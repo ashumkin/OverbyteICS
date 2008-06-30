@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Aug 26, 2007
 Description:
-Version:      1.01
+Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -38,6 +38,7 @@ Legal issues: Copyright (C) 2007-2008 by François PIETTE
 
 History:
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
+Jun 30, 2008 A.Garrels added some RSA and Blowfish crypto functions.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslX509Utils;
@@ -45,16 +46,137 @@ unit OverbyteIcsSslX509Utils;
 interface
 
 uses
-    Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsLibeay, OverbyteIcsLibeayEx;
+    Windows, SysUtils, Classes, OverbyteIcsSSLEAY, OverbyteIcsLibeay,
+    OverbyteIcsLibeayEx, OverByteIcsMD5, OverbyteIcsMimeUtils;
 
 procedure CreateCertRequest(const RequestFileName, KeyFileName, Country,
   State, Locality, Organization, OUnit, CName, Email: AnsiString; Bits: Integer);
 procedure CreateSelfSignedCert(const FileName, Country, State,
   Locality, Organization, OUnit, CName, Email: AnsiString; Bits: Integer;
   IsCA: Boolean; Days: Integer);
+{ RSA crypto functions }
+
+type
+  TRsaPadding = (rpPkcs1, rpPkcs1Oaep, rpNoPadding);
+  { rpPkcs1 - This currently is the most widely used mode             }
+  { rpPkcs1Oaep - This mode is recommended for all new applications   }
+  { rpNoPadding - Don't use                                           }
+  { http://www.openssl.org/docs/crypto/RSA_public_encrypt.html        }
+
+  function DecryptPrivateRSA(
+      PrivKey     : PEVP_PKEY;
+      InBuf       : Pointer;
+      InLen       : Cardinal;
+      OutBuf      : Pointer;
+      var OutLen  : Cardinal;
+      Padding     : TRsaPadding): Boolean;
+
+  function EncryptPublicRSA(
+      PubKey      : PEVP_PKEY;
+      InBuf       : Pointer;
+      InLen       : Cardinal;
+      OutBuf      : Pointer;
+      var OutLen  : Cardinal;
+      Padding     : TRsaPadding): Boolean;
+
+function StrEncRsa(PubKey: PEVP_PKEY; const S: AnsiString; B64: Boolean;
+    Padding: TRsaPadding = rpPkcs1): AnsiString;
+function StrDecRsa(PrivKey: PEVP_PKEY; S: AnsiString; B64: Boolean;
+    Padding: TRsaPadding = rpPkcs1): AnsiString;
+
+{ Symmetric cipher stuff, far from being completed.       }
+{ Should probably be implemented as a class or component. }
+
+const
+  BF_BLOCK_SIZE     = 8;
+
+type
+  TCryptProgress = procedure(Obj: TObject; Count: Int64; var Cancel: Boolean);
+  PMD5Digest = ^TMD5Digest;
+  TCipherType = (ctBfCbc, ctBfCfb64, ctBfOfb, ctBfEcb);
+  TIVector = array[0..8] of Byte;
+  PIVector = ^TIVector;
+  TCipherKey = array[0..47] of Byte;
+  TCipherKeyLen = (cklDefault, ckl64bit, ckl128bit, ckl256bit);
+  PCipherKey = ^TCipherKey;
+  TCipherSalt = String[PKCS5_SALT_LEN];//array[0..PKCS5_SALT_LEN -1] of Byte;
+  TCiphContext = packed record
+      Key       : TCipherKey;
+      IV        : TIVector;
+      //IVLen     : Integer;
+      Ctx       : PEVP_CIPHER_CTX;
+      Cipher    : PEVP_CIPHER;
+      Encrypt   : Boolean;
+      BlockSize : Integer;
+  end;
+  PCiphContext = ^TCiphContext;
+procedure CiphPasswordToKey(InBuf: AnsiString; Salt: TCipherSalt; Count: Integer;
+    var Key: TCipherKey; var KeyLen: Integer; var IV: TIVector; var IVLen: Integer);
+procedure CiphInitialize(var CiphCtx: TCiphContext; const Pwd: AnsiString; Key: PCipherKey;
+    IVector: PIVector; CipherType: TCipherType; KeyLen: TCipherKeyLen; Enc: Boolean);
+procedure CiphSetIVector(var CiphCtx: TCiphContext; IVector: PIVector);
+procedure CiphFinalize(var CiphCtx: TCiphContext);
+procedure CiphUpdate(const InBuf; InLen: Integer; const OutBuf;
+    var OutLen: Integer; CiphCtx: TCiphContext);
+procedure CiphFinal(const OutBuf; var OutLen : Integer; CiphCtx : TCiphContext);
+
+function StrEncBf(const S: AnsiString; const Pwd: AnsiString; IV: PIVector;
+    KeyLen: TCipherKeyLen; B64: Boolean): AnsiString;
+function StrDecBf(S: AnsiString; const Pwd: AnsiString; IV: PIVector;
+    KeyLen: TCipherKeyLen; B64: Boolean): AnsiString;
+
+procedure StreamEncrypt(SrcStream: TStream; DestStream: TStream;
+    StrBlkSize: Integer; CiphCtx: TCiphContext; RandomIV: Boolean); overload;
+procedure StreamDecrypt(SrcStream: TStream; DestStream: TStream;
+    StrBlkSize: Integer; CiphCtx: TCiphContext; RandomIV: Boolean); overload;
+procedure StreamEncrypt(SrcStream: TStream; DestStream: TStream;
+    StrBlkSize: Integer; CiphCtx: TCiphContext; RandomIV: Boolean;
+    Obj: TObject; ProgressCallback : TCryptProgress); overload;
+procedure StreamDecrypt(SrcStream: TStream; DestStream: TStream;
+    StrBlkSize: Integer; CiphCtx: TCiphContext; RandomIV: Boolean;
+    Obj: TObject; ProgressCallback : TCryptProgress); overload;
 
 
 implementation
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function LastOpenSslErrMsg(Dump: Boolean): AnsiString;
+var
+    ErrMsg  : AnsiString;
+    ErrCode : Integer;
+begin
+    ErrCode := f_ERR_get_error;
+    SetLength(Result, 512);
+    f_ERR_error_string_n(ErrCode, PAnsiChar(Result), Length(Result));
+    SetLength(Result, StrLen(PAnsiChar(Result)));
+    if Dump then begin
+        ErrCode := f_ERR_get_error;
+        while ErrCode <> 0 do begin
+            SetLength(ErrMsg, 512);
+            f_ERR_error_string_n(ErrCode, PAnsiChar(ErrMsg), Length(ErrMsg));
+            SetLength(ErrMsg, StrLen(PAnsiChar(ErrMsg)));
+            Result := Result + #13#10 + ErrMsg;
+            ErrCode := f_ERR_get_error;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure RaiseLastOpenSslError(
+    EClass          : ExceptClass;
+    Dump            : Boolean = FALSE;
+    const CustomMsg : AnsiString  = '');
+const
+    CRLF = AnsiString(#13#10);
+begin
+    if Length(CustomMsg) > 0 then
+        raise EClass.Create(CRLF + CustomMsg + CRLF +
+                            LastOpenSslErrMsg(Dump) + CRLF)
+    else
+        raise EClass.Create(CRLF + LastOpenSslErrMsg(Dump) + CRLF);
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure CreateSelfSignedCert(const FileName, Country, State,
@@ -327,5 +449,722 @@ begin
         f_BIO_free(FileBio);
     end;
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function EncryptPublicRSA(
+    PubKey      : PEVP_PKEY;
+    InBuf       : Pointer;
+    InLen       : Cardinal;
+    OutBuf      : Pointer;
+    var OutLen  : Cardinal;
+    Padding     : TRsaPadding): Boolean;
+var
+    Bytes     : Word;
+    MaxBytes  : Word;
+    BlockSize : Word;
+    BytesRet  : Integer;
+    InBufPtr  : PAnsiChar;
+    OutBufPtr : PAnsiChar;
+    PadSize   : Byte;
+    IntPad    : Integer;
+begin
+    Result := FALSE;
+    if not LibeayExLoaded then
+        LoadLibeayEx;
+    if not Assigned(PubKey) then
+        raise Exception.Create('Public key not assigned');
+    if PubKey^.type_ <> EVP_PKEY_RSA then
+        raise Exception.Create('No RSA key');
+    if (InBuf = nil) or (InLen = 0) then
+        raise Exception.Create('Invalid input buffer');
+    case Padding of
+      rpNoPadding :
+          begin
+              IntPad := RSA_NO_PADDING;
+              PadSize := 0;
+          end;    
+      rpPkcs1Oaep :
+          begin
+              IntPad := RSA_PKCS1_OAEP_PADDING;
+              PadSize := RSA_PKCS1_OAEP_PADDING_SIZE;
+          end;
+      else
+        IntPad := RSA_PKCS1_PADDING;
+        PadSize := RSA_PKCS1_PADDING_SIZE;
+    end;
+    BlockSize := f_EVP_PKEY_size(PubKey);
+    MaxBytes := BlockSize - PadSize;
+    { Calculate the required result buffer size }
+    if InLen <= MaxBytes then
+        BytesRet := BlockSize
+    else
+        BytesRet := (InLen div MaxBytes + 1) * BlockSize;
+    if (OutLen = 0) or (OutBuf = nil) or
+       (Integer(OutLen) < BytesRet) then begin
+       { Return required size and exit }
+        OutLen := BytesRet;
+        Exit; //***
+    end;
+    InBufPtr  := InBuf;
+    OutBufPtr := OutBuf;
+    OutLen   := 0;
+    repeat
+        if InLen > MaxBytes then
+            Bytes := MaxBytes
+        else
+            Bytes := InLen;
+        if Bytes > 0 then begin
+            BytesRet := f_RSA_public_encrypt(
+                                            Bytes,
+                                            InBufPtr,
+                                            OutBufPtr,
+                                            PubKey^.rsa,
+                                            IntPad);
+            if BytesRet <> BlockSize then
+            begin
+                if BytesRet = -1 then
+                    RaiseLastOpenSslError(Exception, TRUE,
+                                          'Function f_RSA_public_encrypt:')
+                else 
+                    raise Exception.Create('f_RSA_public_encrypt: ' +
+                                        'Ciphertext must match length of key');
+            end;
+            Dec(InLen, Bytes);
+            Inc(InBufPtr, Bytes);
+            Inc(OutBufPtr, BytesRet);
+            Inc(OutLen, BytesRet);
+        end;
+    until InLen = 0;
+    Result := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function DecryptPrivateRSA(
+    PrivKey     : PEVP_PKEY;
+    InBuf       : Pointer;
+    InLen       : Cardinal;
+    OutBuf      : Pointer;
+    var OutLen  : Cardinal;
+    Padding     : TRsaPadding): Boolean;
+var
+    Bytes     : Word;
+    BlockSize : Word;
+    BytesRet  : Integer;
+    InBufPtr  : PAnsiChar;
+    OutBufPtr : PAnsiChar;
+    IntPad    : Integer;
+begin
+    Result := FALSE;
+    if not LibeayExLoaded then
+        LoadLibeayEx;
+    if PrivKey = nil then
+        raise Exception.Create('Private key not loaded');
+    if PrivKey^.type_ <> EVP_PKEY_RSA then
+        raise Exception.Create('No RSA key');
+    if (InBuf = nil) or (InLen = 0) then
+        raise Exception.Create('Invalid input buffer');
+    if (OutLen = 0) or (OutBuf = nil) or
+       (InLen > OutLen) then begin
+       { Return required size and exit }
+        OutLen := InLen;
+        Exit; //***
+    end;
+    case Padding of
+      rpNoPadding : IntPad := RSA_NO_PADDING;
+      rpPkcs1Oaep : IntPad := RSA_PKCS1_OAEP_PADDING;
+      else
+        IntPad := RSA_PKCS1_PADDING;
+    end;
+    Blocksize := f_EVP_PKEY_size(PrivKey);
+    OutLen    := 0;
+    InBufPtr  := InBuf;
+    OutBufPtr := OutBuf;
+    repeat
+        if InLen > BlockSize then
+            Bytes := BlockSize
+        else
+            Bytes := InLen;
+        if Bytes > 0 then begin
+            BytesRet := f_RSA_private_decrypt(
+                                             Bytes,
+                                             InBufPtr,
+                                             OutBufPtr,
+                                             PrivKey^.rsa,
+                                             IntPad);
+            if BytesRet = -1 then
+                RaiseLastOpenSslError(Exception, TRUE,
+                                      'Function f_RSA_private_decrypt:');
+            Dec(InLen, Bytes);
+            Inc(InBufPtr, Bytes);
+            Inc(OutBufPtr, BytesRet);
+            Inc(OutLen, BytesRet);
+        end;
+    until InLen = 0;
+    Result := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Takes plain text, returns an encrypted and base64 encoded string }
+function StrEncRsa(
+    PubKey  : PEVP_PKEY;
+    const S : AnsiString;
+    B64     : Boolean;
+    Padding : TRsaPadding = rpPkcs1): AnsiString;
+var
+    Len : Cardinal;
+begin
+    { First call is to get return buffer size }
+    EncryptPublicRSA(PubKey, PAnsiChar(S), Length(S), nil, Len, Padding);
+    SetLength(Result, Len);
+    if EncryptPublicRSA(PubKey, PAnsiChar(S), Length(S), PAnsiChar(Result), Len, Padding) then
+    begin
+        if B64 then
+            Result := Base64Encode(Result);
+    end
+    else
+        SetLength(Result, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Takes an encryted and base64 encoded string, returns plain text }
+function StrDecRsa(
+    PrivKey : PEVP_PKEY;
+    S       : AnsiString;
+    B64     : Boolean;
+    Padding : TRsaPadding = rpPkcs1): AnsiString;
+var
+    Len : Cardinal;
+begin
+    if B64 then
+        S := Base64Decode(S);
+    Len := Length(S);
+    SetLength(Result, Len);
+    if DecryptPrivateRSA(PrivKey, PAnsiChar(S), Len, PAnsiChar(Result), Len, Padding) then
+        { Adjust string length! }
+        SetLength(Result, Len)
+    else
+        SetLength(Result, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CiphFinalize(var CiphCtx: TCiphContext);
+begin
+    if Assigned(CiphCtx.Ctx) then begin
+        f_EVP_CIPHER_CTX_cleanup(CiphCtx.Ctx);
+        f_EVP_CIPHER_CTX_free(CiphCtx.Ctx);
+    end;
+    FillChar(CiphCtx, SizeOf(CiphCtx), #0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CalcMD5(
+    Buffer: Pointer;
+    BufSize: Integer;
+    MD5Digest : PMD5Digest);
+var
+    I          : Integer;
+    MD5Context : TMD5Context;
+begin
+    for I := 0 to 15 do
+        MD5Digest^[I] := I + 1;
+    MD5Init(MD5Context);
+    MD5UpdateBuffer(MD5Context, Buffer, BufSize);
+    MD5Final(MD5Digest^, MD5Context);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CiphPasswordToKey(
+    InBuf       : AnsiString;
+    Salt        : TCipherSalt;
+    Count       : Integer;
+    var Key     : TCipherKey;
+    var KeyLen  : Integer;
+    var IV      : TIVector;
+    var IVLen   : Integer);
+var
+    I, nKey, nIV : Integer;
+    MD5Digest  : TMD5Digest;
+    MD5Context : TMD5Context;
+    AddDigest  : Boolean;
+begin
+    FillChar(Key, SizeOf(TCipherKey), #0);
+    FillChar(IV, SizeOf(TIVector), #0);
+    if (KeyLen = 0) or (Length(InBuf)= 0) then Exit;
+    if KeyLen > SizeOf(TCipherKey) then
+        KeyLen := SizeOf(TCipherKey);
+    nKey := 0;
+    nIV  := 0;
+    AddDigest := False;
+    for I := 0 to 15 do
+        MD5Digest[I] := I + 1;
+    while True do
+    begin
+       MD5Init(MD5Context);
+       if AddDigest then
+          MD5UpdateBuffer(MD5Context, @MD5Digest[0], SizeOf(MD5Digest))
+       else
+          AddDigest := TRUE;
+       MD5UpdateBuffer(MD5Context, @InBuf[1], Length(InBuf));
+       if Length(Salt) > 0 then
+            MD5UpdateBuffer(MD5Context, @Salt[1], Length(Salt));
+       MD5Final(MD5Digest, MD5Context);
+       for I := 1 to Count do begin
+          MD5Init(MD5Context);
+          MD5UpdateBuffer(MD5Context, @MD5Digest[0], SizeOf(MD5Digest));
+          MD5Final(MD5Digest, MD5Context);
+       end;
+       I := 0;
+       if nKey <= KeyLen then
+       begin
+           while True do
+           begin
+              if (nKey > KeyLen) or (I > SizeOf(MD5Digest)) then
+                  Break;
+              Key[nKey] := MD5Digest[I];
+              Inc(nkey);
+              Inc(I);
+           end;
+       end;
+       if nIV <= IVLen then
+       begin
+           while True do
+           begin
+              if (nIV > IVLen) or (I > SizeOf(MD5Digest)) then
+                  Break;
+              IV[nIV] := MD5Digest[I];
+              Inc(nIV);
+              Inc(I);
+           end;
+       end;
+       if (nKey > KeyLen) and (nIV > IVLen) then Break;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CiphInitialize(
+    var CiphCtx : TCiphContext;
+    const Pwd   : AnsiString;
+    Key         : PCipherKey; // if not nil Pwd is ignored and the user is responsible to provide a valid Key and IV
+    IVector     : PIVector;
+    CipherType  : TCipherType;
+    KeyLen      : TCipherKeyLen;
+    Enc         : Boolean);
+var
+    SetKeySize  : Integer;
+    //I           : Integer;
+    PIV         : Pointer;
+    KLen, IVLen : Integer;
+begin
+    if not LibeayExLoaded then
+        LoadLibeayEx;
+    SetKeySize := 0;
+    KLen := 0;
+    CiphFinalize(CiphCtx);
+    CiphCtx.Encrypt := Enc;
+    case CipherType of
+        ctBfCbc, {ctBfCfb64,} ctBfOfb, ctBfEcb :
+          { Blowfish keysize 32-448 bits in steps of 8 bits, default 128 bits }
+            begin
+                CiphCtx.BlockSize := BF_BLOCK_SIZE;
+                IVLen := SizeOf(TIVector);
+                case KeyLen of
+                  cklDefault, ckl128bit : KLen := 16;
+                  ckl64bit  : begin Klen := 8; SetKeySize := KLen; end;
+                  ckl256bit : begin Klen := EVP_MAX_KEY_LENGTH; SetKeySize := KLen; end;
+                end;
+                if CipherType = ctBfCbc then
+                    CiphCtx.Cipher := f_EVP_bf_cbc
+                else if CipherType = ctBfOfb then
+                    CiphCtx.Cipher := f_EVP_bf_ofb
+                else begin
+                    CiphCtx.Cipher := f_EVP_bf_ecb;
+                    IVLen := 0;
+                end;
+            end;
+        else
+            raise Exception.Create('Not implemented');
+    end;
+    { Make the key and IV based on password, this is simple, not compatible }
+    { with any standards. }
+    if Key = nil then begin
+        CalcMD5(@Pwd[1], Length(Pwd), @CiphCtx.Key[0]);     //128-bit key
+        if KLen + IVLen > 16 then
+            CalcMD5(@CiphCtx.Key[0], 16, @CiphCtx.Key[16]); //256-bit key
+        if KLen + IVLen > 32 then
+            CalcMD5(@CiphCtx.Key[0], 32, @CiphCtx.Key[32]); //384-bit key
+        {if KeyLen + CiphCtx.IVLen > 48 then
+            CalcMD5(@CiphCtx.Key[0], 48, @CiphCtx.Key[48]); //512-bit key}
+    end
+    else
+        CiphCtx.Key := Key^;
+    if IVLen > 0 then begin
+        if IVector = nil then
+            Move(CiphCtx.Key[KLen], CiphCtx.IV[0], SizeOf(TIVector))
+        else
+            Move(IVector^[0], CiphCtx.IV[0], SizeOf(TIVector));
+        PIV := @CiphCtx.IV[0];
+    end
+    else
+        PIV := nil;
+
+    CiphCtx.Ctx := f_EVP_CIPHER_CTX_new;
+    try
+        f_EVP_CIPHER_CTX_init(CiphCtx.Ctx);
+        if SetKeySize > 0 then begin
+            if not f_EVP_CipherInit_ex(CiphCtx.Ctx, CiphCtx.Cipher, nil, nil, nil,
+                                       Ord(Enc)) then
+                RaiseLastOpenSslError(Exception, TRUE,
+                                      'Function f_EVP_CipherInit_ex:');
+            f_EVP_CIPHER_CTX_set_key_length(CiphCtx.Ctx, SetKeySize);
+        end;
+        if SetKeySize > 0 then begin
+            if not f_EVP_CipherInit_ex(CiphCtx.Ctx, nil, nil, @CiphCtx.key[0],
+                                       PIV, Ord(Enc)) then
+                RaiseLastOpenSslError(Exception, TRUE,
+                                      'Function f_EVP_CipherInit_ex:');
+        end
+        else begin
+            if not f_EVP_CipherInit_ex(CiphCtx.Ctx, CiphCtx.Cipher, nil,
+                                       @CiphCtx.key[0],
+                                       PIV, Ord(Enc)) then
+                RaiseLastOpenSslError(Exception, TRUE,
+                                      'Function f_EVP_CipherInit_ex:');
+        end;
+    except
+        CiphFinalize(CiphCtx);
+        raise;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CiphSetIVector(
+    var CiphCtx : TCiphContext;
+    IVector     : PIVector);
+var
+    PIV : Pointer;
+begin
+    if not Assigned(CiphCtx.Ctx) then
+        raise Exception.Create('Cipher context not initialized');
+    if IVector = nil then begin
+        FillChar(CiphCtx.IV, SizeOf(TIVector), #0);
+        PIV := nil;
+    end
+    else begin
+        CiphCtx.IV := IVector^;
+        PIV := @CiphCtx.IV[0];
+    end;
+    if not f_EVP_CipherInit_ex(CiphCtx.Ctx, nil, nil, nil,
+                               PIV, Ord(CiphCtx.Encrypt)) then
+        RaiseLastOpenSslError(Exception, TRUE, 'Function f_EVP_CipherInit_ex:');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CiphUpdate(
+    const InBuf;
+    InLen : Integer;
+    const OutBuf;
+    var OutLen : Integer;
+    CiphCtx : TCiphContext);
+begin
+    if not Assigned(CiphCtx.Ctx) then
+        raise Exception.Create('Cipher context not initialized');
+    if not f_EVP_CipherUpdate(CiphCtx.Ctx, PAnsiChar(@OutBuf), OutLen,
+                              PAnsiChar(@InBuf), InLen) then
+        RaiseLastOpenSslError(Exception, TRUE,
+                              'Function f_EVP_CipherUpdate:');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CiphFinal(
+    const OutBuf;
+    var OutLen : Integer;
+    CiphCtx : TCiphContext);
+begin
+    if not Assigned(CiphCtx.Ctx) then
+        raise Exception.Create('Cipher context not initialized');
+    if not f_EVP_CipherFinal_ex(CiphCtx.Ctx, PAnsiChar(@OutBuf), OutLen) then
+        RaiseLastOpenSslError(Exception, TRUE,
+                              'Function f_EVP_CipherFinal_ex:');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Takes plain text, returns an encrypted string, optionally base64 encoded }
+function StrEncBf(
+    const S   : AnsiString;
+    const Pwd : AnsiString;
+    IV        : PIVector;
+    KeyLen    : TCipherKeyLen;
+    B64       : Boolean): AnsiString;
+var
+    Len, TmpLen : Integer;
+    CiphCtx : TCiphContext;
+begin
+    FillChar(CiphCtx, SizeOf(CiphCtx), #0);
+    CiphInitialize(CiphCtx, Pwd, nil, IV, ctBfCbc, KeyLen, True);
+    try
+        Len := Length(S);
+        SetLength(Result, Len + CiphCtx.BlockSize);
+        CiphUpdate(S[1], Length(S), Result[1], Len, CiphCtx);
+        CiphFinal(Result[Len + 1], TmpLen, CiphCtx);
+        Inc(Len, TmpLen);
+        SetLength(Result, Len);
+    finally
+        CiphFinalize(CiphCtx);
+    end;
+    if B64 then
+         Result := Base64Encode(Result);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function StrDecBf(
+    S         : AnsiString;
+    const Pwd : AnsiString;
+    IV        : PIVector;
+    KeyLen    : TCipherKeyLen;
+    B64       : Boolean): AnsiString;
+var
+    Len, TmpLen : Integer;
+    CiphCtx : TCiphContext;
+begin
+    FillChar(CiphCtx, SizeOf(CiphCtx), #0);
+    CiphInitialize(CiphCtx, Pwd, nil, IV, ctBfCbc, KeyLen, False);
+    try
+        if B64 then
+            S := Base64Decode(S);
+        Len := Length(S);
+        SetLength(Result, Len + CiphCtx.BlockSize);
+        CiphUpdate(S[1], Length(S), Result[1], Len, CiphCtx);
+        CiphFinal(Result[Len + 1], TmpLen, CiphCtx);
+        Inc(Len, TmpLen);
+        SetLength(Result, Len);
+    finally
+        CiphFinalize(CiphCtx);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure StreamEncrypt(
+    SrcStream  : TStream;
+    DestStream : TStream;
+    StrBlkSize : Integer;
+    CiphCtx    : TCiphContext;
+    RandomIV   : Boolean);
+var
+    Bytes, RetLen, TmpLen : Integer;
+    Len : Int64;
+    InBuf : array of Byte;
+    OutBuf : array of Byte;
+    IV : TIVector;
+begin
+    if RandomIV then begin
+        f_RAND_bytes(@IV[0], SizeOf(TIVector));
+        CiphSetIVector(CiphCtx, @IV);
+    end;
+    if StrBlkSize < 1024 then StrBlkSize := 1024;
+    SetLength(InBuf, StrBlkSize);
+    SetLength(OutBuf, StrBlkSize + CiphCtx.BlockSize); // Room for padding
+    Len := SrcStream.Size;
+    SrcStream.Position  := 0;
+    DestStream.Position := 0;
+    { The IV must be known to decrypt, it may be public.   }
+    { Without a random IV we always get the same cipher    }
+    { text when using both same key and data.              }
+    { http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation }
+    if RandomIV then // prepend the Initialization Vector data
+        DestStream.Write(IV[0], SizeOf(TIVector));
+    TmpLen := 0;
+    RetLen := TmpLen;
+    while True do begin
+        Bytes := SrcStream.Read(InBuf[0], StrBlkSize);
+        if Bytes > 0 then begin
+            Dec(Len, Bytes);
+            CiphUpdate(InBuf[0], Bytes, OutBuf[0], RetLen, CiphCtx);
+            if Len <= 0 then begin
+                CiphFinal(OutBuf[RetLen], TmpLen, CiphCtx);
+                Inc(RetLen, TmpLen);
+            end;
+            if RetLen <> 0 then
+                DestStream.Write(OutBuf[0], RetLen);
+        end
+        else
+            Break;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure StreamEncrypt(
+    SrcStream  : TStream;
+    DestStream : TStream;
+    StrBlkSize : Integer;
+    CiphCtx    : TCiphContext;
+    RandomIV   : Boolean;
+    Obj        : TObject;
+    ProgressCallback : TCryptProgress);
+var
+    Bytes, RetLen, TmpLen : Integer;
+    Len : Int64;
+    InBuf : array of Byte;
+    OutBuf : array of Byte;
+    IV : TIVector;
+    Cancel: Boolean;
+begin
+    Cancel := FALSE;
+    if RandomIV then begin
+        f_RAND_bytes(@IV[0], SizeOf(TIVector));
+        CiphSetIVector(CiphCtx, @IV);
+    end;
+    if StrBlkSize < 1024 then StrBlkSize := 1024;
+    SetLength(InBuf, StrBlkSize);
+    SetLength(OutBuf, StrBlkSize + CiphCtx.BlockSize); // Room for padding
+    Len := SrcStream.Size;
+    SrcStream.Position  := 0;
+    DestStream.Position := 0;
+    { The IV must be known to decrypt, it may be public.   }
+    { Without a random IV we always get the same cipher    }
+    { text when using both same key and data.              }
+    { http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation }
+    if RandomIV then// prepend the Initialization Vector data
+        DestStream.Write(IV[0], SizeOf(TIVector));
+    TmpLen := 0;
+    RetLen := TmpLen;
+    while True do begin
+        Bytes := SrcStream.Read(InBuf[0], StrBlkSize);
+        if Bytes > 0 then begin
+            Dec(Len, Bytes);
+            CiphUpdate(InBuf[0], Bytes, OutBuf[0], RetLen, CiphCtx);
+            if Len <= 0 then begin
+                CiphFinal(OutBuf[RetLen], TmpLen, CiphCtx);
+                Inc(RetLen, TmpLen);
+            end;
+            if RetLen <> 0 then begin
+                DestStream.Write(OutBuf[0], RetLen);
+                if Assigned(ProgressCallback) then begin
+                    ProgressCallback(Obj, SrcStream.Position, Cancel);
+                    if Cancel then
+                        Break;
+                end;
+            end;
+        end
+        else
+            Break;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure StreamDecrypt(
+    SrcStream  : TStream;
+    DestStream : TStream;
+    StrBlkSize : Integer;
+    CiphCtx    : TCiphContext;
+    RandomIV   : Boolean);
+var
+    Bytes, RetLen, TmpLen : Integer;
+    Len : Int64;
+    InBuf : array of Byte;
+    OutBuf : array of Byte;
+    IV : TIVector;
+begin
+    SrcStream.Position := 0;
+    if RandomIV then begin
+        SrcStream.Read(IV[0], SizeOf(TIVector));
+        CiphSetIVector(CiphCtx, @IV);
+    end;
+    if StrBlkSize < 1024 then StrBlkSize := 1024;
+    SetLength(InBuf, StrBlkSize);
+    SetLength(OutBuf, StrBlkSize + CiphCtx.BlockSize);
+    Len := SrcStream.Size;
+    DestStream.Position := 0;
+    TmpLen := 0;
+    RetLen := TmpLen;
+    while True do begin
+        Bytes := SrcStream.Read(InBuf[0], StrBlkSize);
+        if Bytes > 0 then begin
+            Dec(Len, Bytes);
+            CiphUpdate(InBuf[0], Bytes, OutBuf[0], RetLen, CiphCtx);
+            if Len <= 0 then begin
+                CiphFinal(OutBuf[RetLen], TmpLen, CiphCtx);
+                Inc(RetLen, TmpLen);
+            end;
+            if RetLen <> 0 then
+                DestStream.Write(OutBuf[0], RetLen);
+        end
+        else
+            Break;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure StreamDecrypt(
+    SrcStream  : TStream;
+    DestStream : TStream;
+    StrBlkSize : Integer;
+    CiphCtx    : TCiphContext;
+    RandomIV   : Boolean;
+    Obj        : TObject;
+    ProgressCallback : TCryptProgress);
+var
+    Bytes, RetLen, TmpLen : Integer;
+    Len : Int64;
+    InBuf : array of Byte;
+    OutBuf : array of Byte;
+    IV : TIVector;
+    Cancel: Boolean;
+begin
+    Cancel := FALSE;
+    SrcStream.Position := 0;
+    if RandomIV then begin
+        SrcStream.Read(IV[0], SizeOf(TIVector));
+        CiphSetIVector(CiphCtx, @IV);
+    end;
+    if StrBlkSize < 1024 then StrBlkSize := 1024;
+    SetLength(InBuf, StrBlkSize);
+    SetLength(OutBuf, StrBlkSize + CiphCtx.BlockSize);
+    Len := SrcStream.Size;
+    DestStream.Position := 0;
+    TmpLen := 0;
+    RetLen := TmpLen;
+    while True do begin
+        Bytes := SrcStream.Read(InBuf[0], StrBlkSize);
+        if Bytes > 0 then begin
+            Dec(Len, Bytes);
+            CiphUpdate(InBuf[0], Bytes, OutBuf[0], RetLen, CiphCtx);
+            if Len <= 0 then begin
+                CiphFinal(OutBuf[RetLen], TmpLen, CiphCtx);
+                Inc(RetLen, TmpLen);
+            end;
+            if RetLen <> 0 then begin
+                DestStream.Write(OutBuf[0], RetLen);
+                if Assigned(ProgressCallback) then begin
+                    ProgressCallback(Obj, SrcStream.Position, Cancel);
+                    if Cancel then
+                        Break;
+                end;
+            end;
+        end
+        else
+            Break;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
 
 end.

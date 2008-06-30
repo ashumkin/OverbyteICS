@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.01
+Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -54,6 +54,7 @@ Jan 27, 2006 A. Garrels made BDS2006 (BCB & Pascal) compilers happy.
 Mar 03, 2007 A. Garrels: Small changes to support OpenSSL 0.9.8e.
              Read comments in OverbyteIcsSslDefs.inc.
 Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
+             Added a few constants and dummy records.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -86,7 +87,9 @@ const
     IcsSSLEAYVersion   = 100;
     CopyRight : String = ' IcsSSLEAY (c) 2003-2007 F. Piette V1.00 ';
 
-    EVP_MAX_IV_LENGTH   = 16;       { 03/02/07 AG }
+    EVP_MAX_IV_LENGTH                 = 16;       { 03/02/07 AG }
+    EVP_MAX_BLOCK_LENGTH              = 32;       { 11/08/07 AG }
+    EVP_MAX_KEY_LENGTH                = 32;       { 11/08/07 AG }
 
 type
     EIcsSsleayException = class(Exception);
@@ -182,17 +185,31 @@ type
     end;
     PEVP_MD = ^TEVP_MD_st;
 
+    TRSA_st = packed record
+        Dummy : array [0..0] of Byte;      //AG
+    end;
+    PRSA = ^TRSA_st;
+
+    TDSA_st = packed record                //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PDSA = ^TDSA_st;
+
+    TDH_st = packed record                 //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PDH = ^TDH_st;
+
     // 0.9.7g, 0.9.8a, 0.9.8e
     TEVP_PKEY_st = packed record
         type_       : Longint;
         save_type   : Longint;
         references  : Longint;
-        {
         case Integer of
         0 : (ptr  : PAnsiChar);
         1 : (rsa  : PRSA); // RSA
         2 : (dsa  : PDSA); // DSA
-        3 : (dh   : PDH);  // DH}
+        3 : (dh   : PDH);  // DH
         { more not needed ...
         int save_parameters;
         STACK_OF(X509_ATTRIBUTE) *attributes; /* [ 0 ] */ }
@@ -266,11 +283,6 @@ type
         references  : Integer ;}
     end;
     PX509_PKEY = ^TPrivate_key_st;
-
-    TRSA_st = packed record                  //AG
-        Dummy : array [0..0] of Byte;
-    end;
-    PRSA = ^TRSA_st; 
 
     TX509_REQ_st = packed record
         Dummy : array [0..0] of Byte;
