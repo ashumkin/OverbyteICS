@@ -1,8 +1,8 @@
 object SslSmtpTestForm: TSslSmtpTestForm
-  Left = 267
-  Top = 140
-  Width = 600
-  Height = 476
+  Left = 456
+  Top = 161
+  Width = 609
+  Height = 474
   Caption = 'SMTP SSL Test - http://www.overbyte.be'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -21,7 +21,7 @@ object SslSmtpTestForm: TSslSmtpTestForm
   object MsgMemo: TMemo
     Left = 0
     Top = 245
-    Width = 592
+    Width = 601
     Height = 66
     Hint = 'Enter the message text in this memo'
     Align = alTop
@@ -41,8 +41,8 @@ object SslSmtpTestForm: TSslSmtpTestForm
   object DisplayMemo: TMemo
     Left = 0
     Top = 394
-    Width = 592
-    Height = 55
+    Width = 601
+    Height = 46
     Hint = 'This memo shows info messages'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -62,12 +62,12 @@ object SslSmtpTestForm: TSslSmtpTestForm
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
-    Width = 592
+    Width = 601
     Height = 245
     Align = alTop
     TabOrder = 3
     DesignSize = (
-      592
+      601
       245)
     object Label1: TLabel
       Left = 22
@@ -421,6 +421,8 @@ object SslSmtpTestForm: TSslSmtpTestForm
         'Plain'
         'Login'
         'CramMD5'
+        'CramSHA1'
+        'NTLM'
         'AutoSelect')
     end
     object EhloButton: TButton
@@ -582,7 +584,7 @@ object SslSmtpTestForm: TSslSmtpTestForm
   object AttachPanel: TPanel
     Left = 0
     Top = 311
-    Width = 592
+    Width = 601
     Height = 17
     Align = alTop
     TabOrder = 4
@@ -597,7 +599,7 @@ object SslSmtpTestForm: TSslSmtpTestForm
   object FileAttachMemo: TMemo
     Left = 0
     Top = 328
-    Width = 592
+    Width = 601
     Height = 49
     Hint = 'Enter the attached file path, one per line'
     Align = alTop
@@ -617,7 +619,7 @@ object SslSmtpTestForm: TSslSmtpTestForm
   object InfoPanel: TPanel
     Left = 0
     Top = 377
-    Width = 592
+    Width = 601
     Height = 17
     Align = alTop
     TabOrder = 5

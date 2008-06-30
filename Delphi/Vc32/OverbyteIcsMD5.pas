@@ -54,6 +54,9 @@ Oct 31, 2006 V6.03 Angus - progress reports position not size
 July 2007    V6.04 changes for .net compatibility
 27 Nov 2007  V6.05 Angus added FileMD5 for partial file, removed duplicate code
 08 Jan 2008  V6.06 Angus added FileListMD5, optional file mode to stop file being share locked
+Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
+17 Apr, 2008 MD5UpdateBuffer String to AnsiString type-change.
+
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMD5;
@@ -112,7 +115,7 @@ procedure MD5UpdateBuffer(var MD5Context: TMD5Context;
                           BufSize: Integer); overload;
 procedure MD5UpdateBuffer(
     var MD5Context : TMD5Context;
-    const Buffer   : String); overload;
+    const Buffer   : AnsiString); overload;
 procedure MD5Final(var Digest: TMD5Digest; var MD5Context: TMD5Context);
 
 function  MD5GetBufChar(const MD5Context : TMD5Context; Index : Integer) : Byte;
@@ -136,17 +139,17 @@ function GetMD5({$IFDEF SAFE}
                 {$ELSE}
                 Buffer: Pointer;
                 {$ENDIF}
-                BufSize: Integer): string; overload;
-function StrMD5(Buffer : String): string;
-function FileMD5(const Filename: String; Mode: Word = DefaultMode) : String; overload;
+                BufSize: Integer): AnsiString; overload;
+function StrMD5(Buffer : AnsiString): AnsiString;
+function FileMD5(const Filename: String; Mode: Word = DefaultMode) : AnsiString; overload;
 function FileMD5(const Filename: String; Obj: TObject; ProgressCallback: TMD5Progress;
-                                           Mode: Word = DefaultMode) : String; overload;
+                                           Mode: Word = DefaultMode) : AnsiString; overload;
 function FileMD5(const Filename: String; StartPos, EndPos: Int64;
-                                 Mode: Word = DefaultMode) : String; overload; { V6.05 }
+                                 Mode: Word = DefaultMode) : AnsiString; overload; { V6.05 }
 function FileMD5(const Filename: String; Obj: TObject; ProgressCallback : TMD5Progress;
-        StartPos, EndPos: Int64;  Mode: Word = DefaultMode): String; overload; { V6.05 }
+        StartPos, EndPos: Int64;  Mode: Word = DefaultMode): AnsiString; overload; { V6.05 }
 function FileListMD5(FileList: TStringList; Obj: TObject;
-    ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : String;    { V6.06 }
+    ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 
 implementation
 
@@ -496,9 +499,9 @@ end;
 
 procedure MD5UpdateBuffer(
     var MD5Context : TMD5Context;
-    const Buffer   : String);
+    const Buffer   : AnsiString);
 begin
-    MD5UpdateBuffer(MD5Context, PChar(Buffer), Length(Buffer));
+    MD5UpdateBuffer(MD5Context, Pointer(Buffer), Length(Buffer));
 end;
 {$ENDIF}
 
@@ -510,7 +513,7 @@ function GetMD5(
 {$ELSE}
     Buffer: Pointer;
 {$ENDIF}
-    BufSize: Integer): string;
+    BufSize: Integer): AnsiString;
 var
     I          : Integer;
     MD5Digest  : TMD5Digest;
@@ -528,7 +531,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StrMD5(Buffer : String): string;
+function StrMD5(Buffer : AnsiString): AnsiString;
 {$IFDEF SAFE}
 var
     Bytes : TBytes;
@@ -557,7 +560,7 @@ function FileMD5(
     Obj              : TObject;
     ProgressCallback : TMD5Progress;
     StartPos, EndPos : Int64;              { V6.05 }
-    Mode: Word = DefaultMode) : String;    { V6.06 }
+    Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 const
     ChunkSize : Cardinal = 102400;
 var
@@ -631,7 +634,7 @@ function FileMD5(
     Obj              : TObject;
     ProgressCallback : TMD5Progress;
     StartPos, EndPos : Int64;              { V6.05 }
-    Mode: Word = DefaultMode) : String;    { V6.06 }
+    Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 const
 {$IFDEF VER80}
     ChunkSize : Cardinal = 1024 * 31;
@@ -711,28 +714,28 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function FileMD5(const Filename: String; Mode: Word = DefaultMode) : String;    { V6.06 }
+function FileMD5(const Filename: String; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5 (FileName, 0, 0, Mode);
         end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FileMD5(const Filename: String; StartPos, EndPos: Int64;
-                                    Mode: Word = DefaultMode) : String;    { V6.06 }
+                                    Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5(Filename, Nil, Nil, StartPos, EndPos, Mode);
         end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.05 }
 function FileMD5(const Filename: String; Obj: TObject;
-    ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : String;    { V6.06 }
+    ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5(Filename, Obj, ProgressCallback, 0, 0, Mode);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FileListMD5(FileList: TStringList; Obj: TObject;
-    ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : String;    { V6.06 }
+    ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 const
     ChunkSize : Cardinal = 102400;
 var

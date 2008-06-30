@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -51,7 +51,8 @@ Mar 03, 2006 A. Garrels: Added functions f_Ics_X509_get_notBefore,
 Mar 03, 2007 A. Garrels: Small changes to support OpenSSL 0.9.8e.
              Read comments in OverbyteIcsSslDefs.inc.
 May 24, 2007 A.Garrels: Added code to handle ASN1 BMPString and Utf8 string
-             types.            
+             types.
+Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -70,7 +71,7 @@ unit OverbyteIcsLIBEAY;
 interface
 
 uses
-    Windows, SysUtils, OverbyteIcsSSLEAY;
+    Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils;
 
 const
     IcsLIBEAYVersion   = 100;
@@ -79,7 +80,7 @@ const
 type
     EIcsLibeayException = class(Exception);
 
-    TStatLockLockCallback = procedure(Mode : Integer; N : Integer; const _File : PChar; Line : Integer); cdecl;
+    TStatLockLockCallback = procedure(Mode : Integer; N : Integer; const _File : PAnsiChar; Line : Integer); cdecl;
     TStatLockIDCallback   = function : Longword; cdecl;
 
     TCRYPTO_dynlock_value_st = packed record
@@ -88,9 +89,9 @@ type
     PCRYPTO_dynlock_value = ^TCRYPTO_dynlock_value_st;
     CRYPTO_dynlock_value  = TCRYPTO_dynlock_value_st;
 
-    TDynLockCreateCallback  = function(const _file : PChar; Line: Integer): PCRYPTO_dynlock_value; cdecl;
-    TDynLockLockCallback    = procedure(Mode : Integer; L : PCRYPTO_dynlock_value; _File : PChar; Line: Integer); cdecl;
-    TDynLockDestroyCallback = procedure(L : PCRYPTO_dynlock_value; _File : PChar; Line: Integer); cdecl;
+    TDynLockCreateCallback  = function(const _file : PAnsiChar; Line: Integer): PCRYPTO_dynlock_value; cdecl;
+    TDynLockLockCallback    = procedure(Mode : Integer; L : PCRYPTO_dynlock_value; _File : PAnsiChar; Line: Integer); cdecl;
+    TDynLockDestroyCallback = procedure(L : PCRYPTO_dynlock_value; _File : PAnsiChar; Line: Integer); cdecl;
 
 const
     V_ASN1_UNIVERSAL                    = $00;
@@ -374,12 +375,12 @@ const
 
 const
     f_SSLeay :                                 function: Longword; cdecl = nil; //AG
-    f_SSLeay_version :                         function(t: Integer): PChar; cdecl = nil; //AG
-    f_ERR_get_error_line_data :                function(const FileName: PPChar; Line: PInteger; const Data: PPChar; Flags: PInteger): Cardinal; cdecl = nil;
+    f_SSLeay_version :                         function(t: Integer): PAnsiChar; cdecl = nil; //AG
+    f_ERR_get_error_line_data :                function(const FileName: PPAnsiChar; Line: PInteger; const Data: PPAnsiChar; Flags: PInteger): Cardinal; cdecl = nil;
     f_ERR_peek_error :                         function : Cardinal; cdecl = nil;
     f_ERR_get_error :                          function: Cardinal; cdecl = nil;
-    f_ERR_error_string :                       function(Err: Cardinal; Buf: PChar): PChar; cdecl = nil;
-    f_ERR_error_string_n :                     procedure(Err: Cardinal; Buf: PChar; Len: Cardinal); cdecl = nil;
+    f_ERR_error_string :                       function(Err: Cardinal; Buf: PAnsiChar): PAnsiChar; cdecl = nil;
+    f_ERR_error_string_n :                     procedure(Err: Cardinal; Buf: PAnsiChar; Len: Cardinal); cdecl = nil;
     f_ERR_clear_error :                        procedure; cdecl = nil; //empties the current thread's error queue
     f_ERR_remove_state :                       procedure(ThreadID: Longword); cdecl = nil;
     f_ERR_free_strings :                       procedure; cdecl = nil; //"Brutal" (thread-unsafe) Application-global cleanup functions
@@ -387,7 +388,7 @@ const
     f_BIO_new :                                function(BioMethods: PBIO_METHOD): PBIO; cdecl = nil;
     f_BIO_new_socket :                         function(Sock: Integer; CloseFlag: Integer): PBIO; cdecl = nil;
     f_BIO_new_fd :                             function(Fd: Integer; CloseFlag: Integer): PBIO; cdecl = nil;
-    f_BIO_new_file :                           function(FileName: PChar; Mode: PChar): PBIO; cdecl = nil;
+    f_BIO_new_file :                           function(FileName: PAnsiChar; Mode: PAnsiChar): PBIO; cdecl = nil;
     f_BIO_new_mem_buf :                        function(Buf : Pointer; Len : Integer): PBIO; cdecl = nil;
     f_BIO_new_bio_pair :                       function(Bio1: PPBIO; WriteBuf1: Integer; Bio2: PPBIO; WriteBuf2: Integer): Integer; cdecl = nil;
     f_BIO_ctrl :                               function(bp: PBIO; Cmd: Integer; LArg: LongInt; PArg: Pointer): LongInt; cdecl = nil;
@@ -395,15 +396,15 @@ const
     f_BIO_ctrl_get_write_guarantee :           function(b: PBIO): Integer; cdecl = nil;
     f_BIO_ctrl_get_read_request :              function(b: PBIO): Integer; cdecl = nil;
     f_d2i_X509_bio :                           function(B: PBIO; X509: PPX509): PX509; cdecl = nil;
-    f_d2i_X509 :                               function(C509: PPX509; Buf: PPChar; Len: Integer): PX509; cdecl = nil;
+    f_d2i_X509 :                               function(C509: PPX509; Buf: PPAnsiChar; Len: Integer): PX509; cdecl = nil;
     f_BIO_free :                               function(B: PBIO): Integer; cdecl = nil;
     f_BIO_read :                               function(B: PBIO; Buf: Pointer; Len: Integer): Integer; cdecl = nil;
-    f_BIO_nread :                              function(B: PBIO; PBuf: PPChar; Num: Integer): Integer; cdecl = nil;
-    f_BIO_nread0 :                             function(B: PBIO; PBuf: PPChar): Integer; cdecl = nil;
-    f_BIO_nwrite :                             function(B: PBIO; PBuf: PPChar; Num: Integer): Integer; cdecl = nil;
-    f_BIO_nwrite0 :                            function(B: PBIO; PBuf: PPChar): Integer; cdecl = nil;
-    f_BIO_gets :                               function(B: PBIO; Buf: PChar; Size: Integer): Integer; cdecl = nil;
-    f_BIO_puts :                               function(B: PBIO; Buf: PChar): Integer; cdecl = nil;
+    f_BIO_nread :                              function(B: PBIO; PBuf: PPAnsiChar; Num: Integer): Integer; cdecl = nil;
+    f_BIO_nread0 :                             function(B: PBIO; PBuf: PPAnsiChar): Integer; cdecl = nil;
+    f_BIO_nwrite :                             function(B: PBIO; PBuf: PPAnsiChar; Num: Integer): Integer; cdecl = nil;
+    f_BIO_nwrite0 :                            function(B: PBIO; PBuf: PPAnsiChar): Integer; cdecl = nil;
+    f_BIO_gets :                               function(B: PBIO; Buf: PAnsiChar; Size: Integer): Integer; cdecl = nil;
+    f_BIO_puts :                               function(B: PBIO; Buf: PAnsiChar): Integer; cdecl = nil;
     f_BIO_push :                               function(B: PBIO; B_Append: PBIO): PBIO; cdecl = nil;
     f_BIO_write :                              function(B: PBIO; Buf: Pointer; Len: Integer): Integer; cdecl = nil;
     f_BIO_s_mem :                              function : PBIO_METHOD; cdecl = nil;
@@ -425,15 +426,15 @@ const
     f_X509_STORE_CTX_trusted_stack :           procedure(C509: PX509_STORE_CTX; STACK_OF_X509: PSTACK); cdecl = nil;//AG;
     f_X509_STORE_add_crl :                     function(Store: PX509_STORE; CRL: PX509_CRL): Integer; cdecl = nil;//AG;
     f_X509_STORE_free :                        procedure(Store: PX509_STORE); cdecl = nil;//AG;
-    f_X509_verify_cert_error_string :          function(ErrCode : Integer): PChar; cdecl = nil;
+    f_X509_verify_cert_error_string :          function(ErrCode : Integer): PAnsiChar; cdecl = nil;
     f_X509_get_issuer_name :                   function(Cert: PX509): PX509_NAME; cdecl = nil;
     f_X509_get_subject_name :                  function(Cert: PX509): PX509_NAME; cdecl = nil;
     f_X509_get_serialNumber :                  function(Cert: PX509): PASN1_INTEGER; cdecl = nil;
     f_ASN1_INTEGER_get :                       function(Asn1_Int : PASN1_INTEGER): Integer; cdecl = nil;
     f_ASN1_STRING_print :                      function(B: PBIO; v: PASN1_STRING): integer; cdecl = nil;//AG;
     f_ASN1_item_free :                         procedure(Val: PASN1_VALUE; const It: PASN1_ITEM); cdecl = nil; //AG
-    f_X509_NAME_oneline :                      function(CertName: PX509_NAME; Buf: PChar; BufSize: Integer): PChar; cdecl = nil;
-    f_X509_NAME_get_text_by_NID :              function(CertName: PX509_NAME; Nid: Integer; Buf : PChar; Len : Integer): Integer; cdecl = nil;
+    f_X509_NAME_oneline :                      function(CertName: PX509_NAME; Buf: PAnsiChar; BufSize: Integer): PAnsiChar; cdecl = nil;
+    f_X509_NAME_get_text_by_NID :              function(CertName: PX509_NAME; Nid: Integer; Buf : PAnsiChar; Len : Integer): Integer; cdecl = nil;
     f_X509_NAME_get_index_by_NID:              function(CertName: PX509_NAME; Nid: Integer; LastPost: Integer): Integer; cdecl = nil; //AG
     f_ASN1_STRING_free :                       procedure(a: PASN1_STRING); cdecl = nil;//AG;
     f_X509_NAME_free :                         procedure(AName: PX509_NAME); cdecl = nil;//AG;
@@ -450,64 +451,64 @@ const
     f_X509_EXTENSION_get_critical :            function(Ext: PX509_EXTENSION): Integer; cdecl = nil;//AG;
     f_X509_subject_name_hash :                 function(Cert: PX509): Cardinal; cdecl = nil;
     f_X509_print :                             function(B: PBIO; Cert: PX509): Integer; cdecl = nil;
-    f_X509_digest :                            function(Cert: PX509; Type_: PEVP_MD; Buf: PChar; BufSize: PInteger): Integer; cdecl = nil; //AG
+    f_X509_digest :                            function(Cert: PX509; Type_: PEVP_MD; Buf: PAnsiChar; BufSize: PInteger): Integer; cdecl = nil; //AG
     f_X509_check_private_key :                 function(Cert: PX509; PKey: PEVP_PKEY): Integer; cdecl = nil; //AG
     f_EVP_sha1 :                               function: PEVP_MD; cdecl = nil;//AG
     f_EVP_PKEY_free :                          procedure(PKey: PEVP_PKEY); cdecl = nil;//AG
     f_EVP_PKEY_new :                           function: PEVP_PKEY; cdecl = nil;//AG
-    f_EVP_PKEY_assign :                        function(PKey: PEVP_PKEY; Type_: Integer; Key: PChar): Integer; cdecl = nil;//AG
+    f_EVP_PKEY_assign :                        function(PKey: PEVP_PKEY; Type_: Integer; Key: PAnsiChar): Integer; cdecl = nil;//AG
     f_RSA_generate_key :                       function(Num: Integer; E: Cardinal; CallBack: TRSA_genkey_cb; cb_arg: Pointer): PRSA; cdecl = nil;//AG
-    f_OBJ_nid2sn :                             function(N: Integer): PChar; cdecl = nil;
+    f_OBJ_nid2sn :                             function(N: Integer): PAnsiChar; cdecl = nil;
     f_OBJ_obj2nid :                            function(O: PASN1_OBJECT): Integer; cdecl = nil;
     f_sk_num :                                 function(Stack: PSTACK): Integer; cdecl = nil;
-    f_sk_value :                               function(Stack: PSTACK; Item: Integer): PChar; cdecl = nil;
+    f_sk_value :                               function(Stack: PSTACK; Item: Integer): PAnsiChar; cdecl = nil;
     f_sk_new_null:                             function: PSTACK; cdecl = nil;//AG;
     { This function free()'s a stack structure.  The elements in the stack will not be freed }
     f_sk_free :                                procedure(Stack: PSTACK); cdecl = nil;//AG;
     { This function calls 'func' for each element on the stack, passing the element as the argument.  sk_free() is then called to free the 'stack' structure.}
     f_sk_pop_free :                            procedure(Stack: PSTACK; PFreeProc: Pointer); cdecl = nil;//AG;
     { Append 'data' to the stack.  0 is returned if there is a failure (due to a malloc failure), else 1 }
-    f_sk_push :                                function(Stack: PSTACK; Data: PChar): Integer; cdecl = nil;//AG;
+    f_sk_push :                                function(Stack: PSTACK; Data: PAnsiChar): Integer; cdecl = nil;//AG;
     { Remove the item at location 'loc' from the stack and returns it. Returns NULL if the 'loc' is out of range }
-    f_sk_delete :                              function(Stack: PSTACK; Item: Integer): PChar; cdecl = nil;//AG;
+    f_sk_delete :                              function(Stack: PSTACK; Item: Integer): PAnsiChar; cdecl = nil;//AG;
     { Return and delete the last element on the stack }
-    f_sk_pop :                                 function(Stack: PSTACK): PChar; cdecl = nil;//AG;
-    f_sk_find :                                function(Stack: PSTACK; Data: PChar): Integer; cdecl = nil;//AG;
-    f_sk_insert :                              function(Stack: PSTACK; Data: PChar; Index: Integer): Integer; cdecl = nil;//AG;
+    f_sk_pop :                                 function(Stack: PSTACK): PAnsiChar; cdecl = nil;//AG;
+    f_sk_find :                                function(Stack: PSTACK; Data: PAnsiChar): Integer; cdecl = nil;//AG;
+    f_sk_insert :                              function(Stack: PSTACK; Data: PAnsiChar; Index: Integer): Integer; cdecl = nil;//AG;
     f_sk_dup :                                 function(Stack: PSTACK): PSTACK; cdecl = nil;//AG;
     f_PEM_write_bio_X509 :                     function(B: PBIO; Cert: PX509): Integer; cdecl = nil;
     f_PEM_write_bio_X509_REQ :                 function(B: PBIO; Cert_Req: PX509_REQ) : Integer; cdecl = nil;
     f_PEM_write_bio_X509_CRL :                 function(B: PBIO; CRL: PX509_CRL) : Integer; cdecl = nil;
-    f_PEM_read_bio_X509_CRL :                  function(B: PBIO; CRL: PPX509_CRL; CallBack: TPem_password_cb; UData: PChar): PX509_CRL; cdecl = nil;//AG
-    f_PEM_read_bio_X509 :                      function(B: PBIO; C509: PPX509; CallBack: TPem_password_cb; UData: PChar): PX509; cdecl = nil;
-    f_PEM_X509_INFO_read_bio :                 function(B: PBIO; Stack: PSTACK_OF_X509_INFO; CallBack: TPem_password_cb; UData: PChar): PSTACK_OF_X509_INFO; cdecl = nil;//AG;
+    f_PEM_read_bio_X509_CRL :                  function(B: PBIO; CRL: PPX509_CRL; CallBack: TPem_password_cb; UData: PAnsiChar): PX509_CRL; cdecl = nil;//AG
+    f_PEM_read_bio_X509 :                      function(B: PBIO; C509: PPX509; CallBack: TPem_password_cb; UData: PAnsiChar): PX509; cdecl = nil;
+    f_PEM_X509_INFO_read_bio :                 function(B: PBIO; Stack: PSTACK_OF_X509_INFO; CallBack: TPem_password_cb; UData: PAnsiChar): PSTACK_OF_X509_INFO; cdecl = nil;//AG;
     f_CRYPTO_free :                            procedure(P: Pointer); cdecl = nil;//AG
     f_X509_NAME_ENTRY_get_object :             function(Ne: PX509_NAME_ENTRY): PASN1_OBJECT; cdecl = nil;//AG
     f_X509_NAME_get_entry :                    function(Name: PX509_NAME; Loc: Integer): PX509_NAME_ENTRY; cdecl = nil;//AG
     f_X509_NAME_entry_count :                  function(Name: PX509_NAME) : Integer; cdecl = nil; //AG
     f_X509_NAME_ENTRY_get_data :               function(Ne: PX509_NAME_ENTRY) : PASN1_STRING; cdecl = nil;//AG
     f_X509_set_version :                       function(Cert: PX509; Version: LongInt): Integer; cdecl = nil;//AG
-    f_ASN1_STRING_to_UTF8 :                    function(POut: PPChar; PIn: PASN1_STRING) : Integer; cdecl = nil;//AG
+    f_ASN1_STRING_to_UTF8 :                    function(POut: PPAnsiChar; PIn: PASN1_STRING) : Integer; cdecl = nil;//AG
     f_ASN1_INTEGER_set :                       function(a: PASN1_INTEGER; v: LongInt) : Integer; cdecl = nil;//AG
-    f_ASN1_item_d2i :                          function(Val: PPASN1_VALUE; _In: PPChar; Len: Longword; const It: PASN1_ITEM): PASN1_VALUE; cdecl = nil;//AG;
+    f_ASN1_item_d2i :                          function(Val: PPASN1_VALUE; _In: PPAnsiChar; Len: Longword; const It: PASN1_ITEM): PASN1_VALUE; cdecl = nil;//AG;
     //ASN1_VALUE * ASN1_item_d2i(ASN1_VALUE **val, unsigned char **in, long len, const ASN1_ITEM *it);
     f_i2a_ASN1_OBJECT :                        function(B: PBIO; A: PASN1_OBJECT): Integer; cdecl = nil;//AG;
     f_X509_gmtime_adj :                        function(S: PASN1_TIME; Adj: LongInt): PASN1_TIME; cdecl = nil;//AG
     f_X509_set_pubkey :                        function(Cert: PX509; PKey: PEVP_PKEY): Integer; cdecl = nil;//AG
     f_X509_new :                               function: PX509; cdecl = nil;//AG
-    f_X509_NAME_add_entry_by_txt :             function(Name: PX509_NAME; Field: PChar; Type_: Integer; Buf: PChar; BufferSize: Integer; Loc: Integer; Set_: Integer): Integer; cdecl = nil;//AG
-    f_X509_NAME_add_entry_by_NID :             function(Name: PX509_NAME; Nid: Integer; Type_: Integer; Buf: PChar; BufferSize: Integer; Loc: Integer; Set_: Integer): Integer; cdecl = nil;//AG
+    f_X509_NAME_add_entry_by_txt :             function(Name: PX509_NAME; Field: PAnsiChar; Type_: Integer; Buf: PAnsiChar; BufferSize: Integer; Loc: Integer; Set_: Integer): Integer; cdecl = nil;//AG
+    f_X509_NAME_add_entry_by_NID :             function(Name: PX509_NAME; Nid: Integer; Type_: Integer; Buf: PAnsiChar; BufferSize: Integer; Loc: Integer; Set_: Integer): Integer; cdecl = nil;//AG
     f_X509_NAME_new :                          function: PX509_NAME; cdecl = nil;//AG
     f_X509_set_issuer_name :                   function(Cert: PX509; Name: PX509_NAME): Integer; cdecl = nil;//AG
     f_X509_sign :                              function(Cert: PX509; PKey: PEVP_PKEY; const Md: PEVP_MD): Integer; cdecl = nil;//AG
     f_X509_INFO_free :                         procedure(Xi: PX509_INFO); cdecl = nil;//AG;
     f_X509_CRL_dup :                           function(CRL: PX509_CRL): PX509_CRL; cdecl = nil;//AG;
     f_X509_PKEY_free :                         procedure(PKey: PX509_PKEY); cdecl = nil;//AG;
-    f_i2d_X509 :                               function(Cert: PX509; pOut: PPChar): Integer; cdecl = nil;//AG
-    f_i2d_PrivateKey :                         function(A: PEVP_PKEY; PP: PPChar): Integer; cdecl = nil;//AG
-    f_PEM_read_bio_PrivateKey :                function(B: PBIO; X:PPEVP_PKEY; CB: TPem_password_cb; UData: PChar): PEVP_PKEY; cdecl = nil; //AG
-    f_PEM_write_bio_PrivateKey :               function(B: PBIO; X: PEVP_PKEY; const Enc: PEVP_CIPHER; Kstr: PChar; Klen: Integer; CallBack: TPem_password_cb; U: Pointer): Integer; cdecl = nil;//AG
-    f_i2d_ASN1_bytes :                         function(A : PASN1_STRING; var p: PChar; tag: Integer; xclass: Integer): Integer; cdecl = nil;//AG
+    f_i2d_X509 :                               function(Cert: PX509; pOut: PPAnsiChar): Integer; cdecl = nil;//AG
+    f_i2d_PrivateKey :                         function(A: PEVP_PKEY; PP: PPAnsiChar): Integer; cdecl = nil;//AG
+    f_PEM_read_bio_PrivateKey :                function(B: PBIO; X:PPEVP_PKEY; CB: TPem_password_cb; UData: PAnsiChar): PEVP_PKEY; cdecl = nil; //AG
+    f_PEM_write_bio_PrivateKey :               function(B: PBIO; X: PEVP_PKEY; const Enc: PEVP_CIPHER; Kstr: PAnsiChar; Klen: Integer; CallBack: TPem_password_cb; U: Pointer): Integer; cdecl = nil;//AG
+    f_i2d_ASN1_bytes :                         function(A : PASN1_STRING; var p: PAnsiChar; tag: Integer; xclass: Integer): Integer; cdecl = nil;//AG
     f_X509_get_pubkey :                        function(Cert: PX509): PEVP_PKEY; cdecl = nil; //AG;
     f_X509_PUBKEY_free :                       procedure(Key: PEVP_PKEY); cdecl = nil; //AG;
     {
@@ -533,16 +534,16 @@ function BIO_should_write(b: PBIO): Boolean;
 function BIO_should_io_special(b: PBIO): Boolean;
 function BIO_retry_type(b: PBIO): Integer;
 function ASN1_ITEM_ptr(iptr: PASN1_ITEM_EXP): PASN1_ITEM;
-function OpenSslVersion : string;
-function OpenSslCompilerFlags : string;
-function OpenSslBuiltOn : string;
-function OpenSslPlatForm : string;
-function OpenSslDir : string;
+function OpenSslVersion : String;
+function OpenSslCompilerFlags : String;
+function OpenSslBuiltOn : String;
+function OpenSslPlatForm : String;
+function OpenSslDir : String;
 function f_Ics_X509_get_notBefore(X: PX509): PASN1_TIME;
 function f_Ics_X509_get_notAfter(X: PX509): PASN1_TIME;
 function Asn1ToUTDateTime(Asn1Time: PASN1_TIME; out UT: TDateTime): Boolean;
 function Asn1ToWideString(PAsn1 : PASN1_STRING): WideString;
-function Asn1ToString(PAsn1 : PASN1_STRING): String;
+function Asn1ToString(PAsn1 : PASN1_STRING): AnsiString;
 
 const
     GLIBEAY_DLL_Handle   : THandle = 0;
@@ -1146,9 +1147,9 @@ var
     Y, M, D, H, N, S : Word;
     I : Integer;
     YC : Word;  { Current century }
-    P  : PChar;
+    P  : PAnsiChar;
     Offset : Integer;
-    Str    : String;
+    Str    : AnsiString;
     IntH, IntM : Integer;
 begin
     Result  := FALSE;
@@ -1222,10 +1223,10 @@ begin
                     if P[I] in ['-', '+'] then
                     begin
                         if P[I] = '-' then
-                            StrECopy(PChar(Str), PChar(@P[I]))
+                            StrECopy(PAnsiChar(Str), PAnsiChar(@P[I]))
                         else
-                            StrECopy(PChar(Str), PChar(@P[I + 1]));
-                        SetLength(Str, StrLen(PChar(Str)));
+                            StrECopy(PAnsiChar(Str), PAnsiChar(@P[I + 1]));
+                        SetLength(Str, StrLen(PAnsiChar(Str)));
                         Offset := StrToIntDef(Str, 0);
                         if (Offset <> 0) and (Offset >= -1200) and
                            (Offset <= 1300) then begin
@@ -1254,7 +1255,7 @@ begin
     // This is a hack : BIO structure has bnot been defined. But I know
     // flags member is the 6th 32 bit field in the structure (index is 5)
     // This could change when OpenSSL is updated. Check "struct bio_st".
-    Result := PInteger(PChar(b) + 5 * SizeOf(Integer))^;
+    Result := PInteger(PAnsiChar(b) + 5 * SizeOf(Integer))^;
 end;
 
 
@@ -1301,42 +1302,42 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function OpenSslVersion : string;
+function OpenSslVersion : String;
 begin
     Result := f_SSLeay_version(SSLEAY_VERSION);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function OpenSslCompilerFlags : string;
+function OpenSslCompilerFlags : String;
 begin
     Result := f_SSLeay_version(SSLEAY_CFLAGS);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function OpenSslBuiltOn : string;
+function OpenSslBuiltOn : String;
 begin
     Result := f_SSLeay_version(SSLEAY_BUILT_ON);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function OpenSslPlatForm : string;
+function OpenSslPlatForm : String;
 begin
     Result := f_SSLeay_version(SSLEAY_PLATFORM);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function OpenSslDir : string;
+function OpenSslDir : String;
 begin
     Result := f_SSLeay_version(SSLEAY_DIR);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function EncodeOctetStr(Str : PChar; Len : Integer) : String;
+function EncodeOctetStr(Str : PAnsiChar; Len : Integer) : String;
 var
     I : Integer;
     Item : String[3];
@@ -1354,7 +1355,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function BMPStrToWideStr(Str : PChar; Len : Integer): WideString;
+function BMPStrToWideStr(Str : PAnsiChar; Len : Integer): WideString;
 var
     I : Integer;
 begin
@@ -1365,18 +1366,18 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Asn1ToString(PAsn1 : PASN1_STRING): String;
+function Asn1ToString(PAsn1 : PASN1_STRING): AnsiString;
 begin
     if (PAsn1 = nil) or (PAsn1^.data = nil) or (PAsn1^.length <= 0) then
         Exit;
     case PAsn1^.type_ of
       V_ASN1_BMPSTRING :
           { Reverse byte order and convert to Ansi }
-          Result := BMPStrToWideStr(PAsn1^.data, PAsn1^.length);
+          Result := UnicodeToAnsi(BMPStrToWideStr(PAsn1^.data, PAsn1^.length));
       V_ASN1_UTF8STRING :
       begin
           SetLength(Result, PAsn1^.length);
-          Move(PChar(PAsn1^.data)^, PChar(Result)^, PAsn1^.length);
+          Move(PAnsiChar(PAsn1^.data)^, PAnsiChar(Result)^, PAsn1^.length);
           Result := Utf8ToAnsi(Result); { convert to Ansi }
       end;
       {V_ASN1_OCTET_STRING :
@@ -1385,7 +1386,7 @@ begin
       end;}
       else  { dump }
           SetLength(Result, PAsn1^.length);
-          Move(PChar(PAsn1^.data)^, PChar(Result)^, PAsn1^.length);
+          Move(Pointer(PAsn1^.data)^, Pointer(Result)^, PAsn1^.length);
     end;
 end;
 
@@ -1393,7 +1394,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function Asn1ToWideString(PAsn1 : PASN1_STRING): WideString;
 var
-    S : String;
+    S : AnsiString;
     Len : Integer;
 begin
     if (PAsn1 = nil) or (PAsn1^.data = nil) or (PAsn1^.length <= 0) then
@@ -1404,10 +1405,10 @@ begin
           Result := BMPStrToWideStr(PAsn1^.data, PAsn1^.length);
       V_ASN1_UTF8STRING :
       begin
-          Len := Utf8ToUnicode(nil, PChar(PAsn1^.data), MAXINT);
+          Len := Utf8ToUnicode(nil, PAnsiChar(PAsn1^.data), MAXINT);
           if Len > 0 then begin
               SetLength(Result, Len);
-              Utf8ToUnicode(PWideChar(Result), PChar(PAsn1^.data), Len);
+              Utf8ToUnicode(PWideChar(Result), PAnsiChar(PAsn1^.data), Len);
           end;
       end;
       {V_ASN1_OCTET_STRING :
@@ -1416,7 +1417,7 @@ begin
       end;}
       else  { Just dump and convert to WideString}
           SetLength(S, PAsn1^.length);
-          Move(PChar(PAsn1^.data)^, PChar(S)^, PAsn1^.length);
+          Move(Pointer(PAsn1^.data)^, Pointer(S)^, PAsn1^.length);
           Result := S;
     end;
 end;

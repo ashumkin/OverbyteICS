@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      1.06
+Version:      1.08
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -70,6 +70,8 @@ Historique:
                  Primož Gabrijelcic <primoz@gabrijelcic.org>). D7 code explorer
                  displays all classes again. 
 21/07/2007 V1.07 Updated TIcsTimer for .NET environment.
+01/05/2008 V1.08 A. Garrels - Function names adjusted according to changes in
+                 OverbyteIcsLibrary.pas.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -99,8 +101,8 @@ uses
   OverbyteIcsTypes, OverbyteIcsLibrary;
 
 const
-  TIcsWndControlVersion  = 106;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2007 F. Piette V1.07 ';
+  TIcsWndControlVersion  = 108;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2008 F. Piette V1.08 ';
 
   WH_MAX_MSG                   = 100;
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
@@ -827,14 +829,14 @@ begin
             IcsWndControlWindowClass.hbrBackground := 0;
             IcsWndControlWindowClass.lpszMenuName  := nil;
 
-           if OverbyteIcsLibrary.RegisterClass(IcsWndControlWindowClass) = 0 then
+           if _RegisterClass(IcsWndControlWindowClass) = 0 then
                 raise EIcsException.Create(
                      'Unable to register TIcsWndControl hidden window class.' +
-                     ' Error #' + IntToStr(GetLastError) + '.');
+                     ' Error #' + _IntToStr(GetLastError) + '.');
         end;
 
         // Now we are sure the class is registered, we can create a window using it
-        FHandle := OverbyteIcsLibrary.CreateWindowEx(WS_EX_TOOLWINDOW,
+        FHandle := _CreateWindowEx(WS_EX_TOOLWINDOW,
                                   IcsWndControlWindowClass.lpszClassName,
                                   '',        // Window name
                                   WS_POPUP,  // Window Style
@@ -848,7 +850,7 @@ begin
         if FHandle = 0 then
             raise EIcsException.Create(
                 'Unable to create TIcsWndControl hidden window. ' +
-                ' Error #' + IntToStr(GetLastError) + '.');
+                ' Error #' + _IntToStr(GetLastError) + '.');
 
         // We have a window. In the associated data, we record a reference
         // to our object. Thjis will later allow to call the WndProc method to
@@ -885,8 +887,7 @@ begin
             { This is necessary to do so from a DLL when the DLL is unloaded }
             { (that is when DllEntryPoint is called with dwReason equal to   }
             { DLL_PROCESS_DETACH.                                            }
-            OverbyteIcsLibrary.UnregisterClass(
-                IcsWndControlWindowClassName, HInstance);
+            _UnregisterClass(IcsWndControlWindowClassName, HInstance);
     finally
         LeaveCriticalSection(GWndHandlerCritSect);
     end;

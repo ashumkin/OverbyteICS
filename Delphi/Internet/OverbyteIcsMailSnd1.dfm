@@ -2,6 +2,8 @@ object SmtpTestForm: TSmtpTestForm
   Left = 93
   Top = 294
   Caption = 'SmtpTestForm'
+  ClientHeight = 441
+  ClientWidth = 600
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -445,6 +447,18 @@ object SmtpTestForm: TSmtpTestForm
       Caption = 'Confirm'
       TabOrder = 25
     end
+    object SendToFileButton: TButton
+      Left = 448
+      Top = 151
+      Width = 73
+      Height = 17
+      Hint = 'Clear info message memo'
+      Caption = 'Send To File'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 26
+      OnClick = SendToFileButtonClick
+    end
   end
   object AttachPanel: TPanel
     Left = 0
@@ -518,6 +532,7 @@ object SmtpTestForm: TSmtpTestForm
     OnGetData = SmtpClientGetData
     OnHeaderLine = SmtpClientHeaderLine
     OnRequestDone = SmtpClientRequestDone
+    OnAttachContentTypeEh = SmtpClientAttachContentTypeEh
     Left = 488
     Top = 196
   end

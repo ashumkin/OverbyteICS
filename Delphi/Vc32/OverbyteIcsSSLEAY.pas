@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -53,6 +53,7 @@ Dec 07, 2005 A. Garrels support of OSSL v0.9.8a added.
 Jan 27, 2006 A. Garrels made BDS2006 (BCB & Pascal) compilers happy.
 Mar 03, 2007 A. Garrels: Small changes to support OpenSSL 0.9.8e.
              Read comments in OverbyteIcsSslDefs.inc.
+Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -90,6 +91,7 @@ const
 type
     EIcsSsleayException = class(Exception);
     PPChar   = ^PChar;
+    PPAnsiChar = ^PAnsiChar;
     //PInteger = ^Integer;
 
     // All datatypes defined below using the Dummy array can't be used
@@ -187,7 +189,7 @@ type
         references  : Longint;
         {
         case Integer of
-        0 : (ptr  : PChar);
+        0 : (ptr  : PAnsiChar);
         1 : (rsa  : PRSA); // RSA
         2 : (dsa  : PDSA); // DSA
         3 : (dh   : PDH);  // DH}
@@ -212,7 +214,7 @@ type
     TASN1_STRING_st = packed record
         length : Integer;
         type_  : Integer;
-        data   : PChar;
+        data   : PAnsiChar;
         //* The value of the following field depends on the type being
         //* held.  It is mostly being used for BIT_STRING so if the
         //* input data has a non-zero 'unused bits' value, it will be
@@ -257,7 +259,7 @@ type
         dec_pkey    : PEVP_PKEY;
         // used to encrypt and decrypt
         key_length  : Integer ;
-        key_data    : PChar;
+        key_data    : PAnsiChar;
         key_free    : Integer; // true if we should auto free key_data
         // expanded version of 'enc_algor'
         cipher      : PEVP_CIPHER_INFO;
@@ -289,7 +291,7 @@ type
         //enc_cipher  : PEVP_CIPHER_INFO;  It's not a pointer !! { 03/02/07 AG }
         enc_cipher  : EVP_CIPHER_INFO;
         enc_len     : Integer;
-        enc_data    : PChar;
+        enc_data    : PAnsiChar;
         references  : Integer;
     end;
     PX509_INFO = ^TX509_INFO_st;
@@ -343,9 +345,9 @@ type
 
     // 0.9.7g, 0.9.8a, 0.9.8e
     TCONF_VALUE = packed record
-        Section : PChar;
-        Name    : PChar;
-        Value   : PChar;
+        Section : PAnsiChar;
+        Name    : PAnsiChar;
+        Value   : PAnsiChar;
     end;
     PCONF_VALUE = ^TCONF_VALUE;
 
@@ -363,14 +365,14 @@ type
     PASN1_ITEM_EXP     = function: PASN1_ITEM; cdecl;
     PX509V3_EXT_NEW    = function: Pointer; cdecl;
     PX509V3_EXT_FREE   = procedure(Arg: Pointer); cdecl;
-    PX509V3_EXT_D2I    = function(Arg1: Pointer; Arg2: PPChar; Arg3: LongInt): Pointer; cdecl;
-    PX509V3_EXT_I2D    = function(Arg1: Pointer; Arg2: PPChar): Integer; cdecl;
-    PX509V3_EXT_I2S    = function(X509V3_EXT_METHOD: Pointer; Ext: Pointer): PChar; cdecl;
-    PX509V3_EXT_S2I    = function(X509V3_EXT_METHOD: Pointer; Ctx: PV3_EXT_CTX; S: PChar): Pointer; cdecl;
+    PX509V3_EXT_D2I    = function(Arg1: Pointer; Arg2: PPAnsiChar; Arg3: LongInt): Pointer; cdecl;
+    PX509V3_EXT_I2D    = function(Arg1: Pointer; Arg2: PPAnsiChar): Integer; cdecl;
+    PX509V3_EXT_I2S    = function(X509V3_EXT_METHOD: Pointer; Ext: Pointer): PAnsiChar; cdecl;
+    PX509V3_EXT_S2I    = function(X509V3_EXT_METHOD: Pointer; Ctx: PV3_EXT_CTX; S: PAnsiChar): Pointer; cdecl;
     PX509V3_EXT_I2V    = function(X509V3_EXT_METHOD: Pointer; Ext: Pointer; ExtList: PSTACK): PSTACK; cdecl;
     PX509V3_EXT_V2I    = function(X509V3_EXT_METHOD: Pointer; Ctx: PV3_EXT_CTX; Values: PSTACK): Pointer; cdecl;
     PX509V3_EXT_I2R    = function(X509V3_EXT_METHOD: Pointer; Ext: Pointer; Output: PBIO; Indent: Integer): Integer; cdecl;
-    PX509V3_EXT_R2I    = function(X509V3_EXT_METHOD: Pointer; Ctx: PV3_EXT_CTX; S: PChar): Pointer; cdecl;
+    PX509V3_EXT_R2I    = function(X509V3_EXT_METHOD: Pointer; Ctx: PV3_EXT_CTX; S: PAnsiChar): Pointer; cdecl;
 
     // V3 extension structure
     TX509V3_EXT_METHOD = packed record
@@ -400,7 +402,7 @@ type
     PX509V3_EXT_METHOD = ^TX509V3_EXT_METHOD;
     
 type
-    TPem_password_cb = function(Buf      : PChar;
+    TPem_password_cb = function(Buf      : PAnsiChar;
                                 Num      : Integer;
                                 RWFlag   : Integer;
                                 UserData : Pointer) : Integer; cdecl;
@@ -629,16 +631,16 @@ const
     f_SSL_get_wbio :                           function(S: PSSL): PBIO; cdecl = nil;
     f_SSL_get1_session :                       function(S: PSSL): PSSL_SESSION; cdecl = nil;
     f_SSL_session_free :                       procedure(Session: PSSL_SESSION); cdecl = nil;
-    f_d2i_SSL_SESSION :                        function(Session: PPSSL_SESSION; const pp: PPChar; Length: Longword): PSSL_SESSION; cdecl = nil;
-    f_i2d_SSL_SESSION :                        function(InSession: PSSL_SESSION; pp: PPChar): Integer; cdecl = nil;
+    f_d2i_SSL_SESSION :                        function(Session: PPSSL_SESSION; const pp: PPAnsiChar; Length: Longword): PSSL_SESSION; cdecl = nil;
+    f_i2d_SSL_SESSION :                        function(InSession: PSSL_SESSION; pp: PPAnsiChar): Integer; cdecl = nil;
     f_SSL_SESSION_get_time :                   function(const Sess: PSSL_SESSION): Longword; cdecl = nil;
     f_SSL_SESSION_set_time :                   function(Sess: PSSL_SESSION; T: Longword): Longword; cdecl = nil;
     f_SSL_SESSION_get_timeout :                function(const Sess: PSSL_SESSION): Longword; cdecl = nil;
     f_SSL_SESSION_set_timeout :                function(Sess: PSSL_SESSION; T: Longword): Longword; cdecl = nil;
-    f_SSL_CTX_set_session_id_context :         function(Ctx: PSSL_CTX; const Sid_ctx: PChar; sid_ctx_len: Integer): Integer; cdecl = nil;
+    f_SSL_CTX_set_session_id_context :         function(Ctx: PSSL_CTX; const Sid_ctx: PAnsiChar; sid_ctx_len: Integer): Integer; cdecl = nil;
     f_SSL_CTX_set_timeout :                    function(Ctx: PSSL_CTX; Timeout: Longword): Longword; cdecl = nil;
     f_SSL_CTX_get_cert_store :                 function(const Ctx: PSSL_CTX): PX509_STORE; cdecl = nil; //AG
-    f_SSL_set_session_id_context :             function(S: PSSL; const Sid_ctx: PChar; sid_ctx_len: Integer): Integer; cdecl = nil;
+    f_SSL_set_session_id_context :             function(S: PSSL; const Sid_ctx: PAnsiChar; sid_ctx_len: Integer): Integer; cdecl = nil;
     f_SSL_accept :                             function(S: PSSL): Integer; cdecl = nil;
     f_SSL_connect :                            function(S: PSSL): Integer; cdecl = nil;
     f_SSL_ctrl :                               function(S: PSSL; Cmd: Integer; LArg: LongInt; PArg: Pointer): LongInt; cdecl = nil;
@@ -659,32 +661,32 @@ const
     f_SSL_set_connect_state :                  procedure(S: PSSL); cdecl = nil;
     f_SSL_set_accept_state :                   procedure(S: PSSL); cdecl = nil; //AG
     f_SSL_set_shutdown :                       procedure(S: PSSL; Mode: Integer); cdecl = nil;
-    f_SSL_get_version :                        function(S: PSSL): PChar; cdecl = nil;
+    f_SSL_get_version :                        function(S: PSSL): PAnsiChar; cdecl = nil;
     f_SSL_version :                            function(const S: PSSL): Integer; cdecl = nil; //AG
     f_SSL_get_current_cipher :                 function(S: PSSL): Pointer; cdecl = nil;
     f_SSL_state :                              function(S: PSSL): Integer; cdecl = nil;
-    f_SSL_state_string_long :                  function(S: PSSL): PChar; cdecl = nil;
-    f_SSL_alert_type_string_long :             function(value: Integer): PChar; cdecl = nil;
-    f_SSL_alert_desc_string_long :             function(value: Integer): PChar; cdecl = nil;
+    f_SSL_state_string_long :                  function(S: PSSL): PAnsiChar; cdecl = nil;
+    f_SSL_alert_type_string_long :             function(value: Integer): PAnsiChar; cdecl = nil;
+    f_SSL_alert_desc_string_long :             function(value: Integer): PAnsiChar; cdecl = nil;
     f_SSL_CIPHER_get_bits :                    function(Cipher, Alg_Bits: Pointer): Integer; cdecl = nil;
-    f_SSL_CIPHER_get_name :                    function(Cipher: Pointer): PChar; cdecl = nil;
-    f_SSL_CIPHER_description :                 function(Cipher: Pointer; buf: PChar; size: Integer): PChar; cdecl = nil;
+    f_SSL_CIPHER_get_name :                    function(Cipher: Pointer): PAnsiChar; cdecl = nil;
+    f_SSL_CIPHER_description :                 function(Cipher: Pointer; buf: PAnsiChar; size: Integer): PAnsiChar; cdecl = nil;
     f_SSL_CTX_free :                           procedure(C: PSSL_CTX); cdecl = nil;
-    f_SSL_CTX_use_certificate_chain_file :     function(C: PSSL_CTX; const FileName: PChar): Integer; cdecl = nil;
-    f_SSL_CTX_use_certificate_file :           function(C: PSSL_CTX; const FileName: PChar; type_: Integer): Integer; cdecl = nil; //AG
+    f_SSL_CTX_use_certificate_chain_file :     function(C: PSSL_CTX; const FileName: PAnsiChar): Integer; cdecl = nil;
+    f_SSL_CTX_use_certificate_file :           function(C: PSSL_CTX; const FileName: PAnsiChar; type_: Integer): Integer; cdecl = nil; //AG
     f_SSL_CTX_set_default_passwd_cb :          procedure(C: PSSL_CTX; CallBack: TPem_password_cb); cdecl = nil;
     f_SSL_CTX_set_default_passwd_cb_userdata : procedure(C: PSSL_CTX; UData: Pointer); cdecl = nil;
-    f_SSL_CTX_use_PrivateKey_file :            function(C: PSSL_CTX; const FileName: PChar; CertType: Integer): Integer; cdecl = nil;
-    f_SSL_CTX_load_verify_locations :          function(C: PSSL_CTX; const FileName: PChar; const SearchPath: PChar): Integer; cdecl = nil;
+    f_SSL_CTX_use_PrivateKey_file :            function(C: PSSL_CTX; const FileName: PAnsiChar; CertType: Integer): Integer; cdecl = nil;
+    f_SSL_CTX_load_verify_locations :          function(C: PSSL_CTX; const FileName: PAnsiChar; const SearchPath: PAnsiChar): Integer; cdecl = nil;
     f_SSL_CTX_set_default_verify_paths :       function(C: PSSL_CTX): Integer; cdecl = nil;
     f_SSL_CTX_set_verify :                     procedure(C: PSSL_CTX; Mode: Integer; CallBack : TSetVerify_cb); cdecl = nil;
     f_SSL_set_verify :                         procedure(S: PSSL; Mode: Integer; CallBack : TSetVerify_cb); cdecl = nil;
     f_SSL_CTX_get_verify_mode :                function(const C: PSSL_CTX): Integer; cdecl = nil; //AG
     f_SSL_CTX_set_verify_depth :               procedure(C: PSSL_CTX; Depth: Integer); cdecl = nil;
-    f_SSL_CTX_ctrl :                           function(C: PSSL_CTX; Cmd: Integer; LArg: LongInt; PArg: PChar): LongInt; cdecl = nil;
-    f_SSL_CTX_set_ex_data :                    function(C: PSSL_CTX; Idx: Integer; Arg: PChar): Integer; cdecl = nil;
-    f_SSL_CTX_get_ex_data :                    function(const C: PSSL_CTX; Idx: Integer): PChar; cdecl = nil;
-    f_SSL_CTX_set_cipher_list :                function(C: PSSL_CTX; CipherString: PChar): Integer; cdecl = nil;
+    f_SSL_CTX_ctrl :                           function(C: PSSL_CTX; Cmd: Integer; LArg: LongInt; PArg: PAnsiChar): LongInt; cdecl = nil;
+    f_SSL_CTX_set_ex_data :                    function(C: PSSL_CTX; Idx: Integer; Arg: PAnsiChar): Integer; cdecl = nil;
+    f_SSL_CTX_get_ex_data :                    function(const C: PSSL_CTX; Idx: Integer): PAnsiChar; cdecl = nil;
+    f_SSL_CTX_set_cipher_list :                function(C: PSSL_CTX; CipherString: PAnsiChar): Integer; cdecl = nil;
     f_SSL_CTX_set_trust :                      function(C: PSSL_CTX; Trust: Integer): Integer; cdecl = nil; //AG
 {$IFNDEF BEFORE_OSSL_098E}
     f_SSL_CTX_set_client_cert_cb:              procedure(CTX: PSSL_CTX; CB: TClient_cert_cb); cdecl = nil; //AG
@@ -695,11 +697,11 @@ const
     f_SSL_CTX_sess_get_get_cb:                 function(CTX: PSSL_CTX): TGet_session_cb; cdecl = nil; //AG
     f_SSL_CTX_sess_set_new_cb:                 procedure(Ctx: PSSL_CTX; CB: TNew_session_cb); cdecl = nil; //AG
     f_SSL_CTX_sess_get_new_cb:                 function (CTX: PSSL_CTX): TNew_session_cb; cdecl = nil; //AG
-    f_SSL_SESSION_get_id:                      function (const Ses: PSSL_SESSION; var Len: LongInt): PChar; cdecl = nil; //AG
+    f_SSL_SESSION_get_id:                      function (const Ses: PSSL_SESSION; var Len: LongInt): PAnsiChar; cdecl = nil; //AG
 {$ENDIF}
     f_SSL_CTX_add_client_CA :                  function(C: PSSL_CTX; CaCert: PX509): Integer; cdecl = nil; //AG
     f_SSL_CTX_set_client_CA_list :             procedure(C: PSSL_CTX; List: PSTACK_OF_X509_NAME); cdecl = nil; //AG
-    f_SSL_load_client_CA_file :                function(const FileName: PChar): PSTACK_OF_X509_NAME; cdecl = nil; //AG
+    f_SSL_load_client_CA_file :                function(const FileName: PAnsiChar): PSTACK_OF_X509_NAME; cdecl = nil; //AG
 
     f_SSL_get_ex_data_X509_STORE_CTX_idx:      function: Integer; cdecl = nil;
     f_BIO_f_ssl :                              function : PBIO_METHOD; cdecl = nil;
@@ -729,7 +731,7 @@ function  f_SSL_CTX_add_extra_chain_cert(Ctx: PSSL_CTX; Cert: PX509): Longword;
 
 {$IFDEF BEFORE_OSSL_098E}
 //procedure f_SSL_session_get_id(Ses: PSSL_SESSION; var SessID: Pointer; var IdLen: Integer);
-function f_SSL_SESSION_get_id(const Ses: PSSL_SESSION; var IdLen: LongInt): PChar;
+function f_SSL_SESSION_get_id(const Ses: PSSL_SESSION; var IdLen: LongInt): PAnsiChar;
 procedure f_SSL_CTX_sess_set_new_cb(Ctx: PSSL_CTX; CB: TNew_session_cb);
 procedure f_SSL_CTX_sess_set_get_cb(Ctx: PSSL_CTX; CB: TGet_session_cb);
 procedure f_SSL_CTX_sess_set_remove_cb(Ctx: PSSL_CTX; CB: TRemove_session_cb);
@@ -1234,19 +1236,19 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function f_SSL_CTX_add_extra_chain_cert(Ctx: PSSL_CTX; Cert: PX509): Longword;
 begin
-    Result := f_SSL_CTX_ctrl(Ctx, SSL_CTRL_EXTRA_CHAIN_CERT, 0, PChar(Cert))
+    Result := f_SSL_CTX_ctrl(Ctx, SSL_CTRL_EXTRA_CHAIN_CERT, 0, PAnsiChar(Cert))
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF BEFORE_OSSL_098E}
-function f_SSL_SESSION_get_id(const Ses: PSSL_SESSION; var IdLen: LongInt): PChar; { 03/02/07 AG }
+function f_SSL_SESSION_get_id(const Ses: PSSL_SESSION; var IdLen: LongInt): PAnsiChar; { 03/02/07 AG }
 begin
     // This is a hack : SSL_SESSION structure has not been defined.
     // There's also no function in openssl to get the session_id
     // from the SSL_SESSION_st.
-    IdLen  := PInteger(PChar(Ses) + 68)^;
-    Result := PChar(Ses) + 72;
+    IdLen  := PInteger(PAnsiChar(Ses) + 68)^;
+    Result := PAnsiChar(Ses) + 72;
 end;
 
 { procedure f_SSL_session_get_id(Ses: PSSL_SESSION; var SessID: Pointer; var IdLen: Integer);
@@ -1254,8 +1256,8 @@ begin
     // This is a hack : SSL_SESSION structure has not been defined.
     // There's also no function in openssl to get the session_id
     // from the SSL_SESSION_st.
-    IdLen  := PInteger(PChar(Ses) + 68)^;
-    SessID := Pointer(PChar(Ses) + 72);
+    IdLen  := PInteger(PAnsiChar(Ses) + 68)^;
+    SessID := Pointer(PAnsiChar(Ses) + 72);
 end; }
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1264,7 +1266,7 @@ begin
     // This is a hack : Ctx structure has not been defined. But we know
     // CB member is the 11th 32 bit field in the structure (index is 10)
     // This could change when OpenSSL is updated. Check "struct ssl_ctx_st".
-    PNew_session_cb(PChar(Ctx) + 10 * 4)^ := @CB;
+    PNew_session_cb(PAnsiChar(Ctx) + 10 * 4)^ := @CB;
 end;
 
 
@@ -1274,7 +1276,7 @@ begin
     // This is a hack : Ctx structure has not been defined. But we know
     // CB member is the 12th 32 bit field in the structure (index is 11)
     // This could change when OpenSSL is updated. Check "struct ssl_ctx_st".
-    PRemove_session_cb(PChar(Ctx) + 11 * 4)^ := @CB;
+    PRemove_session_cb(PAnsiChar(Ctx) + 11 * 4)^ := @CB;
 end;
 
 
@@ -1284,7 +1286,7 @@ begin
     // This is a hack : Ctx structure has not been defined. But we know
     // CB member is the 13th 32 bit field in the structure (index is 12)
     // This could change when OpenSSL is updated. Check "struct ssl_ctx_st".
-    PGet_session_cb(PChar(Ctx) + 12 * 4)^ := @CB;
+    PGet_session_cb(PAnsiChar(Ctx) + 12 * 4)^ := @CB;
 end;
 
 
@@ -1294,7 +1296,7 @@ begin
     // This is a hack : Ctx structure has not been defined. But we know
     // CB member is the 30th 32 bit field in the structure (index is 29)
     // This could change when OpenSSL is updated. Check "struct ssl_ctx_st".
-    PClient_cert_cb(PChar(CTX) + 29 * 4)^ := @CB;
+    PClient_cert_cb(PAnsiChar(CTX) + 29 * 4)^ := @CB;
 end;
 
 
@@ -1304,8 +1306,8 @@ begin
     // This is a hack : Ctx structure has not been defined. But we know
     // CB member is the 30th 32 bit field in the structure (index is 29)
     // This could change when OpenSSL is updated. Check "struct ssl_ctx_st".
-    Result := PChar(CTX) + 29 * 4;
-    if PChar(Result)^ = #0 then
+    Result := PAnsiChar(CTX) + 29 * 4;
+    if PAnsiChar(Result)^ = #0 then
         Result := nil
 end;
 {$ENDIF}

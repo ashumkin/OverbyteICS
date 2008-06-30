@@ -5,7 +5,7 @@ Description:  Some more function headers of LIBEAY32.DLL which are not
               declared/used in OverbyteIcsLibeay.pas (OpenSSL)
               This is only the subset and may grow.
 Creation:     Jan 12, 2005
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -40,6 +40,7 @@ Legal issues: Copyright (C) 2005-2008 by François PIETTE
 
 
 History:
+Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -101,7 +102,7 @@ type
     PASN1_BIT_STRING   = ^TASN1_BIT_STRING;
 
     TASN1_ENCODING_st = packed record
-        enc       : PChar;
+        enc       : PAnsiChar;
         len       : LongWord;
         modified  : Integer;
     end;
@@ -144,18 +145,18 @@ type
 
 const
 f_RAND_screen             : procedure; cdecl = nil;
-f_RAND_load_file          : function(const FileName: PChar; Max_Bytes: Longint): Integer; cdecl = nil;
-f_RAND_write_file         : function(const FileName: PChar): Integer; cdecl = nil;
+f_RAND_load_file          : function(const FileName: PAnsiChar; Max_Bytes: Longint): Integer; cdecl = nil;
+f_RAND_write_file         : function(const FileName: PAnsiChar): Integer; cdecl = nil;
 f_RAND_status             : function: Integer; cdecl = nil;
 f_RAND_cleanup            : procedure; cdecl = nil;
 f_RAND_poll               : function: Integer; cdecl = nil;
 f_RAND_add                : procedure(buf: Pointer; num: Integer; entropy: Double); cdecl = nil;
-f_RAND_bytes              : function(buf: PChar; num: Integer): Integer; cdecl = nil;
-f_RAND_pseudo_bytes       : function(buf: PChar; num: Integer): Integer; cdecl = nil;
+f_RAND_bytes              : function(buf: PAnsiChar; num: Integer): Integer; cdecl = nil;
+f_RAND_pseudo_bytes       : function(buf: PAnsiChar; num: Integer): Integer; cdecl = nil;
 
 f_RSA_free                : procedure(RSA: PRSA); cdecl = nil;
 
-f_X509V3_EXT_conf_nid     : function(Conf: PLHASH; Ctx: PX509V3_CTX; ext_nid: Integer; value: PChar): PX509_EXTENSION; cdecl = nil;
+f_X509V3_EXT_conf_nid     : function(Conf: PLHASH; Ctx: PX509V3_CTX; ext_nid: Integer; value: PAnsiChar): PX509_EXTENSION; cdecl = nil;
 f_X509_add_ext            : function(Cert: PX509; Ex: PX509_EXTENSION; loc: Integer): Integer; cdecl = nil;
 f_X509_EXTENSION_free     : procedure(Ext: PX509_EXTENSION); cdecl = nil;
 
@@ -167,8 +168,8 @@ f_X509_REQ_add_extensions : function(Req: PX509_REQ; Exts: PSTACK): Integer; cde
 f_X509_REQ_free           : procedure(Req: PX509_REQ); cdecl = nil;
 
 f_EVP_PKEY_size           : function(Pkey: PEVP_PKEY): Integer; cdecl = nil;
-f_RSA_public_encrypt      : function(flen: Integer; from: PChar; to_: PChar; rsa: PRSA; padding: Integer): Integer; cdecl = nil;
-f_RSA_private_decrypt     : function(flen: Integer; from: PChar; to_: PChar; rsa: PRSA; padding: Integer): Integer; cdecl = nil;
+f_RSA_public_encrypt      : function(flen: Integer; from: PAnsiChar; to_: PAnsiChar; rsa: PRSA; padding: Integer): Integer; cdecl = nil;
+f_RSA_private_decrypt     : function(flen: Integer; from: PAnsiChar; to_: PAnsiChar; rsa: PRSA; padding: Integer): Integer; cdecl = nil;
 
 
 // High level OpenSSL Crypto stuff, most require OSSL 0.9.7
@@ -182,11 +183,11 @@ f_EVP_CIPHER_CTX_new      : function: PEVP_CIPHER_CTX; cdecl = nil;
 f_EVP_CIPHER_CTX_free     : procedure(ctx: PEVP_CIPHER_CTX); cdecl = nil;
 f_EVP_CIPHER_CTX_init     : procedure(ctx: PEVP_CIPHER_CTX); cdecl = nil;
 f_EVP_CIPHER_CTX_set_key_length : function(ctx: PEVP_CIPHER_CTX; keyl: Integer): LongBool; cdecl = nil;
-f_EVP_CipherInit_ex       : function(ctx: PEVP_CIPHER_CTX; const cipher: PEVP_CIPHER; impl: PEngine; key, iv: PChar; enc: Integer): LongBool; cdecl = nil;
-f_EVP_CipherUpdate        : function(ctx: PEVP_CIPHER_CTX; out_: PChar; var outl: Integer; const in_: PChar; inl: Integer): LongBool; cdecl = nil;
-f_EVP_CipherFinal_ex      : function(ctx: PEVP_CIPHER_CTX; out_: PChar; var outl: Integer): LongBool; cdecl = nil;
+f_EVP_CipherInit_ex       : function(ctx: PEVP_CIPHER_CTX; const cipher: PEVP_CIPHER; impl: PEngine; key, iv: PAnsiChar; enc: Integer): LongBool; cdecl = nil;
+f_EVP_CipherUpdate        : function(ctx: PEVP_CIPHER_CTX; out_: PAnsiChar; var outl: Integer; const in_: PAnsiChar; inl: Integer): LongBool; cdecl = nil;
+f_EVP_CipherFinal_ex      : function(ctx: PEVP_CIPHER_CTX; out_: PAnsiChar; var outl: Integer): LongBool; cdecl = nil;
 f_EVP_CIPHER_CTX_cleanup  : function(ctx: PEVP_CIPHER_CTX): Integer; cdecl = nil;
-f_EVP_BytesToKey          : function(const type_: PEVP_CIPHER; const md: PEVP_MD; const salt: PChar; const data: PChar; datalen, count : Integer; key, iv: PChar): Integer; cdecl = nil;
+f_EVP_BytesToKey          : function(const type_: PEVP_CIPHER; const md: PEVP_MD; const salt: PAnsiChar; const data: PAnsiChar; datalen, count : Integer; key, iv: PAnsiChar): Integer; cdecl = nil;
 f_EVP_md5                 : function: PEVP_MD; cdecl = nil;
 
 var
@@ -209,7 +210,7 @@ begin
     if FileExists(FileName) then
     begin
         if MaxBytes < -1 then MaxBytes := -1;
-        Result := f_RAND_load_file(PChar(FileName), MaxBytes);
+        Result := f_RAND_load_file(PAnsiChar(AnsiString(FileName)), MaxBytes);
     end;
 end;
 

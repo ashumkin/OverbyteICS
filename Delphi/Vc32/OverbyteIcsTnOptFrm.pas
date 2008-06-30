@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  User interface for TnEmulVT component options
 Creation:     May, 1996
-Version:      6.01
+Version:      6.02
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org See website for details.
@@ -22,14 +22,14 @@ Legal issues: Copyright (C) 1996-2007 by François PIETTE
 
               1. The origin of this software must not be misrepresented,
                  you must not claim that you wrote the original software.
-                 If you use this software in a product, an acknowledgment 
+                 If you use this software in a product, an acknowledgment
                  in the product documentation would be appreciated but is
                  not required.
 
               2. Altered source versions must be plainly marked as such, and
                  must not be misrepresented as being the original software.
 
-              3. This notice may not be removed or altered from any source 
+              3. This notice may not be removed or altered from any source
                  distribution.
 
               4. You must register this software by sending a picture postcard
@@ -41,6 +41,7 @@ Mar 18, 1999  V1.01 Removed FormPos dependency
 Mar 26, 2006  V6.00 started from previous version
 Mar 24, 2008  V6.01 Francois Piette made some changes to prepare code
               for Unicode.
+May 11, 2008  V6.02 USchuster removed local atoi implementation (atoi is now in OverbyteIcsUtils.pas) 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -74,11 +75,11 @@ uses
     WinTypes, WinProcs,
 {$ENDIF}
     SysUtils, Classes, Graphics, Controls,
-    Dialogs, Forms, StdCtrls, IniFiles, Buttons;
+    Dialogs, Forms, StdCtrls, IniFiles, Buttons, OverbyteIcsUtils;
 
 const
-  TnOptFrmVersion      = 601;
-  CopyRight : String = ' TnOptFrm (c) 1996-2008 F. Piette V6.01 ';
+  TnOptFrmVersion      = 602;
+  CopyRight : String = ' TnOptFrm (c) 1996-2008 F. Piette V6.02 ';
 
 type
   TOptForm = class(TForm)
@@ -196,23 +197,6 @@ const
     KeyLeft            = 'Left';
     KeyWidth           = 'Width';
     KeyHeight          = 'Height';
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function atoi(value : string) : Integer;
-var
-    i : Integer;
-begin
-    Result := 0;
-    i := 1;
-    while (i <= Length(Value)) and (Value[i] = ' ') do
-        i := i + 1;
-    while (i <= Length(Value)) and
-          (Value[i] >= '0') and (Value[i] <= '9') do begin
-        Result := Result * 10 + ord(Value[i]) - ord('0');
-        i := i + 1;
-    end;
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TOptForm.SetFKeys(Value : Integer);

@@ -1,4 +1,4 @@
-package OverbyteIcsDel110Package;
+package OverbyteIcsDel120Package;
 
 {$R *.res}
 {$R 'OverbyteIcsHttpSrv.dcr'}
@@ -43,7 +43,7 @@ package OverbyteIcsDel110Package;
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'Overbyte ICS for Delphi 2007'}
+{$DESCRIPTION 'Overbyte ICS for Delphi 2008'}
 {$IMPLICITBUILD ON}
 {$DEFINE USE_ZLIB_OBJ}
 

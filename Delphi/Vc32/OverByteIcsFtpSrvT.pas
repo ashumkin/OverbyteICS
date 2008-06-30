@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Time functions.
 Creation:     Nov 24, 1999 from Bruce Christensen <bkc51831234@hotmail.com>
               code used with his permission. Thanks.
-Version:      1.16
+Version:      1.18
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -56,6 +56,8 @@ Dec 04, 2007  V1.15 Added Tick and Trigger functions for timing stuff which
                     Added GetFreeSpacePath
 Mar 10, 2008 V1.16 FPiette made some changes to prepare code for Unicode
                    GetFileAge: do not use set of char
+Apr 22, 2008 V1.17 AGarrels Removed checks for faVolumeID
+12 May 2008  V1.18 Removed function atoi it's in OverbyteIcsUtils.pas now.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -86,11 +88,12 @@ uses
 {$ELSE}
     WinTypes, WinProcs,
 {$ENDIF}
-    Classes, SysUtils;
+    Classes, SysUtils,
+    OverbyteIcsUtils;
 
 const
-    FtpSrvT_Unit       = 116;
-    CopyRight : String = ' FtpSrvT  (c) 1999-2007 F. Piette V1.16 ';
+    FtpSrvT_Unit       = 118;
+    CopyRight : String = ' FtpSrvT  (c) 1999-2008 F. Piette V1.18 ';
 
   { V1.16 Tick and Trigger constants }
   TicksPerDay      : longword =  24 * 60 * 60 * 1000 ;
@@ -123,9 +126,7 @@ function DecodeMlsResp (Response: String; var Fname, FType, FAttr: String;
                             var FSize: Integer; var FileUDT: TDateTime): boolean;
 function TimeDateStr(dDateTime : TDateTime) : String;
 function DateTimeToUTC(dtDT : TDateTime) : TDateTime;
-function atoi(value : String) : Integer;
 {$IFDEF STREAM64}                { V1.12 }
-function atoi64(value : String) : Int64;
 function DecodeMlsResp64 (Response: String; var Fname, FType, FAttr: String;
                             var FSize: Int64; var FileUDT: TDateTime): boolean;
 {$ENDIF}
@@ -162,21 +163,6 @@ function GetFreeSpacePath (const Path: String): int64;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 implementation
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function atoi(value : String) : Integer;
-var
-    i : Integer;
-begin
-    Result := 0;
-    i := 1;
-    while (i <= Length(Value)) and (Value[i] = ' ') do
-        i := i + 1;
-    while (i <= Length(Value)) and (Value[i] >= '0') and (Value[i] <= '9')do begin
-        Result := Result * 10 + ord(Value[i]) - ord('0');
-        i := i + 1;
-    end;
-end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function PadIntZero(nWord  : Word;
@@ -449,21 +435,6 @@ end;
 
 {$IFDEF STREAM64}                { V1.12 }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function atoi64(value : String) : Int64;
-var
-    i : Integer;
-begin
-    Result := 0;
-    i := 1;
-    while (i <= Length(Value)) and (Value[i] = ' ') do
-        i := i + 1;
-    while (i <= Length(Value)) and (Value[i] >= '0') and (Value[i] <= '9')do begin
-        Result := Result * 10 + ord(Value[i]) - ord('0');
-        i := i + 1;
-    end;
-end;
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function DecodeMlsResp64(
     Response: String;   var Fname, FType, FAttr: String;
     var FSize: Int64; var FileUDT: TDateTime): boolean;
@@ -674,7 +645,7 @@ begin
              { ignore hidden files and directories }
                 if (not Hidden) and ((SearchRec.Attr and faHidden) = faHidden) then
                                                                     savename := FALSE;
-                if ((SearchRec.Attr and faVolumeID) = faVolumeID) then savename := FALSE;
+                //if ((SearchRec.Attr and faVolumeID) = faVolumeID) then savename := FALSE;
 
              { found another directory, recursively call this function to process it }
                 if savename and (((SearchRec.Attr and faDirectory) =

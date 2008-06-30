@@ -177,6 +177,7 @@ Delphi\Vc32\OverbyteIcsBcb100Package.bdsproj
 Delphi\Vc32\OverbyteIcsBcb100Package.cpp
 Delphi\Vc32\OverbyteIcsBcb100Package.res
 Delphi\Vc32\OverbyteIcsCRC.pas
+Delphi\Vc32\OverbyteIcsUtils.pas
 Delphi\Vc32\OverbyteIcsDefs.inc
 Delphi\VC32\OverbyteIcsBcb110Package.cbproj
 Delphi\VC32\OverbyteIcsBcb110Package.cpp
@@ -187,6 +188,9 @@ Delphi\Vc32\OverbyteIcsDel100Package.res
 Delphi\Vc32\OverbyteIcsDel110Package.dpk
 Delphi\Vc32\OverbyteIcsDel110Package.res
 Delphi\Vc32\OverbyteIcsDel110Package.dproj
+Delphi\Vc32\OverbyteIcsDel120Package.dpk
+Delphi\Vc32\OverbyteIcsDel120Package.res
+Delphi\Vc32\OverbyteIcsDel120Package.dproj
 Delphi\Vc32\OverbyteIcsDel70.dpk
 Delphi\Vc32\OverbyteIcsDel70.res
 Delphi\Vc32\OverbyteIcsDES.pas

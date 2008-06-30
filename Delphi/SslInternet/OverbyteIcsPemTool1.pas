@@ -9,7 +9,7 @@ Description:  A small utility to export SSL certificate from IE certificate
               Make use of OpenSSL (http://www.openssl.org)
               Make use of the Jedi CryptoAPI2
               (http://delphi-jedi.org/Jedi:APILIBRARY:172871)(CryptoAPI2.zip).
-Version:      1.00
+Version:      1.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -52,6 +52,7 @@ Sep 04, 2003 V1.03 Added LVCert sort on column header click, and a simple
              and beautyfied source.
 Sep 11, 2003 V1.04 Test version for new IcsOpenSsl.DLL.
 Aug 07, 2007 V1.05 ICS-SSL V6 compatibility
+Jun 30, 2008 V1.06 A.Garrels made some changes to prepare SSL code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPemtool1;
@@ -246,7 +247,8 @@ begin
         until
             LastPos = -1;
 
-        while (Length(Result) > 0) and (Result[Length(Result)] in [#13, #10]) do
+        while (Length(Result) > 0) and
+                      (Word(Result[Length(Result)]) in [Ord(#13), Ord(#10)]) do
             SetLength(Result, Length(Result) - 1);
     end;
 end;

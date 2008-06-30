@@ -1,4 +1,4 @@
-package OverbyteIcsDel110Package;
+package OverbyteIcsSslDel120Package;
 
 {$R *.res}
 {$R 'OverbyteIcsHttpSrv.dcr'}
@@ -18,10 +18,11 @@ package OverbyteIcsDel110Package;
 {$R 'OverbyteIcsTnScript.dcr'}
 {$R 'OverbyteIcsFingCli.dcr'}
 {$R 'OverbyteIcsLogger.dcr'}
-{$R 'OverbyteIcsMimedec.dcr'}
-{$R 'OverbyteIcsMultiProgressBar.dcr'}
-{$R 'OverbyteIcsMultipartHttpDownloader.dcr'}
+{$R 'OverbyteIcsSslSessionCache.dcr'}
+{$R 'OverbyteIcsSslThrdLock.dcr'}
+{$R 'OverbyteIcsMimeDec.dcr'}
 {$R 'OverbyteIcsMultipartFtpDownloader.dcr'}
+{$R 'OverbyteIcsMultipartHttpDownloader.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -43,9 +44,11 @@ package OverbyteIcsDel110Package;
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'Overbyte ICS for Delphi 2007'}
+{$DESCRIPTION 'Overbyte ICS-SSL for Delphi 2007'}
 {$IMPLICITBUILD ON}
+{$DEFINE USE_SSL}
 {$DEFINE USE_ZLIB_OBJ}
+{$DEFINE DEBUG}
 
 requires
   rtl,
@@ -60,7 +63,6 @@ contains
   OverByteIcsWSocketE in 'OverByteIcsWSocketE.pas',
   OverByteIcsFtpSrvT in 'OverByteIcsFtpSrvT.pas',
   OverbyteIcsFtpSrvC in 'OverbyteIcsFtpSrvC.pas',
-  OverbyteIcsHttpSrv in 'OverbyteIcsHttpSrv.pas',
   OverbyteIcsWSocket in 'OverbyteIcsWSocket.pas',
   OverbyteIcsFtpCli in 'OverbyteIcsFtpCli.pas',
   OverbyteIcsFtpSrv in 'OverbyteIcsFtpSrv.pas',
@@ -90,16 +92,21 @@ contains
   OverbyteIcsIcmp in 'OverbyteIcsIcmp.pas',
   OverbyteIcsNtlmMsgs in 'OverbyteIcsNtlmMsgs.pas',
   OverbyteIcsStreams in 'OverbyteIcsStreams.pas',
+  OverbyteIcsAvlTrees in 'OverbyteIcsAvlTrees.pas',
+  OverbyteIcsSslSessionCache in 'OverbyteIcsSslSessionCache.pas',
+  OverbyteIcsLIBEAY in 'OverbyteIcsLIBEAY.pas',
+  OverbyteIcsSslThrdLock in 'OverbyteIcsSslThrdLock.pas',
   OverbyteIcsLibrary in 'OverbyteIcsLibrary.pas',
+  OverbyteIcsHttpSrv in 'OverbyteIcsHttpSrv.pas',
   OverbyteIcsSspi in 'OverbyteIcsSspi.pas',
   OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas',
+  OverbyteIcsSSLEAY in 'OverbyteIcsSSLEAY.pas',
   OverbyteIcsWinsock2 in 'OverbyteIcsWinsock2.pas',
   OverbyteIcsMimeDec in 'OverbyteIcsMimeDec.pas',
-  OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
-  OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas',
-  OverbyteIcsMultipartHttpDownloader in 'OverbyteIcsMultipartHttpDownloader.pas',
   OverbyteIcsMultipartFtpDownloader in 'OverbyteIcsMultipartFtpDownloader.pas',
+  OverbyteIcsMultipartHttpDownloader in 'OverbyteIcsMultipartHttpDownloader.pas',
   OverbyteIcsOneTimePw in 'OverbyteIcsOneTimePw.pas',
+  OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
   OverbyteIcsUtils in 'OverbyteIcsUtils.pas';
 
 end.

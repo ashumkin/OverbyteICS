@@ -52,7 +52,7 @@ How to use:  TSslStaticLock and TSslDynamicLock implement the locking callbacks
 History:
 March 03, 2006 Version 1.01, new property Enabled, OpenSSL is now loaded
           when Enabled is set to TRUE.
-
+Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslThrdLock;
@@ -206,7 +206,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure StatLockCallback(Mode : Integer; N : Integer;
-    const _File : PChar; Line : Integer); cdecl;
+    const _File : PAnsiChar; Line : Integer); cdecl;
 begin
     if Mode and Crypto_Lock <> 0 then
         MutexLock(MutexBuf[n])
@@ -263,7 +263,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF NO_DYNLOCK}
-function DynCreateCallBack(const _file : PChar;
+function DynCreateCallBack(const _file : PAnsiChar;
                            Line: Integer): PCRYPTO_dynlock_value; cdecl;
 begin
     New(Result);
@@ -277,7 +277,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure DynDestroyCallBack(L : PCRYPTO_dynlock_value; _File : PChar;
+procedure DynDestroyCallBack(L : PCRYPTO_dynlock_value; _File : PAnsiChar;
     Line: Integer); cdecl;
 begin
     if Assigned(L) then
@@ -291,7 +291,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure DynLockCallback(Mode : Integer; L : PCRYPTO_dynlock_value;
-    _File : PChar; Line: Integer); cdecl;
+    _File : PAnsiChar; Line: Integer); cdecl;
 begin
     if Assigned(L) then
     begin

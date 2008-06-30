@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      2.33
+Version:      2.34
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
               Compatible with Delphi 1, 2, 3, 4 and 5
@@ -73,7 +73,7 @@ Oct 29, 2006  V2.32 Reworked the button click event handler to show exactly
               in ExecuteCmd but then no one has a clear vision about which
               property is used by each method.
 06 Jan 2008   V2.33 Angus added about 20 new buttons and edits for new client commands
-
+15 May 2008   V2.34 Arno added OverByteIcsUtils.pas to the uses clause.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpTst1;
@@ -93,7 +93,7 @@ interface
 uses
   Windows, SysUtils, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, IniFiles, ExtCtrls, WinSock,
-  OverByteIcsFtpCli,  OverbyteIcsFtpSrvT, 
+  OverByteIcsUtils, OverByteIcsFtpCli,  OverbyteIcsFtpSrvT,
   OverByteIcsWSocket, OverbyteIcsWndControl;
 
 const

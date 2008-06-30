@@ -3,8 +3,8 @@
 Author:       Angus Robertson, Magenta Systems Ltd
 Description:  One Time Password support functions, see RFC2289/1938 (aka S/KEY)
 Creation:     12 November 2007
-Updated:      16 November 2007
-Version:      1.00
+Updated:      12 May 2008
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -39,6 +39,7 @@ Legal issues: Copyright (C) 1997-2007 by François PIETTE
 
 Updates:
 16 Nov 2007 - 1.00 baseline Angus
+12 May 2008 - 1.01 Uses OverbyteIcsUtils.pas for atoi
 
 
 
@@ -127,11 +128,12 @@ interface
 
 uses
     SysUtils, Classes,
-    OverbyteIcsMD5, OverbyteIcsMD4, OverbyteIcsSha1, OverbyteIcsFtpSrvT;
+    OverbyteIcsMD5, OverbyteIcsMD4, OverbyteIcsSha1, OverbyteIcsFtpSrvT,
+    OverbyteIcsUtils;
 
 const
-    OneTimePwVersion = 100;
-    CopyRight : String = ' OneTimePw (c) 1997-2007 F. Piette V1.00 ';
+    OneTimePwVersion = 101;
+    CopyRight : String = ' OneTimePw (c) 1997-2008 F. Piette V1.01 ';
 
 type
   { 64-bit result of OTP hash }

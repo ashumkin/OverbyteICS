@@ -271,7 +271,7 @@ begin
         if CompareText(IniKey, Copy(Buf, 1, Length(IniKey))) <> 0 then
             Strings.Delete(nItem)
         else begin
-            if not (Buf[Length(IniKey) + 1] in ['0'..'9']) then
+            if not (Word(Buf[Length(IniKey) + 1]) in [Ord('0')..Ord('9')]) then
                 Strings.Delete(nItem)
             else begin
                 I := Pos('=', Buf);

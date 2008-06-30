@@ -47,6 +47,9 @@ Mar 26, 2006 V6.00 F. Piette started new version 6
                   added ZlibDecompressStreamEx with callback functions
                   added ZlibErrMess to report zlib error messages as literals
                   added TZlibProgress callback
+May 02, 2008 V6.02 A.Garrels prepared code for Unicode, type-changes from String
+                   and PChar to AnsiString and PAnsiChar.
+
 
 pending: compress callback not correct total count
 
@@ -66,7 +69,7 @@ uses
 {$IFDEF USE_ZLIB_OBJ}
     OverbyteIcsZLibObj;             {interface to access ZLIB C OBJ files}
 {$ELSE}
-    IcsZLibDll;                     {interface to access zLib1.dll}
+    OverbyteIcsZLibDll;             {interface to access zLib1.dll} { AG V6.02 }
 {$ENDIF}
 
 
@@ -81,10 +84,10 @@ type
   TZBack = record
     InStream  : TStream;
     OutStream : TStream;
-    InMem     : PChar; //direct memory access
+    InMem     : PAnsiChar; //direct memory access
     InMemSize : integer;
-    ReadBuf   : array[word] of char;
-    Window    : array[0..WindowSize] of char;
+    ReadBuf   : array[word] of AnsiChar;
+    Window    : array[0..WindowSize] of AnsiChar;
     MainObj   : TObject; // Angus
     ProgressCallback : TZlibProg; { V6.01 }
     Count     : Int64;  { V6.01 }
@@ -105,7 +108,7 @@ const
      Z_NO_COMPRESSION, Z_BEST_SPEED, 2, 3, 4, 5, 6, 7, 8, Z_BEST_COMPRESSION) ;
 
 function ZlibGetDllLoaded: boolean ;
-function ZlibGetVersionDll: string ;
+function ZlibGetVersionDll: AnsiString ;
 function ZlibCCheck(code: Integer): Integer;
 function ZlibDCheck(code: Integer): Integer;
 procedure ZlibDecompressStream(InStream, OutStream: TStream);
@@ -121,7 +124,7 @@ function ZlibCheckInitInflateStream (var strm: TZStreamRec;
 function Strm_in_func(BackObj: PZBack; var buf: PByte): Integer; cdecl;
 function Strm_out_func(BackObj: PZBack; buf: PByte; size: Integer): Integer; cdecl;
 function DMAOfStream(AStream: TStream; out Available: integer): Pointer;
-function ZlibErrMess(code: Integer): String;                        { V6.01 }
+function ZlibErrMess(code: Integer): AnsiString;                        { V6.01 }
 
 
 implementation
@@ -133,13 +136,13 @@ begin
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ZlibGetVersionDll: string ;
+function ZlibGetVersionDll: AnsiString ;
 begin
     result := zlibVersionDll ;
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ZlibErrMess(code: Integer): String;              { V6.01 }
+function ZlibErrMess(code: Integer): AnsiString;              { V6.01 }
 begin
     case code of
         Z_OK            : Result := 'No error';
@@ -205,7 +208,7 @@ end;
 function ZlibCheckInitInflateStream (var strm: TZStreamRec;
                                     gzheader: gz_headerp): TZStreamType;
 var
-  InitBuf: PChar;
+  InitBuf: PAnsiChar;
   InitIn : integer;
 
   function TryStreamType(AStreamType: TZStreamType): boolean;
@@ -350,7 +353,7 @@ const
   BufSize = 65536;
 var
   strm   : z_stream;
-  InBuf, OutBuf : PChar;
+  InBuf, OutBuf : PAnsiChar;
   UseInBuf, UseOutBuf : boolean;
   LastOutCount : integer;
   Finished : boolean;

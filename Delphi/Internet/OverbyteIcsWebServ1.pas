@@ -16,7 +16,7 @@ Description:  WebSrv1 show how to use THttpServer component to implement
               The code below allows to get all files on the computer running
               the demo. Add code in OnGetDocument, OnHeadDocument and
               OnPostDocument to check for authorized access to files.
-Version:      1.12
+Version:      1.15
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -82,6 +82,10 @@ Oct 29, 2006 V1.12 Made authentication demo pages better.
                    Added compiler switches and DELPHI7_UP check.
                    Added D2006 memory leak detection
 Nov 05, 2006 V1.13 Removed IsDirectory function which wasn't used
+Apr 14, 2008 V1.14 A. Garrels, a few Unicode related changes.
+May 15, 2008 V1.15 A. Garrels, a few more Unicode related changes, removed some
+                   ifdefs for older compiler.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebServ1;
@@ -96,6 +100,13 @@ unit OverbyteIcsWebServ1;
 {$I+}                 { Turn IO exceptions to on            }
 {$H+}                 { Use long strings                    }
 {$J+}                 { Allow typed constant to be modified }
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 {$WARN SYMBOL_PLATFORM   OFF}
 {$WARN SYMBOL_LIBRARY    OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
@@ -109,8 +120,8 @@ uses
   OverbyteIcsHttpSrv;
 
 const
-  WebServVersion     = 113;
-  CopyRight : String = 'WebServ (c) 1999-2007 F. Piette V1.13 ';
+  WebServVersion     = 115;
+  CopyRight : String = 'WebServ (c) 1999-2008 F. Piette V1.15 ';
   NO_CACHE           = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
   WM_CLIENT_COUNT    = WM_USER + WH_MAX_MSG + 1;
 
@@ -122,7 +133,8 @@ type
   { his own private data.                                                   }
   TMyHttpConnection = class(THttpConnection)
   protected
-    FPostedDataBuffer : PChar;     { Will hold dynamically allocated buffer }
+    FPostedRawData    : PAnsiChar; { Will hold dynamically allocated buffer }
+    FPostedDataBuffer : PChar;     { Contains either Unicode or Ansi data   } 
     FPostedDataSize   : Integer;   { Databuffer size                        }
     FDataLen          : Integer;   { Keep track of received byte count.     }
     FDataFile         : TextFile;  { Used for datafile display              }
@@ -374,8 +386,8 @@ begin
         Display('        Version ' +
                 Format('%d.%d', [WinsockInfo.wHighVersion shr 8,
                                  WinsockInfo.wHighVersion and 15]));
-        Display('        ' + StrPas(@wsi.szDescription));
-        Display('        ' + StrPas(@wsi.szSystemStatus));
+        Display('        ' + StrPas(wsi.szDescription));
+        Display('        ' + StrPas(wsi.szSystemStatus));
 {$IFNDEF DELPHI3}
         { A bug in Delphi 3 makes lpVendorInfo invalid }
         if wsi.lpVendorInfo <> nil then
@@ -932,10 +944,6 @@ begin
     ClientCnx.AnswerString(Flags,
         '',                            { Default Status '200 OK'            }
         '',                            { Default Content-Type: text/html    }
-{$IFDEF DELPHI2_UP}
-        { Sorry but Delphi 1 doesn't support long strings                     }
-        'X-LongHeader: '   + DupeString('Hello ', 1500) + #13#10 +
-{$ENDIF}
         'Pragma: no-cache' + #13#10 +  { No client caching please           }
         'Expires: -1'      + #13#10,   { I said: no caching !               }
         '<HTML>' +
@@ -1101,20 +1109,8 @@ begin
         { We need a buffer to hold posted data. We allocate as much as the }
         { size of posted data plus one byte for terminating nul char.      }
         { We should check for ContentLength = 0 and handle that case...    }
-{$IFDEF VER80}
-        if ClientCnx.FPostedDataSize = 0 then begin
-            ClientCnx.FPostedDataSize := ClientCnx.RequestContentLength + 1;
-            GetMem(ClientCnx.FPostedDataBuffer, ClientCnx.FPostedDataSize);
-        end
-        else begin
-            ReallocMem(ClientCnx.FPostedDataBuffer, ClientCnx.FPostedDataSize,
-                       ClientCnx.RequestContentLength + 1);
-            ClientCnx.FPostedDataSize := ClientCnx.RequestContentLength + 1;
-        end;
-{$ELSE}
-        ReallocMem(ClientCnx.FPostedDataBuffer,
+        ReallocMem(ClientCnx.FPostedRawData,
                    ClientCnx.RequestContentLength + 1);
-{$ENDIF}
         { Clear received length }
         ClientCnx.FDataLen := 0;
     end;
@@ -1135,7 +1131,7 @@ procedure TWebServForm.HttpServer1PostedData(
 var
     Len     : Integer;
     Remains : Integer;
-    Junk    : array [0..255] of char;
+    Junk    : array [0..255] of AnsiChar;
     ClientCnx  : TMyHttpConnection;
 begin
     { It's easyer to do the cast one time. Could use with clause... }
@@ -1153,7 +1149,7 @@ begin
     { Receive as much data as we need to receive. But warning: we may       }
     { receive much less data. Data will be split into several packets we    }
     { have to assemble in our buffer.                                       }
-    Len := ClientCnx.Receive(ClientCnx.FPostedDataBuffer + ClientCnx.FDataLen, Remains);
+    Len := ClientCnx.Receive(ClientCnx.FPostedRawData + ClientCnx.FDataLen, Remains);
     { Sometimes, winsock doesn't wants to givve any data... }
     if Len <= 0 then
         Exit;
@@ -1161,12 +1157,16 @@ begin
     { Add received length to our count }
     Inc(ClientCnx.FDataLen, Len);
     { Add a nul terminating byte (handy to handle data as a string) }
-    ClientCnx.FPostedDataBuffer[ClientCnx.FDataLen] := #0;
+    ClientCnx.FPostedRawData[ClientCnx.FDataLen] := #0;
     { Display receive data so far }
-    Display('Data: ''' + StrPas(ClientCnx.FPostedDataBuffer) + '''');
-
+    Display('Data: ''' + StrPas(ClientCnx.FPostedRawData) + '''');
     { When we received the whole thing, we can process it }
     if ClientCnx.FDataLen = ClientCnx.RequestContentLength then begin
+{$IFDEF COMPILER12_UP}
+        ClientCnx.FPostedDataBuffer := Pointer(UnicodeString(ClientCnx.FPostedRawData)); // Cast to Unicode
+{$ELSE}
+        ClientCnx.FPostedDataBuffer := ClientCnx.FPostedRawData;
+{$ENDIF}
         { First we must tell the component that we've got all the data }
         ClientCnx.PostedDataReceived;
         { Then we check if the request is one we handle }
@@ -1213,7 +1213,7 @@ begin
         else
             Stream := TFileStream.Create(FileName, fmCreate);
         Stream.Seek(0, soFromEnd);
-        Stream.Write(Buf[1], Length(Buf));
+        StreamWriteStrA(Stream, Buf);
         Stream.Destroy;
     finally
         LeaveCriticalSection(LockFileAccess);
@@ -1262,10 +1262,10 @@ end;
 { memory for our data buffer.                                               }
 destructor TMyHttpConnection.Destroy;
 begin
-    if Assigned(FPostedDataBuffer) then begin
-        FreeMem(FPostedDataBuffer, FPostedDataSize);
-        FPostedDataBuffer := nil;
-        FPostedDataSize   := 0;
+    if Assigned(FPostedRawData) then begin
+        FreeMem(FPostedRawData, FPostedDataSize);
+        FPostedRawData  := nil;
+        FPostedDataSize := 0;
     end;
     inherited Destroy;
 end;

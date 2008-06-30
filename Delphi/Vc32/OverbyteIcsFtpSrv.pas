@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      6.02
+Version:      6.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -298,6 +298,18 @@ Mar 24, 2008 V6.01 Bumped version number to 6.01
              Francois Piette made some changes to prepare code for Unicode.
 Jun 25, 2008 V6.02 A. Garrels SSL code merged. 
 
+Apr 14, 2008 V6.03 A. Garrels, some Unicode related changes, basic features
+             do work now. Receive buffer type-change from PChar to PAnsiChar.
+             Check the various DataAvailableEvents. Fixed a bug in function
+             GetInteger().
+Apr 22, 2008 Some more Unicode related changes.
+May 01, 2008 V6.04 A. Garrels - call new function DataStreamWriteString in
+             TFtpServer.BuildDirectory.
+May 12, 2008 v6.05 A. Garrels changed call of GetTempPath in constructor.
+             Some type changes from String to AnsiString of published properties.
+             Added Setters and Getters for those properties since current
+             compiler is not able to handle AnsiString properties correctly.
+             
 Angus pending -
 CRC on the fly
 MD5 on the fly for downloads if not cached already
@@ -315,6 +327,13 @@ unit OverbyteIcsFtpSrv;
 {$I OverbyteIcsDefs.inc}
 {$DEFINE USE_BUFFERED_STREAM} { V1.54 }
 {$DEFINE USE_MODEZ}           { V1.54 }
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
@@ -366,19 +385,22 @@ uses
         OverbyteIcsZLibDll,     {interface to access zLib1.dll}
     {$ENDIF}
 {$ENDIF}
+    OverbyteIcsUtils,
     OverbyteIcsWndControl,
     OverbyteIcsWinsock,
-    OverbyteIcsWinsock2, { AG V1.51 }
+    OverbyteIcsWinsock2,   { AG V1.51 }
     OverbyteIcsWSocket,
     OverbyteIcsFtpSrvC,
     OverbyteIcsFtpSrvT,
     OverbyteIcsOneTimePw,  { angus V1.54 }
     OverbyteIcsCRC,        { angus V1.54 }
-    OverbyteIcsMD5;
+    OverbyteIcsMD5,
+    OverbyteIcsWSockBuf,   { AG V6.02 }
+    OverbyteIcsLibrary;    { AG V6.04 }
 
 const
-    FtpServerVersion         = 602;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.02 ';
+    FtpServerVersion         = 605;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.05 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
 
 type
@@ -475,7 +497,7 @@ type
     TFtpSrvDataAvailableEvent = procedure (Sender : TObject;
                                            Client : TFtpCtrlSocket;
                                            Data   : TWSocket;
-                                           Buf    : PChar;
+                                           Buf    : PAnsiChar;  { AG V6.02 }
                                            Len    : LongInt;
                                            AError : Word) of object;
     TFtpSrvRetrDataSentEvent  = procedure (Sender : TObject;
@@ -517,8 +539,8 @@ type
 
     TFtpServer = class(TIcsWndControl)
     protected
-        FAddr                   : String;
-        FPort                   : String;
+        FAddr                   : AnsiString;
+        FPort                   : AnsiString;
         FBanner                 : String;
         FServSocket             : TWSocket;
         FClientClass            : TFtpCtrlSocketClass;
@@ -600,6 +622,10 @@ type
         FOnUpCompressFile       : TFtpSrvCompressFileEvent;  { angus V1.54 }
         FOnUpCompressedFile     : TFtpSrvCompressedFileEvent; { angus V1.54 }
         FOnDisplay              : TFtpSrvDisplayEvent;       { angus V1.54 }
+        function  GetAddr: AnsiString;
+        function  GetPort: AnsiString;
+        procedure SetAddr(const Value: AnsiString);
+        procedure SetPort(const Value: AnsiString);
 {$IFNDEF NO_DEBUG_LOG}
         function  GetIcsLogger: TIcsLogger;                                      { V1.46 }
         procedure SetIcsLogger(const Value: TIcsLogger);                         { V1.46 }
@@ -698,7 +724,7 @@ type
                                      var Allowed   : Boolean); virtual;
         procedure TriggerStorDataAvailable(Client : TFtpCtrlSocket;
                                        Data   : TWSocket;
-                                       Buf    : PChar;
+                                       Buf    : PAnsiChar;  { AG V6.02 }
                                        Len    : LongInt;
                                        AError : Word); virtual;
         procedure TriggerRetrDataSent(Client : TFtpCtrlSocket;
@@ -765,7 +791,7 @@ type
         function  GetClient(nIndex : Integer) : TFtpCtrlSocket; virtual;
 { !!!!!!!!!!!!!!!! NGB: Added next two lines }
         procedure FreeCurrentPasvPort(AClient : TFtpCtrlSocket);
-        function  GetNextAvailablePasvPort : String;
+        function  GetNextAvailablePasvPort : AnsiString;
 { !!!!!!!!!!!!!!!! NGB: Added last two lines }
         function  GetActive : Boolean;
         procedure SetActive(newValue : Boolean);
@@ -1012,10 +1038,10 @@ type
         property IcsLogger              : TIcsLogger  read  GetIcsLogger  { V1.46 }
                                                       write SetIcsLogger;
 {$ENDIF}
-        property  Addr                   : String     read  FAddr
-                                                      write FAddr;
-        property  Port                   : String     read  FPort
-                                                      write FPort;
+        property  Addr                   : AnsiString read  GetAddr
+                                                      write SetAddr;
+        property  Port                   : AnsiString read  GetPort
+                                                      write SetPort;
         property  Banner                 : String     read  FBanner
                                                       write FBanner;
         property  UserData               : LongInt    read  FUserData
@@ -1640,7 +1666,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsSpace(Ch : Char) : Boolean;
 begin
-    Result := (Ch = ' ') or (Ch = #9);
+    Result := (Ch = ' ') or (Ch = Char($09));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsDigit(Ch : Char) : Boolean; { AG V6.02 }
+begin
+    Result := (Ch >= '0') and (Ch <= '9');
 end;
 
 
@@ -1679,7 +1712,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TFtpServer.Create(AOwner: TComponent);
 var
-    Buffer: array [0..1023] of Char ;
+    //Buffer: array [0..1023] of Char ;
+    Len : Cardinal;
 begin
     inherited Create(AOwner);
     //FWindowHandle       := ftpsrvAllocateHWnd(WndProc);
@@ -1699,7 +1733,10 @@ begin
     FZlibMinLevel       := 1;       { angus V1.54 }
     FZlibMaxLevel       := 9;       { angus V1.54 }
     FZlibNoCompExt      := '.zip;.rar;.7z;.cab;.lzh;.gz;.avi;.wmv;.mpg;.mp3;.jpg;.png;'; { angus V1.54 }
-    SetString (FZlibWorkDir, Buffer, GetTempPath (Sizeof (Buffer) - 1, Buffer)) ;        { angus V1.54 }
+    //SetString(FZlibWorkDir, Buffer, GetTempPath(Length(Buffer) - 1, Buffer)) ;        { angus V1.54 } { BufferLength = Number of chars, AG V6.02 }
+    SetLength(FZlibWorkDir, 1024);
+    Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.04 }
+    SetLength(FZlibWorkDir, Len);                                     { AG V6.04 }
     FZlibWorkDir        := IncludeTrailingPathDelimiter (FZlibWorkDir) + 'icsftpsrv\' ;  { angus V1.54 }
     FZlibMinSpace       := 50000000;               { angus V1.54 50 Mbyte }
     FZlibMaxSize        := 500000000;              { angus V1.55 - 500 meg }
@@ -2023,6 +2060,35 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TFtpServer.GetAddr: AnsiString;
+begin
+    Result := FAddr;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.SetAddr(const Value: AnsiString);
+begin
+    FAddr := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TFtpServer.GetPort: AnsiString;
+begin
+    Result := FPort;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.SetPort(const Value: AnsiString);
+begin
+    FPort := Value;
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServer.ServSocketStateChange(Sender : TObject; OldState, NewState : TSocketState);
 begin
     if csDestroying in ComponentState then
@@ -2191,7 +2257,7 @@ begin
                 Client.AnswerDelayed := FALSE; { AG V1.50 }
                 FCmdTable[I].Proc(Client, KeyWord, Params, Answer);
                 if not Client.AnswerDelayed then  { AG V1.50 }
-                            SendAnswer(Client, Answer);
+                    SendAnswer(Client, Answer);
                 Exit;
             end;
             Inc(I);
@@ -2599,7 +2665,7 @@ end;
 procedure TFtpServer.TriggerStorDataAvailable(
     Client : TFtpCtrlSocket;
     Data   : TWSocket;
-    Buf    : PChar;
+    Buf    : PAnsiChar; { AG V6.02 }
     Len    : LongInt;
     AError : Word);
 begin
@@ -3044,7 +3110,7 @@ begin
     while (I <= Length(Src)) and IsSpace(Src[I]) do
         Inc(I);
     Result := 0;
-    while (I <= Length(Src)) and IsSpace(Src[I]) do begin
+    while (I <= Length(Src)) and IsDigit(Src[I]) do begin { AG V6.02 }
         Result := Result * 10 + Ord(Src[I]) - Ord('0');
         Inc(I);
     end;
@@ -3085,7 +3151,7 @@ begin
         Client.DataAddr   := Client.DataAddr + '.' + IntToStr(GetInteger(I, Params));
         N := GetInteger(I, Params);
         N := (N shl 8) + GetInteger(I, Params);
-        Client.DataPort := IntToStr(N);
+        Client.DataPort := IcsIntToStrA(N);
         Answer := msgPortSuccess;
     except
         Answer := msgPortFailed;
@@ -4198,8 +4264,9 @@ begin
 
          { angus V1.54 see if returning listing on control socket instead of data socket }
             if Client.CurCmdType in [ftpcSiteIndex, ftpcSiteCmlsd] then begin
-                SetLength (Answer, Client.DataStream.Size) ;
-                Client.DataStream.Read (Answer [1], Client.DataStream.Size) ;
+                //SetLength (Answer, Client.DataStream.Size) ;
+                //Client.DataStream.Read (Answer [1], Client.DataStream.Size) ;
+                Client.DataStreamReadString(String(Answer), Client.DataStream.Size);
                 if Client.CurCmdType = ftpcSiteIndex then
                      Answer := Format (msgIndexFollows, [Params]) +
                                                      #13#10 + Answer + msgIndexDone;
@@ -4297,13 +4364,13 @@ begin
         { nothing.                                                         }
         Allowed := IsPathAllowed(Client, Path, TRUE);           { AG V1.52 }   *)
 
-    Allowed := IsPathAllowed(Client, Client.DirListPath);                 { AG V1.52 }
+    Allowed := IsPathAllowed(Client, Client.DirListPath);          { AG V1.52 }
     if not Allowed then { AG V1.52 }
     begin
         Buf := FormatResponsePath(Client, Client.DirListPath) +
                                                  ' Permission denied' + #13#10;
         if Length (Path) >= 1 then
-                 Client.DataStream.Write(Path[1], Length(Path));   { angus 1.54 }
+                 Client.DataStreamWriteString(Path);   { angus 1.54 }{ AG V6.03 }
         Exit; //***
     end;
 
@@ -4335,7 +4402,7 @@ begin
 
     if Client.DataStream.Size = 0 then begin
         Buf := FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10; { AG V1.52 }
-        Client.DataStream.Write(Buf[1], Length(Buf));
+        Client.DataStreamWriteString(Buf);               { AG V6.03 }
     end;
 end;
 
@@ -4793,27 +4860,27 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TFtpServer.GetNextAvailablePasvPort : String;
+function TFtpServer.GetNextAvailablePasvPort : AnsiString;
 var
     I        : Integer;
     NewPort  : Integer;
     TablePtr : PBoolean;
 begin
     if (FPasvPortRangeSize = 0) or (FPasvPortRangeStart = 0) then
-        Result := '0'
+        Result := AnsiChar('0')
     else begin
-        Result := '0';
+        Result := AnsiChar('0');
         I := 0;
   { angus V1.56 - allocate sequential ports within range instead of same low ports }
         if FPasvNextNr >= FPasvPortRangeSize then FPasvNextNr := 0;      { angus V1.56 }
         while TRUE do begin
-            TablePtr := PBoolean(PChar(FPasvPortTable) + (SizeOf(Boolean) * FPasvNextNr));
+            TablePtr := IncPtr(FPasvPortTable, SizeOf(Boolean) * FPasvNextNr); { AG V6.02 }
             if TablePtr^ = FALSE then begin
                 TablePtr^ := TRUE;
              //   NewPort   := FPasvPortRangeStart + I;
                 NewPort   := FPasvPortRangeStart + FPasvNextNr;          { angus V1.56 }
                 Inc(FPasvNextNr);                                        { angus V1.56 }
-                Result    := IntToStr(NewPort);
+                Result    := IcsIntToStrA(NewPort);
                 break;
             end;
             Inc(FPasvNextNr);                                            { angus V1.56 }
@@ -4831,20 +4898,30 @@ end;
 procedure TFtpServer.FreeCurrentPasvPort(AClient : TFtpCtrlSocket);
 var
     CurrentPort : Integer;
+{$IFNDEF COMPILER12_UP}
     ErrorCode   : Integer;
+{$ENDIF}    
 begin
     if (FPasvPortRangeSize = 0) or (FPasvPortRangeStart = 0) then
         Exit;          
     { FLD changed following lines, because                                   }
     { FreeCurrentPasvPort might be called when the socket is already closed! }
     if AClient.DataSocket.State = wsClosed then
+{$IFNDEF COMPILER12_UP}
         Val(AClient.DataSocket.Port, CurrentPort, ErrorCode)
+{$ELSE}
+        CurrentPort := atoi(AClient.DataSocket.Port)
+{$ENDIF}
     else
+{$IFNDEF COMPILER12_UP}
         Val(AClient.DataSocket.GetXPort, CurrentPort, ErrorCode);
+{$ELSE}        
+        CurrentPort := atoi(AClient.DataSocket.GetXPort);
+{$ENDIF}
     if (CurrentPort >= FPasvPortRangeStart) and
        (CurrentPort <= (FPasvPortRangeStart + FPasvPortRangeSize)) then begin
-        PBoolean(PChar(FPasvPortTable) +
-                 SizeOf(Boolean) * (CurrentPort - FPasvPortRangeStart))^ := FALSE;
+        PBoolean(IncPtr(FPasvPortTable,                        { AG V6.02 }
+                 SizeOf(Boolean) * (CurrentPort - FPasvPortRangeStart)))^ := FALSE;
     end;
     AClient.PassiveMode := FALSE;  // FLD 29.12.05
 end;
@@ -4939,7 +5016,11 @@ begin
                            HiByte(DataPort),
                            LoByte(DataPort)])
             else begin
+              {$IFDEF COMPILER12_UP}
+                PASVAddr.S_addr := WSocket_inet_addr(AnsiString(APasvIp));
+              {$ELSE}
                 PASVAddr.S_addr := WSocket_inet_addr(APasvIp);
+              {$ENDIF}
                 if (PASVAddr.S_addr = u_long(INADDR_NONE)) or
                             (PASVAddr.S_addr = 0) then { angus v1.53 0.0.0.0 not allowed }
                         raise Exception.Create('Invalid PASV IP Address')
@@ -5343,7 +5424,7 @@ begin
     { If we reduce the range, we must be sure to not affect any port in use }
     if NewValue < OldValue then begin
         { Check if any port is used before changing }
-        TablePtr := PBoolean(PChar(FPasvPortTable) + SizeOf(Boolean) * NewValue);
+        TablePtr := IncPtr(FPasvPortTable, SizeOf(Boolean) * NewValue); { AG V6.02 }
         I        := NewValue;
         while I < OldValue do begin
             if TablePtr^ then
@@ -5364,7 +5445,7 @@ begin
     if OldValue >= NewValue then
         Exit;
 
-    TablePtr := PBoolean(PChar(FPasvPortTable) + SizeOf(Boolean) * OldValue);
+    TablePtr := IncPtr(FPasvPortTable, SizeOf(Boolean) * OldValue); { AG V6.02 }
     while OldValue < NewValue do begin
         TablePtr^ := FALSE;
         Inc(TablePtr);
@@ -5995,8 +6076,9 @@ begin
                     end
                  { see if returning listing on control socket instead of data socket }
                     else if CurCmdType in [ftpcSiteIndex, ftpcSiteCmlsd] then begin
-                        SetLength(Answer, DataStream.Size) ;
-                        DataStream.Read(Answer [1], DataStream.Size) ;
+                        //SetLength(Answer, DataStream.Size) ;
+                        //DataStream.Read(Answer [1], DataStream.Size) ;
+                        DataStreamReadString(String(Answer), DataStream.Size);
                         if CurCmdType = ftpcSiteIndex then
                              Answer := Format (msgIndexFollows, [Params]) +
                                                              #13#10 + Answer + msgIndexDone;

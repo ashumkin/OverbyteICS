@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.02
+Version:      6.03
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -63,6 +63,8 @@ Oct 29, 2006  V6.01 Fixed memory leak in PrepareEMail
               Added compiler switches and DELPHI7_UP check.
               Added D2006 memory leak detection
 Nov 05, 2006  V6.02 Fixed typo error in AuthComboBox. Added NTLM.
+Apr 25, 2008  V6.03 A.Garrels made some changes to prepare the code for Unicode.
+              Added button "Send To File" and assigned event OnAttachContentTypeEh.  
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -86,11 +88,11 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Controls, StdCtrls, ExtCtrls, Forms,
-  IniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
+  Dialogs, IniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
 
 const
-    SmtpTestVersion    = 6.02;
-    CopyRight : String = ' MailSnd (c) 1997-2007 F. Piette V6.02 ';
+    SmtpTestVersion    = 6.03;
+    CopyRight : String = ' MailSnd (c) 1997-2008 F. Piette V6.03 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -142,6 +144,7 @@ type
     InfoPanel: TPanel;
     Label7: TLabel;
     SmtpClient: TSmtpCli;
+    SendToFileButton: TButton;
     procedure FormCreate(Sender: TObject);
     procedure ClearDisplayButtonClick(Sender: TObject);
     procedure ConnectButtonClick(Sender: TObject);
@@ -165,12 +168,17 @@ type
       MsgLine: Pointer; MaxLen: Integer; var More: Boolean);
     procedure SmtpClientHeaderLine(Sender: TObject; Msg: Pointer;
       Size: Integer);
+    procedure SendToFileButtonClick(Sender: TObject);
+    procedure SmtpClientAttachContentTypeEh(Sender: TObject;
+      FileNumber: Integer; var FileName, ContentType: string;
+      var AttEncoding: TSmtpEncoding);
   private
     FIniFileName  : String;
     FInitialized  : Boolean;
     FAllInOneFlag : Boolean;
     procedure Display(const Msg : String);
     procedure ExceptionHandler(Sender: TObject; E: Exception);
+    procedure SmtpClientBeforeOutStreamFree(Sender: TObject);
   end;
 
 var
@@ -262,7 +270,9 @@ begin
         if CompareText(IniKey, Copy(Buf, 1, Length(IniKey))) <> 0 then
             Strings.Delete(nItem)
         else begin
-            if not (Buf[Length(IniKey) + 1] in ['0'..'9']) then
+            if (Ord(Buf[Length(IniKey) + 1]) < Ord('0')) or
+               (Ord(Buf[Length(IniKey) + 1]) > Ord('9')) then
+            //if not (Buf[Length(IniKey) + 1] in ['0'..'9']) then
                 Strings.Delete(nItem)
             else begin
                 I := Pos('=', Buf);
@@ -436,6 +446,23 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.SmtpClientAttachContentTypeEh(Sender: TObject;
+  FileNumber: Integer; var FileName, ContentType: string;
+  var AttEncoding: TSmtpEncoding);
+begin
+    AttEncoding := smtpEncodeBase64;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.SmtpClientBeforeOutStreamFree(Sender: TObject);
+begin
+    TSmtpCli(Sender).SendMode := smtpToSocket;
+    TSmtpCli(Sender).OnBeforeOutStreamFree := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.SmtpClientDisplay(Sender: TObject; Msg: String);
 begin
     Display(Msg);
@@ -458,9 +485,9 @@ begin
         Len := Length(MsgMemo.Lines[LineNum - 1]);
         { Truncate the line if too long (should wrap to next line) }
         if Len >= MaxLen then
-            StrPCopy(MsgLine, Copy(MsgMemo.Lines[LineNum - 1], 1, MaxLen - 1))
+            StrPCopy(PChar(MsgLine), Copy(MsgMemo.Lines[LineNum - 1], 1, MaxLen - 1))
         else
-            StrPCopy(MsgLine, MsgMemo.Lines[LineNum - 1]);
+            StrPCopy(PChar(MsgLine), MsgMemo.Lines[LineNum - 1]);
     end;
 end;
 
@@ -475,8 +502,8 @@ begin
     { Just detect one of the header lines and add text at the end of this   }
     { line. Use #13#10 to form a new line                                   }
     { Here we check for the From: header line and add a Comments: line      }
-    if StrLIComp(Msg, 'From:', 5) = 0 then
-        StrCat(Msg, #13#10 + 'Comments: This is a test');
+    if (StrLen(PChar(Msg)) > 0) and (StrLIComp(PChar(Msg), 'From:', 5) = 0) then
+        StrCat(PChar(Msg), #13#10 + 'Comments: This is a test');
 end;
 
 
@@ -533,6 +560,32 @@ begin
     SmtpClient.Password        := PasswordEdit.Text;
     SmtpClient.AuthType        := TSmtpAuthType(AuthComboBox.ItemIndex);
     SmtpClient.Auth;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.SendToFileButtonClick(Sender: TObject);
+begin
+    FAllInOneFlag              := FALSE;
+    SmtpClient.RcptName.Clear;
+    SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.text);
+    SmtpClient.HdrFrom         := FromEdit.Text;
+    SmtpClient.HdrTo           := ToEdit.Text;
+    SmtpClient.HdrCc           := CcEdit.Text;
+    SmtpClient.HdrSubject      := SubjectEdit.Text;
+    SmtpClient.EmailFiles      := FileAttachMemo.Lines;
+    SmtpClient.ConfirmReceipt  := ConfirmCheckBox.Checked;
+
+    with TOpenDialog.Create(nil) do
+    try
+        if Execute and (Filename <> '') then begin
+            SmtpClient.SendMode := smtpToStream;
+            SmtpClient.OnBeforeOutStreamFree := SmtpClientBeforeOutStreamFree;
+            SmtpClient.SendToFile(Filename, fmShareDenyWrite);
+        end;
+    finally
+        Free;
+    end;
 end;
 
 
@@ -596,6 +649,9 @@ end;
 { MailFrom, RcptTo and Data methods combined }
 procedure TSmtpTestForm.MailButtonClick(Sender: TObject);
 begin
+    { Assign the MailMessage if you need automatic encoding and line wrapping }
+    //SmtpClient.MailMessage     := MsgMemo.Lines;
+    //SmtpClient.OnGetData       := nil;
     FAllInOneFlag              := FALSE;
     SmtpClient.RcptName.Clear;
     SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.text);

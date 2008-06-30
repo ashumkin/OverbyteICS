@@ -40,6 +40,9 @@ Legal issues: Copyright (C) 2006 by François PIETTE
 
 History:
 
+Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
+
+
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWinsock2;
 
@@ -176,7 +179,7 @@ type
     procedure WSocket2GetInterfaceList(InterfaceList : TInterfaceList); overload;
     procedure WSocket2GetInterfaceList(StrList : TStrings); overload;
     function  WSocket2IsAddrInSubNet(saddr : TInAddr) : Boolean; overload;
-    function  WSocket2IsAddrInSubNet(IpAddr : String) : Boolean; overload;
+    function  WSocket2IsAddrInSubNet(IpAddr : AnsiString) : Boolean; overload;
 
 implementation
 
@@ -388,13 +391,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  WSocket2IsAddrInSubNet(IpAddr : String) : Boolean;
+function  WSocket2IsAddrInSubNet(IpAddr : AnsiString) : Boolean;
 var
     saddr : TInAddr;
 begin
     if Length(IpAddr) = 0 then
         raise ESocketException.Create('Invalid address');
-    saddr.S_addr := WSocket_inet_addr(PChar(IpAddr));
+    saddr.S_addr := WSocket_inet_addr(PAnsiChar(IpAddr));
     Result := WSocket2IsAddrInSubNet(saddr);
 end;
 

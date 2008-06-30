@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpCtrlSocket component. It handle the client connection for
               the TFtpServer component.
 Creation:     April 21, 1998
-Version:      1.52
+Version:      1.61
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -80,7 +80,16 @@ Dec 03, 2007  V1.54 added more FEAT extensions, by Angus Robertson, angus@magsys
                (more details in OverbyteFtpSrv)
 Dec 09, 2007 V1.55 mode z bug fix for resumed transfers
 Jan 08, 2008 V1.57 added FileModeRead and FileModeWrite as public so share locking
-               can be changed, use FileModeRead for MD5SUM (not locked)
+             can be changed, use FileModeRead for MD5SUM (not locked)
+Apr 15, 2008 V1.58 A. Garrels, Unicode changes. Changed type of RcvBuf to
+             PAnsiChar, corrected line indents.
+Apr 25, 2008 V1.59 Removed checks for faVolumeID.
+May 01, 2008 V1.60 A.Garrels added new functions DataStreamWriteString and
+             DataStreamReadString.
+May 15, 2008 V1.61 AGarrels type change of some published String properties
+             to AnsiString, this is an attempt to avoid too many implicit
+             string casts.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpSrvC;
@@ -93,6 +102,13 @@ interface
 {$I OverbyteIcsDefs.inc}
 {$DEFINE USE_BUFFERED_STREAM} { V1.54 }
 {$DEFINE USE_MODEZ}           { V1.54 }
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
@@ -135,11 +151,14 @@ uses
     OverbyteIcsMd5, { AG V1.46}
     OverbyteIcsCRC,        { angus V1.54 }
     OverbyteIcsOneTimePw,  { V1.54 }
+{$IFDEF COMPILER12_UP}
+    OverbyteIcsUtils,
+{$ENDIF}
     OverbyteIcsWinsock, OverbyteIcsWSocket, OverbyteIcsWSockBuf;
 
 const
-    FtpCtrlSocketVersion = 157;
-    CopyRight : String   = ' TFtpCtrlSocket  (c) 1998-2008 F. Piette V1.57 ';
+    FtpCtrlSocketVersion = 161;
+    CopyRight : String   = ' TFtpCtrlSocket  (c) 1998-2008 F. Piette V1.61 ';
     DefaultRcvSize       = 2048;
     UtcDateMaskPacked    = 'yyyymmddhhnnss';         { angus V1.38 }
 
@@ -255,7 +274,7 @@ type
     TFtpCtrlSocket = class(TBaseFtpCtrlSocket)
     protected
         FDataSocket        : TWSocket;
-        FRcvBuf            : PChar;
+        FRcvBuf            : PAnsiChar;
         FRcvCnt            : Integer;
         FRcvSize           : Integer;
         FBusy              : Boolean;
@@ -271,7 +290,7 @@ type
         FFtpState          : TFtpCtrlState;
         FAbortingTransfer  : Boolean;
         FUserData          : LongInt;        { Reserved for component user }
-        FPeerAddr          : String;
+        FPeerAddr          : AnsiString;
         FPeerSAddr         : TSockAddr;      { AG V1.47 }
         FID                : LongInt;
         FOnDisplay         : TDisplayEvent;
@@ -284,8 +303,8 @@ type
         procedure SetHomeDir(const newValue: String);   { AG V1.52}
     public
         BinaryMode        : Boolean;
-        DataAddr          : String;
-        DataPort          : String;
+        DataAddr          : AnsiString;
+        DataPort          : AnsiString;
         FileName          : String;
         FilePath          : String;
         DataSessionActive : Boolean;
@@ -340,7 +359,7 @@ type
         ReqDurMilliSecs   : Integer;     { angus V1.54 how long last request took, in ticks }
         TotGetBytes       : Int64;       { angus V1.54 how many bytes GET during session, data and control }
         TotPutBytes       : Int64;       { angus V1.54 how many bytes PUT during session, data and control }
-        SessIdInfo        : String;      { angus V1.54 session identificaton information for application use }
+        SessIdInfo        : AnsiString;  { angus V1.54 session identificaton information for application use }
         FileModeRead      : Word;        { angus V1.57 }
         FileModeWrite     : Word;        { angus V1.57 }
 {$IFDEF USE_SSL}
@@ -357,51 +376,62 @@ type
         procedure   SetDirectory(newValue : String); virtual;
         procedure   SetAbortingTransfer(newValue : Boolean);
         procedure   BuildDirectory(const Path : String);
-        function    GetPeerAddr: string; override;
+        function    GetPeerAddr: AnsiString; override;
 {$IFDEF USE_SSL}
         function    SslSendPlain(Data : TWSocketData; Len : Integer) : Integer;
 {$ENDIF}
-        property    DataSocket     : TWSocket    read FDataSocket;
-        property    ConnectedSince : TDateTime   read FConnectedSince;
-        property    LastCommand    : TDateTime   read FLastCommand;
-        property    CommandCount   : LongInt     read FCommandCount;
-        property    RcvBuf         : PChar       read FRcvBuf;
+        procedure   DataStreamWriteString(const Str: AnsiString); {$IFDEF COMPILER12_UP} overload;
+        procedure   DataStreamWriteString(const Str: UnicodeString; ACodePage: Cardinal); overload;
+        procedure   DataStreamWriteString(const Str: UnicodeString); overload;
+    {$ENDIF}
+        procedure    DataStreamReadString(var Str: AnsiString; Len: TFtpBigInt); {$IFDEF COMPILER12_UP} overload;
+        procedure    DataStreamReadString(var Str: UnicodeString; Len: TFtpBigInt; ACodePage: Cardinal); overload;
+        procedure    DataStreamReadString(var Str: UnicodeString; Len: TFtpBigInt); overload;
+    {$ENDIF}
+        property    DataSocket     : TWSocket    read  FDataSocket;
+        property    ConnectedSince : TDateTime   read  FConnectedSince;
+        property    LastCommand    : TDateTime   read  FLastCommand;
+        property    CommandCount   : LongInt     read  FCommandCount;
+        property    RcvBuf         : PAnsiChar   read  FRcvBuf;
         property    RcvdCount;
         property    CloseRequest   : Boolean     read  FCloseRequest
                                                  write FCloseRequest;
-        property Directory : String              read  FDirectory
+        property    Directory      : String      read  FDirectory
                                                  write SetDirectory;
-        property HomeDir : String                read  FHomeDir
+        property    HomeDir        : String      read  FHomeDir
                                                  write SetHomeDir;  { AG V1.52}
-        property AbortingTransfer : Boolean      read  FAbortingTransfer
+        property    AbortingTransfer : Boolean   read  FAbortingTransfer
                                                  write SetAbortingTransfer;
-        property ID               : LongInt      read  FID
+        property    ID             : LongInt     read  FID
                                                  write FID;
-        property PeerSAddr        : TSockAddr    read  FPeerSAddr;  { AG V1.47 }
+        property    PeerSAddr      : TSockAddr   read  FPeerSAddr;  { AG V1.47 }
     published
-        property FtpState : TFtpCtrlState  read  FFtpState
-                                           write FFtpState;
-        property Banner : String           read  FBanner
-                                           write FBanner;
-        property RcvSize : integer         read  FRcvSize
-                                           write SetRcvSize;
-        property Busy : Boolean            read  FBusy
-                                           write FBusy;
-        property UserName : String         read  FUserName
-                                           write FUserName;
-        property PassWord : String         read  FPassWord
-                                           write FPassWord;
-        property UserData  : LongInt       read  FUserData
-                                           write FUserData;
-        property OnDisplay : TDisplayEvent read  FOnDisplay
-                                           write FOnDisplay;
-        property OnCommand : TCommandEvent read  FOnCommand
-                                           write FOnCommand;
-        property OnSessionClosed;
-        property OnDataSent;
-        property HSocket;
-        property AllSent;
-        property State;
+        property    FtpState       : TFtpCtrlState
+                                                 read  FFtpState
+                                                 write FFtpState;
+        property    Banner         : String      read  FBanner
+                                                 write FBanner;
+        property    RcvSize        : Integer     read  FRcvSize
+                                                 write SetRcvSize;
+        property    Busy           : Boolean     read  FBusy
+                                                 write FBusy;
+        property    UserName       : String      read  FUserName
+                                                 write FUserName;
+        property    PassWord       : String      read  FPassWord
+                                                 write FPassWord;
+        property    UserData       : LongInt     read  FUserData
+                                                 write FUserData;
+        property    OnDisplay      : TDisplayEvent
+                                                 read  FOnDisplay
+                                                 write FOnDisplay;
+        property    OnCommand      : TCommandEvent
+                                                 read  FOnCommand
+                                                 write FOnCommand;
+        property    OnSessionClosed;
+        property    OnDataSent;
+        property    HSocket;
+        property    AllSent;
+        property    State;
 {$IFNDEF NO_DEBUG_LOG}
         property IcsLogger;
 {$ENDIF}
@@ -571,7 +601,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TFtpCtrlSocket.GetPeerAddr: String;
+function TFtpCtrlSocket.GetPeerAddr: AnsiString;
 begin
     Result := FPeerAddr;
 end;
@@ -661,11 +691,11 @@ begin
         Inc(FCommandCount);
         if (I > 1) and (FRcvBuf[I - 1] = #13) then begin
             FRcvBuf[I - 1] := #0;
-            TriggerCommand(FRcvBuf, I - 1);
+            TriggerCommand(PChar(String(FRcvBuf)), I - 1);
             FRcvBuf[I - 1] := #13;
         end
         else
-            TriggerCommand(FRcvBuf, I);
+            TriggerCommand(PChar(String(FRcvBuf)), I);
 
         FRcvBuf[I] := #10;
         if I >= (FRcvCnt - 1) then begin
@@ -686,6 +716,87 @@ begin
     LastTick := IcsGetTickCountX;  { angus V1.54 last tick for time out checking }
     TotGetBytes := TotGetBytes + Length (Answer) + 2;    { angus V1.54 }
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+procedure TFtpCtrlSocket.DataStreamWriteString(
+    const Str: UnicodeString;
+    ACodePage: Cardinal);
+begin
+    StreamWriteString(DataStream, Str, ACodePage);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpCtrlSocket.DataStreamWriteString(const Str: UnicodeString);
+begin
+    StreamWriteString(DataStream, Str, CP_ACP);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpCtrlSocket.DataStreamWriteString(const Str: AnsiString);
+begin
+    DataStream.Write(Pointer(Str)^, Length(Str));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpCtrlSocket.DataStreamReadString(var Str: AnsiString; Len: TFtpBigInt);
+var
+    ReadLen: Cardinal;
+begin
+    SetLength(Str, Len);
+    ReadLen := DataStream.Read(Pointer(Str)^, Len);
+    if ReadLen < Len then
+        SetLength(Str, ReadLen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+procedure TFtpCtrlSocket.DataStreamReadString(var Str: UnicodeString; Len: TFtpBigInt; ACodePage: Cardinal);
+var
+    SBuf : array [0..2047] of AnsiChar;
+    HBuf : PAnsiChar;
+    eLen : Cardinal;
+begin
+    if ACodePage <> 1200 {CP_UTF16} then begin
+        if Len <= SizeOf(SBuf) then begin
+            eLen := DataStream.Read(SBuf[0], Len);
+            Len := MultiByteToWideChar(ACodePage, 0, @SBuf, eLen, nil, 0);
+            SetLength(Str, Len);
+            MultiByteToWideChar(ACodePage, 0, @SBuf, eLen, Pointer(Str), Len);
+        end
+        else begin
+            GetMem(HBuf, Len);
+            try
+                eLen := DataStream.Read(HBuf^, Len);
+                Len := MultiByteToWideChar(ACodePage, 0, HBuf, eLen, nil, 0);
+                SetLength(Str, Len);
+                MultiByteToWideChar(ACodePage, 0, HBuf, eLen, Pointer(Str), Len);
+            finally
+                FreeMem(HBuf);
+            end;
+        end;
+    end
+    else begin
+        SetLength(Str, Len);
+        eLen := DataStream.Read(Pointer(Str)^, Len * SizeOf(WideChar));
+        if (eLen div SizeOf(WideChar)) < Len then
+            SetLength(Str, (eLen div SizeOf(WideChar)));
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpCtrlSocket.DataStreamReadString(var Str: UnicodeString; Len: TFtpBigInt);
+begin
+    DataStreamReadString(Str, Len, CP_ACP);
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -847,12 +958,14 @@ const
         ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
 begin
 {$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+    (*  faVolumeID not used in Win32
     if ((F.Attr and faVolumeID) <> 0) {or
        ((F.Attr and faHidden)   <> 0)} then begin
         { Ignore hidden files and volume ID entries }
         Result := '';
         Exit;
     end;
+    *)
     { Owner - Group - Others }
     Attr := '-rw-rw-rw-';
     if (F.Attr and faDirectory) <> 0 then
@@ -942,12 +1055,13 @@ var
     SizeStr : String;
 begin
 {$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+    (*  faVolumeID not used in Win32
     if ((F.Attr and faVolumeID) <> 0)  then begin
         { Ignore volume ID entries }
         Result := '';
         Exit;
     end;
-
+    *)
 {$IFDEF STREAM64} { Defined in Delphi 6 and up }
     if F.FindData.nFileSizeHigh = 0 then
         SizeStr := IntToStr(F.FindData.nFileSizeLow)
@@ -1044,7 +1158,8 @@ begin
                     if Length(Buf) > 0 then begin
                         if CurCmdType = ftpcSiteIndex then Buf := '200-' + Buf;
                         if CurCmdType = ftpcSiteCmlsd then Buf := '250-' + Buf;
-                        DataStream.Write(Buf[1], Length(Buf));
+                        //DataStream.Write(Buf[1], Length(Buf));
+                        DataStreamWriteString(Buf);
                     end;
                 end;
             end;
@@ -1068,7 +1183,8 @@ begin
             if Length(Buf) > 0 then begin
                 if CurCmdType = ftpcSiteIndex then Buf := '200-' + Buf; { angus 1.54 }
                 if CurCmdType = ftpcSiteCmlsd then Buf := '250-' + Buf;    { angus 1.54 }
-                DataStream.Write(Buf[1], Length(Buf));
+                //DataStream.Write(Buf[1], Length(Buf));
+                DataStreamWriteString(Buf);
             end;
             Status := FindNext(F);
         end;

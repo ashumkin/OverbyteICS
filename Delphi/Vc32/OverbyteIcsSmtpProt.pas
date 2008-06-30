@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.10
+Version:      6.12
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -303,6 +303,12 @@ Apr 08, 2008 V6.09  A.Garrels wrapped some method calls in DoHighLevelAsync
 Jun 28, 2008 V6.10  **Bracking Change** enum items "smtpTlsImplicite",
                     "smtpTlsExplicite" renamed to "smtpTlsImplicit",
                     "smtpTlsExplicit".
+Apr 25, 2008 V6.11  A.Garrels made some changes to prepare code for Unicode.
+                    Fixed a bug that adds an additional blank line after an
+                    attachment.
+May 15, 2008 V.6.12 A.Garrels type change of some published String properties
+                    to AnsiString.
+                    
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -313,6 +319,13 @@ interface
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
@@ -341,6 +354,9 @@ uses
     OverbyteIcsMD5,
     OverbyteIcsSha1,
     OverbyteIcsNtlmMsgs,
+{$IFDEF COMPILER12_UP}
+    OverbyteIcsUtils,
+{$ENDIF}
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY, OverByteIcsLIBEAY,  {AG/SSL}
 {$ENDIF}
@@ -469,9 +485,9 @@ type
     TCustomSmtpClient = class(TIcsWndControl)
     protected
         FWSocket             : TWSocket;     { Underlaying socket          }
-        FHost                : String;       { SMTP server hostname or IP  }
-        FLocalAddr           : String; {bb}  { Local Address for mulithome }
-        FPort                : String;       { Should be 'smtp'            }
+        FHost                : AnsiString;   { SMTP server hostname or IP  }
+        FLocalAddr           : AnsiString;   {bb}  { Local Address for mulithome }
+        FPort                : AnsiString;   { Should be 'smtp'            }
         FSignOn              : String;       { Used for the 'HELO' command }
         FUsername            : String;       { Used with the 'AUTH' command }
         FPassword            : String;       { Used with the 'AUTH' command }
@@ -507,7 +523,7 @@ type
         FReceiveLen          : Integer;
         FRequestResult       : Integer;
         FStatusCode          : Integer;
-        FReceiveBuffer       : array [0..SMTP_RCV_BUF_SIZE - 1] of char;
+        FReceiveBuffer       : array [0..SMTP_RCV_BUF_SIZE - 1] of AnsiChar;
         FNext                : TSmtpNextProc;
         FWhenConnected       : TSmtpNextProc;
         FFctSet              : TSmtpFctSet;
@@ -549,7 +565,6 @@ type
 
         procedure   EndSendToStream;            {AG}
         procedure   SendLineToStream(Data: Pointer; Len: Integer); {AG}
-
         procedure   CreateSocket; virtual;                         {AG/SSL}
         procedure   AuthGetType;          { parse Ehlo response for AuthTypes }
         procedure   SetShareMode(newValue: TSmtpShareMode);
@@ -648,11 +663,11 @@ type
                                                      write FOnBeforeOutStreamFree;
         property SendMode : TSmtpSendMode            read  FSendMode        {AG}
                                                      write FSendMode;       {AG}
-        property Host : String                       read  FHost
+        property Host : AnsiString                   read  FHost
                                                      write FHost;
-        property LocalAddr : String                  read  FLocalAddr  {bb}
+        property LocalAddr : AnsiString              read  FLocalAddr  {bb}
                                                      write FLocalAddr; {bb}
-        property Port : String                       read  FPort
+        property Port : AnsiString                   read  FPort
                                                      write FPort;
         property SignOn : String                     read  FSignOn
                                                      write FSignOn;
@@ -1054,7 +1069,8 @@ procedure Register;
 
 implementation
 
-{$B-} { Partial boolean evaluation }
+{#$B-} { Partial boolean evaluation } // Is already set, don't ask me why but this turned
+                                      // partial boolean evaluation off again with current compiler {AG}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1547,7 +1563,7 @@ begin
     FReceiveLen := FReceiveLen + Len;
 
     while FReceiveLen > 0 do begin
-        I := Pos(#13#10, FReceiveBuffer);
+        I := Pos(AnsiString(#13#10), FReceiveBuffer);
         if I <= 0 then
             break;
         if I > FReceiveLen then
@@ -1971,9 +1987,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.AuthNextCramMD5;
 var
-    Challenge  : String;
+    Challenge  : AnsiString;
     Response   : String;
-    HexDigits  : String;
+    HexDigits  : AnsiString;
     MD5Digest  : TMD5Digest;
     MD5Context : TMD5Context;
     Count      : Integer;
@@ -2011,8 +2027,11 @@ begin
         TriggerRequestDone(500);
         Exit;
     end;
-
+{$IFDEF COMPILER12_UP}
+    Challenge := AnsiString(Copy(FLastResponse, 5, Length(FLastResponse) - 4));
+{$ELSE}
     Challenge := Copy(FLastResponse, 5, Length(FLastResponse) - 4);
+{$ENDIF}
     Challenge := Base64Decode(Challenge);
 
     { See RFC2104 }
@@ -2054,13 +2073,13 @@ end;
 {$IFDEF DELPHI3_UP}
 procedure TCustomSmtpClient.AuthNextCramSHA1; {HLX}
 const
-    HexDigits : array[0..15] of char = ('0','1','2','3','4','5','6','7',
+    HexDigits : array[0..15] of Char = ('0','1','2','3','4','5','6','7',
                                         '8', '9','a','b','c','d','e','f');
 var
-    Challenge  : String;
+    Challenge  : AnsiString;
     Response   : String;
     Digest     : SHA1Digest;
-    Count      : integer;
+    Count      : Integer;
 begin
     if FRequestResult <> 0 then begin                                   {<= AG}
         if (FAuthType = smtpAuthAutoSelect) then begin
@@ -2076,24 +2095,28 @@ begin
            end;
         end
         else
-	TriggerRequestDone(FRequestResult);
-	Exit;
+	        TriggerRequestDone(FRequestResult);
+	    Exit;
     end;
     {if (FRequestResult <> 0) then begin                                 => AG
         TriggerRequestDone(FRequestResult);
         Exit;
     end;}
     if (Length(FLastResponse) < 5) then begin
-	FLastResponse := '500 Malformed SHA1 Challege: ' + FLastResponse;
-	SetErrorMessage;
-	TriggerRequestDone(500);
-	Exit;
+	      FLastResponse := '500 Malformed SHA1 Challege: ' + FLastResponse;
+	      SetErrorMessage;
+	      TriggerRequestDone(500);
+	      Exit;
     end;
+{$IFDEF COMPILER12_UP}
+    Challenge := AnsiString(Copy(FLastResponse, 5, Length(FLastResponse) - 4));
+{$ELSE}
     Challenge := Copy(FLastResponse, 5, Length(FLastResponse) - 4);
+{$ENDIF}
     Challenge := Base64Decode(Challenge);
     HMAC_SHA1(Challenge[1], Length(Challenge), FPassword[1],
               Length(FPassword), Digest);
-    Response := FUsername+' ';
+    Response := FUsername + ' ';
     for Count := 0 to SHA1HashSize - 1 do begin
         Response := Response + HexDigits[((Byte(Digest[Count]) and $F0) shr 4)];
         Response := Response + HexDigits[(Byte(Digest[Count]) and $0F)];
@@ -2739,7 +2762,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.DataNext;
 var
-    MsgLine  : array [0..1023] of char;
+    MsgLine  : array [0..1023] of Char;
 begin
     { If we have been disconnected, then do nothing.                      }
     { RequestDone event handler is called from socket SessionClose event. }
@@ -2761,12 +2784,15 @@ begin
         FWSocket.OnDataSent := WSocketDataSent;
 
         if FSendMode <> smtpToSocket then begin
-            SendLineToStream(@MsgLine, strlen(MsgLine));
+            SendLineToStream(@MsgLine, StrLen(MsgLine));
             if FSendMode = smtpToStream then
-             	Exit;
+                Exit;
         end;
-
-        FWSocket.PutDataInSendBuffer(@MsgLine, strlen(MsgLine));
+      {$IFNDEF COMPILER12_UP}
+        FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(MsgLine));
+      {$ELSE}
+        FWSocket.PutStringInSendBuffer(StrPas(MsgLine));
+      {$ENDIF}
         FWSocket.SendStr(#13#10);
     end
     else begin
@@ -2791,7 +2817,7 @@ begin
 
         if FMoreLines then begin
             if MsgLine[0] = '.' then
-                Move(MsgLine[0], MsgLine[1], StrLen(MsgLine) + 1);
+                Move(MsgLine[0], MsgLine[1], (StrLen(MsgLine) * SizeOf(Char)) + SizeOf(Char)); { AG }
             TriggerDisplay('> ' + StrPas(MsgLine));
             FWSocket.OnDataSent := WSocketDataSent;
 
@@ -2801,7 +2827,11 @@ begin
                     Exit;
             end;
 
+          {$IFNDEF COMPILER12_UP}
             FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(MsgLine));
+          {$ELSE}
+            FWSocket.PutStringInSendBuffer(StrPas(MsgLine));
+          {$ENDIF}
             FWSocket.SendStr(#13#10);
         end
         else begin
@@ -2979,7 +3009,7 @@ begin
                                 E.ClassName + ': "' + E.Message + '"';
         end;
     end;
-
+    
     {$IFDEF TRACE} TriggerDisplay('! HighLevelAsync done'); {$ENDIF}
     FFctSet          := [];
     FNextRequest     := nil;
@@ -3241,14 +3271,29 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SendLineToStream(Data: Pointer; Len: Integer);
+{$IFDEF COMPILER12_UP}
+var
+    Buf  : array [0..1023] of Byte;
+    Len1 : Integer;
+{$ENDIF}
 begin
     if Assigned(FOutStream) then begin
-        if (Len > 1) and (PChar(Data)[0] = '.') and
-           (PChar(Data)[1] = '.') then // remove a doubled dot
-            FOutStream.Write(PChar(Data)[1], Len - 1)
+{$IFDEF COMPILER12_UP}
+        Len1 := WideCharToMultiByte(CP_ACP, 0, Data, Len, @Buf,
+                                    SizeOf(Buf), nil, nil);
+        if (Len1 > 1) and (Buf[0] = Ord('.')) and
+           (Buf[1] = Ord('.')) then // remove a doubled dot
+            FOutStream.Write(Buf[1], Len1 - 1)
+        else
+            FOutStream.Write(Buf[0], Len1);
+{$ELSE}
+        if (Len > 1) and (PAnsiChar(Data)[0] = '.') and
+           (PAnsiChar(Data)[1] = '.') then // remove a doubled dot
+            FOutStream.Write(PAnsiChar(Data)[1], Len - 1)
         else
             FOutStream.Write(Data^, Len);
-        FOutStream.Write(PChar(#13#10)^, 2);
+{$ENDIF}
+        FOutStream.Write(PAnsiChar(#13#10)^, 2);
     end;
     if FSendMode = smtpToStream then
         PostMessage(Handle, FMsg_WM_SMTP_DATA_NEXT, 0 , 0);
@@ -3555,7 +3600,7 @@ begin
         FEmailBody.Add(#9'name="' + sLine + '"');                          {AG}
         if FAttachmentEncoding = smtpEncodeBase64 then                     {AG}
             FEmailBody.Add('Content-Transfer-Encoding: base64')            {AG}
-        else if FAttachmentEncoding = smtpEncodeQP then                    {AG}                                         {AG}
+        else if FAttachmentEncoding = smtpEncodeQP then                    {AG}
             FEmailBody.Add('Content-Transfer-Encoding: quoted-printable')  {AG}
         else
             FEmailBody.Add('Content-Transfer-Encoding: 7bit');             {AG}
@@ -3570,10 +3615,10 @@ begin
     end;
     if FAttachmentEncoding = smtpEncodeBase64 then                         {AG}
         sLine := DoFileEncBase64(FStream, More)
-    else if FAttachmentEncoding = smtpEncodeQP then                        {AG}                                         {AG}
+    else if FAttachmentEncoding = smtpEncodeQP then                        {AG}
         sLine := DoFileEncQuotedPrintable(FStream, More)                   {AG}                                                                   {AG}
     else
-        sLine := DoTextFileReadNoEncoding(FStream, More);                  {AG}
+        sLine := {$IFDEF COMPILER12_UP} AnsiToUnicode {$ENDIF}(DoTextFileReadNoEncoding(FStream, More));                  {AG}
 
     StrPCopy(MsgLine, sLine);
     if not More then begin  { we hit the end of file. }
@@ -3581,7 +3626,8 @@ begin
         FFileStarted := FALSE;
         Inc(FCurrentFile);
         if (FEmailFiles.Count <= FCurrentFile) then begin
-            FEmailBody.Add('');
+            if sLine <> '' then    { Avoid two blank lines after attachment AG }
+                FEmailBody.Add('');
             FEmailBody.Add('--' + FMimeBoundary + '--');
         end;
         More := TRUE;
@@ -3596,14 +3642,14 @@ begin
     { if we have a MIME type message, then replace the content-type }
     { header with the proper MIME content-type.                     }
     if FMimeBoundary <> '' then begin
-        if StrLIComp('CONTENT-TYPE:', Line, 13) = 0 then
+        if (StrLen(PChar(Line)) > 0) and (StrLIComp('CONTENT-TYPE:', Line, 13) = 0) then
             StrPCopy(Line, 'Content-Type: multipart/mixed;'#13#10#9'boundary="'
                      + FMimeBoundary + '"');
     end
-    else if StrLIComp('CONTENT-TYPE: TEXT', Line, 18) = 0 then             {AG}
+    else if (StrLen(PChar(Line)) > 0) and (StrLIComp('CONTENT-TYPE: TEXT', Line, 18) = 0) then             {AG}
         if FEncoding <> smtpEnc7bit then begin                             {AG}
 {$IFNDEF DELPHI1}
-            StrCat(Line, PChar(#13#10 + 'Content-Transfer-Encoding: ' +
+            StrCat(PChar(Line), PChar(#13#10 + 'Content-Transfer-Encoding: ' +
                                    SmtpDefEncArray[Ord(FEncoding)]));      {AG}
 {$ELSE}
             StrCat(Line, #13#10 + 'Content-Transfer-Encoding: ');

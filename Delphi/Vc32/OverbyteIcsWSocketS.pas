@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      6.00b
+Version:      6.03
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -76,7 +76,10 @@ May 23, 2005 V5.03 Added intermediate variable NewHSocket in procedure
                    TriggerSessionAvailable
 Dec 30, 2005 V6.00b A.Garrels added IcsLogger
 Jan 06, 2008 V6.01 Angus added Disconnect(Client) and DisconnectAll
-
+May 01, 2008 V6.02 A. Garrels - Function names adjusted according to changes in
+                   OverbyteIcsLibrary.pas.
+May 14, 2008 V6.03 A. Garrels - Type change from String to AnsiString in
+                   TWSocketClient (FPeerPort and FPeerAddr).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWSocketS;
@@ -89,6 +92,13 @@ interface
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
@@ -127,8 +137,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWinsock;
 
 const
-    WSocketServerVersion     = 601;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2008 F. Piette V6.01 ';
+    WSocketServerVersion     = 603;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2008 F. Piette V6.03 ';
     DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
 
 type
@@ -151,8 +161,8 @@ type
     protected
         FBanner            : String;
         FServer            : TCustomWSocketServer;
-        FPeerAddr          : String;
-        FPeerPort          : String;
+        FPeerAddr          : AnsiString;
+        FPeerPort          : AnsiString;
         FSessionClosedFlag : Boolean;
         {$IFDEF CLR}
         FHandleGc      : GCHandle;
@@ -162,8 +172,8 @@ type
         procedure   StartConnection; virtual;
         procedure   TriggerSessionClosed(ErrCode : Word); override;
         procedure   Dup(newHSocket : TSocket); override;
-        function    GetPeerAddr: String; override;
-        function    GetPeerPort: String; override;
+        function    GetPeerAddr: AnsiString; override;
+        function    GetPeerPort: AnsiString; override;
         property    Server : TCustomWSocketServer read  FServer
                                                   write FServer;
         {$IFDEF CLR}
@@ -463,7 +473,7 @@ begin
     Client.HandleGc := GcHandle.Alloc(Client);
 {$ENDIF}
     TriggerClientCreate(Client);
-    Client.Name            := Name + 'Client' + IntToStr(FClientNum);
+    Client.Name            := Name + 'Client' + _IntToStr(FClientNum);
     Client.Banner          := FBanner;
     Client.Server          := Self;
 {$IFNDEF NO_DEBUG_LOG}
@@ -638,7 +648,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This override base class GetPeerAddr. It return cached value.             }
-function TWSocketClient.GetPeerAddr: String;
+function TWSocketClient.GetPeerAddr: AnsiString;
 begin
     Result := FPeerAddr;
 end;
@@ -646,7 +656,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This override base class GetPeerPort. It return cached value.             }
-function TWSocketClient.GetPeerPort: String;
+function TWSocketClient.GetPeerPort: AnsiString;
 begin
     Result := FPeerPort;
 end;

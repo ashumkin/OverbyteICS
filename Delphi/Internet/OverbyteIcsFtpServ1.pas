@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.07
+Version:      1.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -71,6 +71,7 @@ May 22, 2007  V1.09 A.Garrels added demo-code that logs on a user
               TCacheData has CRC32B, ZFileName and more admin information
                (not quite finished yet)
               set PasvPortRangeStart/End
+Apr 14, 2008 V1.11 A. Garrels, a few Unicode related changes.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -100,8 +101,8 @@ uses
   OverbyteIcsAvlTrees,   OverbyteIcsOneTimePw;
 
 const
-  FtpServVersion      = 110;
-  CopyRight : String  = ' FtpServer (c) 1998-2008 F. Piette V1.10 ';
+  FtpServVersion      = 111;
+  CopyRight : String  = ' FtpServer (c) 1998-2008 F. Piette V1.11 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -113,7 +114,7 @@ type
   TCacheData = packed record
     MD5Sum    : String;
     CRC32B    : String;
-    ZFileName : string;
+    ZFileName : String;
     CFileUDT  : TDateTime;
     CFSize    : Int64;
     CReadCount: Integer;
@@ -257,10 +258,10 @@ type
     FXLeft            : Integer;
     FXWidth           : Integer;
     FXHeight          : Integer;
-    FMD5Cache            : TCacheTree;
+    FMD5Cache         : TCacheTree;
     FOtpMethod        : TOtpMethod;
     FOtpSequence      : integer;
-    FOtpSeed          : string;
+    FOtpSeed          : String;
     procedure CacheFreeData(Sender: TObject; Data: Pointer; Len: Integer);
     procedure WMAppStartup(var msg: TMessage); message WM_APPSTARTUP;
     procedure LoadConfig;
@@ -516,10 +517,10 @@ begin
     InfoMemo.Lines.Add('   ' + OverbyteIcsFtpSrv.CopyRight);
     InfoMemo.Lines.Add('    Winsock:');
     InfoMemo.Lines.Add('        Version ' +
-            Format('%d.%d', [WinsockInfo.wHighVersion shr 8,
-                             WinsockInfo.wHighVersion and 15]));
-    InfoMemo.Lines.Add('        ' + StrPas(@wsi.szDescription));
-    InfoMemo.Lines.Add('        ' + StrPas(@wsi.szSystemStatus));
+            Format('%d.%d', [wsi.wHighVersion shr 8,
+                             wsi.wHighVersion and 15]));
+    InfoMemo.Lines.Add('        ' + StrPas(wsi.szDescription));
+    InfoMemo.Lines.Add('        ' + StrPas(wsi.szSystemStatus));
 {$IFNDEF VER100}
     { A bug in Delphi 3 makes lpVendorInfo invalid }
     if wsi.lpVendorInfo <> nil then
@@ -681,7 +682,7 @@ procedure TFtpServerForm.FtpServer1RetrSessionConnected(Sender: TObject;
     Data   : TWSocket;
     Error  : Word);
 var
-    Buf : String;
+    Buf : AnsiString;
 begin
     if Error <> 0 then
         InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
@@ -736,7 +737,7 @@ procedure TFtpServerForm.FtpServer1BuildDirectory(
     var Directory : TFtpString;
     Detailed      : Boolean);
 var
-    Buf : String;
+    Buf : AnsiString;
 begin
     if UpperCase(Client.Directory) <> 'C:\VIRTUAL\' then
         Exit;
@@ -769,7 +770,7 @@ procedure TFtpServerForm.FtpServer1AlterDirectory(
     var Directory : TFtpString;
     Detailed      : Boolean);
 var
-    Buf : String;
+    Buf : AnsiString;
 begin
   { angus - show physical file path we listed, and the result }
     InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
@@ -820,7 +821,8 @@ procedure TFtpServerForm.FtpServer1OtpMethodEvent(
     UserName: TFtpString;
     var OtpMethod: TOtpMethod);
 begin
-    { One Time Passwords - should look up user account to find method, sequence and seed }
+    { One Time Passwords - should look up user account to find method, }
+    { sequence and seed }
     OtpMethod := FOtpMethod;
     Client.OtpSequence := FOtpSequence;
     Client.OtpSeed := FOtpSeed;
@@ -974,12 +976,14 @@ begin
     begin
         FtpServer1.Options := FtpServer1.Options + [ftpsCdUpHome];
         for I := 0 to FtpServer1.ClientCount -1 do
-            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options + [ftpCdUpHome];
+            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options +
+                                            [ftpCdUpHome];
     end
     else begin
         FtpServer1.Options := FtpServer1.Options - [ftpsCdUpHome];
         for I := 0 to FtpServer1.ClientCount -1 do
-            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options - [ftpCdUpHome];
+            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options -
+                                            [ftpCdUpHome];
     end;
 end;
 
@@ -993,12 +997,14 @@ begin
     begin
         FtpServer1.Options := FtpServer1.Options + [ftpsHidePhysicalPath];
         for I := 0 to FtpServer1.ClientCount -1 do
-            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options + [ftpHidePhysicalPath];
+            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options +
+                                            [ftpHidePhysicalPath];
     end
     else begin
         FtpServer1.Options := FtpServer1.Options - [ftpsHidePhysicalPath];
         for I := 0 to FtpServer1.ClientCount -1 do
-            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options - [ftpHidePhysicalPath];
+            FtpServer1.Client[I].Options := FtpServer1.Client[I].Options -
+                                            [ftpHidePhysicalPath];
     end;
 end;
 
@@ -1105,7 +1111,7 @@ begin
        { only return cache md5sum if getting it for entire file }
         if (Client.HashEndPos = 0) or (Client.HashEndPos = FSize) then begin
             Md5Sum := PCacheData(Node.Data)^.MD5Sum;
-            inc (PCacheData(Node.Data)^.CReadCount);  { so we know how useful was }
+            inc (PCacheData(Node.Data)^.CReadCount); { so we know how useful was }
             PCacheData(Node.Data)^.CLastTick := IcsGetTickCountX;
             InfoMemo.Lines.Add('Read MD5sum from cache: ' + Md5Sum);
         end;
@@ -1139,7 +1145,8 @@ begin
             PData^.CLastTick := IcsGetTickCountX;
             FMD5Cache.Insert(FilePath, PData, SizeOf(TCachedata));
             FMD5Cache.Remove(Node);
-            InfoMemo.Lines.Add('Renamed cache for ' + Client.FromFileName + ' to ' + FilePath);
+            InfoMemo.Lines.Add('Renamed cache for ' + Client.FromFileName +
+                               ' to ' + FilePath);
         end;
         exit;
     end;
@@ -1147,7 +1154,8 @@ begin
     if GetUAgeSizeFile (FilePath, FileUDT, FSize) then begin
         if Md5Sum <> '' then begin
           { only update cache md5sum if got it for entire file }
-            if (Client.HashEndPos <> 0) AND (Client.HashEndPos <> FSize) then exit;
+            if (Client.HashEndPos <> 0) AND (Client.HashEndPos <> FSize) then
+                exit;
             Node := FMD5Cache.FindKey(Client.FromFileName);
             if (Node <> nil) then begin
                 PCacheData(Node.Data)^.MD5Sum := Md5Sum;
@@ -1160,12 +1168,13 @@ begin
                     PCacheData(Node.Data)^.CRC32B := '' ;
                     if PCacheData(Node.Data)^.ZFileName <> '' then begin
                         InfoMemo.Lines.Add('Deleted Old cached compressed file ' +
-                                                    PCacheData(Node.Data)^.ZFileName);
+                                           PCacheData(Node.Data)^.ZFileName);
                         DeleteFile (PCacheData(Node.Data)^.ZFileName);
                     end;
                     PCacheData(Node.Data)^.ZFileName := '';
                 end;
-                InfoMemo.Lines.Add('Old cached MD5sum updated for file ' + FilePath + '=' + Md5Sum);
+                InfoMemo.Lines.Add('Old cached MD5sum updated for file ' +
+                                   FilePath + '=' + Md5Sum);
             end
             else begin
             New(PData);
@@ -1176,7 +1185,8 @@ begin
                 PData^.CLastTick := IcsGetTickCountX;
             FMD5Cache.Insert(FilePath, PData, SizeOf(TCachedata));
             end;
-            InfoMemo.Lines.Add('Cached MD5sum for new file ' + FilePath + '=' + Md5Sum);
+            InfoMemo.Lines.Add('Cached MD5sum for new file ' +
+                               FilePath + '=' + Md5Sum);
         end
         else
             FMD5Cache.RemoveKey(FilePath);
@@ -1227,7 +1237,7 @@ procedure TFtpServerForm.FtpServer1CalculateCrc(Sender: TObject;
   Client: TFtpCtrlSocket; var FilePath, Md5Sum: TFtpString;
   var Allowed: Boolean);
 begin
- { read from CRC cache or let server do it }
+    { read from CRC cache or let server do it }
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1272,7 +1282,8 @@ begin
     Offset := 1 ;
     OldPw := ScanGetNextArg (Params, Offset);
     NewPw := ScanGetNextArg (Params, Offset);
-    InfoMemo.Lines.Add('Client want to change password from: ' + OldPw + ' to ' + NewPw);
+    InfoMemo.Lines.Add('Client want to change password from: ' +
+                       OldPw + ' to ' + NewPw);
     Answer := '501 Can not change password';
 end;
 
@@ -1280,8 +1291,9 @@ end;
 procedure TFtpServerForm.FtpServer1ValidateAllo(Sender: TObject;
   Client: TFtpCtrlSocket; var Params, Answer: TFtpString);
 begin
-    { this event can be used to check if account has sufficient space for upload and
-      format the correct answers, otherwise the command checks space on the Client volume  }
+    { this event can be used to check if account has sufficient space for }
+    { upload and format the correct answers, otherwise the command checks }
+    { space on the Client volume  }
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1300,10 +1312,11 @@ begin
     if NOT FileExists (Client.ZCompFileName) then Exit;
     try
        Client.ZFileStream := FtpServer1.OpenFileStream(Client.ZCompFileName,
-                                                         fmOpenRead + fmShareDenyNone);
+                                                  fmOpenRead + fmShareDenyNone);
        Client.ZCompFileDelete := False ;
        Done := True ;
-       InfoMemo.Lines.Add('Opened cached compressed file: ' + Client.ZCompFileName);
+       InfoMemo.Lines.Add('Opened cached compressed file: ' +
+                          Client.ZCompFileName);
     except
        InfoMemo.Lines.Add('Failed to open file: ' + Client.ZCompFileName);
     end;
@@ -1322,7 +1335,8 @@ procedure TFtpServerForm.FtpServer1Timeout(Sender: TObject;
   Client: TFtpCtrlSocket; Duration: Integer; var Abort: Boolean);
 begin
     InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
-         ' client being timed out after ' + IntToStr (Duration) + ' secs inactivity');
+                       ' client being timed out after ' + IntToStr (Duration) +
+                       ' secs inactivity');
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

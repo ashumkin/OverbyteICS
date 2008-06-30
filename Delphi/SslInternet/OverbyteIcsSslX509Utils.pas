@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Aug 26, 2007
 Description:
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -37,6 +37,7 @@ Legal issues: Copyright (C) 2007-2008 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslX509Utils;
@@ -47,9 +48,9 @@ uses
     Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsLibeay, OverbyteIcsLibeayEx;
 
 procedure CreateCertRequest(const RequestFileName, KeyFileName, Country,
-  State, Locality, Organization, OUnit, CName, Email: String; Bits: Integer);
+  State, Locality, Organization, OUnit, CName, Email: AnsiString; Bits: Integer);
 procedure CreateSelfSignedCert(const FileName, Country, State,
-  Locality, Organization, OUnit, CName, Email: String; Bits: Integer;
+  Locality, Organization, OUnit, CName, Email: AnsiString; Bits: Integer;
   IsCA: Boolean; Days: Integer);
 
 
@@ -57,7 +58,7 @@ implementation
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure CreateSelfSignedCert(const FileName, Country, State,
-    Locality, Organization, OUnit, CName, Email: String;
+    Locality, Organization, OUnit, CName, Email: AnsiString;
     Bits: Integer; IsCA: Boolean; Days: Integer);
 var
     X         : PX509;
@@ -85,7 +86,7 @@ begin
         if not Assigned(Rsa) then
             raise Exception.Create('Failed to generate rsa key');
 
-        if f_EVP_PKEY_assign(PK, EVP_PKEY_RSA, PChar(Rsa)) = 0 then
+        if f_EVP_PKEY_assign(PK, EVP_PKEY_RSA, PAnsiChar(Rsa)) = 0 then
         begin
             f_RSA_free(Rsa);
             raise Exception.Create('Failed to assign rsa key to key object');
@@ -109,26 +110,26 @@ begin
         correct string type and performing checks on its length.
         Normally we'd check the return value for errors...  	}
         if Length(CName) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar('CN'),
-                                         MBSTRING_ASC, PChar(CName), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar('CN'),
+                                         MBSTRING_ASC, PAnsiChar(CName), -1, -1, 0);
         if Length(OUnit) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar('OU'),
-                                         MBSTRING_ASC, PChar(OUnit), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar('OU'),
+                                         MBSTRING_ASC, PAnsiChar(OUnit), -1, -1, 0);
         if Length(State) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar('ST'),
-                                         MBSTRING_ASC, PChar(State), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar('ST'),
+                                         MBSTRING_ASC, PAnsiChar(State), -1, -1, 0);
         if Length(Organization) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar(String('O')),
-                                  MBSTRING_ASC, PChar(Organization), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar(AnsiString('O')),
+                                  MBSTRING_ASC, PAnsiChar(Organization), -1, -1, 0);
         if Length(Country) > 0 then
-              f_X509_NAME_add_entry_by_txt(Name, PChar(String('C')),
-                                       MBSTRING_ASC, PChar(Country), -1, -1, 0);
+              f_X509_NAME_add_entry_by_txt(Name, PAnsiChar(AnsiString('C')),
+                                       MBSTRING_ASC, PAnsiChar(Country), -1, -1, 0);
         if Length(Locality) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar(String('L')),
-                                      MBSTRING_ASC, PChar(Locality), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar(AnsiString('L')),
+                                      MBSTRING_ASC, PAnsiChar(Locality), -1, -1, 0);
         if Length(Email) > 0 then
             f_X509_NAME_add_entry_by_NID(Name, NID_pkcs9_emailAddress,
-                                         MBSTRING_ASC, PChar(Email), -1, -1, 0);
+                                         MBSTRING_ASC, PAnsiChar(Email), -1, -1, 0);
 
         { Its self signed so set the issuer name to be the same as the
         subject. }
@@ -142,10 +143,10 @@ begin
         { Add various extensions }
         if IsCA then
             Ex := f_X509V3_EXT_conf_nid(nil, nil, NID_basic_constraints,
-                                        PChar('critical,CA:TRUE'))
+                                        PAnsiChar('critical,CA:TRUE'))
         else
             Ex := f_X509V3_EXT_conf_nid(nil, nil, NID_basic_constraints,
-                                       PChar('critical,CA:FALSE'));
+                                       PAnsiChar('critical,CA:FALSE'));
 
         if not Assigned(Ex) then
             raise Exception.Create('Function f_X509V3_EXT_conf_nid failed');
@@ -156,23 +157,23 @@ begin
 
         { Purposes }
         Ex := f_X509V3_EXT_conf_nid(nil, nil, NID_key_usage,
-                                PChar('critical, keyCertSign, cRLSign'));
+                                PAnsiChar('critical, keyCertSign, cRLSign'));
         f_X509_add_ext(X, Ex, -1);
         f_X509_EXTENSION_free(Ex);
 
         { Some Netscape specific extensions }
         Ex := f_X509V3_EXT_conf_nid(nil, nil, NID_netscape_comment,
-                                PChar('ICS Group'));
+                                PAnsiChar('ICS Group'));
         f_X509_add_ext(X, Ex, -1);
         f_X509_EXTENSION_free(Ex);
 
         Ex := f_X509V3_EXT_conf_nid(nil, nil, NID_netscape_cert_type,
-                                PChar('SSL CA, S/MIME CA, Object Signing CA'));
+                                PAnsiChar('SSL CA, S/MIME CA, Object Signing CA'));
         f_X509_add_ext(X, Ex, -1);
         f_X509_EXTENSION_free(Ex);
 
         {Ex := f_X509V3_EXT_conf_nid(nil, nil, NID_crl_distribution_points,
-                                PChar('URI:http://www.domain.com/CRL/class1.crl'));
+                                PAnsiChar('URI:http://www.domain.com/CRL/class1.crl'));
         f_X509_add_ext(X, Ex, -1);
         f_X509_EXTENSION_free(Ex);}
 
@@ -183,7 +184,7 @@ begin
             raise Exception.Create('Failed to sign certificate');
 
         { We write private key as well as certificate to the same file }
-        FileBio := f_BIO_new_file(PChar(FileName), PChar('w+'));
+        FileBio := f_BIO_new_file(PAnsiChar(FileName), PAnsiChar('w+'));
         if not Assigned(FileBio) then
             raise Exception.Create('Failed to open output file');
 
@@ -211,9 +212,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure CreateCertRequest(const RequestFileName, KeyFileName, Country, State,
-  Locality, Organization, OUnit, CName, Email: String; Bits: Integer);
+  Locality, Organization, OUnit, CName, Email: AnsiString; Bits: Integer);
 
-  function Add_Ext(sk : PStack; Nid : Integer; Value : PChar): Boolean;
+  function Add_Ext(sk : PStack; Nid : Integer; Value : PAnsiChar): Boolean;
   var
       Ext : PX509_EXTENSION;
   begin
@@ -253,7 +254,7 @@ begin
         if not Assigned(Rsa) then
             raise Exception.Create('Failed to generate rsa key');
 
-        if f_EVP_PKEY_assign(PK, EVP_PKEY_RSA, PChar(Rsa)) = 0 then
+        if f_EVP_PKEY_assign(PK, EVP_PKEY_RSA, PAnsiChar(Rsa)) = 0 then
         begin
             f_RSA_free(Rsa);
             raise Exception.Create('Failed to assign rsa key to key object');
@@ -273,26 +274,26 @@ begin
         }
 
         if Length(CName) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar('CN'),
-                                         MBSTRING_ASC, PChar(CName), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar('CN'),
+                                         MBSTRING_ASC, PAnsiChar(CName), -1, -1, 0);
         if Length(OUnit) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar('OU'),
-                                         MBSTRING_ASC, PChar(OUnit), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar('OU'),
+                                         MBSTRING_ASC, PAnsiChar(OUnit), -1, -1, 0);
         if Length(State) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar('ST'),
-                                         MBSTRING_ASC, PChar(State), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar('ST'),
+                                         MBSTRING_ASC, PAnsiChar(State), -1, -1, 0);
         if Length(Organization) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar(String('O')),
-                                  MBSTRING_ASC, PChar(Organization), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar(AnsiString('O')),
+                                  MBSTRING_ASC, PAnsiChar(Organization), -1, -1, 0);
         if Length(Country) > 0 then
-              f_X509_NAME_add_entry_by_txt(Name, PChar(String('C')),
-                                       MBSTRING_ASC, PChar(Country), -1, -1, 0);
+              f_X509_NAME_add_entry_by_txt(Name, PAnsiChar(AnsiString('C')),
+                                       MBSTRING_ASC, PAnsiChar(Country), -1, -1, 0);
         if Length(Locality) > 0 then
-            f_X509_NAME_add_entry_by_txt(Name, PChar(String('L')),
-                                      MBSTRING_ASC, PChar(Locality), -1, -1, 0);
+            f_X509_NAME_add_entry_by_txt(Name, PAnsiChar(AnsiString('L')),
+                                      MBSTRING_ASC, PAnsiChar(Locality), -1, -1, 0);
         if Length(Email) > 0 then
             f_X509_NAME_add_entry_by_NID(Name, NID_pkcs9_emailAddress,
-                                         MBSTRING_ASC, PChar(Email), -1, -1, 0);
+                                         MBSTRING_ASC, PAnsiChar(Email), -1, -1, 0);
 
         Exts := f_sk_new_null;
         Add_Ext(Exts, NID_key_usage, 'critical, digitalSignature, keyEncipherment');
@@ -304,13 +305,13 @@ begin
         if f_X509_REQ_sign(Req, PK, f_EVP_sha1) <= 0 then
             raise Exception.Create('Failed to sign request');
 
-        FileBio := f_BIO_new_file(PChar(KeyFileName), PChar('w+'));
+        FileBio := f_BIO_new_file(PAnsiChar(KeyFileName), PAnsiChar('w+'));
         if not Assigned(FileBio) then
             raise Exception.Create('Failed to open output file');
         if f_PEM_write_bio_PrivateKey(FileBio, PK, nil, nil, 0, nil, nil) = 0 then
             raise Exception.Create('Failed to write private key to BIO');
         f_BIO_free(FileBio);
-        FileBio := f_BIO_new_file(PChar(RequestFileName), PChar('w+'));
+        FileBio := f_BIO_new_file(PAnsiChar(RequestFileName), PAnsiChar('w+'));
         if not Assigned(FileBio) then
             raise Exception.Create('Failed to open output file');
         { Write request }
