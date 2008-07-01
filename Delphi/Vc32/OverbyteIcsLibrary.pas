@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.09
+Version:      1.10
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -62,6 +62,8 @@ May 15, 2008 V1.08 A. Garrels optimized _UpperCase, _LowerCase, _Trim and
                    of _IntToStr.
 May 23, 2008 V1.09 A. Garrels check for empty string in IcsLowerCaseA() and
                    IcsUpperCaseA().
+Jul 01, 2008 V1.10 A. Garrels fixed a bug in IcsCompareTextA().
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -98,8 +100,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  OverbyteIcsLibraryVersion = 109;
-  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.09 ';
+  OverbyteIcsLibraryVersion = 110;
+  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.10 ';
 
 
 {$IFDEF CLR}
@@ -1210,21 +1212,29 @@ end;
 function IcsCompareTextA(const S1, S2: AnsiString): Integer;
 var
     I1, I2 : Integer;
+    MinLen : Integer;
 begin
-    Result := 0;
-    I1 := Length(S1);
-    I2 := Length(S2);
+    I1  := Length(S1);
+    I2  := Length(S2);
     if I1 <> I2 then
     begin
         if I1 > I2 then
-            Result := 1
-        else
+        begin
+            Result := 1;
+            MinLen := I2;
+        end
+        else begin
             Result := -1;
-        Exit;
+            MinLen := I1;
+        end;
     end
-    else if I1 = 0 then
+    else begin
+        Result := 0;
+        MinLen := I1;
+    end;
+    if (I1 = 0) or (I2 = 0) then
         Exit;
-    for I2 := 1 to I1 do
+    for I2 := 1 to MinLen do
     begin
         if S1[I2] <> S2[I2] then
         begin
@@ -1232,12 +1242,12 @@ begin
             begin
                 if (S1[I2] in ['a'..'z']) and (Ord(S1[I2]) - 32 = Ord(S2[I2])) then
                     Continue;
-                Result := Ord(S1[I2]) - Ord(S2[I2]);
+                Result := 1;//Ord(S1[I2]) - Ord(S2[I2]);
             end
             else begin
                 if (S1[I2] in ['A'..'Z']) and (Ord(S1[I2]) + 32 = Ord(S2[I2])) then
                     Continue;
-                Result := -(Ord(S2[I2]) - Ord(S1[I2]));
+                Result := -1;//-(Ord(S2[I2]) - Ord(S1[I2]));
             end;
             Exit;
         end;
