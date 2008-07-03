@@ -1,14 +1,13 @@
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-Author:       Arno Garrels
-Description:  Logger class donated to ICS project.
+Author:       Arno Garrels <arno.garrels@gmx.de>
+Description:  Logger class donated to ICS.
 Creation:     December 2005
-Version:      6.00
-EMail:        <arno.garrels@gmx.de>
-              francois.piette@overbyte.be  http://www.overbyte.be
+Version:      6.02
+EMail:        francois.piette@overbyte.be      http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2005-2007 by François PIETTE
+Legal issues: Copyright (C) 2005-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -33,12 +32,20 @@ Legal issues: Copyright (C) 2005-2007 by François PIETTE
               3. This notice may not be removed or altered from any source
                  distribution.
 
+              4. You must register this software by sending a picture postcard
+                 to François PIETTE. Use a nice stamp and mention your
+                 name, street address, EMail address and any comment you like
+                 to say.
+
 History:
 Dec 31, 2005 V1.01 F. Piette cleaned the code
 Jan 18, 2006 V1.02 Fixed an AV on destroy
 Mar 26, 2006 V6.00 Started new version 6
 Aug 20, 2006 V6.01 F. Piette adapted to Delphi.NET
-
+Jul 03, 2008 V6.02 A. Garrels made some changes to prepare code for Unicode.
+                   When new LogFileEncoding is set to lfeUtf16 logging to file
+                   will be probably faster than lfeUtf8.
+                                      
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLogger;
@@ -90,8 +97,8 @@ uses
 {$ENDIF}
 
 const
-    TIcsLoggerVersion   = 601;
-    CopyRight : String  = ' IcsLogger (c) 2005-2007 Arno Garrels V6.01 ';
+    TIcsLoggerVersion   = 602;
+    CopyRight : String  = ' IcsLogger (c) 2005-2008 by François PIETTE V6.02 ';
 
 type
     ELoggerException = class(Exception);
@@ -102,6 +109,9 @@ type
                   loProtSpecErr, loProtSpecInfo, loProtSpecDump);
     TLogOptions = set of TLogOption;
     TLogFileOption = (lfoAppend, lfoOverwrite);
+{$IFDEF COMPILER12_UP}
+    TLogFileEncoding = (lfeUtf8, lfeUtf16);
+{$ENDIF}
 const
     LogAllOptErr  =  [loWsockErr, loSslErr, loProtSpecErr];
     LogAllOptInfo =  LogAllOptErr + [loWsockInfo, loSslInfo, loProtSpecInfo];
@@ -124,6 +134,10 @@ type
         FLogFileName        : String;
         FLogFile            : TFileStream;
         FLogFileOption      : TLogFileOption;
+    {$IFDEF COMPILER12_UP}
+        FLogFileEncoding    : TLogFileEncoding;
+        FLogFileInternalEnc : TLogFileEncoding;
+    {$ENDIF}
     {$IFNDEF NO_ADV_MT}
         FLock               : TRtlCriticalSection;
         procedure   Lock;
@@ -150,6 +164,10 @@ type
     published
         property    LogFileOption : TLogFileOption       read  FLogFileOption
                                                          write SetLogFileOption;
+{$IFDEF COMPILER12_UP}
+        property    LogFileEncoding : TLogFileEncoding   read  FLogFileEncoding
+                                                         write FLogFileEncoding;
+{$ENDIF}
         property    LogFileName   : String               read  FLogFileName
                                                          write SetLogFileName;
         property    LogOptions    : TLogOptions          read  FLogOptions
@@ -229,6 +247,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.InternalOpenLogFile;
+var
+    Bom : array [0..1] of Byte;
+    Len : Integer;
 begin
     InternalCloseLogFile;
     if Length(FLogFileName) = 0 then
@@ -250,10 +271,39 @@ begin
         on E : Exception do
             raise ELoggerException.Create(E.Message);
     end;
+{$IFNDEF COMPILER12_UP}
     if FLogFileOption = lfoAppend then
         FLogFile.Seek(0, soFromEnd)
     else
         FLogFile.Size := 0;
+{$ELSE}
+    if FLogFileOption = lfoAppend then
+    begin
+        Len := FLogFile.Read(Bom[0], Length(Bom));
+        if Len = 0 then begin
+            FLogFileInternalEnc := FLogFileEncoding;
+            if FLogFileInternalEnc = lfeUtf16 then
+            begin
+                Bom[0] := $FF; Bom[1] := $FE;
+                FLogFile.Write(Bom[0], Length(Bom));
+            end;
+        end
+        else if (Len = 2) and (Bom[0] = $FF) and (Bom[1] = $FE) then
+            FLogFileInternalEnc := lfeUtf16
+        else
+            FLogFileInternalEnc := lfeUtf8;
+        FLogFile.Seek(0, soFromEnd);
+    end
+    else begin
+        FLogFile.Size := 0;
+        FLogFileInternalEnc := FLogFileEncoding;
+        if FLogFileInternalEnc = lfeUtf16 then
+        begin
+            Bom[0] := $FF; Bom[1] := $FE;
+            FLogFile.Write(Bom[0], Length(Bom));
+        end;
+    end;
+{$ENDIF}
 end;
 
 
@@ -268,10 +318,23 @@ begin
     for Ch in S do
         FLogFile.Write(Ch);
 {$ELSE}
+{$IFDEF COMPILER12_UP}
+var
+    UStr : Utf8String;
+{$ENDIF}
 begin
     if not Assigned(FLogFile) then
         InternalOpenLogFile;
-    FLogFile.Write(PChar(S)^, Length(S));
+{$IFDEF COMPILER12_UP}
+    if FLogFileInternalEnc = lfeUtf8 then begin
+        UStr := Utf8Encode(S);
+        FLogFile.Write(Pointer(UStr)^, Length(UStr));
+    end
+    else
+        FLogFile.Write(Pointer(S)^, Length(S) * SizeOf(Char));
+{$ELSE}
+    FLogFile.Write(Pointer(S)^, Length(S));
+{$ENDIF}
 {$ENDIF}
 end;
 
