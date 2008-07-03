@@ -7,7 +7,7 @@ Description:  A very fast external SSL-session-cache component.
               Uses OpenSSL (http://www.openssl.org).
               Uses freeware TSslWSocket component  from ICS
               (Internet Component Suite).
-Version:      1.01
+Version:      1.02
 EMail:        <arno.garrels@gmx.de>
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -42,6 +42,7 @@ Legal issues: Copyright (C) 2006-2007 by Arno Garrels, Berlin, Germany,
 
 History:
 06/28/2007 v1.01 A. Garrels fixed a bug with multiple instances.
+Jul 03, 2008 V1.02 A. Garrels made a few changes to prepare code for Unicode.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -671,9 +672,9 @@ begin
             FStreamVersion := Version;
         while AStream.Position < AStream.Size do
         begin
-            AStream.Read(n, SizeOf(Integer));
+            AStream.Read(n, SizeOf(Integer));  { Number of chars }
             SetLength(Key, n);
-            AStream.Read(PChar(Key)^, n);
+            AStream.Read(Pointer(Key)^, n * SizeOf(Char));
             AStream.Read(Time, SizeOf(TDateTime));
             AStream.Read(Expires, SizeOf(TDateTime));
             AStream.Read(Len, SizeOf(Integer));
@@ -711,8 +712,8 @@ var
     n : Integer;
 begin
     n := Length(Key);
-    FStream.Write(n, SizeOf(Integer));
-    FStream.Write(PChar(Key)^, n);
+    FStream.Write(n, SizeOf(Integer)); { Number of chars }
+    FStream.Write(Pointer(Key)^, n * SizeOf(Char));
     FStream.Write(TimeStamp, SizeOf(TDateTime));
     FStream.Write(Expires, SizeOf(TDateTime));
     FStream.Write(Len, SizeOf(Integer));
