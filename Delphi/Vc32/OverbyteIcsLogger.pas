@@ -247,9 +247,11 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.InternalOpenLogFile;
+{$IFDEF COMPILER12_UP}
 var
     Bom : array [0..1] of Byte;
     Len : Integer;
+{$ENDIF}    
 begin
     InternalCloseLogFile;
     if Length(FLogFileName) = 0 then
