@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.13
+Version:      6.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -615,6 +615,7 @@ May 15, 2008 V6.13 AGarrels type change of some published String properties
              string casts, only a few higher level components have been adjusted
              accordingly so far.
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
+Jul 04, 2008 Rev.58 SSL - Still lacked a few changes I made last year.
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -717,8 +718,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 613;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.13 ';
+  WSocketVersion            = 614;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.14 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -9796,7 +9797,10 @@ var
     Tick : Cardinal;
     F    : TextFile;
     S    : String;
+{$IFDEF LOADSSL_ERROR_FILE} // Optional define in OverbyteIcsSslDefs.inc
+    F    : TextFile;
     I, J : Integer;
+{$ENDIF}
 begin
     _EnterCriticalSection(SslCritSect);
     try
@@ -9804,7 +9808,8 @@ begin
             // Load LIBEAY DLL
             // Must be loaded before SSlEAY for the versioncheck to work!
             if not OverbyteIcsLIBEAY.Load then begin
-                    AssignFile(F, 'FailedIcsLIBEAY.txt');
+            {$IFDEF LOADSSL_ERROR_FILE}
+                AssignFile(F, ExtractFilePath(ParamStr(0)) + 'FailedIcsLIBEAY.txt');
                 Rewrite(F);
                 S := OverbyteIcsLIBEAY.WhichFailedToLoad;
                 I := 1;
@@ -9816,6 +9821,7 @@ begin
                     WriteLn(F, Copy(S, J, I - J));
                 end;
                 CloseFile(F);
+            {$ENDIF}
                 if OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle <> 0 then begin
                     _FreeLibrary(OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle);
                     OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle := 0
@@ -9824,7 +9830,8 @@ begin
             end;
             // Load SSlEAY DLL
             if not OverbyteIcsSSLEAY.Load then begin
-                AssignFile(F, 'FailedIcsSSLEAY.txt');
+            {$IFDEF LOADSSL_ERROR_FILE}
+                AssignFile(F, ExtractFilePath(ParamStr(0)) + 'FailedIcsSSLEAY.txt');
                 Rewrite(F);
                 S := OverbyteIcsSSLEAY.WhichFailedToLoad;
                 I := 1;
@@ -9836,6 +9843,7 @@ begin
                     WriteLn(F, Copy(S, J, I - J));
                 end;
                 CloseFile(F);
+            {$ENDIF}    
                 if OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle <> 0 then begin
                     _FreeLibrary(OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle);
                     OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle := 0;
@@ -9874,10 +9882,9 @@ procedure UnloadSsl;
 begin
     _EnterCriticalSection(SslCritSect);
     try
-        Dec(SslRefCount);
-        if SslRefCount > 0 then
-            Exit
-        else begin
+        if SslRefCount > 0 then        {AG 12/30/07}
+            Dec(SslRefCount);
+        if SslRefCount = 0 then begin  {AG 12/30/07}
             if OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle <> 0 then begin
                 _FreeLibrary(OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle);
                 OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle := 0;
