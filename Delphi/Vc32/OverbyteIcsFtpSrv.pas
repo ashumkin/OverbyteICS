@@ -293,11 +293,10 @@ Dec 04, 2007 V1.54 added more FEAT extensions, by Angus Robertson, angus@magsys.
              passive port pool now issues incrementing ports instead of the sames ones
 03 Mar 2008 V1.57 added SrvFileModeRead and SrvFileModeWrite as public so share locking
                can be changed, use SrvFileModeRead for MD5SUM (not locked)
-            ensure file stream closed if session terminates unexpectedly  
+            ensure file stream closed if session terminates unexpectedly
 Mar 24, 2008 V6.01 Bumped version number to 6.01
              Francois Piette made some changes to prepare code for Unicode.
-Jun 25, 2008 V6.02 A. Garrels SSL code merged. 
-
+Jun 25, 2008 V6.02 A. Garrels SSL code merged.
 Apr 14, 2008 V6.03 A. Garrels, some Unicode related changes, basic features
              do work now. Receive buffer type-change from PChar to PAnsiChar.
              Check the various DataAvailableEvents. Fixed a bug in function
@@ -309,6 +308,10 @@ May 12, 2008 v6.05 A. Garrels changed call of GetTempPath in constructor.
              Some type changes from String to AnsiString of published properties.
              Added Setters and Getters for those properties since current
              compiler is not able to handle AnsiString properties correctly.
+Jul 11, 2008 V6.03 Angus fixed 'Unicode' bug introduced in V6.01 that stopped PORT command working
+             (Just the change log from v6 added here and minor cosmetic changes
+              to keep both verions in sync, this issue was already fixed in v7)
+ 
              
 Angus pending -
 CRC on the fly
@@ -1671,7 +1674,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : Char) : Boolean; { AG V6.02 }
+function IsDigit(Ch : Char) : Boolean; { V6.03 }
 begin
     Result := (Ch >= '0') and (Ch <= '9');
 end;
@@ -3110,7 +3113,7 @@ begin
     while (I <= Length(Src)) and IsSpace(Src[I]) do
         Inc(I);
     Result := 0;
-    while (I <= Length(Src)) and IsDigit(Src[I]) do begin { AG V6.02 }
+    while (I <= Length(Src)) and IsDigit(Src[I]) do begin    { V6.03 }
         Result := Result * 10 + Ord(Src[I]) - Ord('0');
         Inc(I);
     end;
