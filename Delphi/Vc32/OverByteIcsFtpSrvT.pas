@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Time functions.
 Creation:     Nov 24, 1999 from Bruce Christensen <bkc51831234@hotmail.com>
               code used with his permission. Thanks.
-Version:      1.18
+Version:      6.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -58,6 +58,7 @@ Mar 10, 2008 V1.16 FPiette made some changes to prepare code for Unicode
                    GetFileAge: do not use set of char
 Apr 22, 2008 V1.17 AGarrels Removed checks for faVolumeID
 12 May 2008  V1.18 Removed function atoi it's in OverbyteIcsUtils.pas now.
+Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and later only                    
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -332,6 +333,7 @@ function MDTM2Date(S: String): TDateTime;
 { 1234567890123456789 }
 var
     yy, mm, dd, hh, nn, ss, zz: Integer;
+    timeDT: TDateTime;
 
     function GetNum(offset, len: Integer): Integer;
     var
@@ -351,17 +353,16 @@ begin
     dd := GetNum(7, 2);
     if (dd = 0) or (dd > 31) then
         Exit;
-{   if not TryEncodeDate (yy, mm, dd, Result) then      D6 only
-    begin
+    if not TryEncodeDate (yy, mm, dd, Result) then begin
         Result := -1;
         Exit;
-    end;  }
-    try
+    end;  
+ {   try   // V6.01 removed, for D5 and earlier 
         Result := EncodeDate(yy, mm, dd);
     except
         Result := -1;
         Exit;
-    end;
+    end; }
     hh := GetNum(9, 2);
     nn := GetNum(11, 2);
     ss := GetNum(13, 2);
@@ -374,14 +375,17 @@ begin
             else ZZ := GetNum(16, 3)
         end;
     end;
-{    if not TryEncodeTime (hh, nn, ss, 0, timeDT) then Exit;      D6 only }
-{    Result := Result + timeDT;                                           }
-    try
+    if not TryEncodeTime (hh, nn, ss, zz, timeDT) then begin
+        Result := -1;
+    	Exit;    
+    end;	
+    Result := Result + timeDT;                                           
+   { try 		 // V6.01 removed, for D5 and earlier 
         Result := Result + EncodeTime(hh, nn, ss, zz);
     except
         Result := -1;
         Exit;
-    end;
+    end; }
 end;
 
 

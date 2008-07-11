@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpCtrlSocket component. It handle the client connection for
               the TFtpServer component.
 Creation:     April 21, 1998
-Version:      1.61
+Version:      6.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -89,6 +89,7 @@ May 01, 2008 V1.60 A.Garrels added new functions DataStreamWriteString and
 May 15, 2008 V1.61 AGarrels type change of some published String properties
              to AnsiString, this is an attempt to avoid too many implicit
              string casts.
+Jul 10, 2008 V6.03 bumped version to match OverbyteFtpCli               
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

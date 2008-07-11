@@ -859,9 +859,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 603;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.03 ';
-  FtpClientId : String = 'ICS FTP Client V2.113 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 606;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.06 ';
+  FtpClientId : String = 'ICS FTP Client V6.06 ';   { V2.113 sent with CLNT command  }
 
 const
   BLOCK_SIZE       = 1460; { 1514 - TCP header size }
