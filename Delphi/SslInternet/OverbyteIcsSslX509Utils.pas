@@ -39,6 +39,9 @@ Legal issues: Copyright (C) 2007-2008 by François PIETTE
 History:
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 Jun 30, 2008 A.Garrels added some RSA and Blowfish crypto functions.
+Jul 11, 2008 v1.01 RTT <pdfe@oniduo.pt> contributed function CreateCertRequest(),
+             slightly modified by A. Garrels.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslX509Utils;
