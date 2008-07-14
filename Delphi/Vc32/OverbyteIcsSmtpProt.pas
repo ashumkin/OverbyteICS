@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.12
+Version:      6.13
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -69,6 +69,7 @@ How to use the HTML feature:
     of EmailFiles list. They will be shown as attached files.
 
 Updates:
+If not otherwise noted, changes are by Francois Piette
 Oct 25, 1997  Added the OnHeaderLine event to allow modification/deletion of
               header lines.
 Oct 26, 1997  V1.00 Released
@@ -306,9 +307,11 @@ Jun 28, 2008 V6.10  **Bracking Change** enum items "smtpTlsImplicite",
 Apr 25, 2008 V6.11  A.Garrels made some changes to prepare code for Unicode.
                     Fixed a bug that adds an additional blank line after an
                     attachment.
-May 15, 2008 V.6.12 A.Garrels type change of some published String properties
+May 15, 2008 V6.12  A.Garrels type change of some published String properties
                     to AnsiString.
-                    
+Jul 13, 2008 V6.13  F. Piette revised socket names used for debugging purpose
+                    A. Grrels fixed RcptToNext
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -1291,6 +1294,7 @@ begin
     AllocateHWnd;
     {FWSocket                := TWSocket.Create(nil);}                {AG/SSL}
     CreateSocket;                                                     {AG/SSL}
+    FWSocket.Name            := ClassName + '_Socket' + IntToStr(SafeWSocketGCount);
     FWSocket.OnSessionClosed := WSocketSessionClosed;
     FState                   := smtpReady;
     FRcptName                := TStringList.Create;
@@ -2394,6 +2398,7 @@ var
     srteAction   : TSmtpRcptToErrorAction;  {A.G. 1/3/05}
 begin
     if (FItemCount >= 0) and (FRequestResult <> 0) then  {A.G. 1/3/05 start} begin
+        srteAction := srteAbort; {A.G. 13/7/08}
         if Assigned(FOnRcptToError) then
             FOnRcptToError(Self, FRequestResult, FItemCount, srteAction);
         case srteAction of
@@ -2406,7 +2411,7 @@ begin
         end;
     end
     else  {A.G. 1/3/05 end}
-    Inc(FItemCount);
+        Inc(FItemCount);
 
     if FItemCount >= (FRcptName.Count - 1) then
         WhenDone := nil

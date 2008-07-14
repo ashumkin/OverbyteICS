@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.14
+Version:      6.15
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -615,7 +615,8 @@ May 15, 2008 V6.13 AGarrels type change of some published String properties
              string casts, only a few higher level components have been adjusted
              accordingly so far.
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
-Jul 04, 2008 Rev.58 SSL - Still lacked a few changes I made last year.
+Jul 04, 2008 V6.11 Rev.58 SSL - Still lacked a few changes I made last year.
+Jul 13, 2008 V6.12 Added SafeWSocketGCount
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -718,8 +719,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 614;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.14 ';
+  WSocketVersion            = 615;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.15 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -2553,6 +2554,10 @@ function WSocket_accept(s: TSocket; addr: PSockAddr; addrlen: PInteger): TSocket
 {$ENDIF}
 {$ENDIF}
 
+{$IFNDEF NO_ADV_MT}
+function SafeWSocketGCount : Integer;
+{$ENDIF}
+
 const
     WSocketGCount   : Integer = 0;
     WSocketGForced  : boolean = FALSE;
@@ -4009,6 +4014,15 @@ procedure SafeDecrementCount;
 begin
     _EnterCriticalSection(GWSockCritSect);
     Dec(WSocketGCount);
+    _LeaveCriticalSection(GWSockCritSect);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function SafeWSocketGCount : Integer;
+begin
+    _EnterCriticalSection(GWSockCritSect);
+    Result := WSocketGCount;
     _LeaveCriticalSection(GWSockCritSect);
 end;
 {$ENDIF}

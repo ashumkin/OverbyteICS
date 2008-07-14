@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      6.05
+Version:      6.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -63,6 +63,7 @@ Authentication:
   Use the OnAuthResult event to log authentication success or failure. 
 
 History:
+If not otherwise noted, changes are by Francois Piette
 Nov 12, 1999 Beta 3 Added Linger properties
 Apr 23, 2000 Beta 4 Added Delphi 1 compatibility
              Made everything public in THttpConnection because BCB has problems
@@ -209,7 +210,8 @@ Apr 30, 2008 V6.04 A. Garrels - Function names adjusted according to changes in
              OverbyteIcsLibrary.pas
 May 15, 2008 V6.05 A. Garrels added function StreamReadStrA.
              Some type changes from String to AnsiString of published properties.
-             
+Jul 13, 2008 V6.06 Revised socket names used for debugging purpose
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -282,8 +284,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 605;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.05 ';
+    THttpServerVersion = 606;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.06 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -1297,6 +1299,7 @@ constructor THttpServer.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
     CreateSocket;
+    FWSocketServer.Name := ClassName + '_SrvSocket' + _IntToStr(SafeWSocketGCount);
     FClientClass   := THttpConnection;
     FOptions       := [];
     FAddr          := '0.0.0.0';

@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      6.05
+Version:      6.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2007 by François PIETTE
+Legal issues: Copyright (C) 1998-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -40,6 +40,7 @@ Legal issues: Copyright (C) 1998-2007 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+If not otherwise noted, changes are by Francois Piette
 Apr 29, 1998  V0.90 released for beta testing.
 May 01, 1998  V0.92 Adapted for Delphi 1.0
 May 03, 1998  V0.93 Adapted for Delphi 2.0 and C++Builder
@@ -311,8 +312,10 @@ May 12, 2008 v6.05 A. Garrels changed call of GetTempPath in constructor.
 Jul 11, 2008 V6.03 Angus fixed 'Unicode' bug introduced in V6.01 that stopped PORT command working
              (Just the change log from v6 added here and minor cosmetic changes
               to keep both verions in sync, this issue was already fixed in v7)
- 
-             
+Jul 13, 2008 V6.04 Revised socket names used for debugging purpose
+                   Added ListenBackLog property
+
+
 Angus pending -
 CRC on the fly
 MD5 on the fly for downloads if not cached already
@@ -402,8 +405,8 @@ uses
     OverbyteIcsLibrary;    { AG V6.04 }
 
 const
-    FtpServerVersion         = 605;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.05 ';
+    FtpServerVersion         = 606;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.06 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
 
 type
@@ -544,6 +547,7 @@ type
     protected
         FAddr                   : AnsiString;
         FPort                   : AnsiString;
+        FListenBackLog          : Integer;
         FBanner                 : String;
         FServSocket             : TWSocket;
         FClientClass            : TFtpCtrlSocketClass;
@@ -1045,6 +1049,8 @@ type
                                                       write SetAddr;
         property  Port                   : AnsiString read  GetPort
                                                       write SetPort;
+        property  ListenBackLog          : Integer    read  FListenBackLog
+                                                      write FListenBackLog;
         property  Banner                 : String     read  FBanner
                                                       write FBanner;
         property  UserData               : LongInt    read  FUserData
@@ -1722,12 +1728,13 @@ begin
     //FWindowHandle       := ftpsrvAllocateHWnd(WndProc);
     AllocateHWnd;
     FServSocket         := TWSocket.Create(Self);
-    FServSocket.Name    := 'ServerWSocket';
+    FServSocket.Name    := ClassName + '_SrvSocket' + IntToStr(SafeWSocketGCount); 
     FClientList         := TList.Create;
     FPort               := 'ftp';
     FAddr               := '0.0.0.0';
     FBanner             := msgDftBanner;
     FClientClass        := TFtpCtrlSocket;
+    FListenBackLog      := 5;
     FOptions            := [ftpsThreadRecurDirs, ftpsSiteXmlsd] ;   { angus V1.54 }
     FMd5UseThreadFileSize   := 0;  { AG V1.50 }
     FTimeoutSecsLogin   := 60;      { angus V1.54 }
@@ -1985,9 +1992,10 @@ begin
 {$ENDIF}
     if FServSocket.State = wsListening then
         Exit;             { Server is already running }
-    FServSocket.Port  := Port;
-    FServSocket.Proto := 'tcp';
-    FServSocket.Addr  := FAddr;
+    FServSocket.Port               := Port;
+    FServSocket.Proto              := 'tcp';
+    FServSocket.Addr               := FAddr;
+    FServSocket.ListenBacklog      := FListenBackLog;
     FServSocket.OnSessionAvailable := ServSocketSessionAvailable;
     FServSocket.OnChangeState      := ServSocketStateChange;
     FServSocket.ComponentOptions   := [wsoNoReceiveLoop];
@@ -2115,8 +2123,8 @@ begin
     Inc(FClientNum);
     Client                 := FClientClass.Create(Self);
     FClientList.Add(Client);
-    Client.Name            := 'ClientWSocket' + IntToStr(FClientNum);
-    Client.DataSocket.Name := 'DataWSocket' + IntToStr(FClientNum);
+    Client.Name            := Name + '_ClientWSocket' + IntToStr(FClientNum);
+    Client.DataSocket.Name := Name + '_DataWSocket'   + IntToStr(FClientNum);
     Client.ID              := FClientNum;
     Client.Banner          := FBanner;
     Client.HSocket         := ServSocket.Accept;
