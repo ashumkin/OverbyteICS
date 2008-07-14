@@ -9,7 +9,7 @@ Description:  A small utility to export SSL certificate from IE certificate
               Make use of OpenSSL (http://www.openssl.org)
               Make use of the Jedi CryptoAPI2
               (http://delphi-jedi.org/Jedi:APILIBRARY:172871)(CryptoAPI2.zip).
-Version:      1.08
+Version:      1.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -56,6 +56,7 @@ Jun 30, 2008 V1.06 A.Garrels made some changes to prepare SSL code for Unicode.
 Jun 30, 2008 V1.07 Some RSA and Blowfish crypto functions.
 Jul 14, 2008 V1.08 Paul <paul.blommaerts@telenet.be> added an option to import
              Windows certificates to a single file (CA bundle).
+Jul 15, 2008 V1.09 Made one change to prepare SSL code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPemtool1;
@@ -83,10 +84,10 @@ uses
   OverbyteIcsLibeayEx, OverbyteIcsSslX509Utils, OverByteIcsMimeUtils;
 
 const
-     PemToolVersion     = 105;
-     PemToolDate        = 'Aug 07, 2007';
+     PemToolVersion     = 109;
+     PemToolDate        = 'July 15, 2008';
      PemToolName        = 'PEM Certificate Tool';
-     CopyRight : String = '(c) 2003-2007 Arno Garrels V1.05 ';
+     CopyRight : String = '(c) 2003-2008 Arno Garrels V1.09 ';
      CaptionMain        = 'ICS PEM Certificate Tool - ';
      WM_APPSTARTUP      = WM_USER + 1;
 
@@ -843,7 +844,7 @@ begin
              1 : BundleFilename := BundlePath + 'RootCaCertsBundle.pem';
              2 : BundleFilename := BundlePath + 'MyCertsBundle.pem';
          end;
-         BundleBio := f_BIO_new_file(PChar(BundleFilename), PChar('w+'));
+         BundleBio := f_BIO_new_file(Pointer(AnsiString(BundleFilename)), PAnsiChar('w+'));
      end;
 
     { Enum all the certs in the store and store them in PEM format }
