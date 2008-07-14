@@ -3,7 +3,7 @@
 Author:       Arno Garrels
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.06
+Version:      1.07
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -47,8 +47,9 @@ May 19, 2008 V1.05 AGarrels added BOM-support to StreamWriteString plus two
              overloads. Made UnicodeString a type alias of WideString in compiler
              versions < COMPILER12 in order to enable use of some conversion
              routines for older compilers as well.
-May 19, 2008 V1.05 Don't check actual string codepage but assume UTF-16 Le
+May 19, 2008 V1.06 Don't check actual string codepage but assume UTF-16 Le
              in function StreamWriteString() (temp fix).
+Jul 14, 2008 V1.07 atoi improved, should be around 3 times faster.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -458,6 +459,7 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 function atoi(const Str: AnsiString): Integer;
 var
     I : Integer;
@@ -471,8 +473,32 @@ begin
         I := I + 1;
     end;
 end;
+*)
+
+{ This one is around 3-4 times faster } { AG }
+function atoi(const Str : AnsiString): Integer;
+var
+    P : PAnsiChar;
+begin
+    Result := 0;
+    P := Pointer(Str);
+    if P = nil then
+        Exit;
+    while P^ = #$20 do Inc(P);
+    while True do
+    begin
+        case P^ of
+            '0'..'9' : Result := Result * 10 + Byte(P^) - Byte('0');
+        else
+            Exit;
+        end;
+        Inc(P);
+    end;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 function atoi(const Str: UnicodeString): Integer;
 var
     I : Integer;
@@ -486,10 +512,33 @@ begin
         I := I + 1;
     end;
 end;
+*)
+
+{ This one is around 3-4 times faster } { AG }
+function atoi(const Str : UnicodeString): Integer;
+var
+    P : PWideChar;
+begin
+    Result := 0;
+    P := Pointer(Str);
+    if P = nil then
+        Exit;
+    while P^ = #$0020 do Inc(P);
+    while True do
+    begin
+        case P^ of
+            '0'..'9' : Result := Result * 10 + Ord(P^) - Ord('0');
+        else
+            Exit;
+        end;
+        Inc(P);
+    end;
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF STREAM64}
+(*
 function atoi64(const Str: AnsiString): Int64;
 var
     I : Integer;
@@ -503,8 +552,32 @@ begin
         I := I + 1;
     end;
 end;
+*)
+
+{ This one is around 3-4 times faster } { AG }
+function atoi64(const Str : AnsiString): Int64;
+var
+    P : PAnsiChar;
+begin
+    Result := 0;
+    P := Pointer(Str);
+    if P = nil then
+        Exit;
+    while P^ = #$20 do Inc(P);
+    while True do
+    begin
+        case P^ of
+            '0'..'9' : Result := Result * 10 + Byte(P^) - Byte('0');
+        else
+            Exit;
+        end;
+        Inc(P);
+    end;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 function atoi64(const Str: UnicodeString): Int64;
 var
     I : Integer;
@@ -518,7 +591,30 @@ begin
         I := I + 1;
     end;
 end;
+*)
+
+{ This one is around 3-4 times faster } { AG }
+function atoi64(const Str : UnicodeString): Int64;
+var
+    P : PWideChar;
+begin
+    Result := 0;
+    P := Pointer(Str);
+    if P = nil then
+        Exit;
+    while P^ = #$0020 do Inc(P);
+    while True do
+    begin
+        case P^ of
+            '0'..'9' : Result := Result * 10 + Ord(P^) - Ord('0');
+        else
+            Exit;
+        end;
+        Inc(P);
+    end;
+end;
 {$ENDIF}
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 end.
