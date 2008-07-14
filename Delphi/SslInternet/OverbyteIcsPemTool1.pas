@@ -9,7 +9,7 @@ Description:  A small utility to export SSL certificate from IE certificate
               Make use of OpenSSL (http://www.openssl.org)
               Make use of the Jedi CryptoAPI2
               (http://delphi-jedi.org/Jedi:APILIBRARY:172871)(CryptoAPI2.zip).
-Version:      1.07
+Version:      1.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -54,6 +54,8 @@ Sep 11, 2003 V1.04 Test version for new IcsOpenSsl.DLL.
 Aug 07, 2007 V1.05 ICS-SSL V6 compatibility
 Jun 30, 2008 V1.06 A.Garrels made some changes to prepare SSL code for Unicode.
 Jun 30, 2008 V1.07 Some RSA and Blowfish crypto functions.
+Jul 14, 2008 V1.08 Paul <paul.blommaerts@telenet.be> added an option to import
+             Windows certificates to a single file (CA bundle).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPemtool1;
@@ -156,6 +158,7 @@ type
     N5: TMenuItem;
     N6: TMenuItem;
     MMExtrasDecryptFileBlowfish: TMenuItem;
+    CheckBoxWriteToBundle: TCheckBox;
     procedure btnImportClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -769,12 +772,16 @@ var
      pwszSystemName  : LPCWSTR;
      X               : TX509Base;
      Subject_Hash    : Cardinal;
+     BundleBio       : PBIO;          // added
      FileName        : String;
      Path            : String;
+     BundleFilename  : String;        // added
+     BundlePath      : String;        // added
      Count           : Integer;
 begin
     Count := 0;
     pCertContext := nil;
+    BundleBio    := nil;
     Path  := Trim(DestDirEdit.Text);
 
     if (Path = '') or (not DirectoryExists(Path)) then begin
@@ -827,6 +834,18 @@ begin
         Exit;
     end;
 
+    if CheckBoxWriteToBundle.Checked then begin
+         BundlePath:= IncludeTrailingPathDelimiter(Path) + 'Bundled certs';
+         ForceDirectories(BundlePath);
+         BundlePath:= IncludeTrailingPathDelimiter(BundlePath);
+         case ComboBoxStoreType.ItemIndex of
+             0 : BundleFilename := BundlePath + 'CaCertsBundle.pem';
+             1 : BundleFilename := BundlePath + 'RootCaCertsBundle.pem';
+             2 : BundleFilename := BundlePath + 'MyCertsBundle.pem';
+         end;
+         BundleBio := f_BIO_new_file(PChar(BundleFilename), PChar('w+'));
+     end;
+
     { Enum all the certs in the store and store them in PEM format }
     pCertContext := CertEnumCertificatesInStore(hSystemStore, pCertContext);
     LoadSsl; // Need to load the libraries here since it may be required for the call of f_d2i_X509()
@@ -843,11 +862,16 @@ begin
                         FileName := FindPemFileName(FileName);
                 X.SaveToPemFile(FileName);
                 Inc(Count);
+                // save to bundle also
+                if (Assigned(BundleBio)) and (CheckBoxWriteToBundle.Checked) then
+                    f_PEM_write_bio_X509(BundleBio, X.X509);
             end;
             pCertContext := CertEnumCertificatesInStore(hSystemStore, pCertContext);
         end;
         ShowMessage(IntToStr(Count) + ' Certificates exported.');
     finally
+        if Assigned(BundleBio) then
+            f_BIO_free(BundleBio);
         X.Free;
         UnloadSsl;
         if pCertContext <> nil then
@@ -1235,5 +1259,4 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 end.
