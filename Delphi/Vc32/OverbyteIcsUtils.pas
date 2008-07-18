@@ -1,9 +1,9 @@
 {*_* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-Author:       Arno Garrels
+Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.07
+Version:      1.08
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -33,8 +33,8 @@ Legal issues: Copyright (C) 2002-2008 by François PIETTE
                  distribution.
 
               4. You must register this software by sending a picture postcard
-                 to the author. Use a nice stamp and mention your name, street
-                 address, EMail address and any comment you like to say.
+                 to Francois PIETTE. Use a nice stamp and mention your name,
+                 street address, EMail address and any comment you like to say.
 
 History:
 Apr 25, 2008 V1.00 AGarrels added first functions UnicodeToAscii, UnicodeToAnsi,
@@ -50,6 +50,10 @@ May 19, 2008 V1.05 AGarrels added BOM-support to StreamWriteString plus two
 May 19, 2008 V1.06 Don't check actual string codepage but assume UTF-16 Le
              in function StreamWriteString() (temp fix).
 Jul 14, 2008 V1.07 atoi improved, should be around 3 times faster.
+Jul 17, 2008 V1.08 Added OverbyteIcsTypes to the uses clause and removed
+             SysUtils, removed some defines for unsupported old compilers.
+             StreamWriteString should work with WideStrings as well with old
+             compilers.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -60,6 +64,8 @@ interface
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
+{$H+}           { Use long strings                    }
+{$J+}           { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER12_UP}
     {$WARN IMPLICIT_STRING_CAST       OFF}
@@ -72,18 +78,14 @@ interface
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
-{$IFNDEF VER80}   { Not for Delphi 1                    }
-    {$H+}         { Use long strings                    }
-    {$J+}         { Allow typed constant to be modified }
-{$ENDIF}
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
 
 uses
     Windows,
-    SysUtils,
-    Classes;
+    Classes,
+    OverbyteIcsTypes; // for TBytes
 
 {$IFNDEF COMPILER12_UP}
 type
@@ -98,13 +100,11 @@ function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal): AnsiStri
 function  UnicodeToAnsi(const Str: UnicodeString): AnsiString; overload;
 function  AnsiToUnicode(const Str: AnsiString; ACodePage: Cardinal): UnicodeString; overload;
 function  AnsiToUnicode(const Str: AnsiString): UnicodeString; overload;
-{$IFDEF COMPILER12_UP}
 function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
 function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; overload;
 function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
 function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal): Integer; overload;
 function  StreamWriteString(AStream: TStream; const Str: UnicodeString): Integer; overload;
-{$ENDIF}
 function  IsUsAscii(const Str: AnsiString): Boolean; overload;
 function  IsUsAscii(const Str: UnicodeString): Boolean; overload;
 procedure IcsAppendStr(var Dest: AnsiString; const Src: AnsiString);
@@ -115,15 +115,7 @@ function  atoi64(const Str: AnsiString): Int64; overload;
 function  atoi64(const Str: UnicodeString): Int64; overload;
 {$ENDIF}
 
-
 implementation
-
-{$IFNDEF COMPILER12_UP}
-{$IFDEF WIN32}
-type
-    TBytes = array of Byte;
-{$ENDIF}
-{$ENDIF}
 
 const
     DefaultFailChar : AnsiChar = '_';
@@ -222,7 +214,7 @@ begin
     Len := Length(Str);
     if Len > 0 then begin
         Len := MultiByteToWideChar(ACodePage, 0, Pointer(Str),
-                               Len, nil, 0);
+                                   Len, nil, 0);
         SetLength(Result, Len);
         if Len > 0 then
             MultiByteToWideChar(ACodePage, 0, Pointer(Str), Length(Str),
@@ -309,7 +301,7 @@ begin
 end;
 *)
 
-{$IFDEF COMPILER12_UP}
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Assumes that the string is a Windows, UTF-16 little endian wide string      }
 function StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer;
@@ -370,7 +362,7 @@ begin
     begin // No conversion needed
         if Bom <> nil then
             AStream.Write(Bom[0], Length(Bom));
-        Result := AStream.Write(Pointer(Str)^, cLen * SizeOf(Char));
+        Result := AStream.Write(Pointer(Str)^, cLen * 2); //Use const char length 
     end
     else begin
         if Dump and Swap then
@@ -456,7 +448,7 @@ begin
     Result:= StreamWriteString(AStream, Pointer(Str), Length(Str),
                                ACodePage, FALSE);
 end;
-{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 (*
@@ -616,5 +608,4 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 end.
