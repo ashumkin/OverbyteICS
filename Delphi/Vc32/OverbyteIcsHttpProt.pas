@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      6.00.5
+Version:      6.00.6
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -388,36 +388,40 @@ Mar 19, 2007 V6.00.3 A.Garrels fixed a memory leak of FSendBuffer and
 May 27, 2008 V6.00.4 A.Garrels Workaround in GetHeaderLineNext. Ignore body data
              sent in the HEAD response by buggy servers.
 Jun 25, 2008 V6.00.5 A. Garrels SSL code merged.
+Jul 17, 2008 V6.00.6 A. Garrels made a few changes to prepare code for Unicode,
+             added OverbyteIcsUtils to the uses clause, optimized
+             MoveTBytesToString a bit, removed some stuff for older compilers,
+             removed typedef of TBytes, now uses TBytes of OverbyteIcsTypes.pas.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpProt;
 
 interface
 
-{$B-}             { Enable partial boolean evaluation   }
-{$T-}             { Untyped pointers                    }
-{$X+}             { Enable extended syntax              }
 {$I OverbyteIcsDefs.inc}
+
+{$IFNDEF COMPILER7_UP}
+    'Sorry, we do not want to support ancient compilers any longer'
+{$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
-{$IFDEF COMPILER2_UP}  { Not for Delphi 1                    }
-    {$H+}         { Use long strings                    }
-    {$J+}         { Allow typed constant to be modified }
-{$ENDIF}
+{$B-}             { Enable partial boolean evaluation   }
+{$T-}             { Untyped pointers                    }
+{$X+}             { Enable extended syntax              }
+{$H+}             { Use long strings                    }
+{$J+}             { Allow typed constant to be modified }
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
-{$IFDEF COMPILER5_UP}
 {$IFNDEF NO_ADVANCED_HTTP_CLIENT_FEATURES}
     {$DEFINE UseNTLMAuthentication}
     {$DEFINE UseBandwidthControl}
     {$DEFINE UseContentCoding}
-{$ENDIF}                                    
 {$ENDIF}
-
 {$IFDEF CLR}
     {$UNDEF UseNTLMAuthentication}
     {$UNDEF UseContentCoding}
@@ -452,23 +456,17 @@ uses
     OverbyteIcsLogger,
 {$ENDIF}
     OverbyteIcsUrl, OverbyteIcsTypes,
+{$IFDEF COMPILER12_UP}
+    OverbyteIcsUtils,
+{$ENDIF}
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
     HttpCliVersion       = 600;
-    CopyRight : String   = ' THttpCli (c) 1997-2008 F. Piette V6.00.5 ';
+    CopyRight : String   = ' THttpCli (c) 1997-2008 F. Piette V6.00.6 ';
     DefaultProxyPort     = '80';
-{$IFDEF DELPHI1}
-    { Delphi 1 has a 255 characters string limitation }
-    HTTP_RCV_BUF_SIZE    = 255;
-    HTTP_SND_BUF_SIZE    = 8193;
-{$ELSE}
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
-{$ENDIF}
-    //WM_HTTP_REQUEST_DONE = WM_USER + 1;
-    //WM_HTTP_SET_READY    = WM_USER + 2;
-    //WM_HTTP_LOGIN        = WM_USER + 3;
     { EHttpException error code }
     httperrNoError                  = 0;
     httperrBusy                     = 1;
@@ -487,7 +485,7 @@ type
         constructor Create(const Msg : String; ErrCode : Word);
     end;
 
-    TBytes = array of Byte;
+    // TBytes = array of Byte;
 
     THttpEncoding    = (encUUEncode, encBase64, encMime);
     THttpRequest     = (httpABORT, httpGET, httpPOST, httpPUT,
@@ -582,7 +580,7 @@ type
         FConnection           : String;         { for Keep-alive }
         FProxyConnection      : String;         { for proxy keep-alive }
         FCurrConnection       : String;
-        FCurrProxyConnection  : String;   
+        FCurrProxyConnection  : String;
         FAgent                : String;
         FAccept               : String;
         FAcceptLanguage       : String;
@@ -1094,56 +1092,6 @@ begin
 {$ENDIF}
                        ]);
 end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF DELPHI1}
-function TrimRight(Str : String) : String;
-var
-    i : Integer;
-begin
-    i := Length(Str);
-    while (i > 0) and (Str[i] in [' ', #9]) do
-        i := i - 1;
-    Result := Copy(Str, 1, i);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TrimLeft(Str : String) : String;
-var
-    i : Integer;
-begin
-    if Str[1] <> ' ' then
-        Result := Str
-    else begin
-        i := 1;
-        while (i <= Length(Str)) and (Str[i] = ' ') do
-            i := i + 1;
-        Result := Copy(Str, i, Length(Str) - i + 1);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Trim(Str : String) : String;
-begin
-    Result := TrimLeft(TrimRight(Str));
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF DELPHI5_UP}
-function StrToIntDef(const S: String; const Default: Integer): Integer;
-begin
-    try
-        Result := StrToInt(S);
-    except
-        Result := Default;
-    end;
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2141,8 +2089,13 @@ begin
     if Assigned(FOnCommand) then
         FOnCommand(Self, Buf);
     if Length(Buf) > 0 then
+{$IFDEF COMPILER12_UP}
+        StreamWriteString(FReqStream, Buf, CP_ACP);
+    StreamWriteString(FReqStream, CRLF, CP_ACP);
+{$ELSE}
         FReqStream.Write(Buf[1], Length(Buf));
     FReqStream.Write(CRLF[1], 2);
+{$ENDIF}
 end;
 {$ENDIF}
 
@@ -2525,21 +2478,29 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ If UNICODE is defined each byte in Buffer must be ASCII (ord < 128) ! }
 procedure MoveTBytesToString(
-    var Buffer : TBytes;
-    OffsetFrom : Integer;
-    var Dest   : String;
-    OffsetTo   : Integer;
-    Count      : Integer);
+    const Buffer : TBytes;
+    OffsetFrom   : Integer;
+    var Dest     : String;
+    OffsetTo     : Integer;
+    Count        : Integer);
+{$IFDEF UNICODE}
+var
+    PSrc  : PByte;
+    PDest : PChar;
 begin
-{$IFDEF CLR}
+    PSrc  := Pointer(Buffer);
+    PDest := Pointer(Dest);
+    Dec(OffsetTo); // String index!
     while Count > 0 do begin
-        Dest[OffsetTo] := Char(Buffer[OffsetFrom]);
+        PDest[OffsetTo] := Char(PSrc[OffsetFrom]);
         Inc(OffsetTo);
         Inc(OffsetFrom);
         Dec(Count);
     end;
 {$ELSE}
+begin
     Move(Buffer[OffsetFrom], Dest[OffsetTo], Count);
 {$ENDIF}
 end;
@@ -3463,17 +3424,17 @@ begin
         { "HTTP/1.0 200 Connection established<CRLF><CRLF>"             }
     {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loProtSpecInfo) then  { V1.91 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loProtSpecInfo, 'Proxy connected: "' + PChar(FReceiveBuffer) + '"');
+            DebugLog(loProtSpecInfo, 'Proxy connected: "' + PAnsiChar(FReceiveBuffer) + '"');
     {$ENDIF}
         FProxyConnected := TRUE;
         if (
-           (StrLIComp(PChar(FReceiveBuffer), 'HTTP/1.0 200', 12) = 0) or
-           (StrLIComp(PChar(FReceiveBuffer), 'HTTP/1.1 200', 12) = 0) or
-           (StrLIComp(PChar(FReceiveBuffer), 'HTTP/1.0  200', 13) = 0) or // M$ Proxy Server 2.0
-           (StrLIComp(PChar(FReceiveBuffer), 'HTTP/1.1  200', 13) = 0)    // M$ Proxy Server 2.0 not tested ??
+           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.0 200'), 12) = 0) or
+           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.1 200'), 12) = 0) or
+           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.0  200'), 13) = 0) or // M$ Proxy Server 2.0
+           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.1  200'), 13) = 0)    // M$ Proxy Server 2.0 not tested ??
            ) and not
-           ((StrLIComp(PChar(FReceiveBuffer), 'HTTP/1.1 200 OK', 15) = 0) or
-           (StrLIComp(PChar(FReceiveBuffer), 'HTTP/1.0 200 OK', 15) = 0)) then
+           ((StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.1 200 OK'), 15) = 0) or
+           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.0 200 OK'), 15) = 0)) then
         begin
             { We have a connection to remote host thru proxy, we can start }
             { SSL handshake                                                }
@@ -3573,7 +3534,8 @@ begin
             else                                                  // FP 09/09/06
                 SetLength(FLastResponse, I);                      // FP 09/09/06
             if Length(FLastResponse) > 0 then                     // FP 09/09/06
-                MoveTBytesToString(FReceiveBuffer, 0, FLastResponse, 1, Length(FLastResponse)); // FP 09/09/06
+                MoveTBytesToString(FReceiveBuffer, 0,
+                        FLastResponse, 1, Length(FLastResponse)); // FP 09/09/06 
         end;                                                      // FP 09/09/06
 
 {$IFNDEF NO_DEBUG_LOG}

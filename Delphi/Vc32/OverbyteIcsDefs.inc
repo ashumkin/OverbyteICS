@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  Version defines for ICS (Internet Component Suite)
 Creation:     2003
-Version:      1.07
+Version:      1.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -568,6 +568,18 @@ Sept 2, 2005 V1.06 64-bit streams are Delphi 6 and later
 
 {$IFDEF WIN32}
   {$DEFINE VCL}
+{$ENDIF}
+
+{$IFDEF COMPILER12_UP}
+  {$IFNDEF BCB}
+    {$STRINGCHECKS OFF}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF CLR}
+  {$IFNDEF UNICODE} // it is probably defined in all .NET versions?
+      {$DEFINE UNICODE}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFNDEF FPC}             { Not for FPC ?                           }
