@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.01
+Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -53,6 +53,8 @@ Mar 03, 2007 A. Garrels: Small changes to support OpenSSL 0.9.8e.
 May 24, 2007 A.Garrels: Added code to handle ASN1 BMPString and Utf8 string
              types.
 Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
+Jul 18, 2008 A. Garrels made some changes to get rid of some string cast
+             warnings. 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -71,11 +73,11 @@ unit OverbyteIcsLIBEAY;
 interface
 
 uses
-    Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils;
+    Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils, OverbyteIcsLibrary;
 
 const
-    IcsLIBEAYVersion   = 100;
-    CopyRight : String = ' IcsLIBEAY (c) 2003-2007 F. Piette V1.00 ';
+    IcsLIBEAYVersion   = 102;
+    CopyRight : String = ' IcsLIBEAY (c) 2003-2008 F. Piette V1.02 ';
 
 type
     EIcsLibeayException = class(Exception);
@@ -1151,6 +1153,7 @@ var
     Offset : Integer;
     Str    : AnsiString;
     IntH, IntM : Integer;
+    Sign : Boolean;
 begin
     Result  := FALSE;
     UT      := MinDateTime;
@@ -1170,38 +1173,38 @@ begin
                     Exit;
             DecodeDate(Now, Y, M, D);
             YC := (Trunc(Y / 100) * 100);
-            Y := StrToInt(P[0] + P[1]);
+            Y := atoi(P[0] + P[1]);
             if Y < 50 then   { fix century }
                 Y := Y + YC
             else
                 Y := Y + YC - 100;
-            M := StrToInt(P[2] + P[3]);
+            M := atoi(P[2] + P[3]);
             if (M > 12) or (M < 1) then
                 Exit;
-            D := StrToInt(P[4] + P[5]);
-            H := StrToInt(P[6] + P[7]);
-            N := StrToInt(P[8] + P[9]);
+            D := atoi(P[4] + P[5]);
+            H := atoi(P[6] + P[7]);
+            N := atoi(P[8] + P[9]);
             { Do we have seconds? }
             if (P[10] in ['0'..'9']) and
                (P[11] in ['0'..'9']) then
-            S := StrToInt(P[10] + P[11]);
+            S := atoi(P[10] + P[11]);
         end else
         if Asn1Time^.Type_ = V_ASN1_GENERALIZEDTIME then begin
             if I < 12 then Exit;
             for I := 0 to 12 - 1 do
                 if not (P[I] in ['0'..'9']) then
                     Exit;
-            Y := StrToInt(P[0] + P[1] + P[2] + P[3]);
-            M := StrToInt(P[4] + P[5]);
+            Y := atoi(P[0] + P[1] + P[2] + P[3]);
+            M := atoi(P[4] + P[5]);
             if (M > 12) or (M < 1) then
                 Exit;
-            D := StrToInt(P[6] + P[7]);
-            H := StrToInt(P[8] + P[9]);
-            N := StrToInt(P[10] + P[11]);
+            D := atoi(P[6] + P[7]);
+            H := atoi(P[8] + P[9]);
+            N := atoi(P[10] + P[11]);
             { Do we have seconds? }
             if (P[12] in ['0'..'9']) and
                (P[13] in ['0'..'9']) then
-            S := StrToInt(P[12] + P[13]);
+            S := atoi(P[12] + P[13]);
         end else
             Exit;
         UT := EncodeDate(Y, M, D) + EncodeTime(H, N, S, 0);
@@ -1223,11 +1226,14 @@ begin
                     if P[I] in ['-', '+'] then
                     begin
                         if P[I] = '-' then
-                            StrECopy(PAnsiChar(Str), PAnsiChar(@P[I]))
+                            Sign := TRUE
                         else
-                            StrECopy(PAnsiChar(Str), PAnsiChar(@P[I + 1]));
+                            Sign := FALSE;
+                        StrECopy(PAnsiChar(Str), PAnsiChar(@P[I + 1]));
                         SetLength(Str, StrLen(PAnsiChar(Str)));
-                        Offset := StrToIntDef(Str, 0);
+                        Offset := atoi(Str);
+                        if Sign then
+                            Offset := -Offset;
                         if (Offset <> 0) and (Offset >= -1200) and
                            (Offset <= 1300) then begin
                             IntH := (Offset div 100);
@@ -1346,7 +1352,7 @@ begin
     SetLength(Result, Len * 3);
     I := 0;
     while I <= Len - 1 do begin
-        Item := IntToHex(Ord(Str[I]), 2) + ':';
+        Item := IcsIntToHexA(Ord(Str[I]), 2) + AnsiString(':');
         Move(Item[1], Result[I * 3 + 1], 3);
         Inc(I);
     end;
