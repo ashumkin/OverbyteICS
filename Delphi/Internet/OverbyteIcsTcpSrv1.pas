@@ -42,6 +42,7 @@ Oct 15, 2000 V1.02 Display remote and local socket binding when a client
                    connect.
 Nov 11, 2000 V1.03 Implemented OnLineLimitExceeded event
 Dec 15, 2001 V1.03 In command help changed #10#13 to the correct value #13#10.
+Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -195,7 +196,7 @@ end;
 { from FormShow event handler. Now UI is ready and visible.                 }
 procedure TTcpSrvForm.WMAppStartup(var Msg: TMessage);
 var
-    MyHostName : String;
+    MyHostName : AnsiString;
 begin
     Display(CopyRight);
     Display(OverbyteIcsWSocket.Copyright);
@@ -277,7 +278,8 @@ begin
         RcvdLine := ReceiveStr;
         { Remove trailing CR/LF }
         while (Length(RcvdLine) > 0) and
-              (RcvdLine[Length(RcvdLine)] in [#13, #10]) do
+              ((RcvdLine[Length(RcvdLine)] = #13) or
+               (RcvdLine[Length(RcvdLine)] = #10)) do
             RcvdLine := Copy(RcvdLine, 1, Length(RcvdLine) - 1);
         Display('Received from ' + GetPeerAddr + ': ''' + RcvdLine + '''');
         ProcessData(Sender as TTcpSrvClient);

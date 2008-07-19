@@ -38,6 +38,8 @@ Feb 27, 1999 V1.01 Added PTR lookup (reverse DNS lookup)
 Mar 07, 1999 V1.02 Adapted for Delphi 1
 May 29, 2005 V1.03 Added TCP/UDP protocol selection. Added version infos.
 Mar 26, 2006 V6.00 New version 6 started
+Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsNsLookup1;
@@ -51,7 +53,7 @@ uses
 
 const
   NsLookVersion      = 600;
-  CopyRight : String = ' NsLookup (c) 1999-2007 F. Piette V6.00 ';
+  CopyRight : String = ' NsLookup (c) 1999-2008 F. Piette V6.00 ';
 
 type
   TNsLookupForm = class(TForm)
@@ -162,7 +164,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNsLookupForm.DumpDnsResponse;
 var
-    P      : PChar;
+    P      : PAnsiChar;
     I      : Integer;
     Len    : Integer;
     Buf    : String;

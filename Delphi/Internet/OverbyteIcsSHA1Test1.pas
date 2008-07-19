@@ -37,6 +37,8 @@ Legal issues: Copyright (C) 2007 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 Updates:
+Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
+
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSHA1Test1;
@@ -99,7 +101,7 @@ begin
 
         for i := 0 to repeatcount[j]-1 do begin
             err := SHA1Input( sha,
-                              {$IFNDEF CLR}PChar{$ENDIF}(testarray[j]),
+                              {$IFNDEF CLR}PAnsiChar{$ENDIF}(testarray[j]),
                               length(testarray[j]) );
             if (err<>0) then begin
                ListBox1.Items.Add('SHA1Input Error ' + INtToStr(err));

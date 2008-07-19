@@ -42,6 +42,7 @@ Legal issues: Copyright (C) 2002-2008 by François PIETTE
 Updates:
 Jul 12, 2008 V6.00 A. Garrels - Bumped version number to 6.00 and slightly 
              modified to work with ICS v6.
+Jul 19, 2008 V6.00 F. Piette made small changes for Unicode
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 program OverbyteIcsConHttp;

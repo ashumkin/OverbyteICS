@@ -40,6 +40,8 @@ Legal issues: Copyright (C) 2001-2006 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 Updates:
+Jul 19, 2008 F.Piette made some changes for Unicode
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 program OverbyteIcsConFtp;
@@ -118,7 +120,7 @@ begin
     FFtpCli.OnRequestDone := FtpRequestDone;
 
     { Delete existing file }
-    DeleteFile(FFtpCli.LocalFileName);
+    _DeleteFile(FFtpCli.LocalFileName);
 
     { Start FTP transfert by connecting to the server }
     WriteLn('Connecting to ', FFtpCli.HostName, '/', FFtpCli.Port);
@@ -153,7 +155,7 @@ begin
 
     { Check status }
     if ErrorCode <> 0 then begin
-        WriteLn('Failed, error #' + IntToStr(ErrorCode));
+        WriteLn('Failed, error #' + _IntToStr(ErrorCode));
         FFtpCli.Abort;
         EndFlag := TRUE;
     end
@@ -190,7 +192,7 @@ begin
             end;
         else
             begin
-                WriteLn('Unknown FtpRequest ' + IntToStr(Ord(RqType)));
+                WriteLn('Unknown FtpRequest ' + _IntToStr(Ord(RqType)));
                 EndFlag := TRUE;
             end;
         end;
@@ -206,7 +208,7 @@ begin
         WriteLn('Hit ENTER key to return quit program...');
         ReadLn;
         { Break message loop we called from the execute method }
-        PostMessage(FFtpCli.ControlSocket.Handle, WM_QUIT, 0, 0);
+        _PostMessage(FFtpCli.ControlSocket.Handle, WM_QUIT, 0, 0);
     end;
 end;
 

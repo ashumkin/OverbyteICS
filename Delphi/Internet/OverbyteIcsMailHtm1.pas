@@ -43,6 +43,8 @@ Jul 18, 2004 V1.01 Revised for new property EmailImages (previous version
                    files.
 Mar 13, 2005 V1.02 Added confirm checkbox and related code.
 Aug 30, 2007 V6.03 ICS V6 compatible.
+Jul 19, 2008 V6.03 F.Piette made some changes for Unicode
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMailHtm1;
@@ -194,12 +196,23 @@ begin
         if CompareText(IniKey, Copy(Buf, 1, Length(IniKey))) <> 0 then
             Strings.Delete(nItem)
         else begin
+            case Buf[Length(IniKey) + 1] of
+            '0'..'9':
+                begin
+                    I := Pos('=', Buf);
+                    Strings.Strings[nItem] := Copy(Buf, I + 1, Length(Buf));
+                end;
+            else
+                Strings.Delete(nItem)
+            end;
+(*
             if not (Buf[Length(IniKey) + 1] in ['0'..'9']) then
                 Strings.Delete(nItem)
             else begin
                 I := Pos('=', Buf);
                 Strings.Strings[nItem] := Copy(Buf, I + 1, Length(Buf));
             end;
+*)
         end;
         Dec(nItem);
     end;
