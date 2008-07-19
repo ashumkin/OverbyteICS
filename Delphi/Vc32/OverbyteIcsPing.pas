@@ -60,7 +60,9 @@ Nov 10, 2002 V1.12 Changed argument name from Error to Status in OnEchoReply
 Jan 29, 2004 V1.13 Added ICMPDLLHandle property and made Ping method virtual.
 May 31, 2004 V1.14 Used ICSDEFS.INC
 Mar 26, 2006 V6.00 New version 6 started.
-
+Jul 19, 2008 V6.00 F. Piette made some changes for Unicode. Address, HostName
+                      and DnsResult properties made as an AnsiString.
+                      
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPing;
@@ -116,7 +118,7 @@ type
     FIcmp             : TICMP;
     FDnsLookupBuffer  : array [0..MAXGETHOSTSTRUCT] of char;
     FDnsLookupHandle  : THandle;
-    FDnsResult        : String;
+    FDnsResult        : AnsiString;
     FOnDnsLookupDone  : TDnsLookupDone;
     FOnEchoRequest    : TPingRequest;
     FOnEchoReply      : TPingReply;
@@ -128,8 +130,8 @@ type
     procedure   WndProc(var MsgRec: TMessage); override;
     procedure   HandleBackGroundException(E: Exception); override;
     procedure   WMAsyncGetHostByName(var msg: TMessage); virtual;
-    procedure   SetAddress(Value : String);
-    function    GetAddress : String;
+    procedure   SetAddress(Value : AnsiString);
+    function    GetAddress : AnsiString;
     procedure   SetSize(Value : Integer);
     function    GetSize : Integer;
     procedure   SetTimeout(Value : Integer);
@@ -137,7 +139,7 @@ type
     function    GetReply : TIcmpEchoReply;
     function    GetErrorCode : Integer;
     function    GetErrorString : String;
-    function    GetHostName : String;
+    function    GetHostName : AnsiString;
     function    GetHostIP : String;
     procedure   SetTTL(Value : Integer);
     function    GetTTL : Integer;
@@ -157,18 +159,18 @@ type
     constructor Create(Owner : TComponent); override;
     destructor  Destroy; override;
     function    Ping : Integer; virtual;
-    procedure   DnsLookup(HostName : String); virtual;
+    procedure   DnsLookup(HostName : AnsiString); virtual;
     procedure   CancelDnsLookup;
 
     property    Reply         : TIcmpEchoReply read GetReply;
     property    ErrorCode     : Integer        read GetErrorCode;
     property    ErrorString   : String         read GetErrorString;
-    property    HostName      : String         read GetHostName;
+    property    HostName      : AnsiString     read GetHostName;
     property    HostIP        : String         read GetHostIP;
-    property    DnsResult     : String         read FDnsResult;
+    property    DnsResult     : AnsiString     read FDnsResult;
     property    ICMPDLLHandle : HModule        read GetICMPHandle;
   published
-    property    Address     : String         read  GetAddress
+    property    Address     : AnsiString     read  GetAddress
                                              write SetAddress;
     property    Size        : Integer        read  GetSize
                                              write SetSize;
@@ -461,7 +463,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.DnsLookup(HostName : String);
+procedure TPing.DnsLookup(HostName : AnsiString);
 var
     IPAddr  : TInAddr;
 begin
@@ -492,7 +494,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.SetAddress(Value : String);
+procedure TPing.SetAddress(Value : AnsiString);
 begin
     if Assigned(FIcmp) then
         FIcmp.Address := Value;
@@ -500,7 +502,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TPing.GetAddress : String;
+function TPing.GetAddress : AnsiString;
 begin
     if Assigned(FIcmp) then
         Result := FIcmp.Address
@@ -612,7 +614,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TPing.GetHostName : String;
+function TPing.GetHostName : AnsiString;
 begin
     if Assigned(FIcmp) then
         Result := FIcmp.HostName
