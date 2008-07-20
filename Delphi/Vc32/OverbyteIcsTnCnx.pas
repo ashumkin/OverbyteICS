@@ -155,7 +155,7 @@ type
     FLocalEcho          : Boolean;
     Spga                : Boolean;
     FTType              : Boolean;
-    FBuffer             : array [0..2048] of char;
+    FBuffer             : array [0..2048] of AnsiChar;
     FBufferCnt          : Integer;
     FOnSessionConnected : TTnSessionConnected;
     FOnSessionClosed    : TTnSessionClosed;
@@ -169,11 +169,11 @@ type
     procedure SocketSessionClosed(Sender: TObject; Error : word);
     procedure SocketDataAvailable(Sender: TObject; Error : word);
     procedure Display(Str : String);
-    procedure AddChar(Ch : Char);
-    procedure ReceiveChar(Ch : Char);
-    procedure Answer(chAns : Char; chOption : Char);
+    procedure AddChar(Ch : AnsiChar);
+    procedure ReceiveChar(Ch : AnsiChar);
+    procedure Answer(chAns : AnsiChar; chOption : AnsiChar);
     procedure NegociateSubOption(strSubOption : String);
-    procedure NegociateOption(chAction : Char; chOption : Char);
+    procedure NegociateOption(chAction : AnsiChar; chOption : AnsiChar);
     procedure FlushBuffer;
     function  GetState : TSocketState;
   public
@@ -184,10 +184,10 @@ type
     function    SendStr(Data : String) : integer;
     procedure   Connect;
     function    IsConnected : Boolean;
-    procedure   WillOption(chOption : Char);
-    procedure   WontOption(chOption : Char);
-    procedure   DontOption(chOption : Char);
-    procedure   DoOption(chOption : Char);
+    procedure   WillOption(chOption : AnsiChar);
+    procedure   WontOption(chOption : AnsiChar);
+    procedure   DontOption(chOption : AnsiChar);
+    procedure   DoOption(chOption : AnsiChar);
     procedure   Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure   Close;
     procedure   Pause;
@@ -384,7 +384,7 @@ end;
 procedure TTnCnx.SocketDataAvailable(Sender: TObject; Error : word);
 var
     Len, I : Integer;
-    Buffer : array [1..2048] of char;
+    Buffer : array [1..2048] of AnsiChar;
     Socket : TWSocket;
 begin
     Socket := Sender as TWSocket;
@@ -425,7 +425,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.Answer(chAns : Char; chOption : Char);
+procedure TTnCnx.Answer(chAns : AnsiChar; chOption : AnsiChar);
 var
     Buf   : String[3];
 begin
@@ -436,28 +436,28 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.WillOption(chOption : Char);
+procedure TTnCnx.WillOption(chOption : AnsiChar);
 begin
     Answer(TNCH_WILL, chOption);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.WontOption(chOption : Char);
+procedure TTnCnx.WontOption(chOption : AnsiChar);
 begin
     Answer(TNCH_WONT, chOption);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.DontOption(chOption : Char);
+procedure TTnCnx.DontOption(chOption : AnsiChar);
 begin
     Answer(TNCH_DONT, chOption);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.DoOption(chOption : Char);
+procedure TTnCnx.DoOption(chOption : AnsiChar);
 begin
     Answer(TNCH_DO, chOption);
 end;
@@ -490,7 +490,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.NegociateOption(chAction : Char; chOption : Char);
+procedure TTnCnx.NegociateOption(chAction : AnsiChar; chOption : AnsiChar);
 var
     Buf : String;
 begin
@@ -569,7 +569,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTnCnx.FlushBuffer;
 var
-    Buffer : PChar;
+    Buffer : PAnsiChar;
     Count  : Integer;
 begin
     try
@@ -605,7 +605,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.AddChar(Ch : Char);
+procedure TTnCnx.AddChar(Ch : AnsiChar);
 begin
     FBuffer[FBufferCnt] := Ch;
     Inc(FBufferCnt);
@@ -615,12 +615,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTnCnx.ReceiveChar(Ch : Char);
+procedure TTnCnx.ReceiveChar(Ch : AnsiChar);
 const
-    bIAC         : Boolean = FALSE;
-    chVerb       : Char    = #0;
-    strSubOption : String  = '';
-    bSubNegoc    : Boolean = FALSE;
+    bIAC         : Boolean  = FALSE;
+    chVerb       : AnsiChar = #0;
+    strSubOption : String   = '';
+    bSubNegoc    : Boolean  = FALSE;
 begin
     if chVerb <> #0 then begin
         NegociateOption(chVerb, Ch);

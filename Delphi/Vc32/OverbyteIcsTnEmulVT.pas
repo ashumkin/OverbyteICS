@@ -434,7 +434,7 @@ begin
 
     for I := 0 to Len - 1 do begin
         try
-            WriteChar((PChar(Buffer) + I)^);
+            WriteChar((PAnsiChar(Buffer) + I)^);
         except
             Break;
         end;
@@ -644,12 +644,16 @@ end;
 procedure TTnEmulVT.KeyPress(var Key: Char);
 begin
     inherited KeyPress(Key);
+{$IFDEF SizeOf(Char) <> 1}
+    if Ord(Key) > 255 then
+        raise Exception.Create('TTnEmulVT.KeyPress detected a non-ansi char');
+{$ENDIF}
     if FUpperLock and (Key >= 'a') and (Key <= 'z') then
         Key := chr(ord(Key) and $DF);
     if Key <> #0 then begin
         try
             if FLocalEcho then
-                WriteChar(Key);
+                WriteChar(AnsiChar(Key));
             if Assigned(FTnCnx) then
                 FTnCnx.Send(@Key, 1);
         except
@@ -794,7 +798,11 @@ begin
             Break;
         Line := Screen.FLines^[Rows - 1 - nRow];
         for nCol := StartCol to StopCol do begin
+{$IF SizeOf(Line.Txt[0]) <> 1}
             Buffer[0] := Line.Txt[nCol];
+{$ELSE}
+            Buffer[0] := Char(Line.Txt[nCol]);
+{$IFEND}
             Inc(Buffer);
             Dec(BufSize);
             Inc(nCnt);

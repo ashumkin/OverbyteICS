@@ -5,7 +5,7 @@ Description:  Delphi component which does Ansi terminal emulation
               Not every escape sequence is implemented, but a large subset.
 Author:       François PIETTE
 Creation:     May, 1996
-Version:      6.02
+Version:      6.03
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -82,7 +82,10 @@ Mar 26, 2006 V6.00 New version 6 started from V5
 Feb 12, 2008 V6.01 Added LogFileName property so name and path can be changed
 Mar 24, 2008 V6.02 Francois Piette made some changes to prepare code
                    for Unicode.
-
+Jul 20, 2008 V6.03 F. Piette made some more changes for UniCode
+                   Currently the component works as AnsiChar emulator. More
+                   changes are needed to make it works as a full unicode
+                   emulator.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsEmulVT;
@@ -119,8 +122,8 @@ uses
     SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ClipBrd;
 
 const
-  EmulVTVersion      = 601;
-  CopyRight : String = ' TEmulVT (c) 1996-2008 F. Piette V6.01 ';
+  EmulVTVersion      = 603;
+  CopyRight : String = ' TEmulVT (c) 1996-2008 F. Piette V6.03 ';
   MAX_ROW            = 50;
   MAX_COL            = 160;
   NumPaletteEntries  = 16;
@@ -131,7 +134,7 @@ type
 
   TScreenOption   = (vtoBackColor, vtoCopyBackOnClear);
   TScreenOptions  = set of TScreenOption;
-  TXlatTable      = array [0..255] of char;
+  TXlatTable      = array [0..255] of AnsiChar;
   PXlatTable      = ^TXlatTable;
   TFuncKeyValue   = String[50];
   PFuncKeyValue   = ^TFuncKeyValue;
@@ -156,7 +159,10 @@ type
   { TLine is an object used to hold one line of text on screen }
   TLine = class(TObject)
   public
-    Txt : array [0..MAX_COL] of Char;
+    // The code is written with conditional compilation so that Txt can be
+    // either AnsiChar or Char. Eventually, it will be Char when the
+    // component fully support unicode
+    Txt : array [0..MAX_COL] of AnsiChar;
     Att : array [0..MAX_COL] of Byte;
     constructor Create;
     procedure   Clear(Attr : Byte);
@@ -199,10 +205,10 @@ type
     FCarbonMode      : Boolean;
     FXlatInputTable  : PXlatTable;
     FXlatOutputTable : PXlatTable;
-    FCharSetG0       : Char;
-    FCharSetG1       : Char;
-    FCharSetG2       : Char;
-    FCharSetG3       : Char;
+    FCharSetG0       : AnsiChar;
+    FCharSetG1       : AnsiChar;
+    FCharSetG2       : AnsiChar;
+    FCharSetG3       : AnsiChar;
     FAllInvalid      : Boolean;
     FInvRect         : TRect;
     FOnCursorVisible : TNotifyEvent;
@@ -216,13 +222,13 @@ type
     procedure   InvClear;
     procedure   SetLines(I : Integer; Value : TLine);
     function    GetLines(I : Integer) : TLine;
-    procedure   WriteChar(Ch : Char);
-    procedure   WriteStr(Str : String);
+    procedure   WriteChar(Ch : AnsiChar);
+    procedure   WriteStr(Str : AnsiString);
     function    ReadStr : String;
     procedure   GotoXY(X, Y : Integer);
-    procedure   WriteLiteralChar(Ch : Char);
-    procedure   ProcessEscape(EscCmd : Char);
-    procedure   SetAttr(Att : Char);
+    procedure   WriteLiteralChar(Ch : AnsiChar);
+    procedure   ProcessEscape(EscCmd : AnsiChar);
+    procedure   SetAttr(Att : AnsiChar);
     procedure   CursorRight;
     procedure   CursorLeft;
     procedure   CursorDown;
@@ -261,12 +267,12 @@ type
     procedure   ProcessCSI_P;                { Delete Character        }
     procedure   ProcessCSI_S;                { Scroll up               }
     procedure   ProcessCSI_T;                { Scroll down             }
-    procedure   process_charset_G0(EscCmd : Char);{ G0 character set   }
-    procedure   process_charset_G1(EscCmd : Char);{ G1 character set   }
-    procedure   process_charset_G2(EscCmd : Char);{ G2 character set   }
-    procedure   process_charset_G3(EscCmd : Char);{ G3 character set   }
-    procedure   UnimplementedEscape(EscCmd : Char);
-    procedure   InvalidEscape(EscCmd : Char);
+    procedure   process_charset_G0(EscCmd : AnsiChar);{ G0 character set   }
+    procedure   process_charset_G1(EscCmd : AnsiChar);{ G1 character set   }
+    procedure   process_charset_G2(EscCmd : AnsiChar);{ G2 character set   }
+    procedure   process_charset_G3(EscCmd : AnsiChar);{ G3 character set   }
+    procedure   UnimplementedEscape(EscCmd : AnsiChar);
+    procedure   InvalidEscape(EscCmd : AnsiChar);
     function    GetEscapeParam(From : Integer; var Value : Integer) : Integer;
     property    OnCursorVisible : TNotifyEvent read  FonCursorVisible
                                                write FOnCursorVisible;
@@ -364,10 +370,10 @@ type
     destructor  Destroy; override;
     procedure   ShowCursor;
     procedure   SetCursor(Row, Col : Integer);
-    procedure   WriteChar(Ch : Char);
-    procedure   WriteStr(Str : String);
+    procedure   WriteChar(Ch : AnsiChar);
+    procedure   WriteStr(Str : AnsiString);
     procedure   WriteBuffer(Buffer : Pointer; Len : Integer);
-    function    ReadStr : String;
+    function    ReadStr : AnsiString;
     procedure   CopyHostScreen;
     procedure   Clear;
     procedure   UpdateScreen;
@@ -395,7 +401,7 @@ type
     procedure   PaintOneLine(DC: HDC; Y, Y1 : Integer; const Line : TLine;
                              nColFrom : Integer; nColTo : Integer; Blank : Boolean);
     procedure   SetupFont;
-    property Text : String read ReadStr write WriteStr;
+    property Text : AnsiString read ReadStr write WriteStr;
     property OnMouseMove;
     property OnMouseDown;
     property OnMouseUp;
@@ -824,6 +830,24 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF UNICODE}
+procedure FillWChar(
+    const Txt : PWideChar;
+    ByteLen   : Integer;       // Number of BYTES !!
+    Value     : WideChar);
+var
+    I : Integer;
+begin
+    I := ByteLen div 2;
+    while I >= 0 do begin
+        Txt[I] := Value;
+        Dec(I);
+    end;
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ShiftStateToString(var State : TShiftState) : String;
 begin
     Result := '';
@@ -1087,7 +1111,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF WIN32}
-procedure SetLength(var S: string; NewLength: Integer);
+procedure SetLength(var S: String; NewLength: Integer);
 begin
     S[0] := chr(NewLength);
 end;
@@ -1098,7 +1122,11 @@ end;
 constructor TLine.Create;
 begin
     inherited Create;
+{$IF SizeOf(Txt[0]) <> 1}
+    FillWChar(Txt, SizeOf(Txt), ' ');
+{$ELSE}
     FillChar(Txt, SizeOf(Txt), ' ');
+{$IFEND}
     FillChar(Att, SizeOf(Att), Chr(F_WHITE));
 end;
 
@@ -1106,7 +1134,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TLine.Clear(Attr : Byte);
 begin
+{$IF SizeOf(Txt[0]) <> 1}
+    FillWChar(Txt, SizeOF(Txt), ' ');
+{$ELSE}
     FillChar(Txt, SizeOF(Txt), ' ');
+{$IFEND}
     FillChar(Att, SizeOf(Att), Attr);
 end;
 
@@ -1356,7 +1388,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.UnimplementedEscape(EscCmd : Char);
+procedure TScreen.UnimplementedEscape(EscCmd : AnsiChar);
 {var
     Buf : String;}
 begin
@@ -1367,7 +1399,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.InvalidEscape(EscCmd : Char);
+procedure TScreen.InvalidEscape(EscCmd : AnsiChar);
 {var
     Buf : String;}
 begin
@@ -1544,7 +1576,11 @@ end;
 procedure TScreen.Eol;
 begin
     with Lines[FRow] do begin
+{$IFDEF UNICODE}
+        FillWChar(@Txt[FCol], FColCount - FCol, ' ');
+{$ELSE}
         FillChar(Txt[FCol], FColCount - FCol, ' ');
+{$ENDIF}
         FillChar(Att[FCol], (FColCount - FCol) * SizeOf(Att[FCol]), FAttribute);
     end;
     InvRect(Frow, FCol);
@@ -2039,7 +2075,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.process_charset_G0(EscCmd : Char); { G0 character set     }
+procedure TScreen.process_charset_G0(EscCmd : AnsiChar); { G0 character set     }
 begin
     case EscCmd of
     '0': begin
@@ -2062,28 +2098,28 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.process_charset_G1(EscCmd : Char); { G1 character set     }
+procedure TScreen.process_charset_G1(EscCmd : AnsiChar); { G1 character set     }
 begin
     FCharSetG1 := EscCmd;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.process_charset_G2(EscCmd : Char); { G2 character set     }
+procedure TScreen.process_charset_G2(EscCmd : AnsiChar); { G2 character set     }
 begin
     FCharSetG2 := EscCmd;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.process_charset_G3(EscCmd : Char); { G2 character set     }
+procedure TScreen.process_charset_G3(EscCmd : AnsiChar); { G2 character set     }
 begin
     FCharSetG3 := EscCmd;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.ProcessEscape(EscCmd : Char);
+procedure TScreen.ProcessEscape(EscCmd : AnsiChar);
 begin
     if Length(FEscBuffer) = 0 then begin
         case EscCmd of
@@ -2154,7 +2190,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.WriteLiteralChar(Ch : Char);
+procedure TScreen.WriteLiteralChar(Ch : AnsiChar);
 var
     Line : TLine;
 begin
@@ -2170,10 +2206,14 @@ begin
     end;
 
     if FForceHighBit then
-        Ch := Chr(ord(ch) or $80);
+        Ch := AnsiChar(Ord(Ch) or $80);
 
     Line := Lines[FRow];
+{$IF SizeOf(Line.Txt[0]) <> 1}
+    Line.Txt[FCol] := WideChar(Ch);
+{$ELSE}
     Line.Txt[FCol] := Ch;
+{$IFEND}
     Line.Att[FCol] := FAttribute;
     InvRect(Frow, FCol);
 
@@ -2183,7 +2223,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TScreen.SetAttr(Att : Char);
+procedure TScreen.SetAttr(Att : AnsiChar);
 begin
      { Not implemented }
 end;
@@ -2192,9 +2232,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Write a single character at current cursor location.                      }
 { Update cursor position.                                                   }
-procedure TScreen.WriteChar(Ch : Char);
+procedure TScreen.WriteChar(Ch : AnsiChar);
 var
     bProcess : Boolean;
+    WCh      : Char;
 begin
     if FCntLiteral > 0 then begin
         if (FCntLiteral and 1) <> 0 then
@@ -2206,19 +2247,20 @@ begin
     end;
 
     if FNoXlat then
-        Ch := FXlatInputTable^[ord(Ch)];
+        Ch := FXlatInputTable^[Ord(Ch)];
 
+    WCh := Char(Ch);
     if FEscFLag then begin
         bProcess := FALSE;
         if (Length(FEscBuffer) = 0) and
-           IsCharInSysCharSet(Ch, ['D', 'M', 'E', 'H', '7', '8', '=', '>', '<']) then
+           IsCharInSysCharSet(WCh, ['D', 'M', 'E', 'H', '7', '8', '=', '>', '<']) then
              bProcess := TRUE
         else if (Length(FEscBuffer) = 1) and
            (FEscBuffer[1] in ['(', ')', '*', '+']) then
             bProcess := TRUE
-        else if IsCharInSysCharSet(Ch, ['0'..'9', ';', '?', ' ']) or
+        else if IsCharInSysCharSet(WCh, ['0'..'9', ';', '?', ' ']) or
                 ((Length(FEscBuffer) = 0) and
-                 IsCharInSysCharSet(ch, ['[', '(', ')', '*', '+'])) then begin
+                 IsCharInSysCharSet(WCh, ['[', '(', ')', '*', '+'])) then begin
             FEscBuffer := FEscBuffer + Ch;
             if Length(FEscBuffer) >= High(FEscBuffer) then begin
                 MessageBeep(MB_ICONASTERISK);
@@ -2277,7 +2319,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Write characters at current cursor location. Update cursor position.      }
-procedure TScreen.WriteStr(Str : String);
+procedure TScreen.WriteStr(Str : AnsiString);
 var
     I : Integer;
 begin
@@ -2380,7 +2422,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomEmulVT.WriteChar(Ch : Char);
+procedure TCustomEmulVT.WriteChar(Ch : AnsiChar);
 begin
     if FCaretCreated and FCaretShown then begin
         HideCaret(Handle);
@@ -2389,7 +2431,7 @@ begin
 
     if FLog then
         Write(FFileHandle, Ch);
-    FScreen.WriteChar(ch);
+    FScreen.WriteChar(Ch);
     if FAutoRepaint then
         UpdateScreen;
 {    SetCaret;   }
@@ -2397,7 +2439,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomEmulVT.WriteStr(Str : String);
+procedure TCustomEmulVT.WriteStr(Str : AnsiString);
 var
     I : Integer;
 begin
@@ -2418,7 +2460,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomEmulVT.WriteBuffer(Buffer : Pointer; Len : Integer);
+procedure TCustomEmulVT.WriteBuffer(
+    Buffer : Pointer;  // Actually assuming a PAnsiChar !
+    Len    : Integer);
 var
     I : Integer;
 begin
@@ -2430,7 +2474,7 @@ begin
     for I := 0 to Len - 1 do begin
         if FLog then
             Write(FFileHandle, PChar(Buffer)[I]);
-        FScreen.WriteChar(PChar(Buffer)[I]);
+        FScreen.WriteChar(PAnsiChar(Buffer)[I]);
     end;
     if FAutoRepaint then
         UpdateScreen;
@@ -2439,7 +2483,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomEmulVT.ReadStr : String;
+function TCustomEmulVT.ReadStr : AnsiString;
 begin
     Result := FScreen.ReadStr;
 end;
@@ -3127,12 +3171,16 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomEmulVT.KeyPress(var Key: Char);
 begin
+{$IFDEF SizeOf(Char) <> 1}
+    if Ord(Key) > 255 then
+        raise Exception.Create('TCustomEmulVT.KeyPress detected a non-ansi char');
+{$ENDIF}
     if not FScreen.FNoXlat then
-        Key := FScreen.FXlatOutputTable^[ord(Key)];
+        Key := Char(FScreen.FXlatOutputTable^[Ord(Key)]);
 
     inherited KeyPress(Key);
     if FLocalEcho then begin
-        WriteChar(Key);
+        WriteChar(AnsiChar(Key));
         if not FAutoRepaint then
             UpdateScreen;
     end;
@@ -3806,7 +3854,11 @@ begin
         if Blank then
            Ch := ' '
         else
+{$IF SizeOf(Line.Txt[0]) <> 1}
            Ch := Line.Txt[nColFrom + nChr];
+{$ELSE}
+           Ch := Char(Line.Txt[nColFrom + nChr]);
+{$IFEND}
         if FGraphicDraw and
            (FScreen.FXlatOutputTable = @ibm_iso8859_1_G0) and
            (Ch >= #$B0) and (Ch <= #$DF) and
