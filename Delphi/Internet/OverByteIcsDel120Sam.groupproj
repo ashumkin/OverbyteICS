@@ -3,7 +3,7 @@
 			<ProjectGuid>{46A19B27-9C01-4FF6-8028-72DD1EA77248}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
-			<Projects Include="..\Vc32\OverbyteIcsSslDel120Package.dproj">
+			<Projects Include="..\Vc32\OverbyteIcsDel120Package.dproj">
 				<Dependencies/>
 			</Projects>
 			<Projects Include="OverbyteIcsConFtp.dproj">
@@ -92,14 +92,14 @@
 				<Default.Personality/>
 			</BorlandProject>
 		</ProjectExtensions>
-		<Target Name="OverbyteIcsSslDel120Package">
-			<MSBuild Projects="..\Vc32\OverbyteIcsSslDel120Package.dproj"/>
+		<Target Name="OverbyteIcsDel120Package">
+			<MSBuild Projects="..\Vc32\OverbyteIcsDel120Package.dproj"/>
 		</Target>
-		<Target Name="OverbyteIcsSslDel120Package:Clean">
-			<MSBuild Targets="Clean" Projects="..\Vc32\OverbyteIcsSslDel120Package.dproj"/>
+		<Target Name="OverbyteIcsDel120Package:Clean">
+			<MSBuild Targets="Clean" Projects="..\Vc32\OverbyteIcsDel120Package.dproj"/>
 		</Target>
-		<Target Name="OverbyteIcsSslDel120Package:Make">
-			<MSBuild Targets="Make" Projects="..\Vc32\OverbyteIcsSslDel120Package.dproj"/>
+		<Target Name="OverbyteIcsDel120Package:Make">
+			<MSBuild Targets="Make" Projects="..\Vc32\OverbyteIcsDel120Package.dproj"/>
 		</Target>
 		<Target Name="OverbyteIcsConFtp">
 			<MSBuild Projects="OverbyteIcsConFtp.dproj"/>
@@ -336,13 +336,13 @@
 			<MSBuild Targets="Make" Projects="OverbyteIcsWebServ.dproj"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="OverbyteIcsSslDel120Package;OverbyteIcsConFtp;OverbyteIcsFtpTst;OverbyteIcsDnsLook;OverbyteIcsDnsResolver;OverbyteIcsConHttp;OverbyteIcsFtpMultipartDownload;OverbyteIcsFtpServ;OverbyteIcsHttpPost;OverbyteIcsHttpTst;OverbyteIcsHttpAsy;OverbyteIcsWndControlTest;OverbyteIcsHttpAsp;OverbyteIcsMailHtml;OverbyteIcsMailRcv;OverbyteIcsMailSnd;OverbyteIcsMD4Test;OverbyteIcsMD5Test;OverbyteIcsMimeDemo;OverbyteIcsNewsReader;OverbyteIcsNsLookup;OverbyteIcsPingTst;OverbyteIcsSHA1Test;OverbyteIcsTcpSrv;OverbyteIcsTelnetClient;OverbyteIcsTimerDemo;OverbyteIcsWebServ"/>
+			<CallTarget Targets="OverbyteIcsDel120Package;OverbyteIcsConFtp;OverbyteIcsFtpTst;OverbyteIcsDnsLook;OverbyteIcsDnsResolver;OverbyteIcsConHttp;OverbyteIcsFtpMultipartDownload;OverbyteIcsFtpServ;OverbyteIcsHttpPost;OverbyteIcsHttpTst;OverbyteIcsHttpAsy;OverbyteIcsWndControlTest;OverbyteIcsHttpAsp;OverbyteIcsMailHtml;OverbyteIcsMailRcv;OverbyteIcsMailSnd;OverbyteIcsMD4Test;OverbyteIcsMD5Test;OverbyteIcsMimeDemo;OverbyteIcsNewsReader;OverbyteIcsNsLookup;OverbyteIcsPingTst;OverbyteIcsSHA1Test;OverbyteIcsTcpSrv;OverbyteIcsTelnetClient;OverbyteIcsTimerDemo;OverbyteIcsWebServ"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="OverbyteIcsSslDel120Package:Clean;OverbyteIcsConFtp:Clean;OverbyteIcsFtpTst:Clean;OverbyteIcsDnsLook:Clean;OverbyteIcsDnsResolver:Clean;OverbyteIcsConHttp:Clean;OverbyteIcsFtpMultipartDownload:Clean;OverbyteIcsFtpServ:Clean;OverbyteIcsHttpPost:Clean;OverbyteIcsHttpTst:Clean;OverbyteIcsHttpAsy:Clean;OverbyteIcsWndControlTest:Clean;OverbyteIcsHttpAsp:Clean;OverbyteIcsMailHtml:Clean;OverbyteIcsMailRcv:Clean;OverbyteIcsMailSnd:Clean;OverbyteIcsMD4Test:Clean;OverbyteIcsMD5Test:Clean;OverbyteIcsMimeDemo:Clean;OverbyteIcsNewsReader:Clean;OverbyteIcsNsLookup:Clean;OverbyteIcsPingTst:Clean;OverbyteIcsSHA1Test:Clean;OverbyteIcsTcpSrv:Clean;OverbyteIcsTelnetClient:Clean;OverbyteIcsTimerDemo:Clean;OverbyteIcsWebServ:Clean"/>
+			<CallTarget Targets="OverbyteIcsDel120Package:Clean;OverbyteIcsConFtp:Clean;OverbyteIcsFtpTst:Clean;OverbyteIcsDnsLook:Clean;OverbyteIcsDnsResolver:Clean;OverbyteIcsConHttp:Clean;OverbyteIcsFtpMultipartDownload:Clean;OverbyteIcsFtpServ:Clean;OverbyteIcsHttpPost:Clean;OverbyteIcsHttpTst:Clean;OverbyteIcsHttpAsy:Clean;OverbyteIcsWndControlTest:Clean;OverbyteIcsHttpAsp:Clean;OverbyteIcsMailHtml:Clean;OverbyteIcsMailRcv:Clean;OverbyteIcsMailSnd:Clean;OverbyteIcsMD4Test:Clean;OverbyteIcsMD5Test:Clean;OverbyteIcsMimeDemo:Clean;OverbyteIcsNewsReader:Clean;OverbyteIcsNsLookup:Clean;OverbyteIcsPingTst:Clean;OverbyteIcsSHA1Test:Clean;OverbyteIcsTcpSrv:Clean;OverbyteIcsTelnetClient:Clean;OverbyteIcsTimerDemo:Clean;OverbyteIcsWebServ:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="OverbyteIcsSslDel120Package:Make;OverbyteIcsConFtp:Make;OverbyteIcsFtpTst:Make;OverbyteIcsDnsLook:Make;OverbyteIcsDnsResolver:Make;OverbyteIcsConHttp:Make;OverbyteIcsFtpMultipartDownload:Make;OverbyteIcsFtpServ:Make;OverbyteIcsHttpPost:Make;OverbyteIcsHttpTst:Make;OverbyteIcsHttpAsy:Make;OverbyteIcsWndControlTest:Make;OverbyteIcsHttpAsp:Make;OverbyteIcsMailHtml:Make;OverbyteIcsMailRcv:Make;OverbyteIcsMailSnd:Make;OverbyteIcsMD4Test:Make;OverbyteIcsMD5Test:Make;OverbyteIcsMimeDemo:Make;OverbyteIcsNewsReader:Make;OverbyteIcsNsLookup:Make;OverbyteIcsPingTst:Make;OverbyteIcsSHA1Test:Make;OverbyteIcsTcpSrv:Make;OverbyteIcsTelnetClient:Make;OverbyteIcsTimerDemo:Make;OverbyteIcsWebServ:Make"/>
+			<CallTarget Targets="OverbyteIcsDel120Package:Make;OverbyteIcsConFtp:Make;OverbyteIcsFtpTst:Make;OverbyteIcsDnsLook:Make;OverbyteIcsDnsResolver:Make;OverbyteIcsConHttp:Make;OverbyteIcsFtpMultipartDownload:Make;OverbyteIcsFtpServ:Make;OverbyteIcsHttpPost:Make;OverbyteIcsHttpTst:Make;OverbyteIcsHttpAsy:Make;OverbyteIcsWndControlTest:Make;OverbyteIcsHttpAsp:Make;OverbyteIcsMailHtml:Make;OverbyteIcsMailRcv:Make;OverbyteIcsMailSnd:Make;OverbyteIcsMD4Test:Make;OverbyteIcsMD5Test:Make;OverbyteIcsMimeDemo:Make;OverbyteIcsNewsReader:Make;OverbyteIcsNsLookup:Make;OverbyteIcsPingTst:Make;OverbyteIcsSHA1Test:Make;OverbyteIcsTcpSrv:Make;OverbyteIcsTelnetClient:Make;OverbyteIcsTimerDemo:Make;OverbyteIcsWebServ:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>
