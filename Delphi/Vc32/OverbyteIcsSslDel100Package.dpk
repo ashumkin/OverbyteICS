@@ -107,6 +107,8 @@ contains
   OverbyteIcsMultipartFtpDownloader in 'OverbyteIcsMultipartFtpDownloader.pas',
   OverbyteIcsMultipartHttpDownloader in 'OverbyteIcsMultipartHttpDownloader.pas',
   OverbyteIcsOneTimePw in 'OverbyteIcsOneTimePw.pas',
-  OverbyteIcsCRC in 'OverbyteIcsCRC.pas';
+  OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
+  OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
+  OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas';
 
 end.

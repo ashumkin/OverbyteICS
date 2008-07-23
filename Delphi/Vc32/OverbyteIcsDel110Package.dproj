@@ -140,6 +140,8 @@
     <DCCReference Include="OverbyteIcsTnScript.pas" />
     <DCCReference Include="OverbyteIcsTypes.pas" />
     <DCCReference Include="OverbyteIcsUrl.pas" />
+    <DCCReference Include="OverbyteIcsUtils.pas" />
+    <DCCReference Include="OverbyteIcsCharsetUtils.pas" />
     <DCCReference Include="OverbyteIcsWinsock.pas" />
     <DCCReference Include="OverbyteIcsWinsock2.pas" />
     <DCCReference Include="OverbyteIcsWndControl.pas" />

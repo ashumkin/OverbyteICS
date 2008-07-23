@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.03
+Version:      6.04
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -65,6 +65,8 @@ Oct 29, 2006  V6.01 Fixed memory leak in PrepareEMail
 Nov 05, 2006  V6.02 Fixed typo error in AuthComboBox. Added NTLM.
 Apr 25, 2008  V6.03 A.Garrels made some changes to prepare the code for Unicode.
               Added button "Send To File" and assigned event OnAttachContentTypeEh.  
+Jul 23, 2008  V6.04 A. Garrels changed code in OnGetDate event handler to prepare
+              code for Unicode.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -91,8 +93,8 @@ uses
   Dialogs, IniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
 
 const
-    SmtpTestVersion    = 6.03;
-    CopyRight : String = ' MailSnd (c) 1997-2008 F. Piette V6.03 ';
+    SmtpTestVersion    = 6.04;
+    CopyRight : String = ' MailSnd (c) 1997-2008 F. Piette V6.04 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -482,12 +484,10 @@ begin
     if LineNum > MsgMemo.Lines.count then
         More := FALSE
     else begin
+        MaxLen := MaxLen div SizeOf(Char);
         Len := Length(MsgMemo.Lines[LineNum - 1]);
         { Truncate the line if too long (should wrap to next line) }
-        if Len >= MaxLen then
-            StrPCopy(PChar(MsgLine), Copy(MsgMemo.Lines[LineNum - 1], 1, MaxLen - 1))
-        else
-            StrPCopy(PChar(MsgLine), MsgMemo.Lines[LineNum - 1]);
+        StrPLCopy(PChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
     end;
 end;
 

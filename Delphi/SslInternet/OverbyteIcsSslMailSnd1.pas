@@ -4,11 +4,11 @@
 Author:       François PIETTE
 Object:       How to use TSslSmtpCli component
 Creation:     09 october 1997
-Version:      2.07
+Version:      2.08
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2003 by François PIETTE
+Legal issues: Copyright (C) 1997-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -42,6 +42,8 @@ Legal issues: Copyright (C) 1997-2003 by François PIETTE
 Updates:
 Aug 20, 2003 SSL support added by Arno Garrels <arno.garrels@gmx.de>.
 Dec 29, 2007 A. Garrels reworked SSL, simplified verification code.
+Jul 23, 2008 A. Garrels changed code in OnGetDate event handler to prepare
+             code for Unicode
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslMailSnd1;
@@ -67,8 +69,8 @@ uses
   OverbyteIcsSmtpProt;
 
 const
-  SslSmtpTestVersion    = 1.00;
-  CopyRight : String    = ' SslMailSnd (c) 1997-2006 F. Piette V1.00 ';
+  SslSmtpTestVersion    = 1.08;
+  CopyRight : String    = ' SslMailSnd (c) 1997-2008 F. Piette V1.08 ';
   WM_SSL_RECONNECT      = WM_USER + 1;
 
 type
@@ -496,12 +498,10 @@ begin
     if LineNum > MsgMemo.Lines.count then
         More := FALSE
     else begin
+        MaxLen := MaxLen div SizeOf(Char);
         Len := Length(MsgMemo.Lines[LineNum - 1]);
         { Truncate the line if too long (should wrap to next line) }
-        if Len >= MaxLen then
-            StrPCopy(MsgLine, Copy(MsgMemo.Lines[LineNum - 1], 1, MaxLen - 1))
-        else
-            StrPCopy(MsgLine, MsgMemo.Lines[LineNum - 1]);
+        StrPLCopy(PChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
     end;
 end;
 

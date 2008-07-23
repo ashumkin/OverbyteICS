@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      1.00
+Version:      1.01
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -65,35 +65,14 @@ Sample:   Usage GetSystemCodePageList():
           end;
 
 History:
+Jul 20, 2008 V1.01 A. Garrels added CodePageToMimeCharsetString();
 
 
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-unit OverbyteIcsCharsetUtils;
 
-{$I OverbyteIcsDefs.inc}
-
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
-{$B-}             { Enable partial boolean evaluation   }
-{$T-}             { Untyped pointers                    }
-{$X+}             { Enable extended syntax              }
-{$H+}             { Use long strings                    }
-{$IFDEF BCB3_UP}
-    {$ObjExportAll On}
-{$ENDIF}
-
-interface
-
-uses
-    Windows, Sysutils, Classes, Contnrs;
-
-(*
-    { Windows codepage Identifiers, June 2008, for a current list try    }
-    { http://msdn.microsoft.com/en-us/library/ms776446.aspx              }
-
+//
+// Windows codepage Identifiers, June 2008, for a current list try
+// http://msdn.microsoft.com/en-us/library/ms776446.aspx
+//
     CP_037            = 037;  //  IBM037          IBM EBCDIC US-Canada
     CP_437            = 437;  //  IBM437          OEM United States
     CP_500            = 500;  //  IBM500          IBM EBCDIC International
@@ -246,7 +225,30 @@ uses
     CP_57011          = 57011;//  x-iscii-pa          ISCII Punjabi
     CP_65000          = 65000;//  utf-7               Unicode (UTF-7)
     CP_65001          = 65001;//  utf-8               Unicode (UTF-8)
-*)
+
+
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+unit OverbyteIcsCharsetUtils;
+
+{$I OverbyteIcsDefs.inc}
+
+{$IFDEF DELPHI6_UP}
+    {$WARN SYMBOL_PLATFORM   OFF}
+    {$WARN SYMBOL_LIBRARY    OFF}
+    {$WARN SYMBOL_DEPRECATED OFF}
+{$ENDIF}
+{$B-}             { Enable partial boolean evaluation   }
+{$T-}             { Untyped pointers                    }
+{$X+}             { Enable extended syntax              }
+{$H+}             { Use long strings                    }
+{$IFDEF BCB3_UP}
+    {$ObjExportAll On}
+{$ENDIF}
+
+interface
+
+uses
+    Windows, Sysutils, Classes, Contnrs;
 
 type
     CsuString = String;
@@ -384,6 +386,7 @@ type
     end;
 
 function  CodePageToMimeCharset(ACodePage: Cardinal): TMimeCharset;
+function  CodePageToMimeCharsetString(ACodePage: Cardinal): CsuString;
 function  GetMimeInfo(AMimeCharSet: TMimeCharset): PCharSetInfo; overload;
 function  GetMimeInfo(const AMimeCharSetString: CsuString): PCharSetInfo; overload;
 function  MimeCharsetToCharsetString(AMimeCharSet: TMimeCharset): CsuString;
@@ -551,6 +554,16 @@ begin
         else
             Result := WIN_1252;
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  CodePageToMimeCharsetString(ACodePage: Cardinal): CsuString;
+var
+    CS : TMimeCharset;
+begin
+    CS := CodePageToMimeCharset(ACodePage);
+    Result := MimeCharsetToCharsetString(CS);
 end;
 
 

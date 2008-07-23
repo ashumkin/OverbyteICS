@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      6.06
+Version:      6.07
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -66,6 +66,9 @@ Apr 21, 2008        A. Garrels, overload Base64Encode and Base64Decode added.
 Apr 25, 2008  V6.05 A. Garrels added more overloads to fight the string-hell <g>.
 May 01, 2008  V6.06 A. Garrels - Function names adjusted according to changes in
                     OverbyteIcsLibrary.pas and use of OverbyteIcsUtils.pas.
+Jul 20, 2008  V6.07 A. Garrels Changed IcsWrapText according to SysUtils.WrapText,
+                    added parameter CodePage to StrEncodeQP, added an overloaded
+                    version of func. NeedsEncoding. 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -108,12 +111,10 @@ uses
 {$IFDEF USE_BUFFERED_STREAM}
     OverbyteIcsStreams,
 {$ENDIF}
-{$IFDEF COMPILER12_UP}
-    OverbyteIcsUtils,
-{$ENDIF}
     SysUtils, // For the LeadChar and Exception
-    OverbyteIcsLibrary,
-    Classes;
+    Classes,
+    OverbyteIcsUtils,
+    OverbyteIcsLibrary;
 
 type
 {$IFDEF CLR}
@@ -127,8 +128,8 @@ type
 {$ENDIF}
 
 const
-    TMimeUtilsVersion = 606;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.06 ';
+    TMimeUtilsVersion = 607;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.07 ';
 
 {$IFDEF CLR}
     SpecialsRFC822 : TSysCharSet = [Ord('('), Ord(')'), Ord('<'), Ord('>'), Ord('@'), Ord(','), Ord(';'), Ord(':'),
@@ -218,7 +219,9 @@ function IcsWrapTextEx(const Line : String;
 { Unfolds folded headers                                                  } {AG}
 function UnFoldHdrLine(const S : String): String;
 {Helper function                                                          }
-function NeedsEncoding(const S : String) : Boolean; overload;               {AG}
+function NeedsEncoding(const S : AnsiString) : Boolean; {$IFDEF COMPILER12_UP} overload;           {AG}
+function NeedsEncoding(const S : UnicodeString) : Boolean; overload;        {AG}
+{$ENDIF}
 {$IFDEF WIN32}
 function NeedsEncodingPChar(S : PChar) : Boolean;                           {FP}
 {$ENDIF}
@@ -245,7 +248,8 @@ function StrEncodeQP(const Input : AnsiString;                         {HLX, AG}
 {$IFDEF COMPILER12_UP}
 function StrEncodeQP(const Input : UnicodeString;                      {HLX, AG}
                      MaxCol      : Integer;
-                     Specials    : TSysCharSet): UnicodeString; overload;
+                     Specials    : TSysCharSet;
+                     ACodePage   : Cardinal): UnicodeString; overload;
 {$ENDIF}
 { Similar to StrEncodeQP, returns just a single line                      } {AG}
 function StrEncodeQPEx(const Buf   : AnsiString;
@@ -1108,6 +1112,7 @@ var
     BreakLen, BreakPos : Integer;
     QuoteChar, CurChar : Char;
     ExistingBreak      : Boolean;
+    L                  : Integer;
 begin
     Col           := 1;
     LinePos       := cPos;
@@ -1120,8 +1125,9 @@ begin
     while cPos <= LineLen do begin
         CurChar := Line[cPos];
         if IsCharInSysCharSet(TSetType(CurChar), LeadBytes) then begin
-            Inc(cPos);
-            Inc(Col);
+            L := CharLength(Line, cPos) div SizeOf(Char) -1;
+            Inc(cPos, L);
+            Inc(Col, L);
         end
         else begin
             if CurChar = BreakStr[1] then begin
@@ -1223,18 +1229,41 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function NeedsEncoding(const S : String) : Boolean;                    { AG }
+function NeedsEncoding(const S : AnsiString) : Boolean;                  { AG }
 var
+    P : PAnsiChar;
     I : Integer;
 begin
-    for I := 1 to Length(S) do
-        if (Ord(S[I]) in [0..8, 11, 12, 14..31]) or
-           (Ord(S[I]) > 126) then begin
+    P := Pointer(S);
+    for I := 0 to Length(S) -1 do begin
+        if (P[I] in [#0..#8, #11, #12, #14..#31]) or
+           (P[I] > #127) then begin
             Result := True;
             Exit;
         end;
+    end;
     Result := False;
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function NeedsEncoding(const S : UnicodeString) : Boolean;               { AG }
+var
+    P : PWideChar;
+    I : Integer;
+begin
+    P := Pointer(S);
+    for I := 0 to Length(S) -1 do begin
+        if (Word(P[I]) in [0..8, 11, 12, 14..31]) or
+           (P[I] > #127) then begin
+            Result := True;
+            Exit;
+        end;
+    end;
+    Result := False;
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1435,9 +1464,10 @@ end;
 {$IFDEF COMPILER12_UP}
 function StrEncodeQP(const Input : UnicodeString;
                      MaxCol      : Integer;
-                     Specials    : TSysCharSet) : UnicodeString;
+                     Specials    : TSysCharSet;
+                     ACodePage   : Cardinal) : UnicodeString;
 begin;
-    Result := StrEncodeQP(UnicodeToAnsi(Input), MaxCol, Specials);
+    Result := StrEncodeQP(UnicodeToAnsi(Input, ACodePage), MaxCol, Specials);
 end;
 {$ENDIF}
 

@@ -116,6 +116,7 @@
 			<DCCReference Include="OverbyteIcsMultipartFtpDownloader.pas"/>
 			<DCCReference Include="OverbyteIcsOneTimePw.pas"/>
 			<DCCReference Include="OverbyteIcsUtils.pas"/>
+			<DCCReference Include="OverbyteIcsCharsetUtils.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>
