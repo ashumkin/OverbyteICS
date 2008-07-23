@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.14
+Version:      6.15
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -328,6 +328,7 @@ Jul 20, 2008 V6.14  A. Garrels revised the SMTP components to support 'on the fl
                     the default system system charset and codepage. Take a look
                     at OverbyteIcsCharsetUtils.pas for currently supported
                     charsets.
+Jul 23, 2008 V.6.15 A. Garrels - just one little optimization in TSmtpHeaderLines.AddHdr
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -383,8 +384,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 614;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.14 ';
+  SmtpCliVersion     = 615;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.15 ';
   smtpProtocolError  = 20600; {AG}
 
 {$IFDEF VER80}
@@ -1307,8 +1308,7 @@ begin
             FoldHdrLine(Self, HdrName + HdrBody);
     end
     else
-        if DoFold and Allow8bit then
-            FoldHdrLine(Self, HdrBody + HdrName);
+        FoldHdrLine(Self, HdrBody + HdrName);
 end;
 
 
