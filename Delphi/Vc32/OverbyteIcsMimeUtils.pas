@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      6.07
+Version:      6.08
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -69,6 +69,8 @@ May 01, 2008  V6.06 A. Garrels - Function names adjusted according to changes in
 Jul 20, 2008  V6.07 A. Garrels Changed IcsWrapText according to SysUtils.WrapText,
                     added parameter CodePage to StrEncodeQP, added an overloaded
                     version of func. NeedsEncoding. 
+Jul, 24, 2008 V6.08 A. Garrels - NeedsEncoding() returned "False" for character
+                    #127.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -128,8 +130,8 @@ type
 {$ENDIF}
 
 const
-    TMimeUtilsVersion = 607;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.07 ';
+    TMimeUtilsVersion = 608;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.08 ';
 
 {$IFDEF CLR}
     SpecialsRFC822 : TSysCharSet = [Ord('('), Ord(')'), Ord('<'), Ord('>'), Ord('@'), Ord(','), Ord(';'), Ord(':'),
@@ -1237,7 +1239,7 @@ begin
     P := Pointer(S);
     for I := 0 to Length(S) -1 do begin
         if (P[I] in [#0..#8, #11, #12, #14..#31]) or
-           (P[I] > #127) then begin
+           (P[I] > #126) then begin
             Result := True;
             Exit;
         end;
@@ -1256,7 +1258,7 @@ begin
     P := Pointer(S);
     for I := 0 to Length(S) -1 do begin
         if (Word(P[I]) in [0..8, 11, 12, 14..31]) or
-           (P[I] > #127) then begin
+           (P[I] > #126) then begin
             Result := True;
             Exit;
         end;
