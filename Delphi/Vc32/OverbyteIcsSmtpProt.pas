@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.15
+Version:      6.16
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -325,10 +325,12 @@ Jul 20, 2008 V6.14  A. Garrels revised the SMTP components to support 'on the fl
                     default system codepage, could lead to data loss.
                     Added property HtmlCharset to THtmlSmtpCli. Assignment of
                     an empty string to the CharSet properties will auto select
-                    the default system system charset and codepage. Take a look
+                    the default system charset and codepage. Take a look
                     at OverbyteIcsCharsetUtils.pas for currently supported
                     charsets.
-Jul 23, 2008 V.6.15 A. Garrels - just one little optimization in TSmtpHeaderLines.AddHdr
+Jul 23, 2008 V6.15  A. Garrels - Just one little optimization in TSmtpHeaderLines.AddHdr
+Jul 29, 2008 V6.16  A. Garrels replaced the various calls to GetAcp by new global
+                    var "IcsSystemCodePage" which is initialized just once. 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -384,8 +386,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 615;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.15 ';
+  SmtpCliVersion     = 616;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.16 ';
   smtpProtocolError  = 20600; {AG}
 
 {$IFDEF VER80}
@@ -1218,7 +1220,7 @@ begin
     rPos  := 1;
     if Allow8Bit and (not DoFold) then begin
     {$IFDEF UNICODE}
-        if NeedsEncoding(HdrBody) and (DefaultSystemCodePage <> Integer(ACodePage)) then
+        if NeedsEncoding(HdrBody) and (IcsSystemCodePage <> ACodePage) then
             Add(UnicodeString(UnicodeToAnsi(HdrName + HdrBody,  ACodePage)))
         else
             Add(HdrName + HdrBody);
@@ -1240,7 +1242,7 @@ begin
         if Length(Alias) > 0 then begin
             NeedsEnc := NeedsEncoding(Alias);
         {$IFDEF UNICODE}
-            if NeedsEnc and (DefaultSystemCodePage <> Integer(ACodePage)) then
+            if NeedsEnc and (IcsSystemCodePage <> ACodePage) then
                 Alias := UnicodeString(UnicodeToAnsi(Alias, ACodePage));
         {$ENDIF}
             if (not Allow8Bit) and NeedsEnc then
@@ -1495,7 +1497,7 @@ begin
     FMailMessage             := TStringList.Create;
     FAuthTypesSupported      := TStringList.Create;
     FPort                    := 'smtp';
-    FCodePage                := GetACP;
+    FCodePage                := IcsSystemCodePage;
     FCharSet                 := CodePageToMimeCharsetString(FCodePage);
     FAuthType                := smtpAuthNone;
     FLocalAddr               := '0.0.0.0';
@@ -2607,7 +2609,7 @@ begin
     FCharSet := LowerCase(Value);
     { If empty set the default system codepage }
     if Length(FCharSet) = 0 then begin
-        FCodePage := GetACP;
+        FCodePage := IcsSystemCodePage;
         FCharSet  := CodePageToMimeCharsetString(FCodePage);
     end
     else begin
@@ -2617,7 +2619,7 @@ begin
         if (Pos(FCharSet, PInfo^.MimeName) <= 0) or
            (not IsValidAnsiCodePage(PInfo^.CodePage)) then begin
             { Set default system codepage and charset }
-            FCodePage := GetACP;
+            FCodePage := IcsSystemCodePage;
             FCharSet  := CodePageToMimeCharsetString(FCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
         end
@@ -3860,7 +3862,7 @@ begin
     FPlainText    := TStringList.Create;
     FEmailImages  := TStringList.Create;
     FHtmlText     := TStringList.Create;
-    FHtmlCodePage := GetACP;
+    FHtmlCodePage := IcsSystemCodePage;
     FHtmlCharSet  := CodePageToMimeCharsetString(FCodePage);
     SetContentType(smtpHtml);
 end;
@@ -3962,7 +3964,7 @@ begin
     FHtmlCharSet := LowerCase(Value);
     { If empty set the default system codepage }
     if Length(FHtmlCharSet) = 0 then begin
-        FHtmlCodePage := GetACP;
+        FHtmlCodePage := IcsSystemCodePage;
         FHtmlCharSet  := CodePageToMimeCharsetString(FHtmlCodePage);
     end
     else begin
@@ -3972,7 +3974,7 @@ begin
         if (Pos(FHtmlCharset, PInfo^.MimeName) <= 0) or
            (not IsValidAnsiCodePage(PInfo^.CodePage)) then begin
             { Set default system codepage and charset }
-            FHtmlCodePage := GetACP;
+            FHtmlCodePage := IcsSystemCodePage;
             FHtmlCharset  := CodePageToMimeCharsetString(FHtmlCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
         end
