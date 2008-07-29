@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.09
+Version:      1.10
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -55,6 +55,9 @@ Jul 17, 2008 V1.08 Added OverbyteIcsTypes to the uses clause and removed
              StreamWriteString should work with WideStrings as well with old
              compilers.
 Jul 20, 2008 V1.09 Added Utf-8 string functions.
+Jul 29, 2008 V1.10 Added parameter "SetCodePage" to UnicodeToAnsi(), defaults
+             to "False". Utf-8 functions adjusted accordingly. Does effect
+             compiler post RDS2007 only.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -98,7 +101,7 @@ function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiStri
 function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString;  overload;
 function  UsAsciiToUnicode(const Str: AnsiString; FailCh: AnsiChar): UnicodeString; overload;
 function  UsAsciiToUnicode(const Str: AnsiString): UnicodeString; overload;
-function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal): AnsiString; overload;
+function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): AnsiString; overload;
 function  UnicodeToAnsi(const Str: UnicodeString): AnsiString; overload;
 function  AnsiToUnicode(const Str: AnsiString; ACodePage: Cardinal): UnicodeString; overload;
 function  AnsiToUnicode(const Str: AnsiString): UnicodeString; overload;
@@ -187,7 +190,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Converts an UnicodeString to an AnsiString.                                 }
-function UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal): AnsiString;
+function UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): AnsiString;
 var
     Len : Integer;
 begin
@@ -195,9 +198,14 @@ begin
     if Len > 0 then begin
         Len := WideCharToMultiByte(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, nil);
         SetLength(Result, Len);
-        if Len > 0 then
+        if Len > 0 then begin
             WideCharToMultiByte(ACodePage, 0, Pointer(Str), Length(Str),
                                 Pointer(Result), Len, nil, nil);
+        {$IFDEF COMPILER12_UP}
+            if SetCodePage and (ACodePage <> CP_ACP) then
+                PWord(Integer(Result) - 12)^ := ACodePage;
+        {$ENDIF}
+        end;
     end
     else
         Result := '';
@@ -616,7 +624,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StringToUtf8(const Str: UnicodeString): UTF8String;
 begin
-    Result := UnicodeToAnsi(Str, CP_UTF8);
+    Result := UnicodeToAnsi(Str, CP_UTF8, True);
 end;
 
 
@@ -626,7 +634,7 @@ var
     Temp : UnicodeString;
 begin
     Temp := AnsiToUnicode(Str, ACodePage);
-    Result := UnicodeToAnsi(Temp, CP_UTF8);
+    Result := UnicodeToAnsi(Temp, CP_UTF8, True);
 end;
 
 
@@ -643,7 +651,7 @@ var
     Temp: UnicodeString;
 begin
     Temp := AnsiToUnicode(Str, CP_UTF8);
-    Result := UnicodeToAnsi(Temp, ACodePage);
+    Result := UnicodeToAnsi(Temp, ACodePage, True);
 end;
 
 

@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      1.01
+Version:      1.02
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -66,6 +66,8 @@ Sample:   Usage GetSystemCodePageList():
 
 History:
 Jul 20, 2008 V1.01 A. Garrels added CodePageToMimeCharsetString();
+Jul 29, 2008 V1.02 A. Garrels added global var IcsSystemCodePage. Changed type
+                   of one local var from AnsiString to CsuString.
 
 
 
@@ -400,6 +402,9 @@ function  GetCPInfoExA(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExA):
 function  GetCPInfoExW(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExW): LongBOOL; stdcall;
 function  GetCPInfoEx(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoEx): LongBOOL; stdcall;
 
+var
+    IcsSystemCodePage : Cardinal;
+
 implementation
 
 var
@@ -578,7 +583,7 @@ end;
 function GetMimeInfo(const AMimeCharSetString: CsuString): PCharSetInfo;
 var
     I, J, Y, Len : Integer;
-    S : AnsiString;
+    S : CsuString;
 begin
     if Length(AMimeCharSetString) > 0 then
     begin
@@ -958,6 +963,7 @@ end;
 
 initialization
     InitializeCharsetInfos;
+    IcsSystemCodePage := GetAcp;
 
 finalization
 
