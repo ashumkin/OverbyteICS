@@ -396,6 +396,7 @@ function  MimeCharsetToCodePage(AMimeCharSet: TMimeCharset): Cardinal; overload;
 function  MimeCharsetToCodePage(const AMimeCharSetString: CsuString): Cardinal; overload;
 
 function  IsValidAnsiCodePage(ACodePage: Cardinal): Boolean; // includes UTF-8 and UTF-7
+function  IsSingleByteCodePage(ACodePage: Cardinal): Boolean;
 procedure GetSystemCodePageList(AOwnsObjectList : TObjectList);
 
 function  GetCPInfoExA(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExA): LongBOOL; stdcall;
@@ -403,7 +404,9 @@ function  GetCPInfoExW(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExW):
 function  GetCPInfoEx(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoEx): LongBOOL; stdcall;
 
 var
-    IcsSystemCodePage : Cardinal;
+    IcsSystemCodePage     : Cardinal;
+    IcsSystemMaxCharSize  : Integer;
+    IcsSystemIsSingleByte : Boolean;
 
 implementation
 
@@ -424,6 +427,17 @@ var
     Info : _CpInfo;
 begin
     Result := GetCPInfo(ACodePage, Info);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsSingleByteCodePage(ACodePage: Cardinal): Boolean;
+var
+    Info : _CpInfo;
+begin
+    if not GetCPInfo(ACodePage, Info) then
+        raise Exception.Create('Codepage "' + IntToStr(ACodePage) + '" is no valid Ansi codepage');
+    Result := Info.MaxCharSize = 1;
 end;
 
 
@@ -667,8 +681,17 @@ end;
 { http://www.iana.org/assignments/character-sets }
 procedure InitializeCharsetInfos;
 var
-    I : Integer;
+    I    : Integer;
+    Info : _CpInfo;
 begin
+    //--
+    IcsSystemCodePage := GetAcp;
+    IcsSystemMaxCharSize := 1;
+    if GetCPInfo(IcsSystemCodePage, Info) then
+        IcsSystemMaxCharSize := Info.MaxCharSize;
+    IcsSystemIsSingleByte := IcsSystemMaxCharSize = 1;
+    //--
+
     SetLength(CharsetInfos, 71);
     I := -1;
     Inc(I);
@@ -963,7 +986,6 @@ end;
 
 initialization
     InitializeCharsetInfos;
-    IcsSystemCodePage := GetAcp;
 
 finalization
 
