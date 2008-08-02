@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.02
+Version:      1.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -55,6 +55,7 @@ Mar 03, 2007 A. Garrels: Small changes to support OpenSSL 0.9.8e.
              Read comments in OverbyteIcsSslDefs.inc.
 Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
              Added a few constants and dummy records.
+Aug 02, 2008 Still one PChar caught in one of the records.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -261,7 +262,7 @@ type
 
     TEVP_CIPHER_INFO_st = packed record      { 03/02/07 AG }
         cipher : PEVP_CIPHER;
-        iv     : array [0..EVP_MAX_IV_LENGTH - 1] of Char;
+        iv     : array [0..EVP_MAX_IV_LENGTH - 1] of AnsiChar;
     end;
     EVP_CIPHER_INFO  = TEVP_CIPHER_INFO_st;
     PEVP_CIPHER_INFO = ^EVP_CIPHER_INFO;
