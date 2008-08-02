@@ -98,7 +98,7 @@ type
   private
     FInitialized   : Boolean;
     FIniFileName   : String;
-    FLineBuf       : array [0..255] of char;
+    FLineBuf       : array [0..255] of AnsiChar;
     FCharCnt       : Integer;
     FFileStream    : TFileStream;
     FFileName      : String;
@@ -224,16 +224,16 @@ begin
     { Copy data to LineBuf until CR/LF }
     I := 0;
     while (I < DataLen) do begin
-        if PChar(Data)[I] = #13 then   { Just ignre CR }
+        if PAnsiChar(Data)[I] = #13 then   { Just ignre CR }
             Inc(I)
-        else if PChar(Data)[I] = #10 then begin { LF is end of line }
+        else if PAnsiChar(Data)[I] = #10 then begin { LF is end of line }
             FLineBuf[FCharCnt] := #0;
             Display(StrPas(FLineBuf));
             FCharCnt := 0;
             Inc(I);
         end
         else begin
-            FLineBuf[FCharCnt] := PChar(Data)[I];
+            FLineBuf[FCharCnt] := PAnsiChar(Data)[I];
             Inc(FCharCnt);
             Inc(I);
         end;
