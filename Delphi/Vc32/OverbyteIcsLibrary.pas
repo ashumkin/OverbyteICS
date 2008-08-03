@@ -64,8 +64,8 @@ May 23, 2008 V1.09 A. Garrels check for empty string in IcsLowerCaseA() and
                    IcsUpperCaseA().
 Jul 01, 2008 V1.10 A. Garrels fixed a bug in IcsCompareTextA().
 Jul 02, 2008 V1.11 A. Garrels optimized IcsCompareTextA() a bit.
-Aug 03, 2008 V1.12 F. Piette made IcsUpperCaseA, IcsLowerCaseA and
-                   IcsCompareTextA public
+Aug 03, 2008 V1.12 F. Piette made IcsUpperCaseA, IcsLowerCaseA, IcsTrimA and
+                   IcsCompareTextA public.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -383,6 +383,7 @@ function  _UpperCase(const S: UnicodeString): UnicodeString; overload;
 function IcsUpperCaseA(const S: AnsiString): AnsiString;
 function IcsLowerCaseA(const S: AnsiString): AnsiString;
 function IcsCompareTextA(const S1, S2: AnsiString): Integer;
+function IcsTrimA(const Str: AnsiString): AnsiString;
 
 {#$EXTERNALSYM CompareStr}
 function  _CompareStr(const S1, S2: String): Integer;
