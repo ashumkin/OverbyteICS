@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.15
+Version:      6.16
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -617,6 +617,7 @@ May 15, 2008 V6.13 AGarrels type change of some published String properties
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 Jul 04, 2008 V6.11 Rev.58 SSL - Still lacked a few changes I made last year.
 Jul 13, 2008 V6.12 Added SafeWSocketGCount
+Aug 03, 2008 V6.16 A. Garrels removed packed from record TExtension.
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -719,8 +720,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 615;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.15 ';
+  WSocketVersion            = 616;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.16 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1449,7 +1450,7 @@ const                                                             {AG 02/06/06}
 {$ENDIF}
 type
     EX509Exception = class(Exception);
-    TExtension = packed record
+    TExtension = record
         Critical  : Boolean;
         ShortName : String;
         Value     : String; // may be also one or multiple Name=value pairs,
