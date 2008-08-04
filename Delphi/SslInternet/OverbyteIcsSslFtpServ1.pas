@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.08
+Version:      1.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -59,7 +59,7 @@ Feb 26, 2002  V1.05 Add DisconectAll in main menu
 Jun 07, 2002  V1.06 Added a processing thread (not for Delphi 1) for Get
 Oct 21, 2005  V1.07 Arno Garrels added SSL features.
 Jun 04, 2008  V1.08 Arno Garrels adjusted WorkerThreadTerminated().                 
-
+Aug 04, 2008  V1.09 A. Garrels made a few changes to prepare code for Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslFtpServ1;
@@ -74,11 +74,11 @@ uses
   Dialogs, IniFiles, OverbyteIcsFtpSrv, OverbyteIcsFtpSrvC, OverbyteIcsWSocket,
   StdCtrls, ExtCtrls, Menus,
   OverbyteIcsWinsock, OverbyteIcsLibeay, OverbyteIcsLogger,
-  OverbyteIcsWndControl;
+  OverbyteIcsWndControl, OverbyteIcsLibrary;
 
 const
-  FtpServVersion      = 108;
-  CopyRight : String  = ' SslFtpServer (c) 1998-2008 F. Piette V1.08 ';
+  FtpServVersion      = 109;
+  CopyRight : String  = ' SslFtpServer (c) 1998-2008 F. Piette V1.09 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -197,7 +197,7 @@ type
   private
     FInitialized              : Boolean;
     FIniFileName              : String;
-    FPort                     : String;
+    FPort                     : AnsiString;
     FXTop                     : Integer;
     FXLeft                    : Integer;
     FXWidth                   : Integer;
@@ -384,7 +384,7 @@ var
     IniFile : TIniFile;
 begin
     IniFile := TIniFile.Create(FIniFileName);
-    FPort   := IniFile.ReadString(SectionData,    KeyPort,   'ftp');
+    FPort   := AnsiString(IniFile.ReadString(SectionData,    KeyPort,   'ftp'));
     CertFileEdit.Text    := IniFile.ReadString(SectionData, KeyCertFile,
                                                '01cert.pem');
     PrivKeyFileEdit.Text := IniFile.ReadString(SectionData, KeyPrivKeyFile,
@@ -526,8 +526,8 @@ begin
     InfoMemo.Lines.Add('        Version ' +
             Format('%d.%d', [WinsockInfo.wHighVersion shr 8,
                              WinsockInfo.wHighVersion and 15]));
-    InfoMemo.Lines.Add('        ' + StrPas(@wsi.szDescription));
-    InfoMemo.Lines.Add('        ' + StrPas(@wsi.szSystemStatus));
+    InfoMemo.Lines.Add('        ' + _StrPas(wsi.szDescription));
+    InfoMemo.Lines.Add('        ' + _StrPas(wsi.szSystemStatus));
 {$IFNDEF VER100}
     { A bug in Delphi 3 makes lpVendorInfo invalid }
     if wsi.lpVendorInfo <> nil then
@@ -561,7 +561,7 @@ begin
                             '220-' + #13#10 +
                             '220 ICS FTP Server ready.';
     SslFtpServer1.Port   := FPort;
-    SslFtpServer2.Port   := SslTypeConnPortEdit.Text;
+    SslFtpServer2.Port   := AnsiString(SslTypeConnPortEdit.Text);
     SslFtpServer1.Start;
     SslFtpServer2.Start;
 end;
