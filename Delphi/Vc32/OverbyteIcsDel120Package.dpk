@@ -43,7 +43,7 @@ package OverbyteIcsDel120Package;
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'Overbyte ICS for Delphi 2008'}
+{$DESCRIPTION 'Overbyte ICS for Delphi 2009'}
 {$IMPLICITBUILD ON}
 {$DEFINE USE_ZLIB_OBJ}
 

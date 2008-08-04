@@ -665,6 +665,7 @@ unit OverbyteIcsWSocket;
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
+{$ALIGN 8}
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
