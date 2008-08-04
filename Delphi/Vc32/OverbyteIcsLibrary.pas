@@ -65,7 +65,7 @@ May 23, 2008 V1.09 A. Garrels check for empty string in IcsLowerCaseA() and
 Jul 01, 2008 V1.10 A. Garrels fixed a bug in IcsCompareTextA().
 Jul 02, 2008 V1.11 A. Garrels optimized IcsCompareTextA() a bit.
 Aug 03, 2008 V1.12 F. Piette made IcsUpperCaseA, IcsLowerCaseA, IcsTrimA and
-                   IcsCompareTextA public.
+                   IcsCompareTextA public. Added IcsSameTextA.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -384,6 +384,7 @@ function IcsUpperCaseA(const S: AnsiString): AnsiString;
 function IcsLowerCaseA(const S: AnsiString): AnsiString;
 function IcsCompareTextA(const S1, S2: AnsiString): Integer;
 function IcsTrimA(const Str: AnsiString): AnsiString;
+function IcsSameTextA(const S1, S2: AnsiString): Boolean;
 
 {#$EXTERNALSYM CompareStr}
 function  _CompareStr(const S1, S2: String): Integer;
@@ -1212,6 +1213,11 @@ begin
     Result := SysUtils.UpperCase(S);
 end;
 {$ENDIF}
+
+function IcsSameTextA(const S1, S2: AnsiString): Boolean;
+begin
+    Result := (IcsCompareTextA(S1, S2) = 0);
+end;
 
 { Author Arno Garrels - Feel free to optimize!                }
 { It's anyway faster than the RTL routine.                    }
