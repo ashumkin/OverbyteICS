@@ -309,7 +309,7 @@ begin
         Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
                                             (Screen.Width  - Width)  div 2);
         DocDirEdit.Text     := IniFile.ReadString(SectionData, KeyDocDir,
-                                                  'c:\WwwRoot');
+                                                  '..\Internet\WebServData\WwwRoot');
         DefaultDocEdit.Text := IniFile.ReadString(SectionData, KeyDefaultDoc,
                                                   'index.html');
         PortHttpsEdit.Text  := IniFile.ReadString(SectionData, KeyPortHttps,
@@ -656,7 +656,7 @@ var
 begin
     Location := (Client as THttpConnection).Params;
     if Location = '' then
-        Location := '/time.htm';
+        Location := '/time.html';
 
     { Let HTTP server component know we will send data to client }
     Flags  := hgWillSendMySelf;
