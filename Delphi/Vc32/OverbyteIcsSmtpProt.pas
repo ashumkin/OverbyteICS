@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.16
+Version:      6.17
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -330,8 +330,10 @@ Jul 20, 2008 V6.14  A. Garrels revised the SMTP components to support 'on the fl
                     charsets.
 Jul 23, 2008 V6.15  A. Garrels - Just one little optimization in TSmtpHeaderLines.AddHdr
 Jul 29, 2008 V6.16  A. Garrels replaced the various calls to GetAcp by new global
-                    var "IcsSystemCodePage" which is initialized just once. 
-
+                    var "IcsSystemCodePage" which is initialized just once.
+Aug 03, 2008 V6.17  A.Garrels - Components use Ansi buffers internally.
+                    More string conversions, however OnGetData works again.
+                    
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -350,7 +352,7 @@ interface
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
     {$WARN IMPLICIT_STRING_CAST       OFF}
-    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
@@ -380,24 +382,20 @@ uses
     OverbyteIcsNtlmMsgs,
     OverbyteIcsUtils,
     OverbyteIcsCharsetUtils,
+    OverbyteIcsLibrary,
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY, OverByteIcsLIBEAY,  {AG/SSL}
 {$ENDIF}
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 616;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.16 ';
+  SmtpCliVersion     = 617;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.17 ';
   smtpProtocolError  = 20600; {AG}
-
-{$IFDEF VER80}
-  { Delphi 1 has a 255 characters string limitation }
-  SMTP_RCV_BUF_SIZE = 255;
-{$ELSE}
-  SMTP_RCV_BUF_SIZE = 4096;
-{$ENDIF}
-  SmtpDefEncArray : array [0..3] of string = ('7bit',             '8bit',
-                                              'quoted-printable', 'base64'); {AG}
+  SMTP_RCV_BUF_SIZE  = 4096;
+  
+  SmtpDefEncArray : array [0..3] of Ansistring = ('7bit',             '8bit',
+                                                  'quoted-printable', 'base64'); {AG}
 
 type
     TSmtpHeaderLines = class(TStringList)
@@ -429,7 +427,7 @@ type
         FText          : AnsiString;
         FCurrentIdx    : Integer;
     public
-        function    NextLineAsString: String;
+        function    NextLineAsString: AnsiString;
         function    SetText(const AText: UnicodeString; DestinationCP: Cardinal; WordWrap: Boolean = TRUE): Integer; overload;
         function    SetText(const AText: AnsiString; DestinationCP: Cardinal; WordWrap: Boolean = TRUE): Integer; overload;
         property    NeedsEncoding: Boolean read FNeedsEncoding;
@@ -561,7 +559,7 @@ type
         FHdrSender           : String;       { Mail Sender's Email          }
         FHdrPriority         : TSmtpPriority;
         FState               : TSmtpState;
-        FCharSet             : String;
+        FCharSet             : AnsiString;
         FCodePage            : Cardinal;
         FDefaultEncoding     : TSmtpDefaultEncoding; { Default transfer } {AG}
         FAllow8bitChars      : Boolean;                                   {AG}
@@ -570,7 +568,7 @@ type
         FContentType         : TSmtpContentType;
         FContentTypeStr      : String;
         FConfirmReceipt      : Boolean;      { Request confirmation of receipt } {AG}
-        FLastResponse        : String;
+        FLastResponse        : AnsiString;
         FErrorMessage        : String;
         FTag                 : LongInt;
         FConnected           : Boolean;
@@ -588,7 +586,7 @@ type
         FHighLevelResult     : Integer;
         FHighLevelFlag       : Boolean;
         FNextRequest         : TSmtpNextProc;
-        FLastResponseSave    : String;
+        FLastResponseSave    : AnsiString;
         FStatusCodeSave      : Integer;
         FRestartFlag         : Boolean;
         FOkResponses         : array [0..15] of Integer;
@@ -619,7 +617,7 @@ type
         FOutStream           : TStream;         {AG}
         FOnBeforeOutStreamFree : TNotifyEvent;  {AG}
         
-        procedure   SetCharset(const Value: String); {AG}
+        procedure   SetCharset(const Value: AnsiString); {AG}
         procedure   EndSendToStream;            {AG}
         procedure   SendLineToStream(Data: Pointer; Len: Integer); {AG}
         procedure   CreateSocket; virtual;                         {AG/SSL}
@@ -753,7 +751,7 @@ type
                                                      write FHdrSender;
         property HdrPriority  : TSmtpPriority        read  FHdrPriority
                                                      write FHdrPriority;
-        property CharSet      : String               read  FCharSet
+        property CharSet      : AnsiString           read  FCharSet
                                                      write SetCharset;
         property CodePage     : Cardinal             read  FCodePage       {AG}
                                                      write FCodePage;
@@ -770,7 +768,7 @@ type
         property ConfirmReceipt : Boolean            read  FConfirmReceipt    {AG}
                                                      write FConfirmReceipt;   {AG}
         property ErrorMessage : String               read  FErrorMessage;
-        property LastResponse : String               read  FLastResponse;
+        property LastResponse : AnsiString           read  FLastResponse;
         property RequestType  : TSmtpRequest         read  FRequestType;      {AG}
         property State        : TSmtpState           read  FState;
         property Tag          : LongInt              read  FTag
@@ -811,7 +809,7 @@ type
         FEmailBody              : TStrings; { Message body text         }
         FEmailFiles             : TStrings; { File names for attachment }
         FCurrentFile            : Integer;  { Current file being sent   }
-        FMimeBoundary           : String;   { Message parts boundary    }
+        FMimeBoundary           : AnsiString; { Message parts boundary    }
         FAttachmentEncoding     : TSmtpEncoding;                          {AG}
         FFileStarted            : Boolean;
         FBodyFlag               : Boolean;
@@ -1055,10 +1053,10 @@ type
         FEmailImages     : TStrings;
         FHtmlText        : TStrings;
         FStreamArray     : TList;
-        FOutsideBoundary : String;
-        FInsideBoundary  : String;
+        FOutsideBoundary : AnsiString;
+        FInsideBoundary  : AnsiString;
         FMimeState       : TSmtpMimeState;
-        FHtmlCharSet     : String;
+        FHtmlCharSet     : AnsiString;
         FHtmlCodePage    : Cardinal;
         FLineOffset      : Integer;
         FImageNumber     : Integer;
@@ -1070,7 +1068,7 @@ type
         function  GetImageStream(Index: Integer): TStream;
         procedure SetImageStream(Index: Integer; const Value: TStream);
         function  GetImageStreamCount: Integer;
-        procedure SetHtmlCharset(const Value: String);
+        procedure SetHtmlCharset(const Value: AnsiString);
     protected
         procedure   SetEMailImages(newValue : TStrings);
         procedure   TriggerGetData(LineNum  : Integer;
@@ -1098,7 +1096,7 @@ type
                                               write SetPlainText;
         property HtmlText  : TStrings         read  FHtmlText
                                               write SetHtmlText;
-        property HtmlCharSet : String         read  FHtmlCharSet
+        property HtmlCharSet : AnsiString     read  FHtmlCharSet
                                               write SetHtmlCharset;
     end;
 
@@ -1171,7 +1169,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : Char) : Boolean;
+function IsDigit(Ch : AnsiChar) : Boolean;
 begin
     Result := (Ch >= '0') and (Ch <= '9');
 end;
@@ -1185,14 +1183,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpaceOrCRLF(Ch : Char) : Boolean;
+function IsSpaceOrCRLF(Ch : AnsiChar) : Boolean;
 begin
     Result := (Ch = ' ') or (Ch = #9) or (Ch = #10) or (Ch = #13);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function stpblk(PValue : PChar) : PChar;
+function stpblk(PValue : PAnsiChar) : PAnsiChar;
 begin
     Result := PValue;
     while IsSpaceOrCRLF(Result^) do
@@ -1310,7 +1308,7 @@ begin
             FoldHdrLine(Self, HdrName + HdrBody);
     end
     else
-        FoldHdrLine(Self, HdrBody + HdrName);
+        FoldHdrLine(Self, HdrName + HdrBody);
 end;
 
 
@@ -1364,17 +1362,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSmtpMessageText.NextLineAsString: String;
+function TSmtpMessageText.NextLineAsString: AnsiString;
 begin
     case FEncoding of
         smtpEnc7bit,
         smtpEnc8bit :
             { Wrap text only }
             if FWrapText then
-                Result := Trim(IcsWrapTextEx(FText, #13#10,
+                Result := _Trim(IcsWrapTextEx(FText, AnsiString(#13#10),
                                [#09, #32, '.', ',', '-'], 76, [], FCurrentIdx, TRUE))
             else
-                Result := Trim(IcsWrapTextEx(FText, #13#10,
+                Result := _Trim(IcsWrapTextEx(FText, AnsiString(#13#10),
                                [#09, #32, '.', ',', '-'], MaxInt, [], FCurrentIdx));
 
         smtpEncQuotedPrintable :
@@ -1622,7 +1620,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetInteger(Data : PChar; var Number : Integer) : PChar;
+function GetInteger(Data : PAnsiChar; var Number : Integer) : PAnsiChar;
 var
     bSign : Boolean;
 begin
@@ -1743,7 +1741,7 @@ procedure TCustomSmtpClient.WSocketDataAvailable(Sender: TObject; ErrorCode: Wor
 var
     Len : Integer;
     I   : Integer;
-    p   : PChar;
+    p   : PAnsiChar;
 begin
     Len := FWSocket.Receive(@FReceiveBuffer[FReceiveLen],
                             sizeof(FReceiveBuffer) - FReceiveLen);
@@ -1770,7 +1768,9 @@ begin
         if I > FReceiveLen then
             break;
 
-        FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
+        //FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
+        SetLength(FLastResponse, I - 1);
+        Move(FReceiveBuffer[0], Pointer(FLastResponse)^, I - 1);
         TriggerResponse(FLastResponse);
 
 {$IFDEF DUMP}
@@ -1825,8 +1825,8 @@ begin
     { Do not trigger the client SessionConnected from here. We must wait }
     { to have received the server banner.                                }
     if ErrorCode <> 0 then begin
-        FLastResponse := '500 ' + WSocketErrorDesc(ErrorCode) +
-                         ' (Winsock error #' + IntToStr(ErrorCode) + ')';
+        FLastResponse := AnsiString('500 ' + WSocketErrorDesc(ErrorCode) +
+                         ' (Winsock error #' + IntToStr(ErrorCode) + ')');
         FStatusCode   := 500;
         FConnected    := FALSE;
 { --Jake Traynham, 06/12/01  Bug - Need to set FRequestResult so High    }
@@ -1851,8 +1851,8 @@ procedure TCustomSmtpClient.WSocketDnsLookupDone(
     ErrorCode : Word);
 begin
     if ErrorCode <> 0 then begin
-        FLastResponse := '500 ' + WSocketErrorDesc(ErrorCode) +
-                         ' (Winsock error #' + IntToStr(ErrorCode) + ')';
+        FLastResponse := AnsiString('500 ' + WSocketErrorDesc(ErrorCode) +
+                         ' (Winsock error #' + IntToStr(ErrorCode) + ')');
         FStatusCode   := 500;
         SetErrorMessage;
         FRequestResult := ErrorCode;
@@ -1872,7 +1872,7 @@ begin
             FWSocket.Connect;
         except
             on E:Exception do begin
-                FLastResponse  := '500 ' + E.ClassName + ': ' + E.Message;
+                FLastResponse  := AnsiString('500 ' + E.ClassName + ': ' + E.Message);
                 FStatusCode    := 500;
                 FRequestResult := FStatusCode;
                 SetErrorMessage;
@@ -1927,7 +1927,7 @@ end;
 procedure TCustomSmtpClient.NextExecAsync;
 var
     I : Integer;
-    p : PChar;
+    p : PAnsiChar;
 begin
     DisplayLastResponse;
     p := GetInteger(@FLastResponse[1], FStatusCode);
@@ -2602,11 +2602,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomSmtpClient.SetCharset(const Value: String);
+procedure TCustomSmtpClient.SetCharset(const Value: AnsiString);
 var
     PInfo : PCharSetInfo;
 begin
-    FCharSet := LowerCase(Value);
+    FCharSet := _LowerCase(Value);
     { If empty set the default system codepage }
     if Length(FCharSet) = 0 then begin
         FCodePage := IcsSystemCodePage;
@@ -2753,7 +2753,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.DataNext;
 var
-    MsgLine  : array [0..1023] of Char;
+    MsgLine  : array [0..1023] of AnsiChar;
 begin
     { If we have been disconnected, then do nothing.                      }
     { RequestDone event handler is called from socket SessionClose event. }
@@ -2766,23 +2766,19 @@ begin
     if FItemCount < FHdrLines.Count then begin
         { There are still header lines to send.                           }
         { Truncate the line if too long, or shall we raise an exception?  }
-        StrPLCopy(PChar(@MsgLine), FHdrLines.Strings[FItemCount],
+        StrPLCopy(PAnsiChar(@MsgLine), AnsiString(FHdrLines.Strings[FItemCount]),
                   Length(MsgLine) - 1);
         TriggerHeaderLine(@MsgLine, SizeOf(MsgLine));
-        TriggerDisplay('> ' + StrPas(PChar(@MsgLine)));
+        TriggerDisplay('> ' + StrPas(PAnsiChar(@MsgLine)));
         FWSocket.OnDataSent := WSocketDataSent;
 
         if FSendMode <> smtpToSocket then begin
-            SendLineToStream(@MsgLine, StrLen(MsgLine)); // len = char count!
+            SendLineToStream(@MsgLine, StrLen(MsgLine));
             if FSendMode = smtpToStream then
                 Exit;
         end;
-    {$IFDEF UNICODE}
-        FWSocket.PutStringInSendBuffer(StrPas(PChar(@MsgLine)));
-    {$ELSE}
-        FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(MsgLine));
-    {$ENDIF}
-        FWSocket.SendStr(#13#10);
+        FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(PAnsiChar(@MsgLine)));
+        FWSocket.SendStr(AnsiString(#13#10));
     end
     else begin
         { Now we need to send data lines }
@@ -2809,22 +2805,17 @@ begin
 
         if FMoreLines then begin
             if MsgLine[0] = '.' then
-                Move(MsgLine[0], MsgLine[1], ((StrLen(MsgLine) + 1) * SizeOf(Char))); { AG }
-            TriggerDisplay('> ' + StrPas(PChar(@MsgLine)));
+                Move(MsgLine[0], MsgLine[1], (StrLen(MsgLine) + 1)); { AG }
+            TriggerDisplay('> ' + StrPas(PAnsiChar(@MsgLine)));
             FWSocket.OnDataSent := WSocketDataSent;
 
             if FSendMode <> smtpToSocket then begin
-                SendLineToStream(@MsgLine, StrLen(PChar(@MsgLine))); // len = char count!
+                SendLineToStream(@MsgLine, StrLen(PAnsiChar(@MsgLine))); // len = char count!
                 if FSendMode = smtpToStream then
                     Exit;
             end;
-
-        {$IFDEF UNICODE}
-            FWSocket.PutStringInSendBuffer(StrPas(PChar(@MsgLine)));
-        {$ELSE}
-            FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(MsgLine));
-        {$ENDIF}
-            FWSocket.SendStr(#13#10);
+            FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(PAnsiChar(@MsgLine)));
+            FWSocket.SendStr(AnsiString(#13#10));
         end
         else begin
             if FSendMode <> smtpToSocket then begin
@@ -3249,32 +3240,15 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SendLineToStream(Data: Pointer; Len: Integer);
-{$IFDEF UNICODE}
-const
-    CP_UTF8 = 65001;
-var
-    Buf  : array [0..1023 * 3] of AnsiChar;
-    bCnt : Integer;
-{$ENDIF}
 begin
     if Assigned(FOutStream) and (Len > 0) then begin
-{$IFDEF UNICODE}
-        bCnt := WideCharToMultiByte(CP_UTF8, 0, Data, Len , @Buf,
-                                    Length(Buf), nil, nil);
-        if (bCnt > 1) and (Buf[0] = '.') and
-           (Buf[1] = '.') then // remove a doubled dot
-            FOutStream.Write(Buf[1], bCnt - 1)
-        else
-            FOutStream.Write(Buf[0], bCnt);
-{$ELSE}
         if (Len > 1) and (PAnsiChar(Data)[0] = '.') and
            (PAnsiChar(Data)[1] = '.') then // remove a doubled dot
             FOutStream.Write(PAnsiChar(Data)[1], Len - 1)
         else
             FOutStream.Write(Data^, Len);
-{$ENDIF}
-        FOutStream.Write(PAnsiChar(#13#10)^, 2);
     end;
+    FOutStream.Write(PAnsiChar(#13#10)^, 2);
     if FSendMode = smtpToStream then
         PostMessage(Handle, FMsg_WM_SMTP_DATA_NEXT, 0 , 0);
 end;
@@ -3407,7 +3381,7 @@ procedure TSmtpCli.TriggerGetData(
     MaxLen   : Integer;
     var More : Boolean);
 var
-    sLine        : String;
+    sLine        : AnsiString;
     FileName     : String;
     sFileName    : String;
     sContentType : String;
@@ -3418,7 +3392,7 @@ begin
     if FEmailBody.Count > 0 then begin
         {if MaxLen > (1022 * SizeOf(Char)) then // already checked in DataNext
             MaxLen := (1022 * SizeOf(Char));  { RFC say 1024 char max, including nul char }
-        StrPLCopy(PChar(MsgLine), FEmailBody[0], MaxLen div SizeOf(Char));
+        StrPLCopy(PAnsiChar(MsgLine), AnsiString(FEmailBody[0]), MaxLen);
         FEmailBody.Delete(0);
         More := TRUE;
         Exit;
@@ -3428,7 +3402,7 @@ begin
         {AG start}
         if FMailMsgText.CurrentIdx > 0 then begin
             sLine := FMailMsgText.NextLineAsString;
-            StrPLCopy(PChar(MsgLine), SLine, MaxLen div SizeOf(Char));
+            StrPLCopy(PAnsiChar(MsgLine), SLine, MaxLen);
             Exit;
         end;
         {AG end}
@@ -3447,7 +3421,7 @@ begin
             Exit;
         end;
 
-        StrPCopy(PChar(MsgLine), '');
+        StrPCopy(PAnsiChar(MsgLine), '');
         FileName := FEmailFiles[FCurrentFile];
 
         {AG start}
@@ -3531,7 +3505,7 @@ begin
         FEmailBody.Add('Content-Type: ' + sContentType + ';');
         {AG start}
         { In order to not TriggerAttachHeader with a modified filename we copy }
-        sLine := sFileName;
+        sLine := AnsiString(sFileName);
         if not FAllow8bitChars and NeedsEncoding(sFileName) then begin
             if (FEncoding = smtpEncBase64) then
                 EncType := 'B'
@@ -3539,11 +3513,11 @@ begin
                 EncType := 'Q';
            { Length of (#9'filename=""') equals 12 }
         {$IFDEF UNICODE}
-            sLine := HdrEncodeInline(UnicodeToAnsi(sFileName, FCodePage),
+            sLine := AnsiString(HdrEncodeInline(UnicodeToAnsi(sFileName, FCodePage),
                                      SpecialsRFC822,
                                      EncType, FCharSet,
                                      75 - 12,
-                                     FFoldHeaders);
+                                     FFoldHeaders));
         {$ELSE}
             sLine := HdrEncodeInline(sFileName, SpecialsRFC822,
                                      EncType, FCharSet,
@@ -3556,9 +3530,9 @@ begin
                 sFileName := UnicodeString(UnicodeToAnsi(sFileName, FCodePage));
         {$ENDIF}
             if (Length(sFileName) + 12 > 76) and FFoldHeaders then
-                sLine := FoldString(sFileName,
+                sLine := AnsiString(FoldString(sFileName,
                                     [#32, 'A'..'Z', 'a'..'z', '0'..'9'],
-                                    75 - 12);
+                                    75 - 12));
         {AG end}
         {FEmailBody.Add(#9'name="' + sFileName + '"');}                    {AG}
         FEmailBody.Add(#9'name="' + sLine + '"');                          {AG}
@@ -3582,9 +3556,9 @@ begin
     else if FAttachmentEncoding = smtpEncodeQP then                        {AG}
         sLine := DoFileEncQuotedPrintable(FStream, More)                   {AG}                                                                   {AG}
     else
-        sLine := {$IFDEF UNICODE} AnsiToUnicode {$ENDIF}(DoTextFileReadNoEncoding(FStream, More));                  {AG}
+        sLine := DoTextFileReadNoEncoding(FStream, More);                  {AG}
 
-    StrPLCopy(PChar(MsgLine), sLine, MaxLen div SizeOf(Char));
+    StrPLCopy(PAnsiChar(MsgLine), sLine, MaxLen);
     if not More then begin  { we hit the end of file. }
         EndFileEncBase64(FStream);
         FFileStarted := FALSE;
@@ -3606,16 +3580,16 @@ begin
     { if we have a MIME type message, then replace the content-type }
     { header with the proper MIME content-type.                     }
     if FMimeBoundary <> '' then begin
-        if (StrLen(PChar(Line)) > 0) and
-           (StrLIComp(PChar('CONTENT-TYPE:'), PChar(Line), 13) = 0) then
-            StrPCopy(PChar(Line), 'Content-Type: multipart/mixed;'#13#10#9'boundary="'
+        if (StrLen(PAnsiChar(Line)) > 0) and
+           (StrLIComp(PAnsiChar('CONTENT-TYPE:'), PAnsiChar(Line), 13) = 0) then
+            StrPCopy(PAnsiChar(Line), 'Content-Type: multipart/mixed;'#13#10#9'boundary="'
                      + FMimeBoundary + '"');
     end
-    else if (StrLen(PChar(Line)) > 0) and
+    else if (StrLen(PAnsiChar(Line)) > 0) and
             (StrLIComp('CONTENT-TYPE: TEXT', Line, 18) = 0) then           {AG}
         if FEncoding <> smtpEnc7bit then begin                             {AG}
-            StrCat(PChar(Line), PChar(#13#10 + 'Content-Transfer-Encoding: '));
-            StrCat(PChar(Line), PChar(SmtpDefEncArray[Ord(FEncoding)]));
+            StrCat(PAnsiChar(Line), PAnsiChar(#13#10 + 'Content-Transfer-Encoding: '));
+            StrCat(PAnsiChar(Line), PAnsiChar(SmtpDefEncArray[Ord(FEncoding)]));
         end;
     inherited TriggerHeaderLine(Line, Size);
 end;
@@ -3674,7 +3648,7 @@ begin
     FEmailBody.Clear;
     if Assigned(FEMailFiles) and (FEmailFiles.Count > FCurrentFile) then begin
         FMimeBoundary := '= Multipart Boundary ' +
-                         FormatDateTime('mmddyyhhnn', Now);
+                         AnsiString(FormatDateTime('mmddyyhhnn', Now));
         FEmailBody.Add('This is a multipart MIME message.');
         FEmailBody.Add('');
         FEmailBody.Add('--' + FMimeBoundary);
@@ -3957,11 +3931,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
+procedure THtmlSmtpCli.SetHtmlCharset(const Value: AnsiString);
 var
     PInfo : PCharSetInfo;
 begin
-    FHtmlCharSet := LowerCase(Value);
+    FHtmlCharSet := _LowerCase(Value);
     { If empty set the default system codepage }
     if Length(FHtmlCharSet) = 0 then begin
         FHtmlCodePage := IcsSystemCodePage;
@@ -4016,7 +3990,7 @@ procedure THtmlSmtpCli.TriggerGetData(
     var More : Boolean);
 var
 //  Len          : Integer;
-    LineBuf      : String;
+    LineBuf      : AnsiString;
     FileName     : String;
     BAction      : TSmtpBeforeOpenFileAction;
     AAction      : TSmtpAfterOpenFileAction;
@@ -4028,7 +4002,7 @@ begin
             if MaxLen > 1022 then { Already corrected in DataNext } { AG 11/04/07 }
                 MaxLen := 1022;  { RFC say 1024 char max, including nul char and room for doubled dot}
             *)
-            StrPLCopy(PChar(MsgLine), FEmailBody[0], MaxLen div SizeOf(Char));
+            StrPLCopy(PAnsiChar(MsgLine), AnsiString(FEmailBody[0]), MaxLen);
             FEmailBody.Delete(0);
             if FEmailBody.Count = 0 then
                 FLineOffset := LineNum;
@@ -4039,7 +4013,7 @@ begin
         if FBodyFlag then begin
             if FMailMsgText.CurrentIdx > 0 then begin
                 LineBuf := FMailMsgText.NextLineAsString;
-                StrPLCopy(PChar(MsgLine), LineBuf, MaxLen div SizeOf(Char));
+                StrPLCopy(PAnsiChar(MsgLine), LineBuf, MaxLen);
                 Exit;
             end;
             More := FALSE;
@@ -4056,15 +4030,15 @@ begin
 
     if FMimeState = smtpMimeIntro then begin
         case LineNum of
-        1: StrPCopy(PChar(MsgLine), 'This is a multipart MIME formatted message.');
-        2, 6, 10: StrPCopy(PChar(MsgLine), '');
-        3: StrPCopy(PChar(MsgLine), '--' + FOutsideBoundary);
-        4: StrPCopy(PChar(MsgLine), 'Content-Type: multipart/alternative;');
-        5: StrPCopy(PChar(MsgLine), #9'boundary="' + FInsideBoundary + '"'); // Folded!
+        1: StrPCopy(PAnsiChar(MsgLine), 'This is a multipart MIME formatted message.');
+        2, 6, 10: StrPCopy(PAnsiChar(MsgLine), '');
+        3: StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
+        4: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: multipart/alternative;');
+        5: StrPCopy(PAnsiChar(MsgLine), #9'boundary="' + FInsideBoundary + '"'); // Folded!
 
-        7: StrPCopy(PChar(MsgLine), '--' + FInsideBoundary);
-        8: StrPCopy(PChar(MsgLine), 'Content-Type: text/plain; charset="' + FCharSet + '"');
-        9: StrPCopy(PChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
+        7: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
+        8: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/plain; charset="' + FCharSet + '"');
+        9: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
         11: begin
                 FMimeState  := smtpMimePlainText;
                 FLineOffset := LineNum - 1;
@@ -4084,12 +4058,12 @@ begin
     if FMimeState = smtpMimePlainText then begin
         if FMailMsgText.CurrentIdx = 0 then begin
             case LineNum - FLineOffset - FMsgLineCount of
-            1: StrPCopy(PChar(MsgLine), '');
-            2: StrPCopy(PChar(MsgLine), '--' + FInsideBoundary);
-            3: StrPCopy(PChar(MsgLine), 'Content-Type: text/html; charset="' +
+            1: StrPCopy(PAnsiChar(MsgLine), '');
+            2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
+            3: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/html; charset="' +
                                  FHtmlCharSet + '"');
-            4: StrPCopy(PChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
-            5: StrPCopy(PChar(MsgLine), '');
+            4: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
+            5: StrPCopy(PAnsiChar(MsgLine), '');
             else
                 FMimeState := smtpMimeHtmlText;
                 FLineOffset := LineNum - 1;
@@ -4102,7 +4076,7 @@ begin
         else begin
             if FMailMsgText.CurrentIdx > 0 then begin
                 LineBuf := FMailMsgText.NextLineAsString;
-                StrPLCopy(PChar(MsgLine), LineBuf, MaxLen div SizeOf(Char));
+                StrPLCopy(PAnsiChar(MsgLine), LineBuf, MaxLen);
                 Inc(FMsgLineCount);
                 Exit;
             end;
@@ -4117,9 +4091,9 @@ begin
     if FMimeState = smtpMimeHtmlText then begin
         if FMailMsgText.CurrentIdx = 0 then begin
             case LineNum - FLineOffset - FMsgLineCount of
-            1: StrPCopy(PChar(MsgLine), '');
-            2: StrPCopy(PChar(MsgLine), '--' + FInsideBoundary + '--');
-            3: StrPCopy(PChar(MsgLine), '');
+            1: StrPCopy(PAnsiChar(MsgLine), '');
+            2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary + '--');
+            3: StrPCopy(PAnsiChar(MsgLine), '');
             else
                 FMimeState   := smtpMimeImages;
                 FImageNumber := 1;
@@ -4129,7 +4103,7 @@ begin
         else begin
             if FMailMsgText.CurrentIdx > 0 then begin
                 LineBuf := FMailMsgText.NextLineAsString;
-                StrPLCopy(PChar(MsgLine), LineBuf, MaxLen div SizeOf(Char));
+                StrPLCopy(PAnsiChar(MsgLine), LineBuf, MaxLen);
                 Inc(FMsgLineCount);
                 Exit;
             end;
@@ -4144,14 +4118,14 @@ begin
     if FMimeState = smtpMimeImages then begin
         if FImageNumber > (FEmailImages.Count + FEmailFiles.Count) then begin
             case LineNum - FLineOffset of
-            1:  StrPCopy(PChar(MsgLine), '--' + FOutsideBoundary + '--');
+            1:  StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary + '--');
             else
                 FMimeState := smtpMimeDone;
             end;
         end
         else begin
             case LineNum - FLineOffset of
-            1:  StrPCopy(PChar(MsgLine), '--' + FOutsideBoundary);
+            1:  StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
             2:  begin
                     if FImageNumber <= FEmailImages.Count then
                         { First we send the image files }
@@ -4170,30 +4144,30 @@ begin
                 end;
             3:  begin
                     if FAttachmentEncoding = smtpEncodeBase64 then          {AG}
-                        StrPCopy(PChar(MsgLine), 'Content-Transfer-Encoding: base64')
+                        StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: base64')
                     else if FAttachmentEncoding = smtpEncodeQP then         {AG}                                         {AG}
-                         StrPCopy(PChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable')  {AG}                                    {AG}
+                         StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable')  {AG}                                    {AG}
                     else
-                        StrPCopy(PChar(MsgLine), 'Content-Transfer-Encoding: 7bit');{AG}
+                        StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: 7bit');{AG}
                 end;    
             4:  begin
                     if FImageNumber <= FEmailImages.Count then
-                        StrPCopy(PChar(MsgLine),
+                        StrPCopy(PAnsiChar(MsgLine),
                                  'Content-Disposition: inline;' + #13#10#9 +
-                                 'filename="' + FsFileName + '"')
+                                 'filename="' + AnsiString(FsFileName) + '"')
                     else
-                        StrPCopy(PChar(MsgLine),
+                        StrPCopy(PAnsiChar(MsgLine),
                                  'Content-Disposition: attachment;' + #13#10#9 +
-                                 'filename="' + FsFileName + '"');
+                                 'filename="' + AnsiString(FsFileName) + '"');
                 end;
             5:  begin
                     if FImageNumber <= FEmailImages.Count then
-                        StrPCopy(PChar(MsgLine), 'Content-ID: <IMAGE' +
-                                 IntToStr(FImageNumber) + '>')
+                        StrPCopy(PAnsiChar(MsgLine), 'Content-ID: <IMAGE' +
+                                 IcsIntToStrA(FImageNumber) + '>')
                     else
                         { This line is just a place holder to avoid }
-                        StrPCopy(PChar(MsgLine), 'X-File-ID: <FILE' +
-                                 IntToStr(FImageNumber - FEmailImages.Count) +
+                        StrPCopy(PAnsiChar(MsgLine), 'X-File-ID: <FILE' +
+                                 IcsIntToStrA(FImageNumber - FEmailImages.Count) +
                                  '>');
                     TriggerAttachHeader(FImageNumber, FsFileName, nil);
                 end;
@@ -4283,7 +4257,7 @@ begin
                         LineBuf := DoFileEncQuotedPrintable(FStream, More)  {AG}
                     else
                         LineBuf := DoTextFileReadNoEncoding(FStream, More); {AG}
-                    StrPCopy(PChar(MsgLine), LineBuf);
+                    StrPCopy(PAnsiChar(MsgLine), LineBuf);
                     if not More then begin
                         { We hit the end-of-file }
                         EndFileEncBase64(FStream);
@@ -4340,11 +4314,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlSmtpCli.GenerateBoundaries;
 var
-    TickPart : String;
-    RandPart : String;
+    TickPart : AnsiString;
+    RandPart : AnsiString;
 begin
-    TickPart := '----=_NextPart_000_' + IntToHex(LongInt(GetTickCount), 8);
-    RandPart := IntToHex(Random(High(Integer)), 8);
+    TickPart := '----=_NextPart_000_' + IcsIntToHexA(LongInt(GetTickCount), 8);
+    RandPart := IcsIntToHexA(Random(High(Integer)), 8);
     FOutsideBoundary := TickPart + '_0.' + RandPart;
     FInsideBoundary  := TickPart + '_1.' + RandPart;
 end;
@@ -4578,7 +4552,7 @@ begin
             FWSocket.SslEnable := FALSE;
             FStatusCode    := 500;
             FRequestResult := FStatusCode;
-            FLastResponse  := E.Classname + ' ' + E.Message;
+            FLastResponse  := AnsiString(E.Classname + ' ' + E.Message);
             SetErrorMessage;
             { Temporarily disable RequestDone }
             FRequestDoneFlag := TRUE;
@@ -4603,7 +4577,7 @@ begin
      if (FSslType = smtpTlsImplicit) and (ErrMsg = '') then
          ErrMsg := '500 STARTTLS is not supported with a implicite SSL connection';
      if ErrMsg <> '' then begin
-         FLastResponse := ErrMsg;
+         FLastResponse := AnsiString(ErrMsg);
          FErrorMessage := ErrMsg;
          FStatusCode    := 500;
          FRequestResult := FStatusCode;

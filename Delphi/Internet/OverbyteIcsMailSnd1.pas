@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.04
+Version:      6.05
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -67,7 +67,8 @@ Apr 25, 2008  V6.03 A.Garrels made some changes to prepare the code for Unicode.
               Added button "Send To File" and assigned event OnAttachContentTypeEh.  
 Jul 23, 2008  V6.04 A. Garrels changed code in OnGetDate event handler to prepare
               code for Unicode.
-
+Aug 03, 2008  V6.05 A. Garrels changed code in OnGetDate event handler to prepare
+              code for Unicode again
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMailSnd1;
@@ -93,8 +94,8 @@ uses
   Dialogs, IniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
 
 const
-    SmtpTestVersion    = 6.04;
-    CopyRight : String = ' MailSnd (c) 1997-2008 F. Piette V6.04 ';
+    SmtpTestVersion    = 6.05;
+    CopyRight : String = ' MailSnd (c) 1997-2008 F. Piette V6.05 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -316,7 +317,7 @@ begin
     DisplayMemo.Clear;
     FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
     FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
-{$IFDEF DELPHI10}
+{$IFDEF DELPHI10_UP}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
 {$ENDIF}
@@ -411,43 +412,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}
-function TrimRight(Str : String) : String;
-var
-    i : Integer;
-begin
-    i := Length(Str);
-    while (i > 0) and (Str[i] = ' ') do
-        i := i - 1;
-    Result := Copy(Str, 1, i);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TrimLeft(Str : String) : String;
-var
-    i : Integer;
-begin
-    if Str[1] <> ' ' then
-        Result := Str
-    else begin
-        i := 1;
-        while (i <= Length(Str)) and (Str[i] = ' ') do
-            i := i + 1;
-        Result := Copy(Str, i, Length(Str) - i + 1);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Trim(Str : String) : String;
-begin
-    Result := TrimLeft(TrimRight(Str));
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.SmtpClientAttachContentTypeEh(Sender: TObject;
   FileNumber: Integer; var FileName, ContentType: string;
   var AttEncoding: TSmtpEncoding);
@@ -478,17 +442,13 @@ procedure TSmtpTestForm.SmtpClientGetData(
     MsgLine : Pointer;
     MaxLen  : Integer;
     var More: Boolean);
-var
-    Len : Integer;
 begin
     if LineNum > MsgMemo.Lines.count then
         More := FALSE
-    else begin
-        MaxLen := MaxLen div SizeOf(Char);
-        Len := Length(MsgMemo.Lines[LineNum - 1]);
-        { Truncate the line if too long (should wrap to next line) }
-        StrPLCopy(PChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
-    end;
+    else
+        { Truncate the line if too long (should wrap to next line) }        
+        StrPLCopy(PAnsiChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
+  
 end;
 
 

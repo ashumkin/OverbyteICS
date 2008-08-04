@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       How to use TSslSmtpCli component
 Creation:     09 october 1997
-Version:      2.08
+Version:      2.09
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -44,6 +44,8 @@ Aug 20, 2003 SSL support added by Arno Garrels <arno.garrels@gmx.de>.
 Dec 29, 2007 A. Garrels reworked SSL, simplified verification code.
 Jul 23, 2008 A. Garrels changed code in OnGetDate event handler to prepare
              code for Unicode
+Aug 03, 2008 A. Garrels changed code in OnGetDate event handler to prepare
+             code for Unicode again.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslMailSnd1;
@@ -69,8 +71,8 @@ uses
   OverbyteIcsSmtpProt;
 
 const
-  SslSmtpTestVersion    = 1.08;
-  CopyRight : String    = ' SslMailSnd (c) 1997-2008 F. Piette V1.08 ';
+  SslSmtpTestVersion    = 2.09;
+  CopyRight : String    = ' SslMailSnd (c) 1997-2008 F. Piette V2.09 ';
   WM_SSL_RECONNECT      = WM_USER + 1;
 
 type
@@ -311,7 +313,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslSmtpTestForm.FormCreate(Sender: TObject);
 begin
-{$IFDEF DELPHI10}
+{$IFDEF DELPHI10_UP}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
 {$ENDIF}
@@ -492,17 +494,12 @@ procedure TSslSmtpTestForm.SslSmtpClientGetData(
     MsgLine : Pointer;
     MaxLen  : Integer;
     var More: Boolean);
-var
-    Len : Integer;
 begin
     if LineNum > MsgMemo.Lines.count then
         More := FALSE
-    else begin
-        MaxLen := MaxLen div SizeOf(Char);
-        Len := Length(MsgMemo.Lines[LineNum - 1]);
+    else
         { Truncate the line if too long (should wrap to next line) }
-        StrPLCopy(PChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
-    end;
+        StrPLCopy(PAnsiChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
 end;
 
 

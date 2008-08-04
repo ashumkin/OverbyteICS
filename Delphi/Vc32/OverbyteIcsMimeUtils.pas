@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      6.08
+Version:      6.09
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -71,7 +71,7 @@ Jul 20, 2008  V6.07 A. Garrels Changed IcsWrapText according to SysUtils.WrapTex
                     version of func. NeedsEncoding. 
 Jul, 24, 2008 V6.08 A. Garrels - NeedsEncoding() returned "False" for character
                     #127.
-
+Aug, 03, 2008 v6.09 A. Garrels changed some string types again.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -85,7 +85,7 @@ unit OverbyteIcsMimeUtils;
     {$WARN IMPLICIT_STRING_CAST       OFF}
     {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
-    {$WARN EXPLICIT_STRING_CAST_LOSS  ON}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
@@ -130,8 +130,8 @@ type
 {$ENDIF}
 
 const
-    TMimeUtilsVersion = 608;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.08 ';
+    TMimeUtilsVersion = 609;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.09 ';
 
 {$IFDEF CLR}
     SpecialsRFC822 : TSysCharSet = [Ord('('), Ord(')'), Ord('<'), Ord('>'), Ord('@'), Ord(','), Ord(';'), Ord(':'),
@@ -148,6 +148,8 @@ const
 {$ENDIF}
 
     HexTable : array[0..15] of Char = ('0','1','2','3','4','5','6','7','8','9',
+                                        'A','B','C','D','E','F');      {HLX}
+    HexTableA : array[0..15] of AnsiChar = ('0','1','2','3','4','5','6','7','8','9',
                                         'A','B','C','D','E','F');      {HLX}
 
 { Functions to encode/decode string as a "quoted-printable" string RFC2045}
@@ -187,9 +189,9 @@ function  Base64Decode(Input : StringBuilder) : StringBuilder; overload;
 function  InitFileEncBase64(const FileName : String;
                             ShareMode      : Word) : TStream;
 function  DoFileEncBase64(var Stream     : TStream;
-                          var More       : Boolean) : String;
+                          var More       : Boolean) : AnsiString;
 function  DoFileEncQuotedPrintable(var Stream     : TStream;                {AG}
-                          var More       : Boolean) : String;
+                          var More       : Boolean) : AnsiString;
 function  DoTextFileReadNoEncoding(var Stream     : TStream;                {AG}
                           var More       : Boolean) : AnsiString;
 function  DoFileLoadNoEncoding(var Stream     : TStream;               {Bjørnar}
@@ -197,7 +199,7 @@ function  DoFileLoadNoEncoding(var Stream     : TStream;               {Bjørnar}
 { Similar to Base64Encode, returns just a coded line                      }
 function  Base64EncodeEx(const Input : AnsiString;
                          MaxCol      : Integer;
-                         var cPos    : Integer) : String; overload;
+                         var cPos    : Integer) : AnsiString; overload;
 {$IFDEF COMPILER12_UP}
 function  Base64EncodeEx(const Input : UnicodeString;
                          MaxCol      : Integer;
@@ -211,13 +213,22 @@ procedure EndFileEncBase64(var Stream : TStream);
 { Dot at start of line escaping for SMTP and NNTP (double the dot)        }
 procedure DotEscape(var S : String; OnlyAfterCrLf : Boolean = False); {AG 11/04/07}
 { Similar to IcsWrapText, returns just a single line                      } {AG}
+function IcsWrapTextEx(const Line : AnsiString;
+                       const BreakStr : AnsiString;
+                       const BreakingChars: TSysCharSet;
+                       MaxCol       : Integer;
+                       QuoteChars   : TSysCharSet;
+                       var cPos     : Integer;
+                       ForceBreak: Boolean = False): AnsiString; {$IFDEF COMPILER12_UP} overload;
+
 function IcsWrapTextEx(const Line : String;
                        const BreakStr : String;
                        const BreakingChars: TSysCharSet;
                        MaxCol       : Integer;
                        QuoteChars   : TSysCharSet;
-                       var cPos: Integer;
-                       ForceBreak: Boolean = False): String;
+                       var cPos     : Integer;
+                       ForceBreak: Boolean = False): String; overload;
+{$ENDIF}
 { Unfolds folded headers                                                  } {AG}
 function UnFoldHdrLine(const S : String): String;
 {Helper function                                                          }
@@ -230,11 +241,11 @@ function NeedsEncodingPChar(S : PChar) : Boolean;                           {FP}
 { MIME In-Line-Encoding plus Folding, see comments in function source     } {AG}
 function HdrEncodeInLine(const Input   : AnsiString;
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
-                         EncType       : Char;        { Either 'Q' or 'B' }
-                         const CharSet : String;      { e.g. 'iso-8859-1' }
+                         EncType       : AnsiChar;    { Either 'Q' or 'B' }
+                         const CharSet : AnsiString;  { e.g. 'iso-8859-1' }
                          MaxCol        : Integer;
-                         DoFold        : Boolean): String; overload;
-{$IFDEF COMPILER12_UP}
+                         DoFold        : Boolean): String; {$IFDEF COMPILER12_UP} overload;
+
 function HdrEncodeInLine(const Input   : UnicodeString;
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
                          EncType       : WideChar;    { Either 'Q' or 'B'        }
@@ -259,7 +270,7 @@ function StrEncodeQPEx(const Buf   : AnsiString;
                        Specials    : TSysCharSet;
                        ShortSpace  : Boolean; {'_' e.g. for in-line}
                        var cPos    : Integer;
-                       DoFold      : Boolean) : String; overload;
+                       DoFold      : Boolean) : AnsiString; overload;
 {$IFDEF COMPILER12_UP}
 function StrEncodeQPEx(const Buf   : UnicodeString;
                        MaxCol      : Integer;
@@ -507,6 +518,13 @@ const
         'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/', '='
     );
+    Base64OutA: array [0..64] of AnsiChar = (
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/', '='
+    );
     Base64In: array[0..127] of Byte = (
         255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
         255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -598,7 +616,7 @@ end;
 { This is a slow function, it realy should be used with TBufferedFileStream }
 function DoFileEncQuotedPrintable(                                       {AG}
     var Stream : TStream;
-    var More   : Boolean) : String;
+    var More   : Boolean) : AnsiString;
 const
     LINE_LENGTH = 73; // + 2 = 75 + trailing '=' = 76
 var
@@ -619,13 +637,13 @@ begin
                 Inc(I);
                 Result[I] := '=';
                 Inc(I);
-                Result[I] := HexTable[(Ord(Buf) shr 4) and 15];
+                Result[I] := HexTableA[(Ord(Buf) shr 4) and 15];
                 Inc(I);
-                Result[I] := HexTable[Ord(Buf) and 15];
+                Result[I] := HexTableA[Ord(Buf) and 15];
             end
             else begin
                 Inc(I);
-                Result[I] := Char(Buf); // No problem here since plain US-ASCII
+                Result[I] := Buf; 
             end;
         end;
     end;
@@ -720,7 +738,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function DoFileEncBase64(
     var Stream     : TStream;
-    var More       : Boolean) : String;
+    var More       : Boolean) : AnsiString;
 const
     MAX_LENGTH = 72;
 var
@@ -775,11 +793,7 @@ begin
         SB[I] := Char(DataOut[I]);
     Result := SB.ToString;
 {$ELSE}
-{$IFDEF COMPILER12_UP}
-    Result := UsAsciiToUnicode(_StrPas(PAnsiChar(@DataOut[0])));
-{$ELSE}
     Result := _StrPas(PAnsiChar(@DataOut[0]));
-{$ENDIF}
 {$ENDIF}
 end;
 
@@ -1030,7 +1044,7 @@ end;
 { Similar to Base64Encode, returns just a coded line                        }
 function Base64EncodeEx(const Input : AnsiString;
                         MaxCol      : Integer;
-                        var cPos    : Integer) : String;
+                        var cPos    : Integer) : AnsiString;
 var
     Len : Integer;
     I   : Integer;
@@ -1040,28 +1054,28 @@ begin
     SetLength(Result, MaxCol + 3);
     while (cPos <= Len) and (I < MaxCol) do begin
         Inc(I);
-        Result[I] := Base64Out[(Byte(Input[cPos]) and $FC) shr 2];
+        Result[I] := Base64OutA[(Byte(Input[cPos]) and $FC) shr 2];
         if (cPos + 1) <= Len  then begin
             Inc(I);
-            Result[I] := Base64Out[((Byte(Input[cPos]) and $03) shl 4) +
+            Result[I] := Base64OutA[((Byte(Input[cPos]) and $03) shl 4) +
                                    ((Byte(Input[cPos + 1]) and $F0) shr 4)];
             if (cPos + 2) <= Len then begin
                 Inc(I);
-                Result[I] := Base64Out[((Byte(Input[cPos + 1]) and $0F) shl 2) +
+                Result[I] := Base64OutA[((Byte(Input[cPos + 1]) and $0F) shl 2) +
                                        ((Byte(Input[cPos + 2]) and $C0) shr 6)];
                 Inc(I);
-                Result[I] := Base64Out[(Byte(Input[cPos + 2]) and $3F)];
+                Result[I] := Base64OutA[(Byte(Input[cPos + 2]) and $3F)];
             end
             else begin
                 Inc(I);
-                Result[I] := Base64Out[(Byte(Input[cPos + 1]) and $0F) shl 2];
+                Result[I] := Base64OutA[(Byte(Input[cPos + 1]) and $0F) shl 2];
                 Inc(I);
                 Result[I] := '=';
             end
         end
         else begin
             Inc(I);
-            Result[I] := Base64Out[(Byte(Input[cPos]) and $03) shl 4];
+            Result[I] := Base64OutA[(Byte(Input[cPos]) and $03) shl 4];
             Inc(I);
             Result[I] := '=';
             Inc(I);
@@ -1100,6 +1114,107 @@ end;
 { i.e. when BreakStr #13#10#9 is found cPos returned is pos of char #9 + 1.    }
 { Breaking chars appear at the end of a line. ForceBreak works outside quoted  }
 { strings only and forces a break at MaxCol if no breaking char has been found.}
+function IcsWrapTextEx(
+    const Line           : AnsiString;
+    const BreakStr       : AnsiString;
+    const BreakingChars  : TSysCharSet;
+    MaxCol               : Integer;
+    QuoteChars           : TSysCharSet;
+    var cPos             : Integer;
+    ForceBreak           : Boolean): AnsiString;
+var
+    Col                : Integer;
+    LinePos, LineLen   : Integer;
+    BreakLen, BreakPos : Integer;
+    QuoteChar, CurChar : AnsiChar;
+    ExistingBreak      : Boolean;
+    L                  : Integer;
+begin
+    Col           := 1;
+    LinePos       := cPos;
+    BreakPos      := 0;
+    QuoteChar     := #0;
+    ExistingBreak := False;
+    LineLen       := Length(Line);
+    BreakLen      := Length(BreakStr);
+    Result        := '';
+    while cPos <= LineLen do begin
+        CurChar := Line[cPos];
+        if IsCharInSysCharSet(TSetType(CurChar), LeadBytes) then begin
+            L := CharLength(Line, cPos) div SizeOf(Char) -1;
+            Inc(cPos, L);
+            Inc(Col, L);
+        end
+        else begin
+            if CurChar = BreakStr[1] then begin
+                if QuoteChar = #0 then begin
+                    ExistingBreak := _StrLComp(PAnsiChar(BreakStr),
+                                              PAnsiChar(@Line[cPos]),
+                                              BreakLen) = 0;
+                    if ExistingBreak then begin
+                        Inc(cPos, BreakLen - 1);
+                        BreakPos := cPos;
+                    end;
+                end
+            end
+            else if IsCharInSysCharSet(TSetType(CurChar),
+                                       BreakingChars) then begin
+                if QuoteChar = #0 then
+                    BreakPos := cPos;
+            end
+            else if IsCharInSysCharSet(TSetType(CurChar), QuoteChars) then begin
+                if CurChar = QuoteChar then begin
+                    QuoteChar := #0;
+                    if ForceBreak and (Col >= MaxCol) and (BreakPos = 0) then
+                        BreakPos := cPos;
+                end
+                else if QuoteChar = #0 then begin
+                    QuoteChar := CurChar;
+                    if ForceBreak and (cPos > LinePos) then
+                        BreakPos := cPos -1; // Break before the QuoteChar
+                end;
+            end
+            else if ForceBreak and (QuoteChar = #0) and (Col >= MaxCol) and
+                    (BreakPos = 0) then begin
+                BreakPos := cPos;
+            end;
+        end;
+        Inc(cPos);
+        Inc(Col);
+
+        if (not IsCharInSysCharSet(TSetType(QuoteChar), QuoteChars)) and
+           (ExistingBreak or
+           ((Col > MaxCol) and (BreakPos >= LinePos))) then begin
+            if ExistingBreak then
+                Result := Copy(Line, LinePos, BreakPos - LinePos + 1 - BreakLen)
+            else
+                Result := Copy(Line, LinePos, BreakPos - LinePos + 1);
+            if (not IsCharInSysCharSet(TSetType(CurChar), QuoteChars)) or
+               (ExistingBreak) then begin
+                if cPos <= LineLen then begin
+                    if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
+                        if not ExistingBreak then begin
+                            { Break due to one of the breaking chars found and CRLF follows }
+                            Inc(cPos, 2);
+                            Exit;
+                        end;
+                        { Empty line follows }
+                        BreakPos := cPos - 1;
+                    end;
+                end;
+            end;
+            Inc(BreakPos);
+            cPos := BreakPos;
+            Exit;
+        end;
+    end;
+    Result := Copy(Line, LinePos, MaxInt);
+    cPos := MaxInt;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
 function IcsWrapTextEx(
     const Line           : String;
     const BreakStr       : String;
@@ -1197,7 +1312,7 @@ begin
     Result := Copy(Line, LinePos, MaxInt);
     cPos := MaxInt;
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Unfold header lines                                                       } {AG}
@@ -1289,8 +1404,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function HdrEncodeInLine(const Input    : AnsiString;
                          Specials       : TSysCharSet;
-                         EncType        : Char;    { Either 'Q' or 'B' }
-                         const CharSet  : String;  { e.g. 'iso-8859-1' }
+                         EncType        : AnsiChar;    { Either 'Q' or 'B' }
+                         const CharSet  : AnsiString;  { e.g. 'iso-8859-1' }
                          MaxCol         : Integer;
                          DoFold         : Boolean): String;
 const
@@ -1397,8 +1512,8 @@ function HdrEncodeInLine(const Input    : UnicodeString;
                          MaxCol         : Integer;
                          DoFold         : Boolean): UnicodeString;
 begin
-    Result := HdrEncodeInLine(UnicodeToAnsi(Input), Specials, EncType,
-                              CharSet, MaxCol, DoFold);
+    Result := HdrEncodeInLine(AnsiString(Input), Specials, AnsiChar(EncType),
+                              AnsiString(CharSet), MaxCol, DoFold);
 end;
 {$ENDIF}
 
@@ -1480,7 +1595,7 @@ function StrEncodeQPEx(const Buf   : AnsiString;
                        Specials    : TSysCharSet;
                        ShortSpace  : Boolean;
                        var cPos    : Integer;
-                       DoFold      : Boolean) : String;
+                       DoFold      : Boolean) : AnsiString;
 var
     lPosRes : Integer;
 begin
@@ -1503,9 +1618,9 @@ begin
             if lPosRes < MaxCol - 2 then begin
                 Result[lPosRes] := '=';
                 Inc(lPosRes);
-                Result[lPosRes] := HexTable[(Ord(Buf[cPos]) shr 4) and 15];
+                Result[lPosRes] := HexTableA[(Ord(Buf[cPos]) shr 4) and 15];
                 Inc(lPosRes);
-                Result[lPosRes] := HexTable[Ord(Buf[cPos]) and 15];
+                Result[lPosRes] := HexTableA[Ord(Buf[cPos]) and 15];
                 Inc(lPosRes);
                 Inc(cPos);
             end
@@ -1517,7 +1632,7 @@ begin
         end
         else
             if lPosRes < MaxCol then begin
-                Result[lPosRes] := Char(Buf[cPos]);
+                Result[lPosRes] := Buf[cPos];
                 Inc(lPosRes);
                 Inc(cPos);
             end

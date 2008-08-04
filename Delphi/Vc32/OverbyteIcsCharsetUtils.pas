@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      1.02
+Version:      1.03
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -68,7 +68,7 @@ History:
 Jul 20, 2008 V1.01 A. Garrels added CodePageToMimeCharsetString();
 Jul 29, 2008 V1.02 A. Garrels added global var IcsSystemCodePage. Changed type
                    of one local var from AnsiString to CsuString.
-
+Aug 03, 2008 V1.03 A. Garrels changed alias CsuString to use AnsiString.
 
 
 //
@@ -250,10 +250,11 @@ unit OverbyteIcsCharsetUtils;
 interface
 
 uses
-    Windows, Sysutils, Classes, Contnrs;
+    Windows, Sysutils, Classes, Contnrs,
+    OverbyteIcsLibrary;
 
 type
-    CsuString = String;
+    CsuString = AnsiString;
     { Proc. InitializeCharsetInfos depends on the order of the items of this }
     { set!                                                                   }
     TMimeCharset = (
@@ -601,7 +602,7 @@ var
 begin
     if Length(AMimeCharSetString) > 0 then
     begin
-        S := LowerCase(AMimeCharSetString);
+        S := _LowerCase(AMimeCharSetString);
         for I := Low(CharsetInfos) to High(CharsetInfos) do
         begin
             Len := Length(CharsetInfos[I].MimeName);
@@ -668,7 +669,7 @@ var
     P   : PCharsetInfo;
 begin
     P   := GetMimeInfo(AMimeCharSet);
-    Idx := Pos(' ', P^.MimeName) - 1;
+    Idx := Pos(AnsiString(' '), P^.MimeName) - 1;
     if Idx <= 0 then
         Result := P^.MimeName
     else
