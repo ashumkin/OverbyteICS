@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      6.06
+Version:      6.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -314,7 +314,9 @@ Jul 11, 2008 V6.03 Angus fixed 'Unicode' bug introduced in V6.01 that stopped PO
               to keep both verions in sync, this issue was already fixed in v7)
 Jul 13, 2008 V6.04 Revised socket names used for debugging purpose
                    Added ListenBackLog property
-
+Aug 04, 2008 V6.07 A. Garrels - CommandAUTH TLS sent Unicode response.
+             Removed some getter and setters, they are no longer needed. 
+ 
 
 Angus pending -
 CRC on the fly
@@ -405,8 +407,8 @@ uses
     OverbyteIcsLibrary;    { AG V6.04 }
 
 const
-    FtpServerVersion         = 606;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.06 ';
+    FtpServerVersion         = 607;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.07 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
 
 type
@@ -629,10 +631,6 @@ type
         FOnUpCompressFile       : TFtpSrvCompressFileEvent;  { angus V1.54 }
         FOnUpCompressedFile     : TFtpSrvCompressedFileEvent; { angus V1.54 }
         FOnDisplay              : TFtpSrvDisplayEvent;       { angus V1.54 }
-        function  GetAddr: AnsiString;
-        function  GetPort: AnsiString;
-        procedure SetAddr(const Value: AnsiString);
-        procedure SetPort(const Value: AnsiString);
 {$IFNDEF NO_DEBUG_LOG}
         function  GetIcsLogger: TIcsLogger;                                      { V1.46 }
         procedure SetIcsLogger(const Value: TIcsLogger);                         { V1.46 }
@@ -1045,10 +1043,10 @@ type
         property IcsLogger              : TIcsLogger  read  GetIcsLogger  { V1.46 }
                                                       write SetIcsLogger;
 {$ENDIF}
-        property  Addr                   : AnsiString read  GetAddr
-                                                      write SetAddr;
-        property  Port                   : AnsiString read  GetPort
-                                                      write SetPort;
+        property  Addr                   : AnsiString read  FAddr
+                                                      write FAddr;
+        property  Port                   : AnsiString read  FPort
+                                                      write FPort;
         property  ListenBackLog          : Integer    read  FListenBackLog
                                                       write FListenBackLog;
         property  Banner                 : String     read  FBanner
@@ -2068,35 +2066,6 @@ begin
     else
         Stop;
 end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TFtpServer.GetAddr: AnsiString;
-begin
-    Result := FAddr;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpServer.SetAddr(const Value: AnsiString);
-begin
-    FAddr := Value;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TFtpServer.GetPort: AnsiString;
-begin
-    Result := FPort;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpServer.SetPort(const Value: AnsiString);
-begin
-    FPort := Value;
-end;
-
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -6364,7 +6333,7 @@ begin
             PlainAnswer := Format(msgAuthOk, [Params]) ;
             TriggerSendAnswer(Client, PlainAnswer);
             PlainAnswer := PlainAnswer + #13#10;
-            Client.SslSendPlain(@PlainAnswer[1], Length(PlainAnswer));
+            Client.SslSendPlain(Pointer(AnsiString(PlainAnswer)), Length(PlainAnswer));
             Client.CurFtpSslType  := TmpCurFtpSslType;
         end  { AUTH in SSL mode, negotiates a new SSL session }
         else
