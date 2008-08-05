@@ -41,7 +41,8 @@ Legal issues: Copyright (C) 2006 by François PIETTE
 History:
 
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
-
+Aug 05, 2008 F. Piette added a cast to avoid warning for AnsiString to
+             String implicit convertion
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWinsock2;
@@ -354,8 +355,8 @@ begin
     try
         WSocket2GetInterfaceList(iList);
         for I := 0 to IList.Count -1 do
-            StrList.Add(WSocket_inet_ntoa(
-                     IList[I]^.iiAddress.AddressIn.sin_addr));
+            StrList.Add(String(WSocket_inet_ntoa(
+                     IList[I]^.iiAddress.AddressIn.sin_addr)));
     finally
         iList.Free;
     end;
