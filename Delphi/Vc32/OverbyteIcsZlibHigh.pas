@@ -2,7 +2,7 @@
 
 Author:       Angus Robertson, Magenta Systems Ltd
 Creation:     15 December 2005
-Version:      6.01
+Version:      6.03
 Description:  High level functions for ZLIB compression and decompression
 Credit:       Based on work by Gabriel Corneanu <gabrielcorneanu(AT)yahoo.com>
               Derived from original sources by Bob Dellaca and Cosmin Truta.
@@ -49,7 +49,7 @@ Mar 26, 2006 V6.00 F. Piette started new version 6
                   added TZlibProgress callback
 May 02, 2008 V6.02 A.Garrels prepared code for Unicode, type-changes from String
                    and PChar to AnsiString and PAnsiChar.
-
+Aug 05, 2008 V6.03 F. Piette reverted ZlibErrMess to from AnsiString to String.
 
 pending: compress callback not correct total count
 
@@ -124,7 +124,7 @@ function ZlibCheckInitInflateStream (var strm: TZStreamRec;
 function Strm_in_func(BackObj: PZBack; var buf: PByte): Integer; cdecl;
 function Strm_out_func(BackObj: PZBack; buf: PByte; size: Integer): Integer; cdecl;
 function DMAOfStream(AStream: TStream; out Available: integer): Pointer;
-function ZlibErrMess(code: Integer): AnsiString;                        { V6.01 }
+function ZlibErrMess(code: Integer): String;                        { V6.01 }
 
 
 implementation
@@ -142,7 +142,7 @@ begin
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ZlibErrMess(code: Integer): AnsiString;              { V6.01 }
+function ZlibErrMess(code: Integer): String;              { V6.01 }
 begin
     case code of
         Z_OK            : Result := 'No error';
@@ -155,7 +155,7 @@ begin
         Z_BUF_ERROR     : Result := 'Buffer error';
         Z_VERSION_ERROR : Result := 'Version error';
     else
-        Result := 'Unknown error ' + IntToStr (code);
+        Result := 'Unknown error ' + IntToStr(code);
     end;
 end;
 
@@ -164,7 +164,7 @@ function ZlibCCheck(code: Integer): Integer;
 begin
   Result := code;
   if code < 0 then
-    raise ECompressionError.Create(ZlibErrMess (code));  //!! angus added code
+    raise ECompressionError.Create(ZlibErrMess(code));  //!! angus added code
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -172,7 +172,7 @@ function ZlibDCheck(code: Integer): Integer;
 begin
   Result := code;
   if code < 0 then
-    raise EDecompressionError.Create(ZlibErrMess (code));  //!! angus added code
+    raise EDecompressionError.Create(ZlibErrMess(code));  //!! angus added code
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
