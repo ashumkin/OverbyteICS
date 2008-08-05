@@ -5,7 +5,7 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      6.06
+Version:      6.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -56,6 +56,7 @@ July 2007    V6.04 changes for .net compatibility
 08 Jan 2008  V6.06 Angus added FileListMD5, optional file mode to stop file being share locked
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 17 Apr, 2008 MD5UpdateBuffer String to AnsiString type-change.
+Aug 05, 2008 V6.07 F. Piette added casts to AnsiString to avoid warnings
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -72,8 +73,8 @@ uses
     SysUtils, Classes;
 
 const
-    MD5Version         = 606;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2008 F. Piette V6.06 ';
+    MD5Version         = 607;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2008 F. Piette V6.07 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}
@@ -526,7 +527,7 @@ begin
     MD5Final(MD5Digest, MD5Context);
     Result := '';
     for I := 0 to 15 do
-        Result := Result + IntToHex(MD5Digest[I], 2);
+        Result := Result + AnsiString(IntToHex(MD5Digest[I], 2));
 end;
 
 
@@ -705,7 +706,7 @@ begin
         { Finalize MD5 calculation }
         MD5Final(MD5Digest, MD5Context);
         for I := 0 to 15 do
-            Result := Result + IntToHex(MD5Digest[I], 2);
+            Result := Result + AnsiString(IntToHex(MD5Digest[I], 2));
     finally
         { Free the file }
         Stream.Free;
@@ -816,7 +817,7 @@ begin
         { Finalize MD5 calculation }
         MD5Final(MD5Digest, MD5Context);
         for I := 0 to 15 do
-        Result := Result + IntToHex(Byte(MD5Digest[I]), 2);
+        Result := Result + AnsiString(IntToHex(Byte(MD5Digest[I]), 2));
     end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
