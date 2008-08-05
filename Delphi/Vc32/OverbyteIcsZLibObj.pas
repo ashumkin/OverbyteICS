@@ -2,6 +2,8 @@
   file   : IcsZLibObj.pas
   date   : 6 Dec 2005
   ICS version: Angus Robertson
+  Updates
+  Aug 05, 2008 F. Piette added some casts for unicode support
 
   Subject
   -------
@@ -44,9 +46,6 @@ unit OverbyteIcsZLibObj;
 
 interface
 
-uses
-    Windows;
-
 {$A-}             {no 32 bits alignment for records     }
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
@@ -57,6 +56,9 @@ uses
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
+
+uses
+    Windows;
 
 {xlb constants and variables}
 const
@@ -390,12 +392,13 @@ begin
                   Z_DLL_NOT_FOUND               : zlibProblemString := 'Dll not found';
                   Z_UNKNOWN_COMPRESSION_VERSION : zlibProblemString := 'Unknown compression stream version';
                   Z_CHECK_PROBLEM               : zlibProblemString := 'Check problem';
-                                           else   zlibProblemString := 'Error n°' + inttostr(-Code);
+                                           else   zlibProblemString := 'Error n°' + AnsiString(IntToStr(-Code));
                end;
           end else
                zlibProblemString := ZLibErrMsg[Code];
 
-          if zlibRaiseError then raise EZLibCheckError.Create(zlibProblemString);
+          if zlibRaiseError then
+              raise EZLibCheckError.Create(String(zlibProblemString));
      end;
 end;
 {==============================================================================}
@@ -591,6 +594,7 @@ begin
 end;
 
 {==============================================================================}
+{ EZLibCheckError }
 
 initialization
 // If the compiler doesn't find the obj files
