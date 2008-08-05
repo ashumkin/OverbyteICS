@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.10
+Version:      1.11
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -58,7 +58,8 @@ Jul 20, 2008 V1.09 Added Utf-8 string functions.
 Jul 29, 2008 V1.10 Added parameter "SetCodePage" to UnicodeToAnsi(), defaults
              to "False". Utf-8 functions adjusted accordingly. Does effect
              compiler post RDS2007 only.
-
+Jun 05, 2008 Utf-8 functions modified to take and return AnsiString rather than
+             Utf8String.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -119,10 +120,10 @@ function  atoi(const Str: UnicodeString): Integer; overload;
 function  atoi64(const Str: AnsiString): Int64; overload;
 function  atoi64(const Str: UnicodeString): Int64; overload;
 {$ENDIF}
-function  StringToUtf8(const Str: UnicodeString): UTF8String; overload;
-function  StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): UTF8String; overload;
-function  Utf8ToStringW(const Str: UTF8String): UnicodeString;
-function  Utf8ToStringA(const Str: UTF8String; ACodePage: Cardinal = CP_ACP): AnsiString;
+function  StringToUtf8(const Str: UnicodeString): AnsiString; overload;
+function  StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString; overload;
+function  Utf8ToStringW(const Str: AnsiString): UnicodeString;
+function  Utf8ToStringA(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
 
 implementation
 
@@ -622,14 +623,14 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StringToUtf8(const Str: UnicodeString): UTF8String;
+function StringToUtf8(const Str: UnicodeString): AnsiString;
 begin
     Result := UnicodeToAnsi(Str, CP_UTF8, True);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): UTF8String;
+function StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
 var
     Temp : UnicodeString;
 begin
@@ -639,14 +640,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Utf8ToStringW(const Str: UTF8String): UnicodeString;
+function Utf8ToStringW(const Str: AnsiString): UnicodeString;
 begin
     Result := AnsiToUnicode(Str, CP_UTF8);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Utf8ToStringA(const Str: UTF8String; ACodePage: Cardinal = CP_ACP): AnsiString;
+function Utf8ToStringA(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
 var
     Temp: UnicodeString;
 begin

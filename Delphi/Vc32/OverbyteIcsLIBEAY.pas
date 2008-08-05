@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.02
+Version:      1.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -54,7 +54,8 @@ May 24, 2007 A.Garrels: Added code to handle ASN1 BMPString and Utf8 string
              types.
 Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
 Jul 18, 2008 A. Garrels made some changes to get rid of some string cast
-             warnings. 
+             warnings.
+Jun 05, 2008 A.Garrels revised Asn1ToString(), made some string casts explicit.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -65,19 +66,26 @@ Jul 18, 2008 A. Garrels made some changes to get rid of some string cast
 
 {$WARN SYMBOL_DEPRECATED OFF}
 
-
 {$I OverbyteIcsSslDefs.inc}
+
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 
 unit OverbyteIcsLIBEAY;
 
 interface
 
 uses
-    Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils, OverbyteIcsLibrary;
+    Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils;
 
 const
-    IcsLIBEAYVersion   = 102;
-    CopyRight : String = ' IcsLIBEAY (c) 2003-2008 F. Piette V1.02 ';
+    IcsLIBEAYVersion   = 103;
+    CopyRight : String = ' IcsLIBEAY (c) 2003-2008 F. Piette V1.03 ';
 
 type
     EIcsLibeayException = class(Exception);
@@ -544,8 +552,7 @@ function OpenSslDir : String;
 function f_Ics_X509_get_notBefore(X: PX509): PASN1_TIME;
 function f_Ics_X509_get_notAfter(X: PX509): PASN1_TIME;
 function Asn1ToUTDateTime(Asn1Time: PASN1_TIME; out UT: TDateTime): Boolean;
-function Asn1ToWideString(PAsn1 : PASN1_STRING): WideString;
-function Asn1ToString(PAsn1 : PASN1_STRING): AnsiString;
+function Asn1ToString(PAsn1 : PASN1_STRING): String;
 
 const
     GLIBEAY_DLL_Handle   : THandle = 0;
@@ -1310,58 +1317,40 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function OpenSslVersion : String;
 begin
-    Result := f_SSLeay_version(SSLEAY_VERSION);
+    Result := String(StrPas(f_SSLeay_version(SSLEAY_VERSION)));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function OpenSslCompilerFlags : String;
 begin
-    Result := f_SSLeay_version(SSLEAY_CFLAGS);
+    Result := String(StrPas(f_SSLeay_version(SSLEAY_CFLAGS)));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function OpenSslBuiltOn : String;
 begin
-    Result := f_SSLeay_version(SSLEAY_BUILT_ON);
+    Result := String(StrPas(f_SSLeay_version(SSLEAY_BUILT_ON)));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function OpenSslPlatForm : String;
 begin
-    Result := f_SSLeay_version(SSLEAY_PLATFORM);
+    Result := String(StrPas(f_SSLeay_version(SSLEAY_PLATFORM)));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function OpenSslDir : String;
 begin
-    Result := f_SSLeay_version(SSLEAY_DIR);
+    Result := String(StrPas(f_SSLeay_version(SSLEAY_DIR)));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function EncodeOctetStr(Str : PAnsiChar; Len : Integer) : String;
-var
-    I : Integer;
-    Item : String[3];
-begin
-    if (Len = 0) or (Str = nil) then Exit;
-    SetLength(Result, Len * 3);
-    I := 0;
-    while I <= Len - 1 do begin
-        Item := IcsIntToHexA(Ord(Str[I]), 2) + AnsiString(':');
-        Move(Item[1], Result[I * 3 + 1], 3);
-        Inc(I);
-    end;
-    SetLength(Result, Length(Result) - 1);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function BMPStrToWideStr(Str : PAnsiChar; Len : Integer): WideString;
+function BMPStrToWideStr(Str : PAnsiChar; Len : Integer): UnicodeString;
 var
     I : Integer;
 begin
@@ -1372,60 +1361,75 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Asn1ToString(PAsn1 : PASN1_STRING): AnsiString;
+function EncodeOctetStr(Str : PAnsiChar; Len : Integer) : String;
+var
+    I : Integer;
+    Item : String;
 begin
-    if (PAsn1 = nil) or (PAsn1^.data = nil) or (PAsn1^.length <= 0) then
-        Exit;
-    case PAsn1^.type_ of
-      V_ASN1_BMPSTRING :
-          { Reverse byte order and convert to Ansi }
-          Result := UnicodeToAnsi(BMPStrToWideStr(PAsn1^.data, PAsn1^.length));
-      V_ASN1_UTF8STRING :
-      begin
-          SetLength(Result, PAsn1^.length);
-          Move(PAnsiChar(PAsn1^.data)^, PAnsiChar(Result)^, PAsn1^.length);
-          Result := Utf8ToAnsi(Result); { convert to Ansi }
-      end;
-      {V_ASN1_OCTET_STRING :
-      begin
-          Result := EncodeOctetStr(PAsn1^.data, PAsn1^.length)
-      end;}
-      else  { dump }
-          SetLength(Result, PAsn1^.length);
-          Move(Pointer(PAsn1^.data)^, Pointer(Result)^, PAsn1^.length);
+    if (Len = 0) or (Str = nil) then Exit;
+    SetLength(Result, Len * 3);
+    I := 0;
+    while I <= Len - 1 do begin
+        Item := IntToHex(Ord(Str[I]), 2) + ':';
+        Move(Item[1], Result[I * 3 + 1], 3 * SizeOf(Char));
+        Inc(I);
     end;
+    SetLength(Result, Length(Result) - 1);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Asn1ToWideString(PAsn1 : PASN1_STRING): WideString;
+function Asn1ToString(PAsn1 : PASN1_STRING): String;
+{$IFDEF UNICODE}
 var
-    S : AnsiString;
     Len : Integer;
+{$ENDIF}
 begin
     if (PAsn1 = nil) or (PAsn1^.data = nil) or (PAsn1^.length <= 0) then
         Exit;
     case PAsn1^.type_ of
+
+      V_ASN1_OCTET_STRING :
+          Result := EncodeOctetStr(PAsn1^.data, PAsn1^.length);
+{$IFNDEF UNICODE}
+      V_ASN1_UTF8STRING :
+      begin  { Slow, but rarely used }
+          SetLength(Result, PAsn1^.length);
+          Move(PAnsiChar(PAsn1^.data)^, PAnsiChar(Result)^, PAsn1^.length);
+          Result := Utf8ToStringA(Result); { convert to Ansi }
+      end;
+
+      V_ASN1_BMPSTRING :
+          { Reverse byte order and convert to Ansi }
+          Result := UnicodeToAnsi(BMPStrToWideStr(PAsn1^.data, PAsn1^.length));
+
+      else  { dump }
+          SetLength(Result, PAsn1^.length);
+          Move(Pointer(PAsn1^.data)^, Pointer(Result)^, PAsn1^.length);
+{$ELSE}
+      V_ASN1_UTF8STRING :
+      begin
+          Len := MultiByteToWideChar(CP_UTF8, 0, PAsn1^.data,  PAsn1^.length,
+                                     nil, 0);
+          SetLength(Result, Len);
+          if Len > 0 then
+              MultiByteToWideChar(CP_UTF8, 0, PAsn1^.data, PAsn1^.length,
+                                  Pointer(Result), Len);
+      end;
+
       V_ASN1_BMPSTRING :
           { Reverse byte order }
           Result := BMPStrToWideStr(PAsn1^.data, PAsn1^.length);
-      V_ASN1_UTF8STRING :
-      begin
-          Len := Utf8ToUnicode(nil, PAnsiChar(PAsn1^.data), MAXINT);
-          if Len > 0 then begin
-              SetLength(Result, Len);
-              Utf8ToUnicode(PWideChar(Result), PAnsiChar(PAsn1^.data), Len);
-          end;
+
+      else  { dump }
+          Len := MultiByteToWideChar(CP_ACP, 0, PAsn1^.data,
+                                     PAsn1^.length, nil, 0);
+          SetLength(Result, Len);
+          if Len > 0 then
+              MultiByteToWideChar(CP_ACP, 0, PAsn1^.data, PAsn1^.length,
+                                  Pointer(Result), Len);
+{$ENDIF}
       end;
-      {V_ASN1_OCTET_STRING :
-      begin
-          Result := EncodeOctetStr(PAsn1^.data, PAsn1^.length)
-      end;}
-      else  { Just dump and convert to WideString}
-          SetLength(S, PAsn1^.length);
-          Move(Pointer(PAsn1^.data)^, Pointer(S)^, PAsn1^.length);
-          Result := S;
-    end;
 end;
 
 
