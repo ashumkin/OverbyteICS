@@ -3,8 +3,8 @@
 Author:       Angus Robertson, Magenta Systems Ltd
 Description:  One Time Password support functions, see RFC2289/1938 (aka S/KEY)
 Creation:     12 November 2007
-Updated:      12 May 2008
-Version:      1.01
+Updated:      06 August 2008
+Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -40,7 +40,7 @@ Legal issues: Copyright (C) 1997-2007 by François PIETTE
 Updates:
 16 Nov 2007 - 1.00 baseline Angus
 12 May 2008 - 1.01 Uses OverbyteIcsUtils.pas for atoi
-
+06 Aug 2008 - 1.02 Changed two strings to AnsiStrings so it works under Delphi 2009
 
 
 
@@ -589,7 +589,7 @@ end;
 function GetSha1Half (Buffer: Pointer; BufSize: Integer): TOtp64bit;
 var
     I: integer;
-    Digest: string;
+    Digest: AnsiString;   { V1.02 }
 begin
     Digest := SHA1ofBuf (Buffer, BufSize);
     if Length (Digest) <> 20 then exit;  { sanity check }
@@ -609,10 +609,10 @@ function GenerateKey64 (OtpMethod: TOtpMethod; const OptSeed: string;
                 const OtpPassword: string; const OtpSequence: Integer): TOtp64bit;
 var
     I: integer;
-    HashText: string;
+    HashText: AnsiString;     { V1.02 }
 begin
   { hash seed and password (max 63) into 64-bits }
-    HashText := LowerCase (OptSeed) + OtpPassword;
+    HashText := AnsiString (LowerCase (OptSeed) + OtpPassword);   { V1.02 }
     case OtpMethod of
         OtpKeyMd5: result := GetMD5Half (@HashText [1], Length (HashText));
         OtpKeyMd4: result := GetMD4Half (@HashText [1], Length (HashText));
