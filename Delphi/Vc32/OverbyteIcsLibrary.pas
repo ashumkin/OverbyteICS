@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.12
+Version:      1.13
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -66,6 +66,8 @@ Jul 01, 2008 V1.10 A. Garrels fixed a bug in IcsCompareTextA().
 Jul 02, 2008 V1.11 A. Garrels optimized IcsCompareTextA() a bit.
 Aug 03, 2008 V1.12 F. Piette made IcsUpperCaseA, IcsLowerCaseA, IcsTrimA and
                    IcsCompareTextA public. Added IcsSameTextA.
+Jul 07, 2008 V1.13 F. Piette found a bug in some AnsiString-functions.                   
+                   They always call SetLength() on the result now.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -102,8 +104,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  OverbyteIcsLibraryVersion = 111;
-  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.11 ';
+  OverbyteIcsLibraryVersion = 113;
+  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.13 ';
 
 
 {$IFDEF CLR}
@@ -814,7 +816,7 @@ end;
 {$ENDIF}
 
 { Author Arno Garrels - Needs optimization!      }
-{ It's as fast as the RTL routine.               }
+{ It's a bit slower that the RTL routine.        }
 { We should realy use a FastCode function here.  }
 function IntToStrA(N : Integer) : AnsiString;
 var
@@ -844,10 +846,7 @@ begin
         Dec(I);
         Buf[I] := '-';
     end;
-    if Length(Result) < Length(Buf) - I then
-        SetLength(Result, Length(Buf) - I)
-    else
-        PInteger(Integer(Result) - 4)^ := Length(Buf) - I;
+    SetLength(Result, Length(Buf) - I);
     Move(Buf[I], Pointer(Result)^, Length(Buf) - I);
 end;
 
@@ -888,10 +887,7 @@ begin
        Dec(I);
        Buf[I] := $30;
     end;
-    if Length(Result) < Length(Buf) - I then
-        SetLength(Result, Length(Buf) - I)
-    else
-        PInteger(Integer(Result) - 4)^ := Length(Buf) - I;
+    SetLength(Result, Length(Buf) - I);
     Move(Buf[I], Pointer(Result)^, Length(Buf) - I);
 end;
 
@@ -987,10 +983,7 @@ begin
     else begin
         while Str[L] <= ' ' do
             Dec(L);
-        if Length(Result) < L - I + 1 then
-            SetLength(Result, L - I + 1)
-        else
-            PInteger(Integer(Result) - 4)^ := L - I + 1;
+        SetLength(Result, L - I + 1);
         Move(Str[I], Pointer(Result)^, L - I + 1);
     end;
 end;
@@ -1130,10 +1123,7 @@ begin
     if L = 0  then
         Result := ''
     else begin
-        if Length(Result) < L then
-            SetLength(Result, L)
-        else
-            PInteger(Integer(Result) - 4)^ := L;
+        SetLength(Result, L);
         Source := Pointer(S);
         Dest := Pointer(Result);
         for I := 1 to L do begin
@@ -1178,10 +1168,7 @@ begin
     if L = 0  then
         Result := ''
     else begin
-        if Length(Result) < L then
-            SetLength(Result, L)
-        else
-            PInteger(Integer(Result) - 4)^ := L;
+        SetLength(Result, L);
         Source := Pointer(S);
         Dest := Pointer(Result);
         for I := 1 to L do begin
