@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.16
+Version:      6.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -618,6 +618,7 @@ Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 Jul 04, 2008 V6.11 Rev.58 SSL - Still lacked a few changes I made last year.
 Jul 13, 2008 V6.12 Added SafeWSocketGCount
 Aug 03, 2008 V6.16 A. Garrels removed packed from record TExtension.
+Jul 07, 2008 V6.17 Still a small fix from December 2007 missing in SSL code. 
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -721,8 +722,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 616;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.16 ';
+  WSocketVersion            = 617;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.17 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -12905,7 +12906,7 @@ begin
                  ' FCloseInvoked=' + _IntToStr(Ord(FCloseInvoked)) + ' ' +
                  _IntToStr(FHSocket));
 {$ENDIF}
-    if (not FCloseInvoked) and
+    if (FHSocket <> INVALID_SOCKET) and (not FCloseInvoked) and {AG 12/30/07}
        (not (csDestroying in ComponentState)) then begin   // AG 03/03/06
         FCloseInvoked := TRUE;
         TriggerSessionClosed(msg.LParamHi);
