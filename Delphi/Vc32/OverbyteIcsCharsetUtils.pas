@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      1.03
+Version:      1.04
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -69,6 +69,7 @@ Jul 20, 2008 V1.01 A. Garrels added CodePageToMimeCharsetString();
 Jul 29, 2008 V1.02 A. Garrels added global var IcsSystemCodePage. Changed type
                    of one local var from AnsiString to CsuString.
 Aug 03, 2008 V1.03 A. Garrels changed alias CsuString to use AnsiString.
+Aug 08, 2008 V1.04 A. Garrels added some code page helper functions.
 
 
 //
@@ -399,6 +400,12 @@ function  MimeCharsetToCodePage(const AMimeCharSetString: CsuString): Cardinal; 
 function  IsValidAnsiCodePage(ACodePage: Cardinal): Boolean; // includes UTF-8 and UTF-7
 function  IsSingleByteCodePage(ACodePage: Cardinal): Boolean;
 procedure GetSystemCodePageList(AOwnsObjectList : TObjectList);
+function  AnsiCodePageFromLocale(ALcid: LCID): Cardinal;
+function  OemCodePageFromLocale(ALcid: LCID): Cardinal;
+function  GetThreadAnsiCodePage: Cardinal;
+function  GetThreadOemCodePage: Cardinal;
+function  GetUserDefaultAnsiCodePage: Cardinal;
+function  GetUserDefaultOemCodePage: Cardinal;
 
 function  GetCPInfoExA(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExA): LongBOOL; stdcall;
 function  GetCPInfoExW(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExW): LongBOOL; stdcall;
@@ -439,6 +446,54 @@ begin
     if not GetCPInfo(ACodePage, Info) then
         raise Exception.Create('Codepage "' + IntToStr(ACodePage) + '" is no valid Ansi codepage');
     Result := Info.MaxCharSize = 1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function AnsiCodePageFromLocale(ALcid: LCID): Cardinal;
+var
+    Buf : array [0..5] of Char;
+begin
+    GetLocaleInfo(ALcid, LOCALE_IDEFAULTANSICODEPAGE, @Buf, 6);
+    Result := StrToIntDef(StrPas(PChar(@Buf)), CP_ACP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function OemCodePageFromLocale(ALcid: LCID): Cardinal;
+var
+    Buf : array [0..5] of Char;
+begin
+    GetLocaleInfo(ALcid, LOCALE_IDEFAULTCODEPAGE, @Buf, 6);
+    Result := StrToIntDef(StrPas(PChar(@Buf)), CP_OEMCP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetUserDefaultAnsiCodePage: Cardinal;
+begin
+    Result := AnsiCodePageFromLocale(GetUserDefaultLCID);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetThreadAnsiCodePage: Cardinal;
+begin
+    Result := AnsiCodePageFromLocale(GetThreadLocale);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetUserDefaultOemCodePage: Cardinal;
+begin
+    Result := OemCodePageFromLocale(GetUserDefaultLCID);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetThreadOemCodePage: Cardinal;
+begin
+    Result := OemCodePageFromLocale(GetThreadLocale);
 end;
 
 
