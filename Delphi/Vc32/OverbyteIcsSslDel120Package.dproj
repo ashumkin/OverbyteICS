@@ -23,8 +23,9 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_Description>Overbyte ICS-SSL for Delphi 2007</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Documents\RAD Studio\6.0\Bpl\OverbyteIcsSslDel120Package.bpl</DCC_DependencyCheckOutputName>
+			<DCC_SymbolReferenceInfo>1</DCC_SymbolReferenceInfo>
+			<DCC_Description>Overbyte ICS-SSL for Delphi 2009</DCC_Description>
+			<DCC_DependencyCheckOutputName>..\..\..\..\packages\OverbyteIcsSslDel120Package.bpl</DCC_DependencyCheckOutputName>
 			<DCC_Define>USE_SSL;USE_ZLIB_OBJ;DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_Optimize>false</DCC_Optimize>
@@ -81,6 +82,7 @@
 			<DCCReference Include="OverbyteIcsMimeDec.dcr"/>
 			<DCCReference Include="OverbyteIcsMultipartFtpDownloader.dcr"/>
 			<DCCReference Include="OverbyteIcsMultipartHttpDownloader.dcr"/>
+			<DCCReference Include="OverbyteIcsMultiProgressBar.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="designide.dcp"/>
@@ -137,6 +139,7 @@
 			<DCCReference Include="OverbyteIcsCRC.pas"/>
 			<DCCReference Include="OverbyteIcsUtils.pas"/>
 			<DCCReference Include="OverbyteIcsCharsetUtils.pas"/>
+			<DCCReference Include="OverbyteIcsMultiProgressBar.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>
@@ -159,6 +162,7 @@
 			<DCCReference Include="OverbyteIcsMimeDec.dcr"/>
 			<DCCReference Include="OverbyteIcsMultipartFtpDownloader.dcr"/>
 			<DCCReference Include="OverbyteIcsMultipartHttpDownloader.dcr"/>
+			<DCCReference Include="OverbyteIcsMultiProgressBar.dcr"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
@@ -173,7 +177,7 @@
 		</ItemGroup>
 		<Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
 		<ProjectExtensions>
-			<Borland.Personality>Delphi.Personality</Borland.Personality>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
 			<Borland.ProjectType>Package</Borland.ProjectType>
 			<BorlandProject>
 				<Delphi.Personality>
@@ -212,7 +216,16 @@
 					<Source>
 						<Source Name="MainSource">OverbyteIcsSslDel120Package.dpk</Source>
 					</Source>
+					<Excluded_Packages>
+						<Excluded_Packages Name="C:\WINDOWS\system32\vclimg120.bpl">CodeGear Delphi image support library</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcboffice2k120.bpl">CodeGear C++Builder Office 2000 Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcbofficexp120.bpl">CodeGear C++Builder Office XP Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dcloffice2k120.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclofficexp120.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\RaveReports\Lib\dclRave.bpl">Rave Reports 7.6 BE Package</Excluded_Packages>
+					</Excluded_Packages>
 				</Delphi.Personality>
 			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
 		</ProjectExtensions>
 	</Project>

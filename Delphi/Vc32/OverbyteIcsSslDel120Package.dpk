@@ -23,6 +23,7 @@ package OverbyteIcsSslDel120Package;
 {$R 'OverbyteIcsMimeDec.dcr'}
 {$R 'OverbyteIcsMultipartFtpDownloader.dcr'}
 {$R 'OverbyteIcsMultipartHttpDownloader.dcr'}
+{$R 'OverbyteIcsMultiProgressBar.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -44,7 +45,7 @@ package OverbyteIcsSslDel120Package;
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'Overbyte ICS-SSL for Delphi 2007'}
+{$DESCRIPTION 'Overbyte ICS-SSL for Delphi 2009'}
 {$IMPLICITBUILD ON}
 {$DEFINE USE_SSL}
 {$DEFINE USE_ZLIB_OBJ}
@@ -108,6 +109,7 @@ contains
   OverbyteIcsOneTimePw in 'OverbyteIcsOneTimePw.pas',
   OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
   OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
-  OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas';
+  OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas',
+  OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas';
 
 end.
