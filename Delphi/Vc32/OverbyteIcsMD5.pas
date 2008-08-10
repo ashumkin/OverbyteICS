@@ -141,7 +141,11 @@ function GetMD5({$IFDEF SAFE}
                 Buffer: Pointer;
                 {$ENDIF}
                 BufSize: Integer): AnsiString; overload;
-function StrMD5(Buffer : AnsiString): AnsiString;
+function StrMD5(Buffer : String): String;
+{$IFDEF COMPILER12_UP}
+overload;
+function StrMD5(Buffer : AnsiString): AnsiString; overload;
+{$ENDIF}
 function FileMD5(const Filename: String; Mode: Word = DefaultMode) : AnsiString; overload;
 function FileMD5(const Filename: String; Obj: TObject; ProgressCallback: TMD5Progress;
                                            Mode: Word = DefaultMode) : AnsiString; overload;
@@ -532,7 +536,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function StrMD5(Buffer : String): String;
+{$IFDEF COMPILER12_UP}
+begin
+    // No a real unicode MD5 computation ! Should be updated !!
+    Result := String(StrMD5(AnsiString(Buffer)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StrMD5(Buffer : AnsiString): AnsiString;
+{$ENDIF}
 {$IFDEF SAFE}
 var
     Bytes : TBytes;
