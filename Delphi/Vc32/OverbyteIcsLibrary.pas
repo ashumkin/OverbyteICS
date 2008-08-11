@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.13
+Version:      1.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -66,8 +66,10 @@ Jul 01, 2008 V1.10 A. Garrels fixed a bug in IcsCompareTextA().
 Jul 02, 2008 V1.11 A. Garrels optimized IcsCompareTextA() a bit.
 Aug 03, 2008 V1.12 F. Piette made IcsUpperCaseA, IcsLowerCaseA, IcsTrimA and
                    IcsCompareTextA public. Added IcsSameTextA.
-Jul 07, 2008 V1.13 F. Piette found a bug in some AnsiString-functions.                   
+Aug 07, 2008 V1.13 F. Piette found a bug in some AnsiString-functions.
                    They always call SetLength() on the result now.
+Aug 11, 2008 V1.14 A. Garrels added IcsCompareStrA() and an overload to
+                   _CompareStr().
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -104,8 +106,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  OverbyteIcsLibraryVersion = 113;
-  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.13 ';
+  OverbyteIcsLibraryVersion = 114;
+  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.14 ';
 
 
 {$IFDEF CLR}
@@ -298,6 +300,8 @@ const
   TIME_ZONE_ID_STANDARD = Windows.TIME_ZONE_ID_STANDARD;
   {$EXTERNALSYM CP_ACP}
   CP_ACP           = Windows.CP_ACP;
+  {$EXTERNALSYM CP_UTF8}
+  CP_UTF8          = Windows.CP_UTF8;
 
 {#$EXTERNALSYM SysErrorMessage}
 function  _SysErrorMessage(ErrCode: Integer): String;
@@ -389,7 +393,9 @@ function IcsTrimA(const Str: AnsiString): AnsiString;
 function IcsSameTextA(const S1, S2: AnsiString): Boolean;
 
 {#$EXTERNALSYM CompareStr}
-function  _CompareStr(const S1, S2: String): Integer;
+function  _CompareStr(const S1, S2: AnsiString): Integer; {$IFDEF COMPILER12_UP} overload;
+function  _CompareStr(const S1, S2: UnicodeString): Integer; overload;
+{$ENDIF}
 {#$EXTERNALSYM CompareText}
 
 function  _CompareText(const S1, S2: AnsiString): Integer;{$IFDEF COMPILER12_UP} overload;
@@ -1275,10 +1281,50 @@ begin
     Result := SysUtils.AnsiStrComp(S1, S2);
 end;
 
-function _CompareStr(const S1, S2: String): Integer;
+function IcsCompareStrA(const S1, S2: AnsiString): Integer;
+var
+    L1, L2, I : Integer;
+    MinLen    : Integer;
+    P1, P2    : PAnsiChar;
+begin
+    L1 := Length(S1);
+    L2 := Length(S2);
+    if L1 > L2 then
+        MinLen := L2
+    else
+        MinLen := L1;
+    P1 := Pointer(S1);
+    P2 := Pointer(S2);
+    for I := 1 to MinLen do
+    begin
+        if (P1[I] <> P2[I]) then
+        begin
+            Result := Ord(P1[I]) - Ord(P2[I]);
+            Exit;
+        end;
+    end;
+    Result := L1 - L2;
+end;
+
+function _CompareStr(const S1, S2: AnsiString): Integer;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IcsCompareStrA(S1, S2);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.CompareStr(S1, S2);
+{$ELSE}
+    Result := IcsCompareStrA(S1, S2);
+{$ENDIF}
+{$ENDIF}
+end;
+
+{$IFDEF COMPILER12_UP}
+function _CompareStr(const S1, S2: UnicodeString): Integer;
 begin
     Result := SysUtils.CompareStr(S1, S2);
 end;
+{$ENDIF}
 
 function _StringReplace(const S: String; const OldPattern: String;
     const NewPattern: String; Flags: TReplaceFlags): String;
