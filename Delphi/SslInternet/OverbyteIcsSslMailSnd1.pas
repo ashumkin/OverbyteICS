@@ -499,7 +499,7 @@ begin
         More := FALSE
     else
         { Truncate the line if too long (should wrap to next line) }
-        StrPLCopy(PAnsiChar(MsgLine), MsgMemo.Lines[LineNum - 1], MaxLen - 1);
+        StrPLCopy(PAnsiChar(MsgLine), AnsiString(MsgMemo.Lines[LineNum - 1]), MaxLen - 1);
 end;
 
 

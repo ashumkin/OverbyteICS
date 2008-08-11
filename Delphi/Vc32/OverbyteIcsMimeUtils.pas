@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      6.09
+Version:      6.10
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -69,9 +69,10 @@ May 01, 2008  V6.06 A. Garrels - Function names adjusted according to changes in
 Jul 20, 2008  V6.07 A. Garrels Changed IcsWrapText according to SysUtils.WrapText,
                     added parameter CodePage to StrEncodeQP, added an overloaded
                     version of func. NeedsEncoding. 
-Jul, 24, 2008 V6.08 A. Garrels - NeedsEncoding() returned "False" for character
+Jul 24, 2008 V6.08  A. Garrels - NeedsEncoding() returned "False" for character
                     #127.
-Aug, 03, 2008 v6.09 A. Garrels changed some string types again.
+Aug 03, 2008 v6.09  A. Garrels changed some string types again.
+Aug 11, 2008 V6.10  A. Garrels - Base64Encode() changed.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -130,8 +131,8 @@ type
 {$ENDIF}
 
 const
-    TMimeUtilsVersion = 609;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.09 ';
+    TMimeUtilsVersion = 610;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.10 ';
 
 {$IFDEF CLR}
     SpecialsRFC822 : TSysCharSet = [Ord('('), Ord(')'), Ord('<'), Ord('>'), Ord('@'), Ord(','), Ord(';'), Ord(':'),
@@ -168,7 +169,7 @@ function  SplitQuotedPrintableString(const S : String) : String;
 function  FilenameToContentType(FileName : String) : String;
 
 { Base 64 encoding }
-function  Base64Encode(const Input : AnsiString) : String; overload;
+function  Base64Encode(const Input : AnsiString) : AnsiString; overload;
 {$IFDEF COMPILER12_UP}
 function  Base64Encode(const Input : UnicodeString; ACodePage: Cardinal) : UnicodeString; overload;
 function  Base64Encode(const Input : UnicodeString) : UnicodeString; overload;
@@ -809,8 +810,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Output must not be converted since it will be plain US-ASCII              }
-function Base64Encode(const Input : AnsiString) : String;
+function Base64Encode(const Input : AnsiString) : AnsiString;
 var
     Count : Integer;
     Len   : Integer;
@@ -822,28 +822,28 @@ begin
     SetLength(Result, ((Len + 2) div 3) * 4);
     while Count <= Len do begin
         Inc(I);
-        Result[I] := Base64Out[(Byte(Input[Count]) and $FC) shr 2];
+        Result[I] := Base64OutA[(Byte(Input[Count]) and $FC) shr 2];
         if (Count + 1) <= Len then begin
             Inc(I);
-            Result[I] := Base64Out[((Byte(Input[Count]) and $03) shl 4) +
+            Result[I] := Base64OutA[((Byte(Input[Count]) and $03) shl 4) +
                                     ((Byte(Input[Count + 1]) and $F0) shr 4)];
             if (Count + 2) <= Len then begin
                 Inc(I);
-                Result[I] := Base64Out[((Byte(Input[Count + 1]) and $0F) shl 2) +
+                Result[I] := Base64OutA[((Byte(Input[Count + 1]) and $0F) shl 2) +
                                        ((Byte(Input[Count + 2]) and $C0) shr 6)];
                 Inc(I);
-                Result[I] := Base64Out[(Byte(Input[Count + 2]) and $3F)];
+                Result[I] := Base64OutA[(Byte(Input[Count + 2]) and $3F)];
             end
             else begin
                 Inc(I);
-                Result[I] := Base64Out[(Byte(Input[Count + 1]) and $0F) shl 2];
+                Result[I] := Base64OutA[(Byte(Input[Count + 1]) and $0F) shl 2];
                 Inc(I);
                 Result[I] := '=';
             end
         end
         else begin
             Inc(I);
-            Result[I] := Base64Out[(Byte(Input[Count]) and $03) shl 4];
+            Result[I] := Base64OutA[(Byte(Input[Count]) and $03) shl 4];
             Inc(I);
             Result[I] := '=';
             Inc(I);
@@ -856,16 +856,20 @@ end;
 
 {$IFDEF COMPILER12_UP}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Converts the UnicodeString to AnsiString using the code page specified,   }
+{ converts the Base64 AnsiString result to Unicode using default code page. }
 function Base64Encode(const Input : UnicodeString; ACodePage: Cardinal) : UnicodeString;
 begin
-    Result := Base64Encode(UnicodeToAnsi(Input, ACodePage));
+    Result := String(Base64Encode(UnicodeToAnsi(Input, ACodePage)));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Converts the UnicodeString to AnsiString using the default code page,     }
+{ converts the Base64 AnsiString result to Unicode using default code page. }
 function Base64Encode(const Input : UnicodeString) : UnicodeString;
 begin
-    Result := Base64Encode(Input, CP_ACP);
+    Result := String(Base64Encode(AnsiString(Input)));
 end;
 
 

@@ -50,6 +50,12 @@ unit OverbyteIcsNtlmSsp;
 {$T-}                                 { Untyped Pointers                    }
 {$X+}                                 { Enable extended syntax              }
 {$H+}                                 { Use long Strings                    }
+{$IFDEF COMPILER12_UP}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 
 {#$DEFINE DEBUG_EXCEPTIONS}
 
@@ -415,7 +421,7 @@ begin
         CleanupLogonSession;
         Exit;
     end;
-    FNtlmMessage := NtlmAccept(Base64Decode(InBuffer));
+    FNtlmMessage := String(NtlmAccept(Base64Decode(AnsiString(InBuffer))));
     Result       := FState = lsDoneOk;
 end;
 

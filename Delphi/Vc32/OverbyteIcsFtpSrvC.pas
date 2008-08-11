@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpCtrlSocket component. It handle the client connection for
               the TFtpServer component.
 Creation:     April 21, 1998
-Version:      6.04
+Version:      6.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -92,6 +92,7 @@ May 15, 2008 V1.61 AGarrels type change of some published String properties
              string casts.
 Jul 10, 2008 V6.03 bumped version to match OverbyteFtpCli
 Jul 13, 2008 V6.04 Made ReadCount a public property
+Aug 11, 2008 V6.05 A. Garrels - Type AnsiString rolled back to String.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -160,8 +161,8 @@ uses
     OverbyteIcsWinsock, OverbyteIcsWSocket, OverbyteIcsWSockBuf;
 
 const
-    FtpCtrlSocketVersion = 161;
-    CopyRight : String   = ' TFtpCtrlSocket  (c) 1998-2008 F. Piette V1.61 ';
+    FtpCtrlSocketVersion = 605;
+    CopyRight : String   = ' TFtpCtrlSocket  (c) 1998-2008 F. Piette V6.05 ';
     DefaultRcvSize       = 2048;
     UtcDateMaskPacked    = 'yyyymmddhhnnss';         { angus V1.38 }
 
@@ -293,7 +294,7 @@ type
         FFtpState          : TFtpCtrlState;
         FAbortingTransfer  : Boolean;
         FUserData          : LongInt;        { Reserved for component user }
-        FPeerAddr          : AnsiString;
+        FPeerAddr          : String;
         FPeerSAddr         : TSockAddr;      { AG V1.47 }
         FID                : LongInt;
         FOnDisplay         : TDisplayEvent;
@@ -306,8 +307,8 @@ type
         procedure SetHomeDir(const newValue: String);   { AG V1.52}
     public
         BinaryMode        : Boolean;
-        DataAddr          : AnsiString;
-        DataPort          : AnsiString;
+        DataAddr          : String;
+        DataPort          : String;
         FileName          : String;
         FilePath          : String;
         DataSessionActive : Boolean;
@@ -362,7 +363,7 @@ type
         ReqDurMilliSecs   : Integer;     { angus V1.54 how long last request took, in ticks }
         TotGetBytes       : Int64;       { angus V1.54 how many bytes GET during session, data and control }
         TotPutBytes       : Int64;       { angus V1.54 how many bytes PUT during session, data and control }
-        SessIdInfo        : AnsiString;  { angus V1.54 session identificaton information for application use }
+        SessIdInfo        : String;      { angus V1.54 session identificaton information for application use }
         FileModeRead      : Word;        { angus V1.57 }
         FileModeWrite     : Word;        { angus V1.57 }
 {$IFDEF USE_SSL}
@@ -379,7 +380,7 @@ type
         procedure   SetDirectory(newValue : String); virtual;
         procedure   SetAbortingTransfer(newValue : Boolean);
         procedure   BuildDirectory(const Path : String);
-        function    GetPeerAddr: AnsiString; override;
+        function    GetPeerAddr: String; override;
 {$IFDEF USE_SSL}
         function    SslSendPlain(Data : TWSocketData; Len : Integer) : Integer;
 {$ENDIF}
@@ -609,7 +610,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TFtpCtrlSocket.GetPeerAddr: AnsiString;
+function TFtpCtrlSocket.GetPeerAddr: String;
 begin
     Result := FPeerAddr;
 end;

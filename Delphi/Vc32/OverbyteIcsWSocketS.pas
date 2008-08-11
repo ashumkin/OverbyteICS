@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      6.03
+Version:      6.04
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -80,6 +80,7 @@ May 01, 2008 V6.02 A. Garrels - Function names adjusted according to changes in
                    OverbyteIcsLibrary.pas.
 May 14, 2008 V6.03 A. Garrels - Type change from String to AnsiString in
                    TWSocketClient (FPeerPort and FPeerAddr).
+Aug 11, 2008 V6.04 A. Garrels - Type AnsiString rolled back String.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWSocketS;
@@ -137,8 +138,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWinsock;
 
 const
-    WSocketServerVersion     = 603;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2008 F. Piette V6.03 ';
+    WSocketServerVersion     = 604;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2008 F. Piette V6.04 ';
     DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
 
 type
@@ -161,8 +162,8 @@ type
     protected
         FBanner            : String;
         FServer            : TCustomWSocketServer;
-        FPeerAddr          : AnsiString;
-        FPeerPort          : AnsiString;
+        FPeerAddr          : String;
+        FPeerPort          : String;
         FSessionClosedFlag : Boolean;
         {$IFDEF CLR}
         FHandleGc      : GCHandle;
@@ -172,8 +173,8 @@ type
         procedure   StartConnection; virtual;
         procedure   TriggerSessionClosed(ErrCode : Word); override;
         procedure   Dup(newHSocket : TSocket); override;
-        function    GetPeerAddr: AnsiString; override;
-        function    GetPeerPort: AnsiString; override;
+        function    GetPeerAddr: String; override;
+        function    GetPeerPort: String; override;
         property    Server : TCustomWSocketServer read  FServer
                                                   write FServer;
         {$IFDEF CLR}
@@ -648,7 +649,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This override base class GetPeerAddr. It return cached value.             }
-function TWSocketClient.GetPeerAddr: AnsiString;
+function TWSocketClient.GetPeerAddr: String;
 begin
     Result := FPeerAddr;
 end;
@@ -656,7 +657,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This override base class GetPeerPort. It return cached value.             }
-function TWSocketClient.GetPeerPort: AnsiString;
+function TWSocketClient.GetPeerPort: String;
 begin
     Result := FPeerPort;
 end;

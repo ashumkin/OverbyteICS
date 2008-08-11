@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      1.04
+Version:      1.05
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -70,7 +70,7 @@ Jul 29, 2008 V1.02 A. Garrels added global var IcsSystemCodePage. Changed type
                    of one local var from AnsiString to CsuString.
 Aug 03, 2008 V1.03 A. Garrels changed alias CsuString to use AnsiString.
 Aug 08, 2008 V1.04 A. Garrels added some code page helper functions.
-
+Aug 11, 2008 V1.05 A. Garrels - Type AnsiString rolled back to String.
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try
@@ -255,7 +255,7 @@ uses
     OverbyteIcsLibrary;
 
 type
-    CsuString = AnsiString;
+    CsuString = String;
     { Proc. InitializeCharsetInfos depends on the order of the items of this }
     { set!                                                                   }
     TMimeCharset = (

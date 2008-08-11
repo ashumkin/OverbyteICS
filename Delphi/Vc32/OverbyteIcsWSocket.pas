@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.17
+Version:      6.18
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -618,7 +618,10 @@ Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 Jul 04, 2008 V6.11 Rev.58 SSL - Still lacked a few changes I made last year.
 Jul 13, 2008 V6.12 Added SafeWSocketGCount
 Aug 03, 2008 V6.16 A. Garrels removed packed from record TExtension.
-Jul 07, 2008 V6.17 Still a small fix from December 2007 missing in SSL code. 
+Jul 07, 2008 V6.17 Still a small fix from December 2007 missing in SSL code.
+Aug 11, 2008 V6.18 A. Garrels - Type AnsiString rolled back to String.
+             Two bugs fixed in SSL code introduced with Unicode change.
+             Socks was not fully prepared for Unicode. 
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -670,8 +673,8 @@ unit OverbyteIcsWSocket;
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
-    {$WARN IMPLICIT_STRING_CAST       OFF}
-    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN IMPLICIT_STRING_CAST       ON}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
@@ -722,8 +725,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 617;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.17 ';
+  WSocketVersion            = 618;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.18 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -803,7 +806,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 
   TCustomWSocket = class(TIcsWndControl)
   private
-    FDnsResult          : AnsiString;
+    FDnsResult          : String;
     FDnsResultList      : TStrings;
     FSendFlags          : Integer;
     FLastError          : Integer;
@@ -835,7 +838,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     //FMsg_WM_WSOCKET_RELEASE      : UINT;
     FMsg_WM_TRIGGER_EXCEPTION      : UINT;
     FMsg_WM_TRIGGER_DATA_AVAILABLE : UINT;
-    FAddrStr            : AnsiString;
+    FAddrStr            : String;
     FAddrResolved       : Boolean;
     FAddrFormat         : Integer;
     FAddrAssigned       : Boolean;
@@ -843,14 +846,14 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     FProtoAssigned      : Boolean;
     FProtoResolved      : Boolean;
     FLocalPortResolved  : Boolean;
-    FProtoStr           : AnsiString;
-    FPortStr            : AnsiString;
+    FProtoStr           : String;
+    FPortStr            : String;
     FPortAssigned       : Boolean;
     FPortResolved       : Boolean;
     FPortNum            : Integer;
-    FLocalPortStr       : AnsiString;
+    FLocalPortStr       : String;
     FLocalPortNum       : Integer;
-    FLocalAddr          : AnsiString;     { IP address for local interface to use }
+    FLocalAddr          : String;     { IP address for local interface to use }
     FType               : Integer;
     FBufHandler         : TIcsBufferHandler;
     FLingerOnOff        : TSocketLingerOnOff;
@@ -879,7 +882,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     { 239.255.255.255. However, the multicast addresses from 224.0.0.0 to     }
     { 224.0.0.255 are reserved for multicast routing information; Application }
     { programs should use multicast addresses outside this range.             }
-    FMultiCastAddrStr   : AnsiString;
+    FMultiCastAddrStr   : String;
     FMultiCastIpTTL     : Integer;
     FReuseAddr          : Boolean;
     FComponentOptions   : TWSocketOptions;
@@ -935,12 +938,12 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 {$ENDIF}
     procedure   SetSendFlags(newValue : TSocketSendFlags);
     function    GetSendFlags : TSocketSendFlags;
-    procedure   SetAddr(InAddr : AnsiString);
-    procedure   SetRemotePort(sPort : AnsiString); virtual;
-    function    GetRemotePort : AnsiString;
-    procedure   SetLocalAddr(sLocalAddr : AnsiString);
-    procedure   SetLocalPort(const sLocalPort : AnsiString);
-    procedure   SetProto(sProto : AnsiString); virtual;
+    procedure   SetAddr(InAddr : String);
+    procedure   SetRemotePort(sPort : String); virtual;
+    function    GetRemotePort : String;
+    procedure   SetLocalAddr(sLocalAddr : String);
+    procedure   SetLocalPort(const sLocalPort : String);
+    procedure   SetProto(sProto : String); virtual;
     function    GetRcvdCount : LongInt; virtual;
     procedure   SetBufSize(Value : Integer); virtual;
     function    GetBufSize: Integer; virtual;
@@ -1026,15 +1029,15 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function    SendStr(const Str : UnicodeString; ACodePage: Cardinal) : Integer; overload; virtual;
     function    SendStr(const Str : UnicodeString) : Integer; overload; virtual;
 {$ENDIF}
-    procedure   DnsLookup(const AHostName : AnsiString); virtual;
-    procedure   ReverseDnsLookup(const HostAddr: AnsiString); virtual;
-    procedure   ReverseDnsLookupSync(const HostAddr: AnsiString); virtual;  {AG 03/03/06}
+    procedure   DnsLookup(const AHostName : String); virtual;
+    procedure   ReverseDnsLookup(const HostAddr: String); virtual;
+    procedure   ReverseDnsLookupSync(const HostAddr: String); virtual;  {AG 03/03/06}
     procedure   CancelDnsLookup; virtual;
-    function    GetPeerAddr: AnsiString; virtual;
-    function    GetPeerPort: AnsiString; virtual;
+    function    GetPeerAddr: String; virtual;
+    function    GetPeerPort: String; virtual;
     function    GetPeerName(var Name : TSockAddrIn; NameLen : Integer) : Integer; virtual;
-    function    GetXPort: AnsiString; virtual;
-    function    GetXAddr: AnsiString; virtual;
+    function    GetXPort: String; virtual;
+    function    GetXAddr: String; virtual;
     function    TimerIsSet(var tvp : TTimeVal) : Boolean; virtual;
     procedure   TimerClear(var tvp : TTimeVal); virtual;
     function    TimerCmp(var tvp : TTimeVal; var uvp : TTimeVal; IsEqual : Boolean) : Boolean; virtual;
@@ -1076,29 +1079,29 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property FWindowHandle : HWND                   read  FHandle;
     property HSocket : TSocket                      read  FHSocket
                                                     write Dup;
-    property Addr : AnsiString                      read  FAddrStr
+    property Addr : String                          read  FAddrStr
                                                     write SetAddr;
-    property Port : AnsiString                      read  GetRemotePort
+    property Port : String                          read  GetRemotePort
                                                     write SetRemotePort;
-    property LocalPort : AnsiString                 read  FLocalPortStr
+    property LocalPort : String                     read  FLocalPortStr
                                                     write SetLocalPort;
-    property LocalAddr : AnsiString                 read  FLocalAddr
+    property LocalAddr : String                     read  FLocalAddr
                                                     write SetLocalAddr;
-    property Proto : AnsiString                     read  FProtoStr
+    property Proto : String                         read  FProtoStr
                                                     write SetProto;
     property MultiThreaded   : Boolean              read  FMultiThreaded
                                                     write FMultiThreaded;
     property MultiCast       : Boolean              read  FMultiCast
                                                     write FMultiCast;
-    property MultiCastAddrStr: AnsiString           read  FMultiCastAddrStr
+    property MultiCastAddrStr: String               read  FMultiCastAddrStr
                                                     write FMultiCastAddrStr;
     property MultiCastIpTTL  : Integer              read  FMultiCastIpTTL
                                                     write FMultiCastIpTTL;
     property ReuseAddr       : Boolean              read  FReuseAddr
                                                     write FReuseAddr;
-    property PeerAddr : AnsiString                  read  GetPeerAddr;
-    property PeerPort : AnsiString                  read  GetPeerPort;
-    property DnsResult : AnsiString                 read  FDnsResult;
+    property PeerAddr : String                      read  GetPeerAddr;
+    property PeerPort : String                      read  GetPeerPort;
+    property DnsResult : String                     read  FDnsResult;
     property DnsResultList : TStrings               read  FDnsResultList;
     property State : TSocketState                   read  FState;
     property AllSent   : Boolean                    read  bAllSent;
@@ -1176,9 +1179,9 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   TCustomSocksWSocket = class(TCustomWSocket)
   protected
       FSocksState          : TSocksState;
-      FSocksServer         : AnsiString;
+      FSocksServer         : String;
       FSocksLevel          : String;
-      FSocksPort           : AnsiString;
+      FSocksPort           : String;
       FSocksPortAssigned   : Boolean;
       FSocksServerAssigned : Boolean;
       FSocksUsercode       : String;
@@ -1204,10 +1207,10 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
       procedure   TriggerSocksConnected(Error : Word); virtual;
       procedure   TriggerSessionClosed(Error : Word); override;
       function    TriggerDataAvailable(Error : Word) : Boolean; override;
-      function    GetSocksPort: AnsiString;
-      procedure   SetSocksPort(sPort : AnsiString); virtual;
-      function    GetSocksServer: AnsiString;
-      procedure   SetSocksServer(sServer : AnsiString); virtual;
+      function    GetSocksPort: String;
+      procedure   SetSocksPort(sPort : String); virtual;
+      function    GetSocksServer: String;
+      procedure   SetSocksServer(sServer : String); virtual;
       procedure   TriggerSocksError(Error : Integer; Msg : String); virtual;
       procedure   TriggerSocksAuthState(AuthState : TSocksAuthState);
       function    GetRcvdCount : LongInt; override;
@@ -1223,11 +1226,11 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
       procedure   Connect; override;
       procedure   Listen; override;
   protected
-      property SocksServer   : AnsiString           read  GetSocksServer
+      property SocksServer   : String               read  GetSocksServer
                                                     write SetSocksServer;
       property SocksLevel    : String               read  FSocksLevel
                                                     write SetSocksLevel;
-      property SocksPort     : AnsiString           read  FSocksPort
+      property SocksPort     : String               read  FSocksPort
                                                     write SetSocksPort;
       property SocksUsercode : String               read  FSocksUsercode
                                                     write FSocksUsercode;
@@ -3451,7 +3454,7 @@ begin
         else begin
             Result := _GetProcAddress(FDllHandle, @ProcName[1]);
             if Result = nil then
-                raise ESocketException.Create('Procedure ' + ProcName +
+                raise ESocketException.Create('Procedure ' + String(ProcName) +
                                               ' not found in ' + winsocket +
                                    ' - ' + GetWindowsErr (GetLastError)); { V5.26 }
         end;
@@ -3487,7 +3490,7 @@ begin
         else begin
             Result := _GetProcAddress(FDll2Handle, @ProcName[1]);
             if Result = nil then
-                raise ESocketException.Create('Procedure ' + ProcName +
+                raise ESocketException.Create('Procedure ' + String(ProcName) +
                                               ' not found in ' + winsocket2 +
                                 ' - ' + GetWindowsErr (GetLastError)); { V5.26 }
         end;
@@ -4927,7 +4930,7 @@ begin
     FProto              := IPPROTO_TCP;
     FProtoStr           := 'tcp';
     FType               := SOCK_STREAM;
-    FLocalPortStr       := AnsiChar('0');
+    FLocalPortStr       := '0';
     FLocalAddr          := '0.0.0.0';
 
     FLingerOnOff        := wsLingerOn;
@@ -5595,7 +5598,7 @@ begin
 {$ENDIF}
 {$IFDEF WIN32}
 begin
-    if Str <> '' then
+    if Length(Str) > 0 then
         PutDataInSendBuffer(@Str[1], Length(Str));
 {$ENDIF}
 end;
@@ -5605,12 +5608,17 @@ end;
 {$IFDEF COMPILER12_UP}                                              
 procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage: Cardinal);
 begin
-    PutStringInSendBuffer(UnicodeToAnsi(Str, ACodePage));  // Explicit cast
+    if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
+        PutDataInSendBuffer(Pointer(Str), Length(Str) * 2)
+    else
+        PutStringInSendBuffer(UnicodeToAnsi(Str, ACodePage));  // Explicit cast
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString);
 begin
-    PutStringInSendBuffer(Str, CP_ACP);  // Explicit cast
+    PutStringInSendBuffer(AnsiString(Str));  // Explicit cast
 end;
 {$ENDIF}
 
@@ -5695,18 +5703,27 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Return -1 if error, else return number of ansi-converted elements written }
+{ Return -1 if error, else return number of bytes written }
 {$IFDEF COMPILER12_UP}
-function TCustomWSocket.SendStr(const Str : UnicodeString; ACodePage: Cardinal) : Integer;
+function TCustomWSocket.SendStr(const Str : UnicodeString; ACodePage : Cardinal) : Integer;
 begin
-    Result := SendStr(UnicodeToAnsi(Str, ACodePage));
+    if Length(Str) > 0 then
+    begin
+        if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
+            Result := Send( Pointer(Str), Length(Str) * 2)
+        else
+           Result := SendStr(UnicodeToAnsi(Str, ACodePage));
+   end
+   else
+        Result := 0;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Converts UnicodeString to AnsiString using System.DefaultSystemCodePage   }
 function TCustomWSocket.SendStr(const Str : UnicodeString) : Integer;
 begin
-    Result := SendStr(Str, CP_ACP);
+    Result := SendStr(AnsiString(Str)); // RTL convert
 end;
 {$ENDIF}
 
@@ -6036,7 +6053,7 @@ begin
 
     I := 0;
     while pptr^[I] <> nil do begin
-        ToList.Add(WSocket_inet_ntoa(pptr^[I]^));
+        ToList.Add(String(WSocket_inet_ntoa(pptr^[I]^)));
         Inc(I);
     end;
 end;
@@ -6054,7 +6071,7 @@ begin
     pptr := PaPAnsiChar(Phe^.h_aliases);
     I    := 0;
     while pptr^[I] <> nil do begin
-        ToList.Add(pptr^[I]);
+        ToList.Add(String(pptr^[I]));
         Inc(I);
     end;
 end;
@@ -6130,8 +6147,9 @@ begin
 {$IFDEF WIN32}
         Phe := PHostent(@FDnsLookupBuffer);
         if phe <> nil then begin
-            SetLength(FDnsResult, _StrLen(Phe^.h_name));
-            _StrCopy(@FDnsResult[1], Phe^.h_name);
+            //SetLength(FDnsResult, _StrLen(Phe^.h_name));
+            //_StrCopy(PAnsiChar(FDnsResult), Phe^.h_name);
+            FDnsResult := String(_StrPas(Phe^.h_name));
 {$ENDIF}
             FDnsResultList.Clear;
             FDnsResultList.Add(FDnsResult);
@@ -6148,7 +6166,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SetProto(sProto : AnsiString);
+procedure TCustomWSocket.SetProto(sProto : String);
 begin
     if FProtoAssigned and (sProto = FProtoStr) then
         Exit;
@@ -6171,7 +6189,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SetRemotePort(sPort : AnsiString);
+procedure TCustomWSocket.SetRemotePort(sPort : String);
 begin
     if FPortAssigned and (FPortStr = sPort) then
         Exit;
@@ -6182,7 +6200,7 @@ begin
     end;
 
     FPortStr := _Trim(sPort);
-  
+
     if Length(FPortStr) = 0 then begin
         FPortAssigned := FALSE;
         Exit;
@@ -6195,14 +6213,14 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
-function TCustomWSocket.GetRemotePort : AnsiString;
+function TCustomWSocket.GetRemotePort : String;
 begin
     Result := FPortStr;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SetLocalPort(const sLocalPort : AnsiString);
+procedure TCustomWSocket.SetLocalPort(const sLocalPort : String);
 begin
     if FState <> wsClosed then begin
         RaiseException('Cannot change LocalPort if not closed');
@@ -6215,7 +6233,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SetLocalAddr(sLocalAddr : AnsiString);
+procedure TCustomWSocket.SetLocalAddr(sLocalAddr : String);
 {var
     IPAddr  : TInAddr;}
 begin
@@ -6241,7 +6259,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomWSocket.GetXPort: AnsiString;
+function TCustomWSocket.GetXPort: String;
 var
     saddr    : TSockAddrIn;
     saddrlen : Integer;
@@ -6252,14 +6270,14 @@ begin
         saddrlen := sizeof(saddr);
         if WSocket_Synchronized_GetSockName(FHSocket, TSockAddr(saddr), saddrlen) = 0 then begin
             port     := WSocket_Synchronized_ntohs(saddr.sin_port);
-            Result   := IcsIntToStrA(port);
+            Result   := _IntToStr(port);
         end;
     end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomWSocket.GetXAddr: AnsiString;
+function TCustomWSocket.GetXAddr: String;
 var
     saddr    : TSockAddrIn;
     saddrlen : Integer;
@@ -6268,13 +6286,13 @@ begin
     if FState in [wsConnected, wsBound, wsListening] then begin
         saddrlen := sizeof(saddr);
         if WSocket_Synchronized_GetSockName(FHSocket, TSockAddr(saddr), saddrlen) = 0 then
-            Result := {StrPas}(WSocket_Synchronized_inet_ntoa(saddr.sin_addr));
+            Result := String(WSocket_Synchronized_inet_ntoa(saddr.sin_addr));
      end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SetAddr(InAddr : AnsiString);
+procedure TCustomWSocket.SetAddr(InAddr : String);
 begin
     if FAddrAssigned and (FAddrStr = InAddr) then
         Exit;
@@ -6312,7 +6330,7 @@ var
 begin
     if InAddr = '' then
       {  raise ESocketException.Create('WSocketResolveHost: ''' + InAddr + ''' Invalid Hostname.'); }
-        raise ESocketException.Create('Winsock Resolve Host: ''' + InAddr + ''' Invalid Hostname.');   { V5.26 }
+        raise ESocketException.Create('Winsock Resolve Host: ''' + String(InAddr) + ''' Invalid Hostname.');   { V5.26 }
 
 
     if WSocketIsDottedIP(InAddr) then begin
@@ -6332,7 +6350,7 @@ begin
                 Exit;
             end;
        {     raise ESocketException.Create('WSocketResolveHost: ''' + InAddr + ''' Invalid IP address.');  }
-            raise ESocketException.Create('Winsock Resolve Host: ''' + InAddr +
+            raise ESocketException.Create('Winsock Resolve Host: ''' + String(InAddr) +
                                          ''' Invalid IP address.');   { V5.26 }
         end;
         Result.s_addr := IPAddr;
@@ -6358,7 +6376,7 @@ begin
     if Phe = nil then
         raise ESocketException.Create(
                  'Winsock Resolve Host: Cannot convert host address ''' +
-                 InAddr + ''' - ' +
+                 String(InAddr) + ''' - ' +
                  GetWinsockErr(WSocket_Synchronized_WSAGetLastError));
     Result.s_addr := PInAddr(Phe^.h_addr_list^)^.s_addr;
 {$ENDIF}
@@ -6431,7 +6449,7 @@ begin
         if Pse = nil then
             raise ESocketException.Create(
                       'Winsock Resolve Port: Cannot convert port ''' +
-                      Port + ''' - ' +
+                      String(Port) + ''' - ' +
                       GetWinsockErr(WSocket_Synchronized_WSAGetLastError)); { V5.26 }
         Result := WSocket_Synchronized_ntohs(Pse^.s_port);
     end;
@@ -6497,7 +6515,7 @@ begin
             if Ppe = nil then
                 raise ESocketException.Create(
                           'Winsock Resolve Proto: Cannot convert protocol ''' +
-                          sProto + ''' - ' +
+                          String(sProto) + ''' - ' +
                           GetWinsockErr(WSocket_Synchronized_WSAGetLastError));    { V5.26 }
             Result := ppe^.p_proto;
 {$ENDIF}
@@ -6529,7 +6547,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomWSocket.GetPeerAddr: AnsiString;
+function TCustomWSocket.GetPeerAddr: String;
 var
     saddr    : TSockAddrIn;
     saddrlen : Integer;
@@ -6544,7 +6562,7 @@ begin
     if FState = wsConnected then begin
         saddrlen := sizeof(saddr);
         if WSocket_Synchronized_GetPeerName(FHSocket, TSockAddr(saddr), saddrlen) = 0 then
-            Result := WSocket_Synchronized_inet_ntoa(saddr.sin_addr)
+            Result := String(WSocket_Synchronized_inet_ntoa(saddr.sin_addr))
         else begin
             SocketError('GetPeerName');
             Exit;
@@ -6554,7 +6572,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomWSocket.GetPeerPort: AnsiString;
+function TCustomWSocket.GetPeerPort: String;
 var
     saddr    : TSockAddrIn;
     saddrlen : Integer;
@@ -6569,7 +6587,7 @@ begin
     if FState = wsConnected then begin
         saddrlen := sizeof(saddr);
         if WSocket_Synchronized_GetPeerName(FHSocket, TSockAddr(saddr), saddrlen) = 0 then
-            Result := IcsIntToStrA(WSocket_Synchronized_ntohs(saddr.sin_port))
+            Result := _IntToStr(WSocket_Synchronized_ntohs(saddr.sin_port))
         else begin
             SocketError('GetPeerPort');
             Exit;
@@ -6614,7 +6632,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.DnsLookup(const AHostName : AnsiString);
+procedure TCustomWSocket.DnsLookup(const AHostName : String);
 var
     IPAddr   : TInAddr;
     HostName : AnsiString;
@@ -6638,12 +6656,12 @@ begin
     { Delphi 1 do not automatically add a terminating nul char }
     HostName := AHostName + #0;
 {$ELSE}
-    HostName := AHostName;
+    HostName := AnsiString(AHostName);
 {$ENDIF}
     if WSocketIsDottedIP(Hostname) then begin   { 28/09/2002 }
         IPAddr.S_addr := WSocket_Synchronized_inet_addr(HostName);
         if IPAddr.S_addr <> u_long(INADDR_NONE) then begin
-            FDnsResult := WSocket_Synchronized_inet_ntoa(IPAddr);
+            FDnsResult := String(WSocket_Synchronized_inet_ntoa(IPAddr));
             FDnsResultList.Add(FDnsResult);     { 28/09/2002 }{ 12/02/2003 }
             TriggerDnsLookupDone(0);
             Exit;
@@ -6684,7 +6702,7 @@ begin
                               @FDnsLookupBuffer,
                               SizeOf(FDnsLookupBuffer));
     if FDnsLookupHandle = 0 then begin
-        RaiseException(HostName + ': can''t start DNS lookup - ' +
+        RaiseException(String(HostName) + ': can''t start DNS lookup - ' +
                        GetWinsockErr(WSocket_Synchronized_WSAGetLastError));  { V5.26 }
         Exit;
     end;
@@ -6697,7 +6715,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.ReverseDnsLookup(const HostAddr: AnsiString);
+procedure TCustomWSocket.ReverseDnsLookup(const HostAddr: String);
 var
     lAddr  : u_long;
 begin
@@ -6713,7 +6731,7 @@ begin
     FDnsResult := '';
     FDnsResultList.Clear;
 
-    lAddr := WSocket_Synchronized_inet_addr(HostAddr);
+    lAddr := WSocket_Synchronized_inet_addr(AnsiString(HostAddr));
 
     if FWindowHandle = 0 then
         RaiseException('Reverse DNS Lookup: Window not assigned');  { V5.26 }
@@ -6783,7 +6801,7 @@ begin
 end;
 {$ENDIF}
 {$IFDEF WIN32}
-procedure TCustomWSocket.ReverseDnsLookupSync(const HostAddr: AnsiString); {AG 03/03/06}
+procedure TCustomWSocket.ReverseDnsLookupSync(const HostAddr: String); {AG 03/03/06}
 var
     szAddr : array [0..256] of AnsiChar;
     lAddr  : u_long;
@@ -6801,7 +6819,7 @@ begin
     FDnsResult := '';
     FDnsResultList.Clear;
 
-    _StrPCopy(szAddr, HostAddr); { Length already checked above }
+    _StrPCopy(szAddr, AnsiString(HostAddr)); { Length already checked above }
 
     lAddr := WSocket_Synchronized_inet_addr(szAddr);
 
@@ -6809,8 +6827,9 @@ begin
     if Phe = nil then
         TriggerDnsLookupDone(WSocket_Synchronized_WSAGetLastError)
     else begin
-        SetLength(FDnsResult, _StrLen(Phe^.h_name));
-        _StrCopy(@FDnsResult[1], Phe^.h_name);
+        //SetLength(FDnsResult, _StrLen(Phe^.h_name));
+        //_StrCopy(@FDnsResult[1], Phe^.h_name);
+        FDnsResult := String(_StrPas(Phe^.h_name));
         FDnsResultList.Add(FDnsResult);
         GetAliasList(Phe, FDnsResultList);
         TriggerDnsLookupDone(0);
@@ -6838,7 +6857,7 @@ begin
     SockNamelen                   := SizeOf(LocalSockName);
     LocalSockName.sin_family      := AF_INET;
     LocalSockName.sin_port        := WSocket_Synchronized_htons(FLocalPortNum);
-    LocalSockName.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(FLocalAddr).s_addr;
+    LocalSockName.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
 
     if WSocket_Synchronized_bind(HSocket, LocalSockName, SockNamelen) <> 0 then begin
         RaiseException('Bind socket failed - ' +
@@ -6852,7 +6871,7 @@ begin
         Exit;
     end;
     FLocalPortNum := WSocket_Synchronized_ntohs(SockName.sin_port);
-    FLocalPortStr := IcsIntToStrA(FLocalPortNum);
+    FLocalPortStr := _IntToStr(FLocalPortNum);
 end;
 
 
@@ -6966,7 +6985,7 @@ begin
     try
         if not FProtoResolved then begin
             { The next line will trigger an exception in case of failure }
-            FProto := WSocket_Synchronized_ResolveProto(FProtoStr);
+            FProto := WSocket_Synchronized_ResolveProto(AnsiString(FProtoStr));
             case FProto of
             IPPROTO_UDP: FType := SOCK_DGRAM;
             IPPROTO_TCP: FType := SOCK_STREAM;
@@ -6979,20 +6998,20 @@ begin
 
         if not FPortResolved then begin
             { The next line will trigger an exception in case of failure }
-            FPortNum      := WSocket_Synchronized_ResolvePort(FPortStr, FProtoStr);
+            FPortNum      := WSocket_Synchronized_ResolvePort(AnsiString(FPortStr), AnsiString(FProtoStr));
             sin.sin_port  := WSocket_Synchronized_htons(FPortNum);
             FPortResolved := TRUE;
         end;
 
         if not FLocalPortResolved then begin
             { The next line will trigger an exception in case of failure }
-            FLocalPortNum      := WSocket_Synchronized_ResolvePort(FLocalPortStr, FProtoStr);
+            FLocalPortNum      := WSocket_Synchronized_ResolvePort(AnsiString(FLocalPortStr), AnsiString(FProtoStr));
             FLocalPortResolved := TRUE;
         end;
 
         if not FAddrResolved then begin
             { The next line will trigger an exception in case of failure }
-            sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(FAddrStr).s_addr;
+            sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr;
             FAddrResolved := TRUE;
         end;
     except
@@ -7066,7 +7085,7 @@ begin
                 end;
             end;
             if FLocalAddr <> '0.0.0.0' then begin                      { RK }
-                laddr.s_addr := WSocket_Synchronized_ResolveHost(FLocalAddr).s_addr;
+                laddr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
                 iStatus      := WSocket_Synchronized_SetSockOpt(FHSocket, IPPROTO_IP,
                                                                 IP_MULTICAST_IF,
                                                                 laddr,
@@ -7189,10 +7208,10 @@ begin
             { The next line will trigger an exception in case of failure }
             if _CompareText(Copy(FProtoStr, 1, 4), 'raw_') = 0 then begin
                 FType  := SOCK_RAW;
-                FProto := WSocket_Synchronized_ResolveProto(Copy(FProtoStr, 5, 10));
+                FProto := WSocket_Synchronized_ResolveProto(AnsiString(Copy(FProtoStr, 5, 10)));
             end
             else begin
-                FProto := WSocket_Synchronized_ResolveProto(FProtoStr);
+                FProto := WSocket_Synchronized_ResolveProto(AnsiString(FProtoStr));
                 if FProto = IPPROTO_UDP then
                     FType := SOCK_DGRAM
                 else
@@ -7203,14 +7222,14 @@ begin
 
         if not FPortResolved then begin
             { The next line will trigger an exception in case of failure }
-            FPortNum      := WSocket_Synchronized_ResolvePort(FPortStr, FProtoStr);
+            FPortNum      := WSocket_Synchronized_ResolvePort(AnsiString(FPortStr), AnsiString(FProtoStr));
             sin.sin_port  := WSocket_Synchronized_htons(FPortNum);
             FPortResolved := TRUE;
         end;
 
         if not FAddrResolved then begin
             { The next line will trigger an exception in case of failure }
-            sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(FAddrStr).s_addr;
+            sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr;
             FAddrResolved       := TRUE;
         end;
     except
@@ -7288,9 +7307,9 @@ begin
                  { mreq.imr_multiaddr.s_addr := WSocket_inet_addr('225.0.0.37');}
                  { mreq.imr_multiaddr.s_addr := sin.sin_addr.s_addr;}
                  { mreq.imr_multiaddr.s_addr := WSocket_inet_addr(FAddrStr);}
-                 mreq.imr_multiaddr.s_addr := WSocket_Synchronized_inet_addr(FMultiCastAddrStr);
+                 mreq.imr_multiaddr.s_addr := WSocket_Synchronized_inet_addr(AnsiString(FMultiCastAddrStr));
                  { mreq.imr_interface.s_addr := htonl(INADDR_ANY);} { RK}
-                 mreq.imr_interface.s_addr := WSocket_Synchronized_ResolveHost(FAddrStr).s_addr;
+                 mreq.imr_interface.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr;
                  iStatus := WSocket_Synchronized_SetSockOpt(FHSocket, IPPROTO_IP,
                                                             IP_ADD_MEMBERSHIP,
                                                             mreq, SizeOf(mreq));
@@ -8146,14 +8165,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomSocksWSocket.GetSocksPort: AnsiString;
+function TCustomSocksWSocket.GetSocksPort: String;
 begin
     Result := FSocksPort;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomSocksWSocket.SetSocksPort(sPort : AnsiString);
+procedure TCustomSocksWSocket.SetSocksPort(sPort : String);
 begin
     if State <> wsClosed then begin
         RaiseException('Can''t change socks port if not closed');
@@ -8171,14 +8190,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomSocksWSocket.GetSocksServer: AnsiString;
+function TCustomSocksWSocket.GetSocksServer: String;
 begin
     Result := FSocksServer;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomSocksWSocket.SetSocksServer(sServer : AnsiString);
+procedure TCustomSocksWSocket.SetSocksServer(sServer : String);
 begin
     if State <> wsClosed then begin
         RaiseException('Can''t change socks server if not closed');
@@ -8226,17 +8245,17 @@ begin
     try
         if not FPortResolved then begin
             { The next line will trigger an exception in case of failure }
-            sin.sin_port  := WSocket_Synchronized_htons(WSocket_Synchronized_ResolvePort(FSocksPort, FProtoStr));
+            sin.sin_port  := WSocket_Synchronized_htons(WSocket_Synchronized_ResolvePort(AnsiString(FSocksPort), AnsiString(FProtoStr)));
             FPortResolved := TRUE;
         end;
 
         if not FAddrResolved then begin
             { The next line will trigger an exception in case of failure }
-            sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(FSocksServer).s_addr;
+            sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FSocksServer)).s_addr;
             FAddrResolved       := TRUE;
         end;
         { The next line will trigger an exception in case of failure }
-        FPortNum := WSocket_Synchronized_ResolvePort(FPortStr, FProtoStr);
+        FPortNum := WSocket_Synchronized_ResolvePort(AnsiString(FPortStr), AnsiString(FProtoStr));
     except
         on E:Exception do begin
             RaiseException('Connect: ' + E.Message);  { V5.26 }
@@ -8338,6 +8357,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Rfc1929  Username/Password Autentication protocol.
+The UNAME field contains the username as known to the source operating system.
+The PLEN field contains the length of the PASSWD field that follows.
+The PASSWD field contains the password association with the given UNAME.
+
+Rfc1929 does not mention anything about character sets allowed so currently
+the Win32 code below converts the user name and password to ANSI using the
+default system code page.                                                   }
+
 procedure TCustomSocksWSocket.SocksDoAuthenticate;
 {$IFDEF CLR}
 var
@@ -8371,19 +8399,23 @@ end;
 {$ENDIF}
 {$IFDEF WIN32}
 var
-    Buf     : array [0..127] of char;
+    Buf     : array [0..127] of AnsiChar;
     I       : Integer;
+    TempS   : AnsiString;
 begin
     FSocksState := socksAuthenticate;
     TriggerSocksAuthState(socksAuthStart);
     Buf[0] := #$01; {06/03/99}           { Socks version }
     I      := 1;
-    Buf[I] := chr(Length(FSocksUsercode));
-    Move(FSocksUsercode[1], Buf[I + 1], Length(FSocksUsercode));
-    I := I + 1 + Length(FSocksUsercode);
-    Buf[I] := chr(Length(FSocksPassword));
-    Move(FSocksPassword[1], Buf[I + 1], Length(FSocksPassword));
-    I := I + 1 + Length(FSocksPassword);
+    TempS  := AnsiString(FSocksUsercode);
+    Buf[I] := AnsiChar(Length(TempS));
+    Move(TempS[1], Buf[I + 1], Length(TempS));
+    I := I + 1 + Length(TempS);
+
+    TempS  := AnsiString(FSocksPassword);
+    Buf[I] := AnsiChar(Length(TempS));
+    Move(TempS[1], Buf[I + 1], Length(TempS));
+    I := I + 1 + Length(TempS);
     try
 {TriggerDisplay('Send = ''' + BufToStr(Buf, I) + '''');}
         Send(@Buf, I);
@@ -8492,7 +8524,7 @@ end;
 type
     pu_long = ^u_long;
 var
-    Buf     : array [0..127] of char;
+    Buf     : array [0..127] of AnsiChar;
     I       : Integer;
     ErrCode : Integer;
 begin
@@ -8509,7 +8541,7 @@ begin
         else begin
             { With original SOCKS4, we have to supply the dest address  }
             try
-                pu_long(@Buf[4])^ := WSocket_Synchronized_ResolveHost(FAddrStr).s_addr;
+                pu_long(@Buf[4])^ := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr;
             except
                 on E:Exception do begin
                      ErrCode := socksHostResolutionFailed;
@@ -8530,7 +8562,7 @@ begin
         Inc(I);
         if FSocksLevel = '4A' then begin
             { We have to supply the destination host name                 }
-            Move(FAddrStr[1], Buf[I], Length(FAddrStr));
+            Move(AnsiString(FAddrStr)[1], Buf[I], Length(FAddrStr));  // No length change expected (ASCII)
             I := I + Length(FAddrStr);
             Buf[I] := #0;  { Alon Gingold }
             Inc(I);        { Alon Gingold }
@@ -8543,9 +8575,9 @@ begin
         Buf[1] := #$01;            { Connect command }
         Buf[2] := #$00;            { Reserved, must be $00 }
         Buf[3] := #$03;            { Address type is domain name }
-        Buf[4] := chr(Length(FAddrStr));
+        Buf[4] := AnsiChar((Length(FAddrStr)));
         { Should check buffer overflow }
-        Move(FAddrStr[1], Buf[5], Length(FAddrStr));
+        Move(AnsiString(FAddrStr)[1], Buf[5], Length(FAddrStr)); // No length change expected (ASCII)
         I := 5 + Length(FAddrStr);
         PWord(@Buf[I])^ := WSocket_Synchronized_htons(FPortNum);
         I := I + 2;
@@ -9947,8 +9979,8 @@ begin
     ErrCode := f_ERR_get_error_line_data(@FileName, @Line, @Data, @Flags);
     while ErrCode <> 0 do begin
         if Result <> '' then Result := Result + #13#10;
-        Result := Result + 'error code: ' + _IntToStr(ErrCode) +
-                          ' in ' + FileName + ' line ' + _IntToStr(line);
+        Result := Result + 'error code: ' + IcsIntToStrA(ErrCode) +
+                          ' in ' + FileName + ' line ' + IcsIntToStrA(line);
         if (Data <> nil) and ((Flags and ERR_TXT_STRING) <> 0) then
                 Result := Result + #13#10 + 'error data: ' + _StrPas(Data);
         ErrCode := f_ERR_get_error_line_data(@FileName, @Line, @Data, @Flags);
@@ -10000,9 +10032,9 @@ begin
     FLastSslError := f_ERR_peek_error;
     if Length(CustomMsg) > 0 then
         raise EClass.Create(#13#10 + CustomMsg + #13#10 +
-                            LastOpenSslErrMsg(Dump) + #13#10)
+                            String(LastOpenSslErrMsg(Dump)) + #13#10)
     else
-        raise EClass.Create(#13#10 + LastOpenSslErrMsg(Dump) + #13#10);
+        raise EClass.Create(#13#10 + String(LastOpenSslErrMsg(Dump)) + #13#10);
 end;
 
 
@@ -10296,7 +10328,7 @@ begin
 {$IFNDEF NO_DEBUG_LOG}
         if (not Result) and
             CheckLogOptions(loSslErr) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslErr, LastOpenSslErrMsg(TRUE));
+            DebugLog(loSslErr, String(LastOpenSslErrMsg(TRUE)));
 {$ELSE}
         if (not Result) then
             f_ERR_clear_error;
@@ -10776,7 +10808,7 @@ begin
                             if f_X509_STORE_add_crl(St, Crl) = 0 then
 {$IFNDEF NO_DEBUG_LOG}
                                 if CheckLogOptions(loSslErr) then  { V5.21 }
-                                    DebugLog(loSslErr, LastOpenSslErrMsg(True));
+                                    DebugLog(loSslErr, String(LastOpenSslErrMsg(True)));
 {$ELSE}
                                 f_ERR_clear_error;
 {$ENDIF};
@@ -10906,7 +10938,7 @@ begin
                                              PAnsiChar(AnsiString(FileName))) = 0) then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslErr) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslErr, LastOpenSslErrMsg(TRUE));
+            DebugLog(loSslErr, String(LastOpenSslErrMsg(TRUE)));
 {$ELSE}
         f_ERR_clear_error;
 {$ENDIF}
@@ -10929,7 +10961,7 @@ begin
                                       SSL_FILETYPE_PEM) = 0) then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, LastOpenSslErrMsg(TRUE));
+            DebugLog(loSslInfo, String(LastOpenSslErrMsg(TRUE)));
 {$ELSE}
         f_ERR_clear_error;
 {$ENDIF}
@@ -11882,11 +11914,11 @@ begin
         Exit;
 
     SetLength(Str, 512);
-    Result := f_X509_NAME_oneline(f_X509_get_issuer_name(FX509),
-                                  PAnsiChar(Str),
-                                  Length(Str));
+    Str := f_X509_NAME_oneline(f_X509_get_issuer_name(FX509),
+                               PAnsiChar(Str),
+                               Length(Str));
     SetLength(Str, _StrLen(PAnsiChar(Str)));
-    Result := Str;
+    Result := String(Str);
 end;
 
 
@@ -11976,7 +12008,7 @@ begin
     Result.Critical := f_X509_EXTENSION_get_critical(Ext) > 0;
     Nid := f_OBJ_obj2nid(f_X509_EXTENSION_get_object(Ext));
     if Nid <> NID_undef then
-        Result.ShortName := _StrPas(f_OBJ_nid2sn(Nid))
+        Result.ShortName := String(_StrPas(f_OBJ_nid2sn(Nid)))
     else begin // custom extension
         //B := nil;
         B := f_BIO_new(f_BIO_s_mem);
@@ -12018,7 +12050,7 @@ begin
         if Assigned(Meth^.i2s) then begin
             Value := Meth^.i2s(Meth, ext_str);
             if Assigned(Value) then
-                Result.Value := _StrPas(Value);
+                Result.Value := String(_StrPas(Value));
         end
         else if Assigned(Meth^.i2v) then begin
             Val := Meth^.i2v(Meth, ext_str, nil);
@@ -12029,10 +12061,10 @@ begin
                 NVal := PCONF_VALUE(f_sk_value(Val, J));
                 if Length(Result.Value) > 0 then
                     Result.Value := Result.Value + #13#10;
-                Result.Value := Result.Value + _StrPas(NVal^.name);
+                Result.Value := Result.Value + String(_StrPas(NVal^.name));
                 if (_StrPas(NVal^.value) <> '') and (_StrPas(NVal^.name) <> '') then
                     Result.Value := Result.Value + '=';
-                Result.Value := Result.Value + _StrPas(NVal^.value);
+                Result.Value := Result.Value + String(_StrPas(NVal^.value));
                 Inc(J);
             end;
         end
@@ -12131,24 +12163,21 @@ begin
     if not Assigned(FX509) then
         Exit;
     SetLength(Str, 512);
-    Result := f_X509_NAME_oneline(f_X509_get_subject_name(FX509),
-                                  PAnsiChar(Str),
-                                  Length(Str));
+    Str := f_X509_NAME_oneline(f_X509_get_subject_name(FX509),
+                               PAnsiChar(Str),
+                               Length(Str));
     SetLength(Str, _StrLen(PAnsiChar(Str)));
-    Result := Str;
+    Result := String(Str);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TX509Base.GetVerifyErrorMsg: String;
-var
-    Str : AnsiString;
 begin
     if Assigned(FX509) then
-        Str := _StrPas(f_X509_verify_cert_error_string(FVerifyResult))
+        Result := String(_StrPas(f_X509_verify_cert_error_string(FVerifyResult)))
     else
-        Str := '';
-    Result := Str;
+        Result := '';
 end;
 
 
@@ -12156,7 +12185,7 @@ end;
 function TX509Base.GetFirstVerifyErrorMsg: String;            {05/21/2007 AG}
 begin
     if Assigned(FX509) then
-        Result := _StrPas(f_X509_verify_cert_error_string(FFirstVerifyResult))
+        Result := String(_StrPas(f_X509_verify_cert_error_string(FFirstVerifyResult)))
     else
         Result := '';
 end;
@@ -12447,7 +12476,7 @@ begin
         if Len > 0 then begin
             f_Bio_read(Bio, PAnsiChar(AStr), Len);
             SetLength(AStr, _StrLen(PAnsiChar(AStr)));
-            Result := AStr;
+            Result := String(AStr);
         end;
     finally
         f_bio_free(Bio);
@@ -13818,7 +13847,7 @@ begin
                 if ((Where and SSL_CB_LOOP) <> 0) then begin
                     if Obj.CheckLogOptions(loSslInfo) then
                         Obj.DebugLog(loSslInfo, 'ICB> ' + Str +
-                                        f_SSL_state_string_long(ssl));
+                                        String(f_SSL_state_string_long(ssl)));
                 end
                 else if ((Where and SSL_CB_ALERT) <> 0) and
                         Obj.CheckLogOptions(loSslInfo) then begin
@@ -13828,21 +13857,21 @@ begin
                         Str := 'write ';
 
                     Obj.DebugLog(loSslInfo, 'ICB> ' + 'SSL3 alert ' + Str +
-                                 f_SSL_alert_type_string_long(ret) + ' ' +
-                                 f_SSL_alert_desc_string_long(ret));
+                                 String(f_SSL_alert_type_string_long(ret)) + ' ' +
+                                 String(f_SSL_alert_desc_string_long(ret)));
                 end
                 else if (Where and SSL_CB_EXIT) <> 0 then begin
                     if Ret = 0 then begin
                         if Obj.CheckLogOptions(loSslInfo) then
                             Obj.DebugLog(loSslInfo,'ICB> ' + Str + 'failed in ' +
-                                            f_SSL_state_string_long(ssl));
+                                            String(f_SSL_state_string_long(ssl)));
                     end
                     else if Ret < 0 then begin
                         Err := f_ssl_get_error(ssl, Ret);
                         if ((Err <> SSL_ERROR_WANT_READ) or
                             (Err <> SSL_ERROR_WANT_WRITE)) then
                                 Obj.DebugLog(loSslInfo, 'ICB> ' + Str + 'error in ' +
-                              f_SSL_state_string_long(ssl));
+                              String(f_SSL_state_string_long(ssl)));
                     end;
                 end;
             end;
@@ -14429,9 +14458,9 @@ begin
     FLastSslError := f_ERR_peek_error;
     if Length(CustomMsg) > 0 then
         raise EClass.Create(#13#10 + CustomMsg + #13#10 +
-                            LastOpenSslErrMsg(Dump) + #13#10)
+                            String(LastOpenSslErrMsg(Dump)) + #13#10)
     else
-        raise EClass.Create(#13#10 + LastOpenSslErrMsg(Dump) + #13#10);
+        raise EClass.Create(#13#10 + String(LastOpenSslErrMsg(Dump)) + #13#10);
 end;
 
 
@@ -15009,11 +15038,11 @@ begin
     FreePeerCert            := FALSE;
     FSslCertChain.X509Class := FX509Class;
     if (ErrCode = 0) and Assigned(FSsl) then begin
-        FSslVersion       := f_SSL_get_version(FSsl);
+        FSslVersion       := String(f_SSL_get_version(FSsl));
         FSslVersNum       := f_SSL_version(FSsl);
         Cipher            := f_SSL_get_current_cipher(FSsl);
         if Assigned(Cipher) then begin
-            FSslCipher     := f_SSL_CIPHER_get_name(Cipher);
+            FSslCipher     := String(f_SSL_CIPHER_get_name(Cipher));
             FSslSecretBits := f_SSL_CIPHER_get_bits(Cipher, @FSslTotalBits);
         end;
         if FSslContext.FSslVerifyPeer and (not SslSessionReused) then begin

@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Component to query DNS records.
               Implement a subset of RFC 1035 (A and MX records).
 Creation:     January 29, 1999
-Version:      6.01
+Version:      6.02
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -57,6 +57,7 @@ Mar 06, 2005 V1.07 DecodeAnswer has been fixed to avoid winsock ntohs and
 May 29, 2005 V1.08 Jack <jlist9@gmail.com> added TCP support
 Mar 26, 2006 V6.00 New version 6 started
 Jun 05, 2008 A. Garrels made some changes to prepare code for Unicode
+Aug 11, 2008 V6.02 A. Garrels - Type AnsiString rolled back to String.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -91,8 +92,8 @@ uses
     SysUtils, Classes, OverbyteIcsWinsock, OverbyteIcsWSocket;
 
 const
-  DnsQueryVersion    = 601;
-  CopyRight : String = ' TDnsQuery  (c) 1999-2008 F. Piette V6.01 ';
+  DnsQueryVersion    = 602;
+  CopyRight : String = ' TDnsQuery  (c) 1999-2008 F. Piette V6.02 ';
 
   { Maximum answers (responses) count }
   MAX_ANCOUNT     = 50;
@@ -213,8 +214,8 @@ type
   TDnsQuery = class(TComponent)
   protected
     FWSocket                    : TWSocket;
-    FPort                       : AnsiString;
-    FAddr                       : AnsiString;
+    FPort                       : String;
+    FAddr                       : String;
     FIDCount                    : WORD;
     FQueryBuf                   : array [0..511] of ansichar;
     FQueryLen                   : Integer;
@@ -246,7 +247,7 @@ type
     FPTRRecordCount             : Integer;
     FHostnameArray              : TDnsHostnameArray;     { For PTR request }
     FOnRequestDone              : TDnsRequestDoneEvent;
-    FProto                      : AnsiString;                { default to udp  }
+    FProto                      : String;                { default to udp  }
     FGotPacketLength            : Boolean; { for tcp, set if packet length received }
     FLengthByte                 : array [0..1] of BYTE; {  for tcp         }
     fLOCInfo                    : TLOCInfo;
@@ -304,7 +305,7 @@ type
                            var Hostname : AnsiString) : PAnsiChar;
     function  GetMultiThreaded: Boolean;
     procedure SetMultiThreaded(const Value: Boolean);
-    procedure SetProto(const Value : AnsiString);
+    procedure SetProto(const Value : String);
   public
     constructor Create(AOwner : TComponent); override;
     destructor  Destroy; override;
@@ -339,9 +340,9 @@ type
     property Hostname[nIndex : Integer]     : AnsiString  read GetHostname;
     property Loc                            : TLOCInfo read fLOCInfo;
   published
-    property Port    : AnsiString read  FPort  write FPort;
-    property Addr    : AnsiString read  FAddr  write FAddr;
-    property Proto   : AnsiString read  FProto write SetProto;
+    property Port    : String read  FPort  write FPort;
+    property Addr    : String read  FAddr  write FAddr;
+    property Proto   : String read  FProto write SetProto;
     property MultiThreaded   : Boolean            read  GetMultiThreaded
                                                   write SetMultiThreaded;
     property OnRequestDone : TDnsRequestDoneEvent read  FOnRequestDone
@@ -1069,9 +1070,9 @@ Var ldeg, lmin, lsec, lmsec : extended;
     hemi                    : AnsiChar;
 begin
   SubLOCgeo(longlat,hemis,ldeg,lmin,lsec,lmsec,hemi);
-  result := Format('%d %02d %02d.%03d',
+  result := AnsiString(Format('%d %02d %02d.%03d',
                [round(ldeg), round(lmin), round(lsec),
-                round(lmsec)]) + ' ' + hemi;
+                round(lmsec)]) + ' ' + Char(hemi));
 end;
 
 
@@ -1137,9 +1138,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TDnsQuery.SetProto(const Value: AnsiString);
+procedure TDnsQuery.SetProto(const Value: String);
 var
-    Buf : AnsiString;
+    Buf : String;
 begin
     Buf := LowerCase(Value);
     if not ((Buf = 'tcp') or (Buf = 'udp')) then

@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.11
+Version:      1.12
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -60,6 +60,7 @@ Jul 29, 2008 V1.10 Added parameter "SetCodePage" to UnicodeToAnsi(), defaults
              compiler post RDS2007 only.
 Jun 05, 2008 Utf-8 functions modified to take and return AnsiString rather than
              Utf8String.
+Aug 11, 2008 CheckUnicodeToAnsi() added. Changed the DefaultFailChar to "?". 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -124,11 +125,12 @@ function  StringToUtf8(const Str: UnicodeString): AnsiString; overload;
 function  StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString; overload;
 function  Utf8ToStringW(const Str: AnsiString): UnicodeString;
 function  Utf8ToStringA(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
+function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
 
 implementation
 
 const
-    DefaultFailChar : AnsiChar = '_';
+    DefaultFailChar : AnsiChar = '?';
     CP_UTF16Le = 1200;
     CP_UTF16Be = 1201;
     CP_UTF8    = 65001;
@@ -653,6 +655,22 @@ var
 begin
     Temp := AnsiToUnicode(Str, CP_UTF8);
     Result := UnicodeToAnsi(Temp, ACodePage, True);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
+var
+    Len : Integer;
+    B   : Bool;
+begin
+    Len := Length(Str);
+    if Len > 0 then begin
+        Len := WideCharToMultiByte(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, @B);
+        Result := (not B) and (Len > 0);
+    end
+    else
+        Result := TRUE;
 end;
 
 

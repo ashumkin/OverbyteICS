@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      6.06
+Version:      6.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -210,7 +210,8 @@ Apr 30, 2008 V6.04 A. Garrels - Function names adjusted according to changes in
              OverbyteIcsLibrary.pas
 May 15, 2008 V6.05 A. Garrels added function StreamReadStrA.
              Some type changes from String to AnsiString of published properties.
-Jul 13, 2008 V6.06 Revised socket names used for debugging purpose
+Jul 13, 2008 V6.06 Revised socket names used for debugging purpose.
+Aug 11, 2008 V6.06 A. Garrels - Type AnsiString rolled back to String.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -222,8 +223,8 @@ unit OverbyteIcsHttpSrv;
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
-    {$WARN IMPLICIT_STRING_CAST       OFF}
-    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN IMPLICIT_STRING_CAST       ON}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
@@ -284,8 +285,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 606;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.06 ';
+    THttpServerVersion = 607;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.07 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -743,8 +744,8 @@ type
     protected
         { FWSocketServer will handle all client management work }
         FWSocketServer      : TWSocketServer;
-        FPort               : AnsiString;
-        FAddr               : AnsiString;
+        FPort               : String;
+        FAddr               : String;
         FMaxClients         : Integer;              {DAVID}
         FClientClass        : THttpConnectionClass;
         FDocDir             : String;
@@ -814,8 +815,8 @@ type
         procedure TriggerFilterDirEntry(Sender   : TObject;
                                         Client   : TObject;
                                         DirEntry : THttpDirEntry); virtual;
-        procedure SetPortValue(const newValue : AnsiString);
-        procedure SetAddr(const newValue : AnsiString);
+        procedure SetPortValue(const newValue : String);
+        procedure SetAddr(const newValue : String);
         procedure SetDocDir(const Value: String);
         function  GetClientCount : Integer;
         function  GetClient(nIndex : Integer) : THttpConnection;
@@ -849,11 +850,11 @@ type
         { Component source version }
         property SrcVersion    : String          read GetSrcVersion;
         { We will listen to that port. Default to 80 for http service }
-        property Port          : AnsiString      read  FPort
+        property Port          : String          read  FPort
                                                  write SetPortValue;
         { We will use that interface to listen. 0.0.0.0 means all     }
         { available interfaces                                        }
-        property Addr          : AnsiString      read  FAddr
+        property Addr          : String          read  FAddr
                                                  write SetAddr;
         property MaxClients    : Integer         read  FMaxClients   {DAVID}
                                                  write FMaxClients;
@@ -1413,7 +1414,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THttpServer.SetPortValue(const newValue : AnsiString);
+procedure THttpServer.SetPortValue(const newValue : String);
 begin
     if newValue = FPort then
         Exit;
@@ -1429,7 +1430,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THttpServer.SetAddr(const newValue : AnsiString);
+procedure THttpServer.SetAddr(const newValue : String);
 begin
     if newValue = FAddr then
         Exit;
@@ -1990,13 +1991,17 @@ begin
         Result := FALSE;
         Exit;
     end;
-    AuthDigestCalcHA1(FAuthDigestAlg, FAuthUserName, FAuthDigestRealm, Password,
-                      FAuthDigestNonce, FAuthDigestCnonce, SessKey);
+    AuthDigestCalcHA1(AnsiString(FAuthDigestAlg), AnsiString(FAuthUserName),
+                      AnsiString(FAuthDigestRealm), AnsiString(Password),
+                      AnsiString(FAuthDigestNonce), AnsiString(FAuthDigestCnonce),
+                      SessKey);
 
-    GetBodyHash(FAuthDigestBody, HEntity);
-    AuthDigestCalcResponse(SessKey, FAuthDigestNonce, FAuthDigestNc,
-                           FAuthDigestCnonce, FAuthDigestQop, FMethod,
-                           FAuthDigestUri, HEntity, MyResponse);
+    GetBodyHash(AnsiString(FAuthDigestBody), HEntity);
+    AuthDigestCalcResponse(SessKey, AnsiString(FAuthDigestNonce),
+                           AnsiString(FAuthDigestNc),
+                           AnsiString(FAuthDigestCnonce),
+                           AnsiString(FAuthDigestQop), AnsiString(FMethod),
+                           AnsiString(FAuthDigestUri), HEntity, MyResponse);
     Result := _StrComp(PAnsiChar(AnsiString(FAuthDigestResponse)),
                       PAnsiChar(@MyResponse[0])) = 0;
 end;
@@ -3910,7 +3915,7 @@ begin
             Exit;
         end;
         Result := Result + Copy(Src, J, I - J) + '&' +
-                  HtmlSpecialChars[Ord(Src[I])] + ';';
+                  String(HtmlSpecialChars[Ord(Src[I])]) + ';';
         Inc(I);
     end;
 end;
@@ -4506,14 +4511,14 @@ begin
     vtBoolean:        Result := BooleanToString[V.VBoolean];
     vtChar:           Result := V.VChar;
     vtExtended:       Result := _FloatToStr(V.VExtended^);
-    vtString:         Result := V.VString^;
+    vtString:         Result := String(V.VString^);
     vtPointer:        Result := 'Unsupported TVarRec.VType = vtPointer';
-    vtPChar:          Result := _StrPas(V.VPChar);
+    vtPChar:          Result := String(_StrPas(V.VPChar));
     vtObject:         Result := 'Unsupported TVarRec.VType = vtObject';
     vtClass:          Result := 'Unsupported TVarRec.VType = vtClass';
     vtWideChar:       Result := 'Unsupported TVarRec.VType = vtWideChar';
     vtPWideChar:      Result := 'Unsupported TVarRec.VType = vtPWideChar';
-    vtAnsiString:     Result := _StrPas(V.VPChar);
+    vtAnsiString:     Result := String(_StrPas(V.VPChar));
     vtCurrency:       Result := 'Unsupported TVarRec.VType = vtCurrency';
     vtVariant:        Result := 'Unsupported TVarRec.VType = vtVariant';
     vtWideString:     Result := 'Unsupported TVarRec.VType = vtWideString';

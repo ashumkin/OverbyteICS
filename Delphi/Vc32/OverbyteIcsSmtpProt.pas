@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.17
+Version:      6.18
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -333,6 +333,7 @@ Jul 29, 2008 V6.16  A. Garrels replaced the various calls to GetAcp by new globa
                     var "IcsSystemCodePage" which is initialized just once.
 Aug 03, 2008 V6.17  A.Garrels - Components use Ansi buffers internally.
                     More string conversions, however OnGetData works again.
+Aug 11, 2008 V6.18  A. Garrels - Type AnsiString rolled back to String.
                     
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -351,7 +352,7 @@ interface
 {$ENDIF}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
-    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST       ON}
     {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
@@ -389,8 +390,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 617;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.17 ';
+  SmtpCliVersion     = 618;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.18 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -539,9 +540,9 @@ type
     TCustomSmtpClient = class(TIcsWndControl)
     protected
         FWSocket             : TWSocket;     { Underlaying socket          }
-        FHost                : AnsiString;   { SMTP server hostname or IP  }
-        FLocalAddr           : AnsiString;   {bb}  { Local Address for mulithome }
-        FPort                : AnsiString;   { Should be 'smtp'            }
+        FHost                : String;       { SMTP server hostname or IP  }
+        FLocalAddr           : String; {bb}  { Local Address for mulithome }
+        FPort                : String;       { Should be 'smtp'            }
         FSignOn              : String;       { Used for the 'HELO' command }
         FUsername            : String;       { Used with the 'AUTH' command }
         FPassword            : String;       { Used with the 'AUTH' command }
@@ -559,7 +560,7 @@ type
         FHdrSender           : String;       { Mail Sender's Email          }
         FHdrPriority         : TSmtpPriority;
         FState               : TSmtpState;
-        FCharSet             : AnsiString;
+        FCharSet             : String;
         FCodePage            : Cardinal;
         FDefaultEncoding     : TSmtpDefaultEncoding; { Default transfer } {AG}
         FAllow8bitChars      : Boolean;                                   {AG}
@@ -568,7 +569,7 @@ type
         FContentType         : TSmtpContentType;
         FContentTypeStr      : String;
         FConfirmReceipt      : Boolean;      { Request confirmation of receipt } {AG}
-        FLastResponse        : AnsiString;
+        FLastResponse        : String;
         FErrorMessage        : String;
         FTag                 : LongInt;
         FConnected           : Boolean;
@@ -586,7 +587,7 @@ type
         FHighLevelResult     : Integer;
         FHighLevelFlag       : Boolean;
         FNextRequest         : TSmtpNextProc;
-        FLastResponseSave    : AnsiString;
+        FLastResponseSave    : String;
         FStatusCodeSave      : Integer;
         FRestartFlag         : Boolean;
         FOkResponses         : array [0..15] of Integer;
@@ -617,7 +618,7 @@ type
         FOutStream           : TStream;         {AG}
         FOnBeforeOutStreamFree : TNotifyEvent;  {AG}
         
-        procedure   SetCharset(const Value: AnsiString); {AG}
+        procedure   SetCharset(const Value: String); {AG}
         procedure   EndSendToStream;            {AG}
         procedure   SendLineToStream(Data: Pointer; Len: Integer); {AG}
         procedure   CreateSocket; virtual;                         {AG/SSL}
@@ -714,11 +715,11 @@ type
                                                      write FOnBeforeOutStreamFree;
         property SendMode : TSmtpSendMode            read  FSendMode        {AG}
                                                      write FSendMode;       {AG}
-        property Host : AnsiString                   read  FHost
+        property Host : String                       read  FHost
                                                      write FHost;
-        property LocalAddr : AnsiString              read  FLocalAddr  {bb}
+        property LocalAddr : String                  read  FLocalAddr  {bb}
                                                      write FLocalAddr; {bb}
-        property Port : AnsiString                   read  FPort
+        property Port : String                       read  FPort
                                                      write FPort;
         property SignOn : String                     read  FSignOn
                                                      write FSignOn;
@@ -751,7 +752,7 @@ type
                                                      write FHdrSender;
         property HdrPriority  : TSmtpPriority        read  FHdrPriority
                                                      write FHdrPriority;
-        property CharSet      : AnsiString           read  FCharSet
+        property CharSet      : String               read  FCharSet
                                                      write SetCharset;
         property CodePage     : Cardinal             read  FCodePage       {AG}
                                                      write FCodePage;
@@ -768,7 +769,7 @@ type
         property ConfirmReceipt : Boolean            read  FConfirmReceipt    {AG}
                                                      write FConfirmReceipt;   {AG}
         property ErrorMessage : String               read  FErrorMessage;
-        property LastResponse : AnsiString           read  FLastResponse;
+        property LastResponse : String               read  FLastResponse;
         property RequestType  : TSmtpRequest         read  FRequestType;      {AG}
         property State        : TSmtpState           read  FState;
         property Tag          : LongInt              read  FTag
@@ -1056,7 +1057,7 @@ type
         FOutsideBoundary : AnsiString;
         FInsideBoundary  : AnsiString;
         FMimeState       : TSmtpMimeState;
-        FHtmlCharSet     : AnsiString;
+        FHtmlCharSet     : String;
         FHtmlCodePage    : Cardinal;
         FLineOffset      : Integer;
         FImageNumber     : Integer;
@@ -1068,7 +1069,7 @@ type
         function  GetImageStream(Index: Integer): TStream;
         procedure SetImageStream(Index: Integer; const Value: TStream);
         function  GetImageStreamCount: Integer;
-        procedure SetHtmlCharset(const Value: AnsiString);
+        procedure SetHtmlCharset(const Value: String);
     protected
         procedure   SetEMailImages(newValue : TStrings);
         procedure   TriggerGetData(LineNum  : Integer;
@@ -1096,7 +1097,7 @@ type
                                               write SetPlainText;
         property HtmlText  : TStrings         read  FHtmlText
                                               write SetHtmlText;
-        property HtmlCharSet : AnsiString     read  FHtmlCharSet
+        property HtmlCharSet : String         read  FHtmlCharSet
                                               write SetHtmlCharset;
     end;
 
@@ -1169,7 +1170,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : AnsiChar) : Boolean;
+function IsDigit(Ch : Char) : Boolean;
 begin
     Result := (Ch >= '0') and (Ch <= '9');
 end;
@@ -1183,14 +1184,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpaceOrCRLF(Ch : AnsiChar) : Boolean;
+function IsSpaceOrCRLF(Ch : Char) : Boolean;
 begin
     Result := (Ch = ' ') or (Ch = #9) or (Ch = #10) or (Ch = #13);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function stpblk(PValue : PAnsiChar) : PAnsiChar;
+function stpblk(PValue : PChar) : PChar;
 begin
     Result := PValue;
     while IsSpaceOrCRLF(Result^) do
@@ -1620,7 +1621,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetInteger(Data : PAnsiChar; var Number : Integer) : PAnsiChar;
+function GetInteger(Data : PChar; var Number : Integer) : PChar;
 var
     bSign : Boolean;
 begin
@@ -1741,7 +1742,10 @@ procedure TCustomSmtpClient.WSocketDataAvailable(Sender: TObject; ErrorCode: Wor
 var
     Len : Integer;
     I   : Integer;
-    p   : PAnsiChar;
+    p   : PChar;
+{$IFDEF COMPILER12_UP}
+    TempS : AnsiString;
+{$ENDIF}
 begin
     Len := FWSocket.Receive(@FReceiveBuffer[FReceiveLen],
                             sizeof(FReceiveBuffer) - FReceiveLen);
@@ -1767,10 +1771,13 @@ begin
             break;
         if I > FReceiveLen then
             break;
-
-        //FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
-        SetLength(FLastResponse, I - 1);
-        Move(FReceiveBuffer[0], Pointer(FLastResponse)^, I - 1);
+{$IFNDEF COMPILER12_UP}
+        FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
+{$ELSE}
+        SetLength(Temps, I - 1);
+        Move(FReceiveBuffer[0], Pointer(Temps)^, I - 1);
+        FLastResponse := String(Temps);
+{$ENDIF}
         TriggerResponse(FLastResponse);
 
 {$IFDEF DUMP}
@@ -1825,8 +1832,8 @@ begin
     { Do not trigger the client SessionConnected from here. We must wait }
     { to have received the server banner.                                }
     if ErrorCode <> 0 then begin
-        FLastResponse := AnsiString('500 ' + WSocketErrorDesc(ErrorCode) +
-                         ' (Winsock error #' + IntToStr(ErrorCode) + ')');
+        FLastResponse := '500 ' + WSocketErrorDesc(ErrorCode) +
+                         ' (Winsock error #' + IntToStr(ErrorCode) + ')';
         FStatusCode   := 500;
         FConnected    := FALSE;
 { --Jake Traynham, 06/12/01  Bug - Need to set FRequestResult so High    }
@@ -1851,8 +1858,8 @@ procedure TCustomSmtpClient.WSocketDnsLookupDone(
     ErrorCode : Word);
 begin
     if ErrorCode <> 0 then begin
-        FLastResponse := AnsiString('500 ' + WSocketErrorDesc(ErrorCode) +
-                         ' (Winsock error #' + IntToStr(ErrorCode) + ')');
+        FLastResponse := '500 ' + WSocketErrorDesc(ErrorCode) +
+                         ' (Winsock error #' + IntToStr(ErrorCode) + ')';
         FStatusCode   := 500;
         SetErrorMessage;
         FRequestResult := ErrorCode;
@@ -1872,7 +1879,7 @@ begin
             FWSocket.Connect;
         except
             on E:Exception do begin
-                FLastResponse  := AnsiString('500 ' + E.ClassName + ': ' + E.Message);
+                FLastResponse  := '500 ' + E.ClassName + ': ' + E.Message;
                 FStatusCode    := 500;
                 FRequestResult := FStatusCode;
                 SetErrorMessage;
@@ -1927,7 +1934,7 @@ end;
 procedure TCustomSmtpClient.NextExecAsync;
 var
     I : Integer;
-    p : PAnsiChar;
+    p : PChar;
 begin
     DisplayLastResponse;
     p := GetInteger(@FLastResponse[1], FStatusCode);
@@ -1984,7 +1991,7 @@ var
 begin
     FFctPrv := smtpFctHelo;
     if FSignOn = '' then
-        Buf := LocalHostName
+        Buf := String(LocalHostName)
     else
         Buf := FSignOn;
     { Replace any space by underscore }
@@ -2005,7 +2012,7 @@ begin
     FAuthTypesSupported.Clear;
     FFctPrv := smtpFctEhlo;
     if FSignOn = '' then
-        Buf := LocalHostName
+        Buf := String(LocalHostName)
     else
         Buf := FSignOn;
     { Replace any space by underscore }
@@ -2245,8 +2252,8 @@ begin
     Response := FUsername;
     Response := Response + ' ';
     for Count := 0 to 15 do begin
-        Response := Response + HexDigits[((Byte(MD5Digest[Count]) and $F0) shr 4)+1];
-        Response := Response + HexDigits[(Byte(MD5Digest[Count]) and $0F)+1];
+        Response := Response + Char(HexDigits[((Byte(MD5Digest[Count]) and $F0) shr 4)+1]);
+        Response := Response + Char(HexDigits[(Byte(MD5Digest[Count]) and $0F)+1]);
     end;
 
     FState := smtpInternalReady;
@@ -2602,7 +2609,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomSmtpClient.SetCharset(const Value: AnsiString);
+procedure TCustomSmtpClient.SetCharset(const Value: String);
 var
     PInfo : PCharSetInfo;
 begin
@@ -2621,7 +2628,7 @@ begin
             { Set default system codepage and charset }
             FCodePage := IcsSystemCodePage;
             FCharSet  := CodePageToMimeCharsetString(FCodePage);
-            raise SmtpException.Create('Charset "' + Value + '" is not supported');
+            raise SmtpException.Create('Charset "' + String(Value) + '" is not supported');
         end
         else
             FCodePage := PInfo^.CodePage;
@@ -2769,7 +2776,7 @@ begin
         StrPLCopy(PAnsiChar(@MsgLine), AnsiString(FHdrLines.Strings[FItemCount]),
                   Length(MsgLine) - 1);
         TriggerHeaderLine(@MsgLine, SizeOf(MsgLine));
-        TriggerDisplay('> ' + StrPas(PAnsiChar(@MsgLine)));
+        TriggerDisplay('> ' + String(StrPas(PAnsiChar(@MsgLine))));
         FWSocket.OnDataSent := WSocketDataSent;
 
         if FSendMode <> smtpToSocket then begin
@@ -2806,7 +2813,7 @@ begin
         if FMoreLines then begin
             if MsgLine[0] = '.' then
                 Move(MsgLine[0], MsgLine[1], (StrLen(MsgLine) + 1)); { AG }
-            TriggerDisplay('> ' + StrPas(PAnsiChar(@MsgLine)));
+            TriggerDisplay('> ' + String(StrPas(PAnsiChar(@MsgLine))));
             FWSocket.OnDataSent := WSocketDataSent;
 
             if FSendMode <> smtpToSocket then begin
@@ -3218,7 +3225,7 @@ begin
     Result := FormatDateTime('yyyymmddhhnnsszzz', Now + TimeZoneBiasDT) + '.' +
               IntToHex(Random(32767), 4) + IntToHex(Random(32767), 4) +
               IntToHex(Random(32767), 4) + IntToHex(Random(32767), 4) +
-              '@' + LocalHostName;
+              '@' + String(LocalHostName);
 
 end;
 
@@ -3387,7 +3394,7 @@ var
     sContentType : String;
     BAction      : TSmtpBeforeOpenFileAction;                               {AG}
     AAction      : TSmtpAfterOpenFileAction;                                {AG}
-    EncType      : Char;                                                    {AG}
+    EncType      : AnsiChar;                                                {AG}
 begin
     if FEmailBody.Count > 0 then begin
         {if MaxLen > (1022 * SizeOf(Char)) then // already checked in DataNext
@@ -3501,7 +3508,7 @@ begin
         sContentType := FilenameToContentType(sFileName);
         TriggerAttachContentType(FCurrentFile, sFileName, sContentType);
         TriggerAttachContentTypeEh(FCurrentFile, sFileName, sContentType);
-        FEmailBody.Add('--' + FMimeBoundary);
+        FEmailBody.Add('--' + String(FMimeBoundary));
         FEmailBody.Add('Content-Type: ' + sContentType + ';');
         {AG start}
         { In order to not TriggerAttachHeader with a modified filename we copy }
@@ -3515,7 +3522,7 @@ begin
         {$IFDEF UNICODE}
             sLine := AnsiString(HdrEncodeInline(UnicodeToAnsi(sFileName, FCodePage),
                                      SpecialsRFC822,
-                                     EncType, FCharSet,
+                                     EncType, AnsiString(FCharSet),
                                      75 - 12,
                                      FFoldHeaders));
         {$ELSE}
@@ -3535,7 +3542,7 @@ begin
                                     75 - 12));
         {AG end}
         {FEmailBody.Add(#9'name="' + sFileName + '"');}                    {AG}
-        FEmailBody.Add(#9'name="' + sLine + '"');                          {AG}
+        FEmailBody.Add(#9'name="' + String(sLine) + '"');                  {AG}
         if FAttachmentEncoding = smtpEncodeBase64 then                     {AG}
             FEmailBody.Add('Content-Transfer-Encoding: base64')            {AG}
         else if FAttachmentEncoding = smtpEncodeQP then                    {AG}
@@ -3544,7 +3551,7 @@ begin
             FEmailBody.Add('Content-Transfer-Encoding: 7bit');             {AG}
         FEmailBody.Add('Content-Disposition: attachment;');
         {FEmailBody.Add(#9'filename="' + sFileName + '"');}                {AG}
-        FEmailBody.Add(#9'filename="' + sLine + '"');                      {AG}
+        FEmailBody.Add(#9'filename="' + String(sLine) + '"');                      {AG}
         TriggerAttachHeader(FCurrentFile, sFileName, FEmailBody);
         FEmailBody.Add('');
         FFileStarted := TRUE;
@@ -3566,7 +3573,7 @@ begin
         if (FEmailFiles.Count <= FCurrentFile) then begin
             if sLine <> '' then    { Avoid two blank lines after attachment AG }
                 FEmailBody.Add('');
-            FEmailBody.Add('--' + FMimeBoundary + '--');
+            FEmailBody.Add('--' + String(FMimeBoundary) + '--');
         end;
         More := TRUE;
         Exit;
@@ -3651,11 +3658,11 @@ begin
                          AnsiString(FormatDateTime('mmddyyhhnn', Now));
         FEmailBody.Add('This is a multipart MIME message.');
         FEmailBody.Add('');
-        FEmailBody.Add('--' + FMimeBoundary);
+        FEmailBody.Add('--' + String(FMimeBoundary));
         FEmailBody.Add('Content-Type: ' + FContentTypeStr +
                        '; charset="' + FCharSet + '"');
         FEmailBody.Add('Content-Transfer-Encoding: ' +
-                        SmtpDefEncArray[Ord(FEncoding)]);                {AG}
+                        String(SmtpDefEncArray[Ord(FEncoding)]));        {AG}
         {FEmailBody.Add('Content-Transfer-Encoding: 7bit');}             {AG}
         FEmailBody.Add('');
     end
@@ -3931,7 +3938,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THtmlSmtpCli.SetHtmlCharset(const Value: AnsiString);
+procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
 var
     PInfo : PCharSetInfo;
 begin
@@ -4037,7 +4044,7 @@ begin
         5: StrPCopy(PAnsiChar(MsgLine), #9'boundary="' + FInsideBoundary + '"'); // Folded!
 
         7: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
-        8: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/plain; charset="' + FCharSet + '"');
+        8: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/plain; charset="' + AnsiString(FCharSet) + '"');
         9: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
         11: begin
                 FMimeState  := smtpMimePlainText;
@@ -4061,7 +4068,7 @@ begin
             1: StrPCopy(PAnsiChar(MsgLine), '');
             2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
             3: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/html; charset="' +
-                                 FHtmlCharSet + '"');
+                                 AnsiString(FHtmlCharSet) + '"');
             4: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
             5: StrPCopy(PAnsiChar(MsgLine), '');
             else
@@ -4303,7 +4310,7 @@ begin
         if CompareText(Copy(HdrLines[I], 1, 13), 'Content-Type:') = 0 then begin
             HdrLines[I] := 'Content-Type: multipart/related; ' +
                            'type="multipart/alternative";';  // Fold otherwise too long
-            HdrLines.Insert(I + 1, #9'boundary="' + FOutsideBoundary + '"');
+            HdrLines.Insert(I + 1, #9'boundary="' + String(FOutsideBoundary) + '"');
             break;
         end;
     end;
@@ -4552,7 +4559,7 @@ begin
             FWSocket.SslEnable := FALSE;
             FStatusCode    := 500;
             FRequestResult := FStatusCode;
-            FLastResponse  := AnsiString(E.Classname + ' ' + E.Message);
+            FLastResponse  := E.Classname + ' ' + E.Message;
             SetErrorMessage;
             { Temporarily disable RequestDone }
             FRequestDoneFlag := TRUE;
@@ -4577,7 +4584,7 @@ begin
      if (FSslType = smtpTlsImplicit) and (ErrMsg = '') then
          ErrMsg := '500 STARTTLS is not supported with a implicite SSL connection';
      if ErrMsg <> '' then begin
-         FLastResponse := AnsiString(ErrMsg);
+         FLastResponse := ErrMsg;
          FErrorMessage := ErrMsg;
          FStatusCode    := 500;
          FRequestResult := FStatusCode;

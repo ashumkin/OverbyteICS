@@ -56,6 +56,13 @@ unit OverbyteIcsWinsock2;
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
+{$IFDEF COMPILER12_UP}
+    { These are usefull for debugging !}
+    {$WARN IMPLICIT_STRING_CAST       OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
+    {$WARN EXPLICIT_STRING_CAST       OFF}
+    {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
+{$ENDIF}
 {$IFDEF COMPILER2_UP}{ Not for Delphi 1                 }
     {$H+}         { Use long strings                    }
     {$J+}         { Allow typed constant to be modified }

@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      6.07
+Version:      6.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -315,7 +315,8 @@ Jul 11, 2008 V6.03 Angus fixed 'Unicode' bug introduced in V6.01 that stopped PO
 Jul 13, 2008 V6.04 Revised socket names used for debugging purpose
                    Added ListenBackLog property
 Aug 04, 2008 V6.07 A. Garrels - CommandAUTH TLS sent Unicode response.
-             Removed some getter and setters, they are no longer needed. 
+             Removed some getter and setters, they are no longer needed.
+Aug 11, 2008 V6.08 A. Garrels - Type AnsiString rolled back to String. 
  
 
 Angus pending -
@@ -338,7 +339,7 @@ unit OverbyteIcsFtpSrv;
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
     {$WARN IMPLICIT_STRING_CAST       OFF}
-    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
@@ -407,8 +408,8 @@ uses
     OverbyteIcsLibrary;    { AG V6.04 }
 
 const
-    FtpServerVersion         = 607;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.07 ';
+    FtpServerVersion         = 608;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.08 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
 
 type
@@ -547,8 +548,8 @@ type
 
     TFtpServer = class(TIcsWndControl)
     protected
-        FAddr                   : AnsiString;
-        FPort                   : AnsiString;
+        FAddr                   : String;
+        FPort                   : String;
         FListenBackLog          : Integer;
         FBanner                 : String;
         FServSocket             : TWSocket;
@@ -796,7 +797,7 @@ type
         function  GetClient(nIndex : Integer) : TFtpCtrlSocket; virtual;
 { !!!!!!!!!!!!!!!! NGB: Added next two lines }
         procedure FreeCurrentPasvPort(AClient : TFtpCtrlSocket);
-        function  GetNextAvailablePasvPort : AnsiString;
+        function  GetNextAvailablePasvPort : String;
 { !!!!!!!!!!!!!!!! NGB: Added last two lines }
         function  GetActive : Boolean;
         procedure SetActive(newValue : Boolean);
@@ -1043,9 +1044,9 @@ type
         property IcsLogger              : TIcsLogger  read  GetIcsLogger  { V1.46 }
                                                       write SetIcsLogger;
 {$ENDIF}
-        property  Addr                   : AnsiString read  FAddr
+        property  Addr                   : String     read  FAddr
                                                       write FAddr;
-        property  Port                   : AnsiString read  FPort
+        property  Port                   : String     read  FPort
                                                       write FPort;
         property  ListenBackLog          : Integer    read  FListenBackLog
                                                       write FListenBackLog;
@@ -4840,7 +4841,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TFtpServer.GetNextAvailablePasvPort : AnsiString;
+function TFtpServer.GetNextAvailablePasvPort : String;
 var
     I        : Integer;
     NewPort  : Integer;
@@ -4860,7 +4861,7 @@ begin
              //   NewPort   := FPasvPortRangeStart + I;
                 NewPort   := FPasvPortRangeStart + FPasvNextNr;          { angus V1.56 }
                 Inc(FPasvNextNr);                                        { angus V1.56 }
-                Result    := IcsIntToStrA(NewPort);
+                Result    := _IntToStr(NewPort);
                 break;
             end;
             Inc(FPasvNextNr);                                            { angus V1.56 }
@@ -4996,11 +4997,7 @@ begin
                            HiByte(DataPort),
                            LoByte(DataPort)])
             else begin
-              {$IFDEF COMPILER12_UP}
                 PASVAddr.S_addr := WSocket_inet_addr(AnsiString(APasvIp));
-              {$ELSE}
-                PASVAddr.S_addr := WSocket_inet_addr(APasvIp);
-              {$ENDIF}
                 if (PASVAddr.S_addr = u_long(INADDR_NONE)) or
                             (PASVAddr.S_addr = 0) then { angus v1.53 0.0.0.0 not allowed }
                         raise Exception.Create('Invalid PASV IP Address')

@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V6.06
+Version:      V6.07
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -777,6 +777,7 @@ May 02, 2008 V6.05 A.Garrels changed code to get the temporary directory for
              ZLIB in TCustomFtpCli.Create.
 May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
              Some type changes from String to AnsiString of published properties.
+Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -789,7 +790,7 @@ unit OverbyteIcsFtpCli;
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
     {$WARN IMPLICIT_STRING_CAST       OFF}
-    {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS  ON}
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
@@ -859,8 +860,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 606;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.06 ';
+  FtpCliVersion      = 607;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.07 ';
   FtpClientId : String = 'ICS FTP Client V6.06 ';   { V2.113 sent with CLNT command  }
 
 const
@@ -969,25 +970,25 @@ type
 
   TCustomFtpCli = class(TIcsWndControl)
   protected
-    FHostName           : AnsiString;
-    FPort               : AnsiString;
+    FHostName           : String;
+    FPort               : String;
     FDataPortRangeStart : DWORD;  {JT}
     FDataPortRangeEnd   : DWORD;  {JT}
     FLastDataPort       : DWORD;  {JT}
-    FLocalAddr          : AnsiString; {bb}
+    FLocalAddr          : String; {bb}
     FUserName           : String;
     FPassWord           : String;
     FAccount            : String;
     FLocalFileName      : String;
     FHostFileName       : String;
     FHostDirName        : String;
-    FDnsResult          : AnsiString;
+    FDnsResult          : String;
     FType               : Char;
     FShareMode          : Word;
     FDisplayFileMode    : TFtpDisplayFileMode;
     FConnectionType     : TFTPConnectionType;
-    FProxyServer        : AnsiString;
-    FProxyPort          : AnsiString;
+    FProxyServer        : String;
+    FProxyPort          : String;
     FAppendFlag         : Boolean;
     FDisplayFileFlag    : Boolean;
     FControlSocket      : TWSocket;
@@ -1124,8 +1125,8 @@ type
     procedure   ControlSocketSessionConnected(Sender: TObject; ErrCode: Word); virtual;
     procedure   ControlSocketDataAvailable(Sender: TObject; ErrCode: Word);
     procedure   ControlSocketSessionClosed(Sender: TObject; ErrCode: Word);
-    procedure   DataSocketPutAppendInit(const TargetPort, TargetIP : AnsiString); virtual;
-    procedure   DataSocketGetInit(const TargetPort, TargetIP : AnsiString); virtual;
+    procedure   DataSocketPutAppendInit(const TargetPort, TargetIP : String); virtual;
+    procedure   DataSocketGetInit(const TargetPort, TargetIP : String); virtual;
     procedure   TriggerRequestDone(ErrCode: Word);
     procedure   TriggerStateChange;
     procedure   StateChange(NewState : TFtpState);
@@ -1161,10 +1162,10 @@ type
     function    GetConnectionType: TFtpConnectionType;
     procedure   SetSocksPassword(NewValue: String);
     function    GetSocksPassword: String;
-    procedure   SetSocksPort(NewValue: AnsiString);
-    function    GetSocksPort: AnsiString;
-    procedure   SetSocksServer(const NewValue: AnsiString);
-    function    GetSocksServer: AnsiString;
+    procedure   SetSocksPort(NewValue: String);
+    function    GetSocksPort: String;
+    procedure   SetSocksServer(const NewValue: String);
+    function    GetSocksServer: String;
     procedure   SetSocksUserCode(NewValue: String);
     function    GetSocksUserCode: String;
     procedure   SetPassive(NewValue: Boolean);
@@ -1270,7 +1271,7 @@ type
     property    LastResponse      : String               read  FLastResponse;
     property    LastMultiResponse : String               read  FLastMultiResponse;  { V2.90  multiple lines }
     property    ErrorMessage      : String               read  FErrorMessage;
-    property    DnsResult         : AnsiString           read  FDnsResult;
+    property    DnsResult         : String               read  FDnsResult;
     property    DirResult         : String               read  FDirResult;
     property    ControlSocket     : TWSocket             read  FControlSocket;
     property    DataSocket        : TWSocket             read  FDataSocket;
@@ -1318,15 +1319,15 @@ type
     property NewOpts              : string               read  FNewOpts         { V2.102 }
                                                          write FNewOpts;
 
-    property HostName             : AnsiString           read  FHostName
+    property HostName             : String               read  FHostName
                                                          write FHostName;
-    property Port                 : AnsiString           read  FPort
+    property Port                 : String               read  FPort
                                                          write FPort;
     property DataPortRangeStart   : DWORD                read  FDataPortRangeStart
                                                          write SetDataPortRangeStart; {JT}
     property DataPortRangeEnd     : DWORD                read  FDataPortRangeEnd
                                                          write SetDataPortRangeEnd; {JT}
-    property LocalAddr            : AnsiString           read  FLocalAddr
+    property LocalAddr            : String               read  FLocalAddr
                                                          write FLocalAddr; {bb}
     property UserName             : String               read  FUserName
                                                          write FUserName;
@@ -1354,15 +1355,15 @@ type
                                                          write SetDisplayFileMode;
     property ConnectionType       : TFtpConnectionType   read  GetConnectionType
                                                          write SetConnectionType;
-    property ProxyServer          : AnsiString           read  FProxyServer
+    property ProxyServer          : String               read  FProxyServer
                                                          write FProxyServer;
-    property ProxyPort            : AnsiString           read  FProxyPort
+    property ProxyPort            : String               read  FProxyPort
                                                          write FProxyPort;
     property SocksPassword        : String               read  GetSocksPassword
                                                          write SetSocksPassword;
-    property SocksPort            : AnsiString           read  GetSocksPort
+    property SocksPort            : String               read  GetSocksPort
                                                          write SetSocksPort;
-    property SocksServer          : AnsiString           read  GetSocksServer
+    property SocksServer          : String               read  GetSocksServer
                                                          write SetSocksServer;
     property SocksUserCode        : String               read  GetSocksUserCode
                                                          write SetSocksUserCode;
@@ -1587,8 +1588,8 @@ type
         procedure SetSslAcceptableHosts(Value : TStrings);
         function  GetSslAcceptableHosts: TStrings;
         procedure ControlSocketSessionConnected(Sender: TObject; ErrCode: Word); override;
-        procedure DataSocketPutAppendInit(const TargetPort, TargetIP : AnsiString); override;
-        procedure DataSocketGetInit(const TargetPort, TargetIP : AnsiString); override;
+        procedure DataSocketPutAppendInit(const TargetPort, TargetIP : String); override;
+        procedure DataSocketGetInit(const TargetPort, TargetIP : String); override;
         procedure SetProtLevel(const Value : String); virtual;
         procedure SetSslType(const Value: TFtpCliSslType); override;
         procedure ControlSocketSslShutDownComplete(Sender     : TObject;
@@ -3834,7 +3835,7 @@ begin
                     {$ENDIF}
                     SetLength(Line, Len);
                     Move(Buffer[1], Line[1], Length(Line));
-                    TriggerDisplayFile(Line);
+                    TriggerDisplayFile(String(Line));
                 end;
             ftpLineByLine:
                 if Len > 0 then begin
@@ -3853,7 +3854,7 @@ begin
                         SetLength(Line, j - 1);
                         if Length(Line) > 0 then
                             Move(Buffer[i - j + 1], Line[1], Length(Line));
-                        TriggerDisplayFile(Line);
+                        TriggerDisplayFile(String(Line));
                         while (i <= Len) and ((Buffer[i] = #10) or (Buffer[i] = #13)) do
                             i := i + 1;
                     end;
@@ -4485,7 +4486,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SetSocksPort(NewValue: AnsiString);
+procedure TCustomFtpCli.SetSocksPort(NewValue: String);
 begin
     FControlSocket.SocksPort := NewValue;
     FDataSocket.SocksPort    := NewValue;
@@ -4493,14 +4494,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomFtpCli.GetSocksPort: AnsiString;
+function TCustomFtpCli.GetSocksPort: String;
 begin
     Result := FControlSocket.SocksPort;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SetSocksServer(const NewValue: AnsiString);
+procedure TCustomFtpCli.SetSocksServer(const NewValue: String);
 begin
     FControlSocket.SocksServer := NewValue;
     FDataSocket.SocksServer    := NewValue;
@@ -4508,7 +4509,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomFtpCli.GetSocksServer: AnsiString;
+function TCustomFtpCli.GetSocksServer: String;
 begin
     Result := FControlSocket.SocksServer;
 end;
@@ -4542,7 +4543,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.DataSocketGetInit(const TargetPort, TargetIP : AnsiString);
+procedure TCustomFtpCli.DataSocketGetInit(const TargetPort, TargetIP : String);
 begin
     FDataSocket.Port               := TargetPort;
     FDataSocket.Addr               := TargetIP; {ControlSocket.Addr;}
@@ -4715,7 +4716,7 @@ begin
         Delete(Temp, 1, Pos(',', Temp));
         TargetPort := TargetPort + StrToInt(Copy(Temp, 1, Pos(')', Temp) - 1));
 
-        DataSocketGetInit(IcsIntToStrA(TargetPort), AnsiString(TargetIP));
+        DataSocketGetInit(_IntToStr(TargetPort), TargetIP);
 
 {$IFNDEF NO_DEBUG_LOG}                                                { 2.104 }
         __DataSocket := FDataSocket;    { V2.107 }
@@ -4831,7 +4832,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.DataSocketPutAppendInit(const TargetPort, TargetIP : AnsiString);
+procedure TCustomFtpCli.DataSocketPutAppendInit(const TargetPort, TargetIP : String);
 begin
     FDataSocket.Port               := TargetPort;
     FDataSocket.Addr               := TargetIP; {ControlSocket.Addr;}
@@ -4999,7 +5000,7 @@ begin
         Delete(Temp, 1, Pos(',', Temp));
         TargetPort := TargetPort + StrToInt(Copy(Temp, 1, Pos(')', Temp) - 1));
 
-        DataSocketPutAppendInit(IcsIntToStrA(TargetPort), AnsiString(TargetIP));
+        DataSocketPutAppendInit(_IntToStr(TargetPort), TargetIP);
         try
             FDataSocket.Connect;
         except
@@ -5169,7 +5170,7 @@ begin
             DataPort      := FLastDataPort;
             StartDataPort := DataPort;
             while TRUE do begin
-                FDataSocket.Port := IcsIntToStrA(DataPort);
+                FDataSocket.Port := _IntToStr(DataPort);
                 try
                     FDataSocket.Listen;
                     break;                { Found a free port }
@@ -6414,7 +6415,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslFtpClient.DataSocketPutAppendInit(const TargetPort, TargetIP : AnsiString);
+procedure TSslFtpClient.DataSocketPutAppendInit(const TargetPort, TargetIP : String);
 begin
     inherited DataSocketPutAppendInit(TargetPort, TargetIP);
     FDataSocket.OnSessionClosed := DataSocketPutSessionClosed;
@@ -6437,7 +6438,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslFtpClient.DataSocketGetInit(const TargetPort, TargetIP : AnsiString);
+procedure TSslFtpClient.DataSocketGetInit(const TargetPort, TargetIP : String);
 begin
     inherited DataSocketGetInit(TargetPort, TargetIP);
     FDataSocket.SslAcceptableHosts        := FControlSocket.SslAcceptableHosts;
