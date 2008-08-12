@@ -118,7 +118,7 @@ type
     FIcmp             : TICMP;
     FDnsLookupBuffer  : array [0..MAXGETHOSTSTRUCT] of char;
     FDnsLookupHandle  : THandle;
-    FDnsResult        : AnsiString;
+    FDnsResult        : String;
     FOnDnsLookupDone  : TDnsLookupDone;
     FOnEchoRequest    : TPingRequest;
     FOnEchoReply      : TPingReply;
@@ -130,8 +130,8 @@ type
     procedure   WndProc(var MsgRec: TMessage); override;
     procedure   HandleBackGroundException(E: Exception); override;
     procedure   WMAsyncGetHostByName(var msg: TMessage); virtual;
-    procedure   SetAddress(Value : AnsiString);
-    function    GetAddress : AnsiString;
+    procedure   SetAddress(Value : String);
+    function    GetAddress : String;
     procedure   SetSize(Value : Integer);
     function    GetSize : Integer;
     procedure   SetTimeout(Value : Integer);
@@ -139,7 +139,7 @@ type
     function    GetReply : TIcmpEchoReply;
     function    GetErrorCode : Integer;
     function    GetErrorString : String;
-    function    GetHostName : AnsiString;
+    function    GetHostName : String;
     function    GetHostIP : String;
     procedure   SetTTL(Value : Integer);
     function    GetTTL : Integer;
@@ -159,18 +159,18 @@ type
     constructor Create(Owner : TComponent); override;
     destructor  Destroy; override;
     function    Ping : Integer; virtual;
-    procedure   DnsLookup(HostName : AnsiString); virtual;
+    procedure   DnsLookup(HostName : String); virtual;
     procedure   CancelDnsLookup;
 
     property    Reply         : TIcmpEchoReply read GetReply;
     property    ErrorCode     : Integer        read GetErrorCode;
     property    ErrorString   : String         read GetErrorString;
-    property    HostName      : AnsiString     read GetHostName;
+    property    HostName      : String         read GetHostName;
     property    HostIP        : String         read GetHostIP;
-    property    DnsResult     : AnsiString     read FDnsResult;
+    property    DnsResult     : String         read FDnsResult;
     property    ICMPDLLHandle : HModule        read GetICMPHandle;
   published
-    property    Address     : AnsiString     read  GetAddress
+    property    Address     : String         read  GetAddress
                                              write SetAddress;
     property    Size        : Integer        read  GetSize
                                              write SetSize;
@@ -383,7 +383,7 @@ begin
     if Error = 0 then begin
         Phe        := PHostent(@FDnsLookupBuffer);
         IPAddr     := PInAddr(Phe^.h_addr_list^)^;
-        FDnsResult := StrPas(inet_ntoa(IPAddr));
+        FDnsResult := String(AnsiString(inet_ntoa(IPAddr)));
     end;
     if Assigned(FOnDnsLookupDone) then
         FOnDnsLookupDone(Self, Error);
@@ -463,19 +463,20 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.DnsLookup(HostName : AnsiString);
+procedure TPing.DnsLookup(HostName : String);
 var
-    IPAddr  : TInAddr;
+    IPAddr    : TInAddr;
+    XHostName : AnsiString;
 begin
     { Cancel any pending lookup }
     if FDnsLookupHandle <> 0 then
         WSACancelAsyncRequest(FDnsLookupHandle);
 
     FDnsResult := '';
-
-    IPAddr.S_addr := Inet_addr(@HostName[1]);
+    XHostName  := AnsiString(HostName);
+    IPAddr.S_addr := Inet_addr(@XHostName[1]);
     if IPAddr.S_addr <> u_long(INADDR_NONE) then begin
-        FDnsResult := StrPas(inet_ntoa(IPAddr));
+        FDnsResult := String(AnsiString((inet_ntoa(IPAddr))));
         if Assigned(FOnDnsLookupDone) then
             FOnDnsLookupDone(Self, 0);
         Exit;
@@ -483,7 +484,7 @@ begin
 
     FDnsLookupHandle := WSAAsyncGetHostByName(FHandle,
                                               FMsg_WM_ASYNCGETHOSTBYNAME,
-                                              @HostName[1],
+                                              @XHostName[1],
                                               @FDnsLookupBuffer,
                                               SizeOf(FDnsLookupBuffer));
     if FDnsLookupHandle = 0 then
@@ -494,7 +495,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.SetAddress(Value : AnsiString);
+procedure TPing.SetAddress(Value : String);
 begin
     if Assigned(FIcmp) then
         FIcmp.Address := Value;
@@ -502,7 +503,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TPing.GetAddress : AnsiString;
+function TPing.GetAddress : String;
 begin
     if Assigned(FIcmp) then
         Result := FIcmp.Address
@@ -614,7 +615,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TPing.GetHostName : AnsiString;
+function TPing.GetHostName : String;
 begin
     if Assigned(FIcmp) then
         Result := FIcmp.HostName
