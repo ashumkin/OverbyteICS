@@ -1069,8 +1069,14 @@ procedure TSslWebServForm.SslHttpServer1SslSvrGetSession(
 var
     LookupKey : string;
 begin
+{$IFDEF UNICODE}
+    { We need to get binary data into a UnicodeString, allocate enough space. }
+    { Not nice, however works in this case.                                   }
+    SetLength(LookupKey, (IDLen div 2) + (IdLen mod 2));
+{$ELSE}
     SetLength(LookupKey, IDLen);
-    StrLCopy(PChar(LookupKey), PChar(SessId), IDLen);
+{$ENDIF}
+    Move(SessId^, Pointer(LookupKey)^, IDLen);
     SslSession  := SslAvlSessionCache1.GetSvrSession(LookupKey +
                                                      Ssl_Session_ID_Context,
                                                      IncRefCount);
@@ -1087,8 +1093,14 @@ procedure TSslWebServForm.SslHttpServer1SslSvrNewSession(
 var
     LookupKey : string;
 begin
+{$IFDEF UNICODE}
+    { We need to get binary data into a UnicodeString, allocate enough space. }
+    { Not nice, however works in this case.                                   }
+    SetLength(LookupKey, (IDLen div 2) + (IdLen mod 2));
+{$ELSE}
     SetLength(LookupKey, IDLen);
-    StrLCopy(PChar(LookupKey), PChar(SessId), IDLen);
+{$ENDIF}
+    Move(SessId^, Pointer(LookupKey)^, IDLen);
     SslAvlSessionCache1.CacheSvrSession(SslSession,
                                         LookupKey + Ssl_Session_ID_Context,
                                         AddToInternalCache);

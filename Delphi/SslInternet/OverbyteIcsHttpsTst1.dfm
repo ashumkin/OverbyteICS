@@ -497,7 +497,7 @@ object HttpsTstForm: THttpsTstForm
     SslVerifyDepth = 9
     SslOptions = [sslOpt_MICROSOFT_SESS_ID_BUG, sslOpt_NETSCAPE_CHALLENGE_BUG, sslOpt_NETSCAPE_REUSE_CIPHER_CHANGE_BUG, sslOpt_SSLREF2_REUSE_CERT_TYPE_BUG, sslOpt_MICROSOFT_BIG_SSLV3_BUFFER, sslOpt_MSIE_SSLV2_RSA_PADDING, sslOpt_SSLEAY_080_CLIENT_DH_BUG, sslOpt_TLS_D5_BUG, sslOpt_TLS_BLOCK_PADDING_BUG, sslOpt_TLS_ROLLBACK_BUG, sslOpt_NO_SSLv2, sslOpt_NETSCAPE_CA_DN_BUG, sslOpt_NETSCAPE_DEMO_CIPHER_CHANGE_BUG]
     SslVerifyPeerModes = [SslVerifyMode_PEER]
-    SslSessionCacheModes = []
+    SslSessionCacheModes = [sslSESS_CACHE_CLIENT, sslSESS_CACHE_NO_INTERNAL_LOOKUP, sslSESS_CACHE_NO_INTERNAL_STORE]
     SslCipherList = 'ALL:!ADH:RC4+RSA:+SSLv2:@STRENGTH'
     SslVersionMethod = sslV23_CLIENT
     SslSessionTimeout = 300
@@ -507,6 +507,7 @@ object HttpsTstForm: THttpsTstForm
   end
   object IcsLogger1: TIcsLogger
     LogFileOption = lfoOverwrite
+    LogFileEncoding = lfeUtf8
     LogFileName = 'Debug_Out_HttpsTst.txt'
     LogOptions = [loDestFile, loProtSpecErr, loProtSpecInfo, loProtSpecDump]
     OnIcsLogEvent = IcsLogger1IcsLogEvent
