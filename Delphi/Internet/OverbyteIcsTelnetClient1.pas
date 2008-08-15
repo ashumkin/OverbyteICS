@@ -5,7 +5,7 @@ Object:       Delphi application which is a basic telnet program demonstrating
               WSocket, TnCnx, TnEmulVT, EmulVT components.
 Author:       François PIETTE
 Creation:     July 22, 1997
-Version:      6.00
+Version:      7.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -44,6 +44,9 @@ Dec 10, 1998  V2.05 Added IniFile to save config
 Mar 26, 2006  V2.06 Set local echo at the right places: after connect and
               after setting the options.
 Mar 26, 2006  V6.00 Started from ICS-V5
+Aug 15, 2008  V7.00 Delphi 2009 (Unicode) support. The terminal is not
+              unicode, but the component support unicode strings.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTelnetClient1;
@@ -140,7 +143,7 @@ begin
         { Set auto-wrap mode. Here is the place to do other settings. }
         TnEmulVT1.WriteStr(#27'[?7h');
         WinsockData := WinsockInfo;
-        StatusLabel.Caption := StrPas(WinsockData.szDescription);
+        StatusLabel.Caption := String(StrPas(WinsockData.szDescription));
     end;
 end;
 
