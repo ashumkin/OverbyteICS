@@ -7,7 +7,7 @@ Object:       Delphi component which implement the TCP/IP telnet protocol
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Creation:     April, 1996
-Version:      6.00
+Version:      7.00
 Support:      Use the mailing list twsocket@elists.org See website for details.
 Legal issues: Copyright (C) 1996-2007 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
@@ -57,6 +57,8 @@ May 31, 2004 V2.10 Used ICSDEFS.INC, removed unused units.
 Jan 13, 2005 V2.11 Replaced symbol "Debug" by "DEBUG_OUTPUT"
 Mar 11, 2006 V2.12 Arno Garrels made it NOFORMS compatible
 Mar 26, 2006 V6.00 New version 6 started from V5
+Aug 15, 2008 V7.00 Delphi 2009 (Unicode) support. The communication is not
+             unicode, but the component support unicode strings.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -92,8 +94,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWinsock;
 
 const
-  TnCnxVersion       = 600;
-  CopyRight : String = ' TTnCnx (c) 1996-2007 F. Piette V6.00 ';
+  TnCnxVersion       = 700;
+  CopyRight : String = ' TTnCnx (c) 1996-2008 F. Piette V7.00 ';
 
   { Telnet command characters                                             }
   TNCH_EOR        = #239;     { $EF End Of Record (preceded by IAC)       }
@@ -180,7 +182,8 @@ type
     Socket      : TWSocket;
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
-    function    Send(Data : Pointer; Len : Integer) : integer;
+    function    Send(Data : Pointer; Len : Integer) : integer; overload;
+    function    Send(Data : PChar; Len : Integer) : integer; overload;
     function    SendStr(Data : String) : integer;
     procedure   Connect;
     function    IsConnected : Boolean;
@@ -408,10 +411,32 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  TTnCnx.Send(Data : Pointer; Len : Integer) : integer;
+function  TTnCnx.Send(
+    Data : Pointer;               // This will send bytes !
+    Len  : Integer) : integer;
 begin
     if Assigned(Socket) then
         Result := Socket.Send(Data, Len)
+    else
+        Result := -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TTnCnx.Send(
+    Data : PChar;
+    Len  : Integer) : integer;
+var
+    I  : Integer;
+    Ch : AnsiChar;
+begin
+    if Assigned(Socket) then begin
+        Result := 0;
+        for I := 0 to Len - 1 do begin
+            Ch     := AnsiChar(Data[I]);
+            Result := Result + Socket.Send(@Ch, 1);
+        end;
+    end
     else
         Result := -1;
 end;
@@ -636,7 +661,7 @@ begin
             strSubOption := '';
         end
         else
-            strSubOption := strSubOption + Ch;
+            strSubOption := strSubOption + Char(Ch);
         Exit;
     end;
 
@@ -660,12 +685,12 @@ begin
             end;
         TNCH_SB:
             begin
-{                DebugString('Subnegociation' + #13 + #10); }
+{               DebugString('Subnegociation' + #13 + #10); }
                 bSubNegoc := TRUE;
                 bIAC      := FALSE;
             end;
         else
-            DebugString('Unknown ' + IntToHex(ord(Ch), 2) + ' ''' + Ch + '''' + #13 + #10);
+            DebugString('Unknown ' + IntToHex(ord(Ch), 2) + ' ''' + Char(Ch) + '''' + #13 + #10);
             bIAC := FALSE;
         end;
 
