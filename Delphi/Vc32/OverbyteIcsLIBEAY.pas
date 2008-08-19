@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.03
+Version:      1.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -56,6 +56,8 @@ Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
 Jul 18, 2008 A. Garrels made some changes to get rid of some string cast
              warnings.
 Jun 05, 2008 A.Garrels revised Asn1ToString(), made some string casts explicit.
+Aug 19, 2008 A.Garrels checked against OpenSSL v0.9.8h and added that version
+             as maximum version.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -589,14 +591,15 @@ const
     OSSL_VER_0908  = $000908000;
     OSSL_VER_0908A = $00090801f;
     OSSL_VER_0908E = $00090805f;
+    OSSL_VER_0908H = $00090808f;
     // Or should we also create an dynamic array of Longword we would add only
     // tested/wanted versions?
 {$IFDEF BEFORE_OSSL_098E}
     MIN_OSSL_VER   = OSSL_VER_0907G;
-    MAX_OSSL_VER   = OSSL_VER_0908E;
+    MAX_OSSL_VER   = OSSL_VER_0908H;
 {$ELSE}
     MIN_OSSL_VER   = OSSL_VER_0908E;
-    MAX_OSSL_VER   = OSSL_VER_0908E;
+    MAX_OSSL_VER   = OSSL_VER_0908H;
 {$ENDIF}
 
 implementation
