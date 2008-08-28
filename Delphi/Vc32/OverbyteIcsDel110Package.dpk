@@ -101,6 +101,6 @@ contains
   OverbyteIcsMultipartFtpDownloader in 'OverbyteIcsMultipartFtpDownloader.pas',
   OverbyteIcsOneTimePw in 'OverbyteIcsOneTimePw.pas',
   OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
-  OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas'
+  OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas';
 
 end.
