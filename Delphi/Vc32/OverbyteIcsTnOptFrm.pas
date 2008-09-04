@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  User interface for TnEmulVT component options
 Creation:     May, 1996
-Version:      6.02
+Version:      7.00
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org See website for details.
@@ -42,7 +42,7 @@ Mar 26, 2006  V6.00 started from previous version
 Mar 24, 2008  V6.01 Francois Piette made some changes to prepare code
               for Unicode.
 May 11, 2008  V6.02 USchuster removed local atoi implementation (atoi is now in OverbyteIcsUtils.pas) 
-
+Sept 4, 2008  V7.00 Angus don't save form size since it's fixed, font now Sans Serif
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTnOptFrm;
@@ -78,8 +78,8 @@ uses
     Dialogs, Forms, StdCtrls, IniFiles, Buttons, OverbyteIcsUtils;
 
 const
-  TnOptFrmVersion      = 602;
-  CopyRight : String = ' TnOptFrm (c) 1996-2008 F. Piette V6.02 ';
+  TnOptFrmVersion      = 700;
+  CopyRight : String = ' TnOptFrm (c) 1996-2008 F. Piette V7.00 ';
 
 type
   TOptForm = class(TForm)
@@ -454,10 +454,10 @@ begin
         FInitialized := TRUE;
 
         IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionName, KeyName + KeyWidth,
+    {    Width        := IniFile.ReadInteger(SectionName, KeyName + KeyWidth,
                                             Width);
         Height       := IniFile.ReadInteger(SectionName, KeyName + KeyHeight,
-                                            Height);
+                                            Height);  }
         Top          := IniFile.ReadInteger(SectionName, KeyName + KeyTop,
                                             (Screen.Height - Height) div 2);
         Left         := IniFile.ReadInteger(SectionName, KeyName + KeyLeft,
@@ -476,8 +476,8 @@ begin
     IniFile := TIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionName, KeyName + KeyTop,         Top);
     IniFile.WriteInteger(SectionName, KeyName + KeyLeft,        Left);
-    IniFile.WriteInteger(SectionName, KeyName + KeyWidth,       Width);
-    IniFile.WriteInteger(SectionName, KeyName + KeyHeight,      Height);
+ {   IniFile.WriteInteger(SectionName, KeyName + KeyWidth,       Width);
+    IniFile.WriteInteger(SectionName, KeyName + KeyHeight,      Height);  }
     IniFile.Destroy;
 end;
 
