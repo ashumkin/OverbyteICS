@@ -225,8 +225,7 @@ type
     procedure   InvClear;
     procedure   SetLines(I : Integer; Value : TLine);
     function    GetLines(I : Integer) : TLine;
-    procedure   WriteChar(Ch : Char); overload;
-{$IFDEF COMPILER12_UP}
+    procedure   WriteChar(Ch : Char); {$IFDEF COMPILER12_UP} overload;
     procedure   WriteChar(Ch : AnsiChar); overload;
 {$ENDIF}
     procedure   WriteStr(Str : String);
@@ -2247,11 +2246,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Write a single character at current cursor location.                      }
 { Update cursor position.                                                   }
+{$IFDEF COMPILER12_UP}
 procedure TScreen.WriteChar(Ch : AnsiChar);
 begin
     WriteChar(Char(Ch));
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Write a single character at current cursor location.                      }

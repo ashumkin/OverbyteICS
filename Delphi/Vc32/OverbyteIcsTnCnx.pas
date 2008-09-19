@@ -182,8 +182,7 @@ type
     Socket      : TWSocket;
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
-    function    Send(Data : Pointer; Len : Integer) : integer; overload;
-    function    Send(Data : PChar; Len : Integer) : integer; overload;
+    function    Send(Data : PChar; Len : Integer) : integer;
     function    SendStr(Data : String) : integer;
     procedure   Connect;
     function    IsConnected : Boolean;
@@ -412,31 +411,40 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function  TTnCnx.Send(
-    Data : Pointer;               // This will send bytes !
+    Data : PChar;               // This will send Ansi!
     Len  : Integer) : integer;
+{$IFDEF COMPILER12_UP}
+var
+    I, L : Integer;
+    SBuf : array[0..1460 - 1] of AnsiChar;
+{$ENDIF}
 begin
     if Assigned(Socket) then
-        Result := Socket.Send(Data, Len)
-    else
-        Result := -1;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  TTnCnx.Send(
-    Data : PChar;
-    Len  : Integer) : integer;
-var
-    I  : Integer;
-    Ch : AnsiChar;
-begin
-    if Assigned(Socket) then begin
+{$IFDEF COMPILER12_UP}
+    begin
+        L := Len;
         Result := 0;
-        for I := 0 to Len - 1 do begin
-            Ch     := AnsiChar(Data[I]);
-            Result := Result + Socket.Send(@Ch, 1);
+        while L > SizeOf(SBuf) do begin
+            for I := 0 to SizeOf(SBuf) - 1 do begin
+                SBuf[I] := AnsiChar(Data[I]);
+                Inc(Result);
+            end;
+            Socket.PutDataInSendBuffer(@SBuf, SizeOf(SBuf));
+            Dec(L, SizeOf(SBuf));
         end;
+        if L > 0 then begin
+            for I := 0 to L - 1 do begin
+                SBuf[I] := AnsiChar(Data[I]);
+                Inc(Result);
+            end;
+            Socket.PutDataInSendBuffer(@SBuf, L);
+        end;
+        if Result > 0 then
+            Socket.Send(nil, 0);
     end
+{$ELSE}
+        Result := Socket.Send(Data, Len)
+{$ENDIF}
     else
         Result := -1;
 end;
@@ -505,7 +513,8 @@ begin
                 if Assigned(FOnTermType) then
                     FOnTermType(Self);
                 Buf := TNCH_IAC + TNCH_SB + TN_TERMTYPE + TN_TTYPE_IS + FTermType + TNCH_IAC + TNCH_SE;
-                Socket.Send(@Buf[1], Length(Buf));
+                //Socket.Send(@Buf[1], Length(Buf));
+                Self.SendStr(Buf);
             end;
         end;
     else
@@ -570,7 +579,7 @@ begin
                 if Assigned(FOnSendLoc) then
                     FOnSendLoc(Self);
                 Buf := TNCH_IAC + TNCH_SB + TN_SEND_LOC + FLocation + TNCH_IAC + TNCH_SE;
-                Socket.Send(@Buf[1], Length(Buf));
+                {Socket.}Send(@Buf[1], Length(Buf));
             end;
         end;
     TN_EOR:
