@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.18
+Version:      6.19
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -621,7 +621,8 @@ Aug 03, 2008 V6.16 A. Garrels removed packed from record TExtension.
 Jul 07, 2008 V6.17 Still a small fix from December 2007 missing in SSL code.
 Aug 11, 2008 V6.18 A. Garrels - Type AnsiString rolled back to String.
              Two bugs fixed in SSL code introduced with Unicode change.
-             Socks was not fully prepared for Unicode. 
+             Socks was not fully prepared for Unicode.
+Sep 19, 2008 V6.19 A. Garrels changed some AnsiString types to RawByteString. 
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -725,8 +726,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 618;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.18 ';
+  WSocketVersion            = 619;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.19 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -950,7 +951,10 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetSocketRcvBufSize(BufSize : Integer); virtual;
     procedure   SetSocketSndBufSize(BufSize : Integer); virtual;
     procedure   BindSocket; virtual;
-    procedure   SendText(Str : String);
+    procedure   SendText(const Str : RawByteString); {$IFDEF COMPILER12_UP} overload;
+    procedure   SendText(const Str : UnicodeString); overload;
+    procedure   SendText(const Str : UnicodeString; ACodePage : Cardinal); overload;
+    {$ENDIF}
     function    RealSend(var Data : TWSocketData; Len : Integer) : Integer; virtual;
 //  procedure   RaiseExceptionFmt(const Fmt : String; args : array of const); virtual;
     procedure   RaiseException(const Msg : String); virtual;
@@ -1024,7 +1028,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                        DestLen    : Integer;
                        const Data : TWSocketData;
                        Len        : Integer) : Integer; virtual;
-    function    SendStr(const Str : AnsiString) : Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF} virtual;
+    function    SendStr(const Str : RawByteString) : Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF} virtual;
 {$IFDEF COMPILER12_UP}
     function    SendStr(const Str : UnicodeString; ACodePage: Cardinal) : Integer; overload; virtual;
     function    SendStr(const Str : UnicodeString) : Integer; overload; virtual;
@@ -1049,7 +1053,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   Pause; virtual;
     procedure   Resume; virtual;
     procedure   PutDataInSendBuffer(Data : TWSocketData; Len : Integer); virtual;
-    procedure   PutStringInSendBuffer(const Str : AnsiString); {$IFDEF COMPILER12_UP} overload; {$ENDIF}
+    procedure   PutStringInSendBuffer(const Str : RawByteString); {$IFDEF COMPILER12_UP} overload; {$ENDIF}
 {$IFDEF COMPILER12_UP}
     procedure   PutStringInSendBuffer(const Str : UnicodeString; ACodePage: Cardinal); overload;
     procedure   PutStringInSendBuffer(const Str : UnicodeString); overload;
@@ -5585,7 +5589,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : AnsiString);
+procedure TCustomWSocket.PutStringInSendBuffer(const Str : RawByteString);
 {$IFDEF CLR}
 var
     Data : TBytes;
@@ -5730,7 +5734,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Return -1 if error, else return number of byte written                    }
-function TCustomWSocket.SendStr(const Str : AnsiString) : Integer;
+function TCustomWSocket.SendStr(const Str : RawByteString) : Integer;
 begin
     if Length(Str) > 0 then
         Result := Send({$IFDEF CLR}
@@ -5746,11 +5750,26 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SendText(Str : String);
+procedure TCustomWSocket.SendText(const Str : RawByteString);
 begin
     SendStr(Str);
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+procedure TCustomWSocket.SendText(const Str : UnicodeString);
+begin
+    SendStr(AnsiString(Str));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SendText(const Str : UnicodeString; ACodePage : Cardinal);
+begin
+    SendStr(Str, ACodePage);
+end;
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function HasOption(
