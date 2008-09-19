@@ -862,7 +862,7 @@ May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
              Some type changes from String to AnsiString of published properties.
 Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
 Aug 27, 2008 V6.08 A. Garrels added UTF-8 and code page support.
-Sep 18, 2008 V6.09 Angus fixed minor widestring bugs, updated FEAT comments for various FTP servers
+Sep 19, 2008 V6.09 Angus fixed minor widestring bugs, updated FEAT comments for various FTP servers
                    changed MdtmyyAsync so it no longer adds +0 since newer Serv-U then fails
                    added FTP commands HOST hostname (before logon) and REIN (re-initialise connection)
                    added ConnectHost that does Open/Host/User/Pass
@@ -4807,7 +4807,7 @@ var
     I : Integer;
     Ticks: String;
 begin
-    Result := WideLowerCase (S);     { V6.09 }
+    Result := IcsLowerCaseW (S);     { V6.09 }
     if Length(Result) = 0 then Result := 'temp'; { might be saving to stream only }
     for I := 1 to Length(Result) do begin
         if (Result [I] = '\') or (Result [I] = '.') or

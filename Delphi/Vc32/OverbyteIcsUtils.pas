@@ -65,7 +65,7 @@ Aug 23, 2008 Utf-8 functions modified RawByteString rather than AnsiString.
 Aug 27, 2008 Arno Garrels added WideString functions and other stuff.
 Sep 11, 2008 Angus added more widestring functions
              No range checking so they all work (IcsFileGetAttrW in particular)
-
+Sep 19, 2008 Angus still adding WideString functions
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -217,6 +217,8 @@ type
     function IcsFileAgeW(const FileName: Utf8String): Integer; overload;
     function IcsFileExistsW(const FileName: UnicodeString): Boolean; overload;
     function IcsFileExistsW(const FileName: Utf8String): Boolean; overload;
+    function IcsLowerCaseW(const S: UnicodeString): UnicodeString;
+    function IcsUpperCaseW(const S: UnicodeString): UnicodeString;
 
 implementation
 
@@ -1480,6 +1482,25 @@ begin
     Result := IcsFileAgeW(FileName) <> -1;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsLowerCaseW(const S: UnicodeString): UnicodeString;
+var
+  Len: Integer;
+begin
+    Len := Length(S);
+    SetString(Result, PWideChar(S), Len);
+    if Len > 0 then CharLowerBuffW(Pointer(Result), Len);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsUpperCaseW(const S: UnicodeString): UnicodeString;
+var
+  Len: Integer;
+begin
+    Len := Length(S);
+    SetString(Result, PWideChar(S), Len);
+    if Len > 0 then CharUpperBuffW(Pointer(Result), Len);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
