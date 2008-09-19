@@ -3,8 +3,8 @@
 Author:       Angus Robertson, based on HashLib! from http://www.cobans.net/
 Description:  Calculates CRC32 abnd CRC32B
 Creation:     10 July 2006
-Updated:      08 January 2008
-Version:      1.04
+Updated:      15 September 2008
+Version:      1.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -43,6 +43,7 @@ Sep 3, 2006  V1.01 Angus - fix to allow files larger than 2 gigs
 Oct 31, 2006 V1.02 Angus - added a progress callback to FileCRC().
 27 Nov 2007  V1.03 Angus added FileCRC32B for partial file, removed duplicate code
 08 Jan 2008  V1.04 Angus optional file mode to stop file being share locked
+Sep 15, 2008 V1.05 Angus changed file names to UnicodeStrings for Unicode
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsCRC;
@@ -53,11 +54,11 @@ unit OverbyteIcsCRC;
 interface
 
 uses
-    SysUtils, Classes;
+    SysUtils, Classes, OverbyteIcsUtils;
 
 const
-    CRCVersion         = 104;
-    CopyRight : String = ' CRC32 (c) 1997-2008 F. Piette V1.04 ';
+    CRCVersion         = 105;
+    CopyRight : String = ' CRC32 (c) 1997-2008 F. Piette V1.05 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;   { V1.04 }
 
 type
@@ -73,16 +74,16 @@ function CRC32Final(var crc: LongWord): String;
 
 function GetCRC32(Buffer: Pointer; BufSize: Integer): string;
 function StrCRC32(Buffer : String): string;
-function FileCRC32(const Filename: String; Mode: Word = DefaultMode) : String; overload;   { V1.04 }
-function FileCRC32(const Filename: String; Obj: TObject;
+function FileCRC32(const Filename: UnicodeString; Mode: Word = DefaultMode) : String; overload;   { V1.04 }
+function FileCRC32(const Filename: UnicodeString; Obj: TObject;
         ProgressCallback: TCRCProgress; Mode: Word = DefaultMode) : String; overload;      { V1.04 }
 
 function GetCRC32B(Buffer: Pointer; BufSize: Integer): string;
 function StrCRC32B(Buffer : String): string;
-function FileCRC32B(const Filename: String; Mode: Word = DefaultMode) : String; overload;  { V1.04 }
-function FileCRC32B(const Filename: String; Obj: TObject; ProgressCallback:
+function FileCRC32B(const Filename: UnicodeString; Mode: Word = DefaultMode) : String; overload;  { V1.04 }
+function FileCRC32B(const Filename: UnicodeString; Obj: TObject; ProgressCallback:
         TCRCProgress; Mode: Word = DefaultMode) : String; overload;                        { V1.04 }
-function FileCRC32B(const Filename: String; Obj: TObject; ProgressCallback:
+function FileCRC32B(const Filename: UnicodeString; Obj: TObject; ProgressCallback:
         TCRCProgress; StartPos, EndPos : Int64; Mode: Word = DefaultMode) : String; overload; { V1.04 }
 
 implementation
@@ -396,7 +397,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function FileCRC32(const Filename: String; Mode: Word = DefaultMode) : String;
+function FileCRC32(const Filename: UnicodeString; Mode: Word = DefaultMode) : String;
 const
 {$IFDEF VER80}
     ChunkSize { Cardinal} = 1024 * 31;
@@ -409,12 +410,12 @@ var
     Rest       : Integer;
     crc        : LongWord ;
     Buf        : ^Byte;
-    Stream     : TFileStream;
+    Stream     : TIcsFileStreamW;
 begin
     Result := '';
 
     { Open file }
-    Stream := TFileStream.Create(Filename, Mode);    { V1.04 }
+    Stream := TIcsFileStreamW.Create(Filename, Mode);    { V1.04 }
     try
         { Allocate buffer to read file }
         GetMem(Buf, ChunkSize);
@@ -455,7 +456,7 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V1.02 }
-function FileCRC32(const Filename: String; Obj: TObject; ProgressCallback:
+function FileCRC32(const Filename: UnicodeString; Obj: TObject; ProgressCallback:
                                 TCRCProgress; Mode: Word = DefaultMode) : String;
 const
 {$IFDEF VER80}
@@ -469,13 +470,13 @@ var
     Rest       : Integer;
     crc        : LongWord ;
     Buf        : ^Byte;
-    Stream     : TFileStream;
+    Stream     : TIcsFileStreamW;
     Cancel     : Boolean;
 begin
     Result := '';
 
     { Open file }
-    Stream := TFileStream.Create(Filename, Mode);           { V1.04 }
+    Stream := TIcsFileStreamW.Create(Filename, Mode);           { V1.04 }
     try
         { Allocate buffer to read file }
         GetMem(Buf, ChunkSize);
@@ -522,7 +523,7 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V1.02 }
-function FileCRC32B(const Filename: String; Obj: TObject; ProgressCallback:
+function FileCRC32B(const Filename: UnicodeString; Obj: TObject; ProgressCallback:
          TCRCProgress; StartPos, EndPos : Int64; Mode: Word = DefaultMode) : String;  { V1.03 }
 const
 {$IFDEF VER80}
@@ -536,14 +537,14 @@ var
     Rest       : Integer;
     crc        : LongWord ;
     Buf        : ^Byte;
-    Stream     : TFileStream;
+    Stream     : TIcsFileStreamW;
     Cancel     : Boolean;
     FSize      : Int64;
 begin
     Result := '';
 
     { Open file }
-    Stream := TFileStream.Create(Filename, Mode);       { V1.04 }
+    Stream := TIcsFileStreamW.Create(Filename, Mode);       { V1.04 }
     try
         { Allocate buffer to read file }
         GetMem(Buf, ChunkSize);
@@ -595,14 +596,14 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  V1.03 }
-function FileCRC32B(const Filename: String; Obj: TObject;
+function FileCRC32B(const Filename: UnicodeString; Obj: TObject;
                   ProgressCallback: TCRCProgress; Mode: Word = DefaultMode) : String;
 begin
     Result := FileCRC32B(Filename, Obj, ProgressCallback, 0, 0, Mode);  { V1.04 }
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  V1.03 }
-function FileCRC32B(const Filename: String; Mode: Word = DefaultMode) : String;
+function FileCRC32B(const Filename: UnicodeString; Mode: Word = DefaultMode) : String;
 begin
     Result := FileCRC32B(Filename, Nil, Nil, 0, 0, Mode);               { V1.04 }
 end;

@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V6.07
+Version:      V6.09
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -62,7 +62,7 @@ Methods:
   Abort      - Disconnect (close connection) immediately
   AbortXfer  - Abort file transfer without disconnecting.
                Warning: LocalFilename property is lost after this command.
-  Pwd        - Get current working directory into 
+  Pwd        - Get current working directory into DirResult
   Cwd        - Change Working Directory to HostDirName
   CDup       - Change to parent directory
   TypeSet    - Set type for file transfert (see Binary property)
@@ -105,7 +105,7 @@ Methods:
   Syst       - Get system information from the server
   System     - Connect, Cwd, Get system information from the server & Quit
 
-  Size       - Get file size of HostFileName to SizeResult 
+  Size       - Get file size of HostFileName to SizeResult
   FileSize   - Connect, Cwd, get file size & Quit
 
   Quote      - Send literal command (use LocalFileName as command to send)
@@ -238,6 +238,19 @@ Microsoft IIS/6 in Windows 2003
     MDTM
 211 END
 
+Microsoft FTP Service IIS/7 in Windows 2008
+211-Extended features supported:
+ LANG EN*
+ UTF8
+ AUTH TLS;TLS-C;SSL;TLS-P;
+ PBSZ
+ PROT C;P;
+ CCC
+ HOST
+ SIZE
+ MDTM
+211 END
+
 RhinoSoft Serv-U FTP 4.1
 211-Extension supported
  MDTM
@@ -265,6 +278,32 @@ RhinoSoft Serv-U FTP Server v6.1
  MLST Type*;Size*;Create;Modify*;Win32.ea*;
 211 End
 
+RhinoSoft Serv-U FTP Server v7.2
+211-Extensions supported
+    UTF8
+    OPTS MODE;MLST;UTF8
+    CLNT
+    CSID Name; Version;
+    HOST domain
+    SITE PSWD;SET;INDEX;ZONE;CHMOD;MSG;EXEC;HELP
+    AUTH TLS;SSL;TLS-C;TLS-P;
+    PBSZ
+    PROT
+    CCC
+    SSCN
+    RMDA directoryname
+    DSIZ
+    AVBL
+    MODE Z
+    THMB BMP|JPEG|GIF|TIFF|PNG max_width max_height pathname
+    REST STREAM
+    SIZE
+    MDTM
+    MDTM YYYYMMDDHHMMSS[+-TZ];filename
+    XCRC filename;start;end
+    MLST Type*;Size*;Create;Modify*;Perm;Win32.ea;Win32.dt;Win32.dl
+211 End (for details use "HELP commmand" where command is the command of interest)
+
 Ipswich WS_FTP Server 3.14
 211-Extensions supported
  SIZE
@@ -277,6 +316,25 @@ Ipswich WS_FTP Server 3.14
  AUTH SSL;TLS-P;
  PBSZ
  PROT C;P;
+211 end
+
+WS_FTP Server 6.1.1
+211-Extensions supported
+    SIZE
+    XMD5
+    XSHA1
+    XSHA256
+    XSHA512
+    XQUOTA
+    LANG EN, ES, FR, GE
+    MDTM
+    MLST size*;type*;perm*;create*;modify*;
+    REST STREAM
+    TVFS
+    UTF8
+    AUTH SSL;TLS-P;
+    PBSZ
+    PROT C;P;
 211 end
 
 Gene6 FTP Server v3.6.0
@@ -299,6 +357,31 @@ Gene6 FTP Server v3.6.0
  UTF8
  XCRC "filename" SP EP
  XMD5 "filename" SP EP
+211 End.
+
+Gene6 FTP Server v3.10.0
+211-Extensions supported:
+ AUTH TLS
+ CCC
+ CLNT
+ CPSV
+ EPRT
+ EPSV
+ MDTM
+ MFCT
+ MFMT
+ MLST type*;size*;create;modify*;
+ PASV
+ PBSZ
+ PROT
+ REST STREAM
+ SIZE
+ SSCN
+ TVFS
+ UTF8
+ XCRC "filename" SP EP
+ XMD5 "filename" SP EP
+ XSHA1 "filename" SP EP
 211 End.
 
 Unknown Unix Daemon
@@ -772,12 +855,17 @@ Jun 25, 2008 V6.02 A. Garrels, ZlibOnProgress needs to be compiled conditionally
 Jun 28, 2008 v6.03 **Breaking Change** enum item "sslTypeImplizit" renamed to
              "sslTypeImplicit".
 May 01, 2008 V6.04 A.Garrels added function LocalStreamWriteString to prepare
-             code for Unicode changed some types from char to AnsiChar.             
+             code for Unicode changed some types from char to AnsiChar.
 May 02, 2008 V6.05 A.Garrels changed code to get the temporary directory for
              ZLIB in TCustomFtpCli.Create.
 May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
              Some type changes from String to AnsiString of published properties.
 Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
+Aug 27, 2008 V6.08 A. Garrels added UTF-8 and code page support.
+Sep 18, 2008 V6.09 Angus fixed minor widestring bugs, updated FEAT comments for various FTP servers
+                   changed MdtmyyAsync so it no longer adds +0 since newer Serv-U then fails
+                   added FTP commands HOST hostname (before logon) and REIN (re-initialise connection)
+                   added ConnectHost that does Open/Host/User/Pass
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -860,9 +948,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 607;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.07 ';
-  FtpClientId : String = 'ICS FTP Client V6.06 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 609;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.09 ';
+  FtpClientId : String = 'ICS FTP Client V6.09 ';   { V2.113 sent with CLNT command  }
 
 const
   BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -886,7 +974,7 @@ type
                      ftpFeatXCrc,  ftpFeatXMD5,  ftpFeatSitePaswd,          { V2.113 }
                      ftpFeatSiteExec, ftpFeatSiteIndex, ftpFeatSiteZone,    { V2.113 }
                      ftpFeatSiteMsg, ftpFeatSiteCmlsd, ftpFeatSiteDmlsd,    { V2.113 }
-                     ftpFeatClnt, ftpFeatComb);                             { V2.113 }
+                     ftpFeatClnt, ftpFeatComb, ftpFeatUtf8);                { V2.113 }
   TFtpExtensions  = set of TFtpExtension; { V2.94 which features server supports }
   TFtpTransMode   = (ftpTransModeStream, ftpTransModeZDeflate) ;  { V2.102 }
   TZStreamState   = (ftpZStateNone, ftpZStateSaveDecom, ftpZStateSaveComp{,
@@ -918,7 +1006,8 @@ type
                      ftpClntAsync,     ftpSitePaswdAsync, ftpSiteExecAsync,    { V2.113 }
                      ftpSiteIndexAsync, ftpSiteZoneAsync, ftpSiteMsgAsync,     { V2.113 }
                      ftpSiteCmlsdAsync, ftpSiteDmlsdAsync, ftpAlloAsync,       { V2.113 }
-                     ftpCombAsync,     ftpXMd5Async );                         { V2.113 }
+                     ftpCombAsync,     ftpXMd5Async,      ftpConnectHostAsync, { V2.113 }
+                     ftpReinAsync,     ftpHostAsync);                          { V6.09 }
   TFtpFct         = (ftpFctNone,       ftpFctOpen,       ftpFctUser,
                      ftpFctPass,       ftpFctCwd,        ftpFctSize,
                      ftpFctMkd,        ftpFctRmd,        ftpFctRenFrom,
@@ -935,7 +1024,8 @@ type
                      ftpFctXCrc,       ftpFctClnt,       ftpFctSitePaswd,     { V2.113 }
                      ftpFctSiteExec,   ftpFctSiteIndex,  ftpFctSiteZone,      { V2.113 }
                      ftpFctSiteMsg,    ftpFctSiteCmlsd,  ftpFctSiteDmlsd,     { V2.113 }
-                     ftpFctAllo,       ftpFctComb,       ftpFctXMd5 );        { V2.113 }
+                     ftpFctAllo,       ftpFctComb,       ftpFctXMd5,          { V2.113 }
+                     ftpFctRein,       ftpFctHost );                          { V6.09 }
   TFtpFctSet      = set of TFtpFct;
   TFtpShareMode   = (ftpShareCompat,    ftpShareExclusive,
                      ftpShareDenyWrite, ftpShareDenyRead,
@@ -972,6 +1062,7 @@ type
   protected
     FHostName           : String;
     FPort               : String;
+    FCodePage           : Cardinal;
     FDataPortRangeStart : DWORD;  {JT}
     FDataPortRangeEnd   : DWORD;  {JT}
     FLastDataPort       : DWORD;  {JT}
@@ -979,9 +1070,9 @@ type
     FUserName           : String;
     FPassWord           : String;
     FAccount            : String;
-    FLocalFileName      : String;
-    FHostFileName       : String;
-    FHostDirName        : String;
+    FLocalFileName      : UnicodeString;
+    FHostFileName       : UnicodeString;
+    FHostDirName        : UnicodeString;
     FDnsResult          : String;
     FType               : Char;
     FShareMode          : Word;
@@ -1078,8 +1169,8 @@ type
   { FZStreamRec         : TZStreamRec;    V2.102 Zlib stream control record, used for Immediate }
     FModeZStream        : TStream;       { V2.113 compressed data stream, was TMemoryStream, now buffered file }
     FOnZlibProgress     : TZlibProgress; { V2.113 call back event during ZLIB processing }
-    FZCompFileName      : String;        { V2.113 zlib file name of compressed file }
-    FZlibWorkDir        : String;        { V2.113 zlib work directory }
+    FZCompFileName      : UnicodeString; { V2.113 zlib file name of compressed file }
+    FZlibWorkDir        : UnicodeString; { V2.113 zlib work directory }
 {$ENDIF}
 {$IFDEF UseBandwidthControl}              { V2.106 }
     FBandwidthLimit     : Integer;  // Bytes per second
@@ -1179,11 +1270,11 @@ type
     procedure   WMFtpCloseDown(var msg: TMessage); virtual;
     procedure   DestroyLocalStream;
     procedure   SetLocalStream (Stream:TStream);
-    procedure   SetLocalFileName (FileName:String);
+    procedure   SetLocalFileName (const FileName: UnicodeString);
     procedure   SetDataPortRangeStart (NewValue:DWord); {JT}
     procedure   SetDataPortRangeEnd (NewValue:DWord); {JT}
     procedure   RestAsyncGetResumePos; virtual;
-    function    OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
+    function    OpenFileStream (const FileName: UnicodeString; Mode: Word): TStream;  { V2.113 }
     procedure   CreateLocalFileStream;         { V2.113 }
   public
     constructor Create(AOwner: TComponent); override;
@@ -1267,7 +1358,12 @@ type
     procedure   SiteCmlsdAsync;  virtual;    { V2.113  extended MLSD using control channel }
     procedure   SiteDmlsdAsync;  virtual;    { V2.113  extended MLSD using data channel }
     procedure   ExecSiteDmlsdAsync; virtual; { V2.113  internal use }
+    procedure   ConnectHostAsync; virtual;   { V6.09   same as Connect but also sends Host  }
+    procedure   ReinAsync;       virtual;    { V6.09   re-initialize control connection  }
+    procedure   HostAsync;       virtual;    { V6.09   domain/hostname, usually sent before logon  }
 
+    property    CodePage          : Cardinal             read  FCodePage
+                                                         write FCodePage;
     property    LastResponse      : String               read  FLastResponse;
     property    LastMultiResponse : String               read  FLastMultiResponse;  { V2.90  multiple lines }
     property    ErrorMessage      : String               read  FErrorMessage;
@@ -1333,15 +1429,15 @@ type
                                                          write FUserName;
     property PassWord             : String               read  FPassWord
                                                          write FPassWord;
-    property HostDirName          : String               read  FHostDirName
+    property HostDirName          : UnicodeString        read  FHostDirName
                                                          write FHostDirName;
-    property HostFileName         : String               read  FHostFileName
+    property HostFileName         : UnicodeString        read  FHostFileName
                                                          write FHostFileName;
 {$IFNDEF NO_DEBUG_LOG}
     property IcsLogger            : TIcsLogger           read  GetIcsLogger  { 2.104 }
                                                          write SetIcsLogger;
 {$ENDIF}
-    property LocalFileName        : String               read  FLocalFileName
+    property LocalFileName        : UnicodeString        read  FLocalFileName
                                                          write SetLocalFileName;
     property DisplayFileFlag      : Boolean              read  FDisplayFileFlag
                                                          write FDisplayFileFlag;
@@ -1388,7 +1484,7 @@ type
 {$IFDEF USE_MODEZ}
     property OnZlibProgress       : TZlibProgress        read  FOnZlibProgress { V2.113 }
                                                          write FOnZlibProgress;
-    property ZlibWorkDir          : String               read  FZlibWorkDir    { V2.113 }
+    property ZlibWorkDir          : UnicodeString        read  FZlibWorkDir    { V2.113 }
                                                          write FZlibWorkDir;
 {$ENDIF}
     property OnSessionConnected   : TSessionConnected    read  FOnSessionConnected
@@ -1485,6 +1581,9 @@ type
     function    SiteMsg    : Boolean;    { V2.113  send message }
     function    SiteCmlsd  : Boolean;    { V2.113  extended MLSD using control channel }
     function    SiteDmlsd  : Boolean;    { V2.113  extended MLSD using data channel }
+    function    ConnectHost : Boolean;   { V6.09   same as connect but sends Host  }
+    function    Rein       : Boolean;    { V6.09   re-initialize control connection  }
+    function    Host       : Boolean;    { V6.09   domain/hostname, usually sent before logon  }
 {$IFDEF NOFORMS}
     property    Terminated         : Boolean        read  FTerminated
                                                     write FTerminated;
@@ -1496,9 +1595,10 @@ type
     property MultiThreaded : Boolean read FMultiThreaded write FMultiThreaded;
     property HostName;
     property Port;
+    property CodePage;
     property DataPortRangeStart; {JT}
     property DataPortRangeEnd; {JT}
-    property LocalAddr; {bb}    
+    property LocalAddr; {bb}
     property UserName;
     property PassWord;
     property HostDirName;
@@ -1791,6 +1891,8 @@ begin
       ftpAlloAsync: result:='AlloAsync';
       ftpCombAsync: result:='CombAsync';
       ftpXMd5Async: result:='XMd5Async';
+      ftpReinAsync: result:='ReinAsync';
+      ftpHostAsync: result:='XHostAsync';
 {$IFDEF USE_SSL}
       ftpCccAsync: result:='CCCAsync';
       ftpAuthAsync: result:='AuthAsync';
@@ -1835,15 +1937,15 @@ begin
         Result := -1;
 end;}
 
-function GetFileSize(FileName : String) : TFtpBigInt; { V2.108 }
+function GetFileSize(FileName : UnicodeString) : TFtpBigInt; { V2.108 }
 var
-    SR : TSearchRec;
+    SR : TIcsSearchRecW;
 {$IFDEF STREAM64}
     TempSize: TULargeInteger ;  // 64-bit integer record
 {$ENDIF}
 begin
 {$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
-    if FindFirst(FileName, faReadOnly or faHidden or
+    if IcsFindFirstW(FileName, faReadOnly or faHidden or
                  faSysFile or faArchive, SR) = 0 then begin
 {$IFDEF STREAM64}
         TempSize.LowPart  := SR.FindData.nFileSizeLow;
@@ -1852,7 +1954,7 @@ begin
 {$ELSE}
         Result := SR.Size
 {$ENDIF}
-        FindClose(SR);
+        IcsFindCloseW(SR);
     end
     else
         Result := -1;
@@ -2044,9 +2146,9 @@ begin
     FStreamFlag                       := FALSE;
 {$IFDEF USE_MODEZ}
     SetLength(FZlibWorkDir, 1024);
-    Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.03 }
+    Len := GetTempPathW(Length(FZlibWorkDir) - 1, PWideChar(FZlibWorkDir));{ AG V6.03 }
     SetLength(FZlibWorkDir, Len);                                 { AG V6.03 }
-    FZlibWorkDir := IncludeTrailingPathDelimiter (FZlibWorkDir);  { V2.113 }
+    FZlibWorkDir := IcsIncludeTrailingPathDelimiterW(FZlibWorkDir);  { V2.113 }
 {$ENDIF}
 {$IFDEF UseBandwidthControl}
     FBandwidthLimit     := 10000;  // Bytes per second
@@ -2058,6 +2160,7 @@ begin
 {$IFDEF USE_SSL}
     FControlSocket.SslEnable          := FALSE;
 {$ENDIF}
+    FCodePage := CP_ACP;
 end;
 
 
@@ -2227,7 +2330,7 @@ begin
             if Assigned (FModeZStream) then FModeZStream.Destroy;
             FModeZStream := nil;
             try
-                if FileExists(FZCompFileName) then DeleteFile (FZCompFileName);  { V1.113 }
+                if IcsFileExistsW(FZCompFileName) then IcsDeleteFileW(FZCompFileName);  { V1.113 }
             except
             end;
         end;
@@ -2240,12 +2343,12 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TCustomFtpCli.OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
+function TCustomFtpCli.OpenFileStream (const FileName: UnicodeString; Mode: Word): TStream;  { V2.113 }
 begin
 {$IFDEF USE_BUFFERED_STREAM}
     result := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
 {$ELSE}
-    result := TFileStream.Create(FileName, Mode);
+    result := TIcsFileStreamW.Create(FileName, Mode);
 {$ENDIF}
 end ;
 
@@ -2328,10 +2431,10 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SetLocalFileName(FileName: String);
+procedure TCustomFtpCli.SetLocalFileName(const FileName: UnicodeString);
 begin
     FLocalFileName := FileName;
-    if FileName <> '' then
+    if Length(FileName) > 0 then
         FStreamFlag := FALSE;
 end;
 
@@ -2342,7 +2445,7 @@ begin
     FLocalStream := Stream;
     FStreamFlag  := (Stream <> nil);
     if FStreamFlag then
-        FLocalFileName := '';
+        SetLength(FLocalFileName, 0);
 end;
 
 
@@ -2458,7 +2561,11 @@ begin
         FOnCommand(Self, Cmd);
     TriggerDisplay('> ' + Cmd);
     if FControlSocket.State = wsConnected then
-        FControlSocket.SendStr(Cmd + #13 + #10)
+    {$IFDEF COMPILER12_UP}
+        FControlSocket.SendStr(Cmd + #13#10, FCodePage)
+    {$ELSE}
+        FControlSocket.SendStr(Cmd + #13#10)
+    {$ENDIF}
     { Quit when not connected never returned. }                { 01/14/06 AG}
     else begin
         if cmd = 'QUIT' then
@@ -2767,9 +2874,12 @@ begin
         HandleError('HostDirName empty');
         Exit;
     end;
-
     FFctPrv := ftpFctCwd;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpCwdAsync, 'CWD '+ FHostDirName, [200, 250, 257], nil);
+{$ELSE}
+    ExecAsync(ftpCwdAsync, 'CWD '+ UnicodeToAnsi(FHostDirName, FCodePage), [200, 250, 257], nil);
+{$ENDIF}
 end;
 
 
@@ -2897,7 +3007,11 @@ procedure TCustomFtpCli.SizeAsync;
 begin
     FSizeResult := 0;
     FFctPrv := ftpFctSize;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSizeAsync, 'SIZE ' + FHostFileName, [213], nil);
+{$ELSE}
+    ExecAsync(ftpSizeAsync, 'SIZE ' + UnicodeToAnsi(FHostFileName, FCodePage), [213], nil);
+{$ENDIF}
 end;
 
 
@@ -2929,7 +3043,11 @@ end;
 procedure TCustomFtpCli.MkdAsync;
 begin
     FFctPrv := ftpFctMkd;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMkdAsync, 'MKD ' + FHostFileName, [200, 250, 257], nil);  { V2.100 }
+{$ELSE}
+    ExecAsync(ftpMkdAsync, 'MKD ' + UnicodeToAnsi(FHostFileName, FCodePage), [200, 250, 257], nil);  { V2.100 }
+{$ENDIF}
 end;
 
 
@@ -2937,7 +3055,11 @@ end;
 procedure TCustomFtpCli.RmdAsync;
 begin
     FFctPrv := ftpFctRmd;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpRmdAsync, 'RMD ' + FHostFileName, [200, 250, 257], nil);  { V2.100 }
+{$ELSE}
+    ExecAsync(ftpRmdAsync, 'RMD ' + UnicodeToAnsi(FHostFileName, FCodePage), [200, 250, 257], nil);  { V2.100 }
+{$ENDIF}
 end;
 
 
@@ -2945,7 +3067,11 @@ end;
 procedure TCustomFtpCli.DeleAsync;
 begin
     FFctPrv := ftpFctDele;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpDeleAsync, 'DELE ' + FHostFileName, [200, 250, 257], nil); { V2.100 }
+{$ELSE}
+    ExecAsync(ftpDeleAsync, 'DELE ' + UnicodeToAnsi(FHostFileName, FCodePage), [200, 250, 257], nil); { V2.100 }
+{$ENDIF}
 end;
 
 
@@ -2961,7 +3087,11 @@ end;
 procedure TCustomFtpCli.QuoteAsync;
 begin
     FFctPrv := ftpFctQuote;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpQuoteAsync, FLocalFileName, [0], nil);
+{$ELSE}
+    ExecAsync(ftpQuoteAsync, UnicodeToAnsi(FLocalFileName, FCodePage), [0], nil);
+{$ENDIF}
 end;
 
 
@@ -2985,7 +3115,11 @@ end;
 procedure TCustomFtpCli.RenFromAsync;
 begin
     FFctPrv := ftpFctRenFrom;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpRenFromAsync, 'RNFR ' + FHostFileName, [350], nil);
+{$ELSE}
+    ExecAsync(ftpRenFromAsync, 'RNFR ' + UnicodeToAnsi(FHostFileName, FCodePage), [350], nil);
+{$ENDIF}
 end;
 
 
@@ -2993,7 +3127,11 @@ end;
 procedure TCustomFtpCli.RenToAsync;
 begin
     FFctPrv := ftpFctRenTo;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpRenToAsync, 'RNTO ' + FLocalFileName, [200, 250, 257], nil);
+{$ELSE}
+    ExecAsync(ftpRenToAsync, 'RNTO ' + UnicodeToAnsi(FLocalFileName, FCodePage), [200, 250, 257], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3001,7 +3139,11 @@ procedure TCustomFtpCli.MlstAsync;     { V2.90 machine list one file        }
 begin
     FFctPrv   := ftpFctMlst;
     FRemFacts := '';
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMlstAsync, 'MLST ' + FHostFileName, [250], nil); { V2.100 }
+{$ELSE}
+    ExecAsync(ftpMlstAsync, 'MLST ' + UnicodeToAnsi(FHostFileName, FCodePage), [250], nil); { V2.100 }
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3015,7 +3157,11 @@ end;
 procedure TCustomFtpCli.MdtmAsync;     { V2.90 get file modification time   }
 begin
     FFctPrv := ftpFctMdtm;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMdtmAsync, 'MDTM ' + FHostFileName, [213], nil); { V2.100 }
+{$ELSE}
+    ExecAsync(ftpMdtmAsync, 'MDTM ' + UnicodeToAnsi(FHostFileName, FCodePage), [213], nil); { V2.100 }
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3028,8 +3174,12 @@ begin
         Exit;
     end;
     FFctPrv := ftpFctMdtmyy;
-    S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT) + '+0';  { no time offset=UTC }
+    S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT) {+ '+0' }; // V6.09 latest Serv-U objects to +   { no time offset=UTC }
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMdtmyyAsync, 'MDTM ' + S + ' ' + FHostFileName, [213, 253], nil);  { V2.100 }
+{$ELSE}
+    ExecAsync(ftpMdtmyyAsync, 'MDTM ' + S + ' ' + UnicodeToAnsi(FHostFileName, FCodePage), [213, 253], nil);  { V2.100 }
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3043,14 +3193,22 @@ begin
     end;
     FFctPrv := ftpFctMfmt;
     S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT);  { UTC }
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMfmtAsync, 'MFMT ' + S + ' ' + FHostFileName, [213], nil);  { V2.100 }
+{$ELSE}
+    ExecAsync(ftpMfmtAsync, 'MFMT ' + S + ' ' + UnicodeToAnsi(FHostFileName, FCodePage), [213], nil);  { V2.100 }
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.Md5Async;     { V2.94 get MD5 hash sum   }
 begin
     FFctPrv := ftpFctMd5;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMd5Async, 'MD5 ' + FHostFileName, [251], nil);
+{$ELSE}
+    ExecAsync(ftpMd5Async, 'MD5 ' + UnicodeToAnsi(FHostFileName, FCodePage), [251], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3059,7 +3217,11 @@ var
     S: String;
 begin
     FFctPrv := ftpFctMd5;
+{$IFDEF COMPILER12_UP}
     S := '"' + FHostFileName + '"';
+{$ELSE}
+    S := '"' + UnicodeToAnsi(FHostFileName, FCodePage) + '"';
+{$ENDIF}
     if (FPosStart >= 0) and (FPosEnd > FPosStart) then
              S := S + ' ' + IntToStr(FPosStart) + ' ' + IntToStr(FPosEnd);
     ExecAsync(ftpMd5Async, 'XMD5 ' + S, [250], nil);
@@ -3091,7 +3253,11 @@ var
     S: String;
 begin
     FFctPrv := ftpFctXCrc;
+{$IFDEF COMPILER12_UP}
     S := '"' + FHostFileName + '"';
+{$ELSE}
+    S := '"' + UnicodeToAnsi(FHostFileName, FCodePage) + '"';
+{$ENDIF}
     if (FPosStart >= 0) and (FPosEnd > FPosStart) then
              S := S + ' ' + IntToStr(FPosStart) + ' ' + IntToStr(FPosEnd);
     ExecAsync(ftpXCrcAsync, 'XCRC ' + S, [250], nil);
@@ -3115,21 +3281,33 @@ end;
 procedure TCustomFtpCli.CombAsync;     { V2.113  combine file names  }
 begin
     FFctPrv := ftpFctClnt;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpCombAsync, 'COMB ' + FHostFileName, [200], nil);
+{$ELSE}
+    ExecAsync(ftpCombAsync, 'COMB ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SitePaswdAsync;     { V2.113  change password }
 begin
     FFctPrv := ftpFctSitePaswd;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSitePaswdAsync, 'SITE PSWD ' + FPassWord + ' ' + FHostFileName, [200], nil);
+{$ELSE}
+    ExecAsync(ftpSitePaswdAsync, 'SITE PSWD ' + FPassWord + ' ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SiteExecAsync;    { V2.113  run program  }
 begin
     FFctPrv := ftpFctSiteExec;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteExecAsync, 'SITE EXEC ' + FHostFileName, [200], nil);
+{$ELSE}
+    ExecAsync(ftpSiteExecAsync, 'SITE EXEC ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3137,7 +3315,11 @@ procedure TCustomFtpCli.SiteIndexAsync;     { V2.113  list files and dirs recurs
 begin
     FFctPrv := ftpFctSiteIndex;
     CreateLocalFileStream;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteIndexAsync, 'SITE INDEX ' + FHostFileName, [200], nil);
+{$ELSE}
+    ExecAsync(ftpSiteIndexAsync, 'SITE INDEX ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3151,7 +3333,11 @@ end;
 procedure TCustomFtpCli.SiteMsgAsync;      { V2.113  send message }
 begin
     FFctPrv := ftpFctSiteMsg;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteMsgAsync, 'SITE MSG ' + FHostFileName, [200], nil);
+{$ELSE}
+    ExecAsync(ftpSiteMsgAsync, 'SITE MSG ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3161,8 +3347,38 @@ begin
 { data will be returned on control channel so we need stream to write it }
     FFctPrv := ftpFctSiteCmlsd;
     CreateLocalFileStream;
+{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteCmlsdAsync, 'SITE CMLSD ' + FHostFileName, [200,250], nil);
+{$ELSE}
+    ExecAsync(ftpSiteCmlsdAsync, 'SITE CMLSD ' + UnicodeToAnsi(FHostFileName, FCodePage), [200,250], nil);
+{$ENDIF}
 end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ReinAsync;     { V6.09   re-initialize control connection  }
+begin
+    FFctPrv := ftpFctRein;
+    ExecAsync(ftpReinAsync, 'REIN', [220], nil);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.HostAsync;     { V6.09   domain/hostname, usually sent before logon  }
+var
+    S: String;
+begin
+    FFctPrv := ftpFctHost;
+    if FDnsResult = FHostName then  { if host name was IP address, delimit it }
+        S := '[' + FHostName + ']'
+    else
+        S := FHostName;
+ { note: responses 504 and 530 are really domain not found but don't stop login }
+{$IFDEF COMPILER12_UP}
+    ExecAsync(ftpHostAsync, 'HOST ' + S, [220,421,500,502,504,530,550], nil);
+{$ELSE}
+    ExecAsync(ftpHostAsync, 'HOST ' + UnicodeToAnsi(S, FCodePage), [220,421,500,502,504,530,550], nil);
+{$ENDIF}
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.AbortAsync;
@@ -3231,6 +3447,13 @@ begin
         FFctPrv := ftpFctOpen;
         FFctSet := FFctSet - [FFctPrv];
         OpenAsync;
+        Exit;
+    end;
+
+    if ftpFctHost in FFctSet then begin             { 6.09 }
+        FFctPrv := ftpFctHost;
+        FFctSet := FFctSet - [ftpFctHost];
+        HostAsync;
         Exit;
     end;
 
@@ -3525,6 +3748,13 @@ begin
                     ftpFctAcct]);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ConnectHostAsync;
+begin
+    HighLevelAsync(ftpConnectHostAsync,
+                   [ftpFctOpen, ftpFctHost, ftpFctAuth, ftpFctUser,
+                    ftpFctPass, ftpFctAcct]);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ReceiveAsync;
@@ -3764,6 +3994,9 @@ var
     aSocket : TWSocket;
     I, J    : Integer;
     Line    : AnsiString;
+{$IFDEF COMPILER12_UP}
+    ACodePage : Cardinal;
+{$ENDIF}
 begin
     if not Progress then
         Exit;
@@ -3827,15 +4060,17 @@ begin
             case FDisplayFileMode of
             ftpBinary:
                 begin
-                    {$IFDEF VER80}
-                    { 16 bit has max 255 characters per String }
-                    if Len > 255 then
-                        SetLength(Line, 255)
-                    else
-                    {$ENDIF}
                     SetLength(Line, Len);
                     Move(Buffer[1], Line[1], Length(Line));
-                    TriggerDisplayFile(String(Line));
+                {$IFDEF COMPILER12_UP}
+                    if (FCodePage = CP_UTF8) and (not IsUtf8Valid(Line)) then
+                        ACodePage := CP_ACP
+                    else
+                        ACodePage := FCodePage;
+                    TriggerDisplayFile(AnsiToUnicode(Line, ACodePage));
+                {$ELSE}
+                    TriggerDisplayFile(Line);
+                {$ENDIF}
                 end;
             ftpLineByLine:
                 if Len > 0 then begin
@@ -3846,15 +4081,18 @@ begin
                             i := i + 1;
                             j := j + 1;
                         end;
-                        {$IFDEF VER80}
-                        if (j - 1) > 255 then
-                            SetLength(Line, 255)
-                        else
-                        {$ENDIF}
                         SetLength(Line, j - 1);
                         if Length(Line) > 0 then
                             Move(Buffer[i - j + 1], Line[1], Length(Line));
-                        TriggerDisplayFile(String(Line));
+                    {$IFDEF COMPILER12_UP}
+                        if (FCodePage = CP_UTF8) and (not IsUtf8Valid(Line)) then
+                            ACodePage := CP_ACP
+                        else
+                            ACodePage := FCodePage;
+                        TriggerDisplayFile(AnsiToUnicode(Line, ACodePage));
+                    {$ELSE}
+                        TriggerDisplayFile(Line);
+                    {$ENDIF}
                         while (i <= Len) and ((Buffer[i] = #10) or (Buffer[i] = #13)) do
                             i := i + 1;
                     end;
@@ -3961,9 +4199,17 @@ begin
     FNext := Next1PutAsync;
 
     if FAppendFlag then
+    {$IFDEF COMPILER12_UP}
         SendCommand('APPE ' + FHostFileName)
+    {$ELSE}
+        SendCommand('APPE ' + UnicodeToAnsi(FHostFileName, FCodePage))
+    {$ENDIF}
     else
+    {$IFDEF COMPILER12_UP}
         SendCommand('STOR ' + FHostFileName);
+    {$ELSE}
+        SendCommand('STOR ' + UnicodeToAnsi(FHostFileName, FCodePage));
+    {$ENDIF}
 end;
 
 
@@ -4556,12 +4802,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetZlibCacheFileName(const S : String) : String;  { V2.113 }
+function GetZlibCacheFileName(const S : UnicodeString) : UnicodeString;  { V2.113 }
 var
     I : Integer;
     Ticks: String;
 begin
-    Result := Lowercase (S);
+    Result := WideLowerCase (S);     { V6.09 }
     if Length(Result) = 0 then Result := 'temp'; { might be saving to stream only }
     for I := 1 to Length(Result) do begin
         if (Result [I] = '\') or (Result [I] = '.') or
@@ -4570,7 +4816,7 @@ begin
     Ticks := IntToStr(IcsGetTickCountX);  { now make it unique by adding some ms }
     I := Length(Ticks);
     if I < 6 then Ticks := '123' + Ticks; { if windows running short }
-    Result := Result + '_' + Copy (Ticks, I-6, 6) + '.zlib';
+    Result := Result + '_' + UnicodeString(Copy(Ticks, I-6, 6) + '.zlib');
 end;
 
 
@@ -4624,11 +4870,6 @@ begin
     FError             := 0;
 
     FDataSocket.OnSessionAvailable := DataSocketGetSessionAvailable;
-
-{$IFDEF VER80}
-    { With Delphi 1 you need to nul terminate each string }
-    FLocalFileName[Length(FLocalFileName) + 1] := chr(0);
-{$ENDIF}
 
     { open the destination file }
     { Don't open a file if we're on FDisplayFileFlag }
@@ -4686,7 +4927,7 @@ begin
             if Assigned (FModeZStream) then FModeZStream.Destroy;
             FModeZStream := nil;
             try
-                if FileExists(FZCompFileName) then DeleteFile (FZCompFileName);  { V1.113 }
+                if IcsFileExistsW(FZCompFileName) then IcsDeleteFileW(FZCompFileName);  { V1.113 }
             except
             end;
 {$ENDIF}
@@ -4741,7 +4982,11 @@ begin
     StateChange(ftpWaitingResponse);
     FNext := Next1GetAsync;
     if Length(FHostFileName) > 0 then
+    {$IFDEF COMPILER12_UP}
         SendCommand(FGetCommand + ' ' + FHostFileName)
+    {$ELSE}
+        SendCommand(FGetCommand + ' ' + UnicodeToAnsi(FHostFileName, FCodePage))
+    {$ENDIF}    
     else
         SendCommand(FGetCommand);
 end;
@@ -4895,11 +5140,7 @@ begin
     end;
 
     FDataSocket.OnSessionAvailable := DataSocketPutSessionAvailable;
-{$IFDEF VER80}
-    { With Delphi 1 you need to nul terminate each string }
-    FLocalFileName[Length(FLocalFileName) + 1] := chr(0);
-{$ENDIF}
-
+    
     { open the local source file }
     try
         { Be sure to have previous instance closed }
@@ -4965,7 +5206,7 @@ begin
                 if Assigned (FModeZStream) then FModeZStream.Destroy;
                 FModeZStream := nil;
                 try
-                    if FileExists(FZCompFileName) then DeleteFile (FZCompFileName);  { V1.113 }
+                    if IcsFileExistsW(FZCompFileName) then IcsDeleteFileW(FZCompFileName);  { V1.113 }
                 except
                 end;
                 if Assigned(FLocalStream) and (FStreamFlag = FALSE) then begin   { V1.113 }
@@ -5021,9 +5262,17 @@ begin
     FNext := Next1PutAsync;
 
     if FAppendFlag then
+    {$IFDEF COMPILER12_UP}
         SendCommand('APPE ' + FHostFileName)
+    {$ELSE}
+        SendCommand('APPE ' + UnicodeToAnsi(FHostFileName, FCodePage))
+    {$ENDIF}
     else
+    {$IFDEF COMPILER12_UP}
         SendCommand('STOR ' + FHostFileName);
+    {$ELSE}
+        SendCommand('STOR ' + UnicodeToAnsi(FHostFileName, FCodePage));
+    {$ENDIF}
 end;
 
 
@@ -5295,6 +5544,9 @@ var
     I, J : Integer;
     p    : PChar;
     Feat : String;
+{$IFDEF COMPILER12_UP}
+    ACodePage : Cardinal;
+{$ENDIF}    
 const
     NewLine =  #13#10 ;
 begin
@@ -5328,7 +5580,20 @@ begin
             break;
         if I > FReceiveLen then
             break;
+    {$IFDEF COMPILER12_UP}
+        { Calling MultiByteToWideChar rather than AnsiToUnicode saves one string copy }
+        if (FCodePage = CP_UTF8) and (not IsUtf8Valid(@FReceiveBuffer[0], I - 2)) then
+            ACodePage := CP_ACP
+        else
+            ACodePage := FCodePage;
+        Len := MultiByteToWideChar(ACodePage, 0, @FReceiveBuffer[0], I - 2, nil, 0);
+        SetLength(FLastResponse, Len);
+        if Len > 0 then
+            MultiByteToWideChar(ACodePage, 0, @FReceiveBuffer[0], I - 2,
+                                Pointer(FLastResponse), Len);
+    {$ELSE}
         FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
+    {$ENDIF}
         { Remove trailing control chars }
         while (Length(FLastResponse) > 0) and
               IsCRLF(FLastResponse[Length(FLastResponse)]) do
@@ -5387,7 +5652,7 @@ begin
         else if FState = ftpWaitingResponse then begin
             if FFctPrv in [ftpFctFeat] then begin       { V2.90 supported extensions }
                 Feat := Trim (FLastResponse);
-                if (Pos ('MDTM YYYYMMDDHHMMSS[+-TZ]', Feat) = 1) then
+                if (Pos ('MDTM YYYYMMDDHHMMSS' {[+-TZ]'}, Feat) = 1) then  { V6.09 skip TZ part in case it disappears }
                         FSupportedExtensions := FSupportedExtensions + [ftpFeatMDTMYY];
                 if Feat = 'MDTM' then
                         FSupportedExtensions := FSupportedExtensions + [ftpFeatMDTM];
@@ -5448,10 +5713,11 @@ begin
                     if (Pos('DMLSD;', Feat) > 4) then
                         FSupportedExtensions := FSupportedExtensions + [ftpFeatSiteDmlsd];
                 end;
+                if Feat = 'UTF8' then
+                    FSupportedExtensions := FSupportedExtensions + [ftpFeatUtf8];
            { Other extensions which are currently being ignored
              LANG EN*
-             TVFS
-             UTF8 }
+             TVFS }
             end;
             if FFctPrv in [ftpFctMlst] then begin       { V2.90 response to MLST command }
                 if (Length (FLastResponse) > 4) and (FStatusCode = 250) then begin
@@ -6115,6 +6381,24 @@ end;
 function  TFtpClient.SiteDmlsd  : Boolean;    { V2.113  extended MLSD using data channel }
 begin
     Result := Synchronize(SiteDmlsdASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.ConnectHost  : Boolean;     { V6.09   same as connect, but sends HOST  }
+begin
+    Result := Synchronize(ConnectHostASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.Rein  : Boolean;     { V6.09   re-initialize control connection  }
+begin
+    Result := Synchronize(ReinASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.Host  : Boolean;     { V6.09   domain/hostname, usually sent before logon  }
+begin
+    Result := Synchronize(HostASync);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

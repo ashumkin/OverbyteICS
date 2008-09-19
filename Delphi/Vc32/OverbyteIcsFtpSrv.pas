@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      6.08
+Version:      6.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -316,8 +316,9 @@ Jul 13, 2008 V6.04 Revised socket names used for debugging purpose
                    Added ListenBackLog property
 Aug 04, 2008 V6.07 A. Garrels - CommandAUTH TLS sent Unicode response.
              Removed some getter and setters, they are no longer needed.
-Aug 11, 2008 V6.08 A. Garrels - Type AnsiString rolled back to String. 
- 
+Aug 11, 2008 V6.08 A. Garrels - Type AnsiString rolled back to String.
+Sep 17, 2008 V6.09 Angus some initial changes for Unicode directory listings
+
 
 Angus pending -
 CRC on the fly
@@ -408,8 +409,8 @@ uses
     OverbyteIcsLibrary;    { AG V6.04 }
 
 const
-    FtpServerVersion         = 608;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.08 ';
+    FtpServerVersion         = 609;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.09 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
 
 type
@@ -5466,8 +5467,8 @@ procedure TFtpServer.CommandMLST(   { angus V1.38 }
     var Params  : TFtpString;
     var Answer  : TFtpString);
 var
-    F          : TSearchRec;
-    FileName   : String;
+    F          : TIcsSearchRecW;
+    FileName   : UnicodeString;
 begin
     if Client.FtpState <> ftpcReady then begin
         Answer := msgNotLogged;
@@ -5483,13 +5484,13 @@ begin
     end;
     TriggerEnterSecurityContext(Client);                    { V1.52 AG }
     try
-        if FindFirst(FileName, faArchive + faDirectory, F) = 0 then
+        if IcsFindFirstW(FileName, faArchive + faDirectory, F) = 0 then
             Answer := msgMlstFollows + Params + #13#10 +
                       ' ' + FormatFactsDirEntry(F, F.Name) + #13#10 + { angus 1.54 added name }
                       msgMlstFollowDone
         else
             Answer := Format(msgMlstNotExists, [Params]);
-        FindClose(F);
+        IcsFindCloseW(F);
     finally
         TriggerLeaveSecurityContext(Client);                { V1.52 AG }
     end;

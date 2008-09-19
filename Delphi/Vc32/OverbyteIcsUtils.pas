@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.12
+Version:      1.13
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -60,7 +60,12 @@ Jul 29, 2008 V1.10 Added parameter "SetCodePage" to UnicodeToAnsi(), defaults
              compiler post RDS2007 only.
 Jun 05, 2008 Utf-8 functions modified to take and return AnsiString rather than
              Utf8String.
-Aug 11, 2008 CheckUnicodeToAnsi() added. Changed the DefaultFailChar to "?". 
+Aug 11, 2008 CheckUnicodeToAnsi() added. Changed the DefaultFailChar to "?".
+Aug 23, 2008 Utf-8 functions modified RawByteString rather than AnsiString.
+Aug 27, 2008 Arno Garrels added WideString functions and other stuff.
+Sep 11, 2008 Angus added more widestring functions
+             No range checking so they all work (IcsFileGetAttrW in particular)
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -72,6 +77,8 @@ interface
 {$X+}           { Enable extended syntax              }
 {$H+}           { Use long strings                    }
 {$J+}           { Allow typed constant to be modified }
+{$R-}           { no range checking, otherwise DWORD=Integer fails with some Windows APIs }
+
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER12_UP}
     {$WARN IMPLICIT_STRING_CAST       OFF}
@@ -91,41 +98,125 @@ interface
 uses
     Windows,
     Classes,
+    SysUtils,
+    RtlConsts,
+    SysConst,
     OverbyteIcsTypes; // for TBytes
 
-{$IFNDEF COMPILER12_UP}
-{ Should probably move to OverbyteIcsTypes.pas ? }
 type
+{$IFNDEF COMPILER12_UP}
+   { Should move to OverbyteIcsTypes.pas }
     UnicodeString = WideString;
+    RawByteString = AnsiString;
 {$ENDIF}
 
-function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiString; overload;
-function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString;  overload;
-function  UsAsciiToUnicode(const Str: AnsiString; FailCh: AnsiChar): UnicodeString; overload;
-function  UsAsciiToUnicode(const Str: AnsiString): UnicodeString; overload;
-function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): AnsiString; overload;
-function  UnicodeToAnsi(const Str: UnicodeString): AnsiString; overload;
-function  AnsiToUnicode(const Str: AnsiString; ACodePage: Cardinal): UnicodeString; overload;
-function  AnsiToUnicode(const Str: AnsiString): UnicodeString; overload;
-function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
-function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; overload;
-function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
-function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal): Integer; overload;
-function  StreamWriteString(AStream: TStream; const Str: UnicodeString): Integer; overload;
-function  IsUsAscii(const Str: AnsiString): Boolean; overload;
-function  IsUsAscii(const Str: UnicodeString): Boolean; overload;
-procedure IcsAppendStr(var Dest: AnsiString; const Src: AnsiString);
-function  atoi(const Str: AnsiString): Integer; overload;
-function  atoi(const Str: UnicodeString): Integer; overload;
+    TIcsSearchRecW = record
+        Time        : Integer;
+        Size        : Integer;
+        Attr        : Integer;
+        Name        : UnicodeString;
+        ExcludeAttr : Integer;
+        FindHandle  : THandle;
+        FindData    : TWin32FindDataW;
+    end;
+
+    TUnicodeString = record
+        Length        : Word;
+        MaximumLength : Word;
+        Buffer        : PWideChar;
+    end;
+    PUnicodeString = ^TUnicodeString;
+
+    TIcsFileStreamW = class(THandleStream)
+    private
+        FFileName: UnicodeString;
+    public
+        constructor Create(const AFileName: UnicodeString; Mode: Word); overload;
+        constructor Create(const AFileName: UnicodeString; Mode: Word; Rights: Cardinal); overload;
+        constructor Create(const AFileName: Utf8String; Mode: Word); overload;
+        constructor Create(const AFileName: Utf8String; Mode: Word; Rights: Cardinal); overload;
+        destructor  Destroy; override;
+        property    FileName: UnicodeString read FFileName;
+    end;
+
+    function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiString; overload;
+    function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString;  overload;
+    function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
+    function  UsAsciiToUnicode(const Str: RawByteString): UnicodeString; overload;
+    function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
+    function  UnicodeToAnsi(const Str: UnicodeString): RawByteString; overload;
+    function  AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString; overload;
+    function  AnsiToUnicode(const Str: RawByteString): UnicodeString; overload;
+    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
+    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal): Integer; overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString): Integer; overload;
+    function  IsUsAscii(const Str: RawByteString): Boolean; overload;
+    function  IsUsAscii(const Str: UnicodeString): Boolean; overload;
+    procedure IcsAppendStr(var Dest: RawByteString; const Src: RawByteString);
+    function  atoi(const Str: RawByteString): Integer; overload;
+    function  atoi(const Str: UnicodeString): Integer; overload;
 {$IFDEF STREAM64}
-function  atoi64(const Str: AnsiString): Int64; overload;
-function  atoi64(const Str: UnicodeString): Int64; overload;
+    function  atoi64(const Str: RawByteString): Int64; overload;
+    function  atoi64(const Str: UnicodeString): Int64; overload;
 {$ENDIF}
-function  StringToUtf8(const Str: UnicodeString): AnsiString; overload;
-function  StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString; overload;
-function  Utf8ToStringW(const Str: AnsiString): UnicodeString;
-function  Utf8ToStringA(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
-function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
+    function  StringToUtf8(const Str: UnicodeString): RawByteString; overload;
+    function  StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString; overload;
+    function  Utf8ToStringW(const Str: RawByteString): UnicodeString;
+    function  Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString;
+    function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
+    function  IsUtf8Valid(const Str: RawByteString): Boolean; overload;
+    function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload;
+    function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
+{ Wide library }
+    function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
+    function IcsFileCreateW(const FileName: Utf8String): Integer; overload;
+    function IcsFileCreateW(const FileName: UnicodeString; Rights: LongWord): Integer; overload;
+    function IcsFileCreateW(const FileName: Utf8String; Rights: LongWord): Integer; overload;
+    function IcsFileOpenW(const FileName: UnicodeString; Mode: LongWord): Integer; overload;
+    function IcsFileOpenW(const FileName: Utf8String; Mode: LongWord): Integer; overload;
+    function IcsStrScanW(const Str: PWideChar; Ch: WideChar): PWideChar;
+    function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;
+    function IcsExtractFileDirW(const FileName: UnicodeString): UnicodeString;
+    function IcsExtractFileDriveW(const FileName: UnicodeString): UnicodeString;
+    function IcsExtractFileNameW(const FileName: UnicodeString): UnicodeString;
+    function IcsExtractFileExtW(const FileName: UnicodeString): UnicodeString;
+    function IcsExpandFileNameW(const FileName: UnicodeString): UnicodeString;
+    function IcsExtractNameOnlyW(FileName: UnicodeString): UnicodeString; // angus
+    function IcsChangeFileExtW(const FileName, Extension: UnicodeString): UnicodeString;  // angus
+    function IcsStrAllocW(Len: Cardinal): PWideChar;
+    function IcsStrLenW(Str: PWideChar): Cardinal;
+    function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer; overload;
+    function IcsAnsiCompareFileNameW(const S1, S2: Utf8String): Integer; overload;
+    function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
+    function IcsDirExistsW(const FileName: PWideChar): Boolean; overload;
+    function IcsDirExistsW(const FileName: UnicodeString): Boolean; overload;
+    function IcsDirExistsW(const FileName: Utf8String): Boolean; overload;
+    function IcsFindFirstW(const Path: UnicodeString; Attr: Integer; var  F: TIcsSearchRecW): Integer; overload;
+    function IcsFindFirstW(const Path: Utf8String; Attr: Integer; var  F: TIcsSearchRecW): Integer; overload;
+    procedure IcsFindCloseW(var F: TIcsSearchRecW);
+    function IcsFindNextW(var F: TIcsSearchRecW): Integer;
+    function IcsIncludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
+    function IcsExcludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
+    function IcsFileGetAttrW(const FileName: UnicodeString): Integer; overload;
+    function IcsFileGetAttrW(const FileName: Utf8String): Integer; overload;
+    function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer; overload;
+    function IcsFileSetAttrW(const FileName: Utf8String; Attr: Integer): Integer;  overload;
+    function IcsDeleteFileW(const FileName: UnicodeString): Boolean; overload;
+    function IcsDeleteFileW(const FileName: Utf8String): Boolean; overload;
+    function IcsRenameFileW(const OldName, NewName: UnicodeString): Boolean; overload;
+    function IcsRenameFileW(const OldName, NewName: Utf8String): Boolean; overload;
+    function IcsForceDirectoriesW(Dir: UnicodeString): Boolean; overload;
+    function IcsForceDirectoriesW(Dir: Utf8String): Boolean; overload;
+    function IcsCreateDirW(const Dir: UnicodeString): Boolean; overload;
+    function IcsCreateDirW(const Dir: Utf8String): Boolean; overload;
+    function IcsRemoveDirW(const Dir: UnicodeString): Boolean; overload;
+    function IcsRemoveDirW(const Dir: Utf8String): Boolean; overload;
+    function IcsFileAgeW(const FileName: UnicodeString): Integer; overload;
+    function IcsFileAgeW(const FileName: Utf8String): Integer; overload;
+    function IcsFileExistsW(const FileName: UnicodeString): Boolean; overload;
+    function IcsFileExistsW(const FileName: Utf8String): Boolean; overload;
 
 implementation
 
@@ -134,10 +225,14 @@ const
     CP_UTF16Le = 1200;
     CP_UTF16Be = 1201;
     CP_UTF8    = 65001;
-    
+
+    IcsPathDelimW       : WideChar  = '\';
+    IcsDriveDelimW      : WideChar  = ':';
+    IcsPathDriveDelimW  : PWideChar = '\:';
+    IcsPathSepW         : WideChar  = ';';
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsUsAscii(const Str: AnsiString): Boolean;
+function IsUsAscii(const Str: RawByteString): Boolean;
 var
     I : Integer;
 begin
@@ -193,7 +288,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Converts an UnicodeString to an AnsiString.                                 }
-function UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): AnsiString;
+function UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString;
 var
     Len : Integer;
 begin
@@ -217,14 +312,14 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Converts an UnicodeString to an AnsiString using current code page.         }
-function UnicodeToAnsi(const Str: UnicodeString): AnsiString;
+function UnicodeToAnsi(const Str: UnicodeString): RawByteString;
 begin
     Result := UnicodeToAnsi(Str, CP_ACP);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function AnsiToUnicode(const Str: AnsiString; ACodePage: Cardinal): UnicodeString;
+function AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString;
 var
     Len : Integer;
 begin
@@ -243,14 +338,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function AnsiToUnicode(const Str: AnsiString): UnicodeString;
+function AnsiToUnicode(const Str: RawByteString): UnicodeString;
 begin
     Result := AnsiToUnicode(Str, CP_ACP);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UsAsciiToUnicode(const Str: AnsiString; FailCh: AnsiChar): UnicodeString;
+function UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString;
 var
     I  : Integer;
     P  : PByte;
@@ -270,14 +365,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UsAsciiToUnicode(const Str: AnsiString): UnicodeString;
+function UsAsciiToUnicode(const Str: RawByteString): UnicodeString;
 begin
     Result := UsAsciiToUnicode(Str, DefaultFailChar);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure IcsAppendStr(var Dest: AnsiString; const Src: AnsiString);
+procedure IcsAppendStr(var Dest: RawByteString; const Src: RawByteString);
 begin
 {$IFDEF COMPILER12_UP}
     SetLength(Dest, Length(Dest) + Length(Src));
@@ -485,7 +580,7 @@ end;
 *)
 
 { This one is around 3-4 times faster } { AG }
-function atoi(const Str : AnsiString): Integer;
+function atoi(const Str : RawByteString): Integer;
 var
     P : PAnsiChar;
 begin
@@ -564,7 +659,7 @@ end;
 *)
 
 { This one is around 3-4 times faster } { AG }
-function atoi64(const Str : AnsiString): Int64;
+function atoi64(const Str : RawByteString): Int64;
 var
     P : PAnsiChar;
 begin
@@ -625,36 +720,74 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StringToUtf8(const Str: UnicodeString): AnsiString;
+function StringToUtf8(const Str: UnicodeString): RawByteString;
 begin
     Result := UnicodeToAnsi(Str, CP_UTF8, True);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StringToUtf8(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
+function ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal;
+  DstCodePage: Cardinal = CP_ACP): RawByteString;
 var
-    Temp : UnicodeString;
+    SBuf : array[0..2047] of WideChar;
+    P    : PWideChar;
+    sLen : Integer;
+    dLen : Integer;
+    FreeFlag : Boolean;
 begin
-    Temp := AnsiToUnicode(Str, ACodePage);
-    Result := UnicodeToAnsi(Temp, CP_UTF8, True);
+    sLen := Length(Str);
+{$IFDEF COMPILER12_UP}
+    SrcCodePage := PWord(Integer(Result) - 12)^;
+{$ENDIF}
+    if (sLen = 0) or (SrcCodePage = DstCodePage) then
+    begin
+        Result := Str;
+        Exit;
+    end;
+    dLen := MultibyteToWideChar(SrcCodePage, 0, Pointer(Str), sLen, nil, 0);
+    if dLen = 0 then Exit;
+    if dLen > Length(SBuf) then
+    begin
+        GetMem(P, dLen * 2);
+        FreeFlag := TRUE;
+    end
+    else begin
+        FreeFlag := FALSE;
+        P := SBuf;
+    end;
+    dLen := MultibyteToWideChar(SrcCodePage, 0, Pointer(Str), sLen, P, dLen);
+    if dLen = 0 then Exit;
+    sLen := WideCharToMultiByte(DstCodePage, 0, P, dLen, nil, 0, nil, nil);
+    SetLength(Result, sLen);
+    if sLen > 0 then
+        WideCharToMultiByte(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
+    {$IFDEF COMPILER12_UP}
+        if DstCodePage <> CP_ACP then
+            PWord(Integer(Result) - 12)^ := DstCodePage;
+    {$ENDIF}
+    if FreeFlag then FreeMem(P);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Utf8ToStringW(const Str: AnsiString): UnicodeString;
+function StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString;
+begin
+    Result := ConvertCodepage(Str, CP_UTF8, ACodePage);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Utf8ToStringW(const Str: RawByteString): UnicodeString;
 begin
     Result := AnsiToUnicode(Str, CP_UTF8);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Utf8ToStringA(const Str: AnsiString; ACodePage: Cardinal = CP_ACP): AnsiString;
-var
-    Temp: UnicodeString;
+function Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString;
 begin
-    Temp := AnsiToUnicode(Str, CP_UTF8);
-    Result := UnicodeToAnsi(Temp, ACodePage, True);
+    Result := ConvertCodepage(Str, CP_UTF8, ACodePage);
 end;
 
 
@@ -675,4 +808,749 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsUtf8Valid(const Str: RawByteString): Boolean;
+begin
+    Result := IsUtf8Valid(Pointer(Str), Length(Str));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean;
+var
+    PEndBuf   : PByte;
+    PBuf      : PByte;
+    Byte2Mask : Byte;
+    Ch        : Byte;
+    Trailing  : Integer; // trailing (continuation) bytes to follow
+begin
+    PBuf        := Buf;
+    PEndBuf     := Pointer(Integer(Buf) + Len);
+    Byte2Mask   := $00;
+    Trailing    := 0;
+    while (PBuf <> PEndBuf) do
+    begin
+        Ch := PBuf^;
+        Inc(Integer(PBuf));
+        if Trailing <> 0 then
+        begin
+            if Ch and $C0 = $80 then // Does trailing byte follow UTF-8 format?
+            begin
+                if (Byte2Mask <> 0) then // Need to check 2nd byte for proper range?
+                    if Ch and Byte2Mask <> 0 then // Are appropriate bits set?
+                        Byte2Mask := 0
+                    else begin
+                        Result := False;
+                        Exit;
+                    end;
+                Dec(Trailing);
+            end
+            else begin
+                Result := False;
+                Exit;
+            end;
+        end
+        else begin
+            if Ch and $80 = 0 then
+                Continue                      // valid 1 byte UTF-8
+            else if Ch and $E0 = $C0 then     // valid 2 byte UTF-8
+            begin
+                if Ch and $1E <> 0 then       // Is UTF-8 byte in proper range?
+                    Trailing := 1
+                else begin
+                    Result := False;
+                    Exit;
+                end;
+            end
+            else if Ch and $F0 = $E0 then     // valid 3 byte UTF-8
+            begin
+                if Ch and $0F = 0 then        // Is UTF-8 byte in proper range?
+                    Byte2Mask := $20;         // If not set mask to check next byte
+                Trailing := 2;
+            end
+            else if Ch and $F8 = $F0 then     // valid 4 byte UTF-8
+            begin
+                if Ch and $07 = 0 then        // Is UTF-8 byte in proper range?
+                    Byte2Mask := $30;         // If not set mask to check next byte
+                Trailing := 3;
+            end
+          { 4 byte is the maximum today, see ISO 10646, so let's break here }
+          { else if Ch and $FC = $F8 then     // valid 5 byte UTF-8
+            begin
+                if Ch and $03 = 0 then        // Is UTF-8 byte in  proper range?
+                    Byte2Mask := $38;         // If not set mask to check next byte
+                Trailing := 4;
+            end
+            else if Ch and $FE = $FC then     // valid 6 byte UTF-8
+            begin
+                if ch and $01 = 0 then        // Is UTF-8 byte in proper range?
+                    Byte2Mask := $3C;         // If not set mask to check next byte
+                Trailing := 5;
+            end}
+            else begin
+                Result := False;
+                Exit;
+            end;
+        end;
+    end;// while
+    Result := Trailing = 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsFindCloseW(var F: TIcsSearchRecW);
+begin
+    if F.FindHandle <> INVALID_HANDLE_VALUE then
+    begin
+        Windows.FindClose(F.FindHandle);
+        F.FindHandle := INVALID_HANDLE_VALUE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFindMatchingFileW(var F: TIcsSearchRecW): Integer;
+var
+    LocalFileTime : TFileTime;
+begin
+    with F do
+    begin
+        while FindData.dwFileAttributes and ExcludeAttr <> 0 do
+            if not FindNextFileW(FindHandle, FindData) then
+        begin
+            Result := GetLastError;
+            Exit;
+        end;
+        FileTimeToLocalFileTime(FindData.ftLastWriteTime, LocalFileTime);
+        FileTimeToDosDateTime(LocalFileTime, LongRec(Time).Hi,
+        LongRec(Time).Lo);
+        Size := FindData.nFileSizeLow;
+        Attr := FindData.dwFileAttributes;
+        Name := FindData.cFileName;
+    end;
+    Result := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFindFirstW(const Path: UnicodeString; Attr: Integer;
+  var  F: TIcsSearchRecW): Integer;
+const
+    faSpecial = faHidden or faSysFile or faDirectory;
+begin
+    F.ExcludeAttr := not Attr and faSpecial;
+    F.FindHandle := FindFirstFileW(PWideChar(Path), F.FindData);
+    if F.FindHandle <> INVALID_HANDLE_VALUE then
+    begin
+        Result := IcsFindMatchingFileW(F);
+        if Result <> 0 then IcsFindCloseW(F);
+    end else
+        Result := GetLastError;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFindFirstW(const Path: Utf8String; Attr: Integer;
+  var  F: TIcsSearchRecW): Integer;
+begin
+    Result := IcsFindFirstW(AnsiToUnicode(Path, CP_UTF8), Attr, F);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFindNextW(var F: TIcsSearchRecW): Integer;
+begin
+    if FindNextFileW(F.FindHandle, F.FindData) then
+        Result := IcsFindMatchingFileW(F)
+    else
+        Result := GetLastError;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCreateDirW(const Dir: UnicodeString): Boolean;
+begin
+    Result := CreateDirectoryW(PWideChar(Dir), nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCreateDirW(const Dir: Utf8String): Boolean; overload;
+begin
+    Result := CreateDirectoryW(PWideChar(AnsiToUnicode(Dir, CP_UTF8)), nil);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsForceDirectoriesW(Dir: UnicodeString): Boolean;
+var
+    E: EInOutError;
+begin
+    Result := True;
+    if Length(Dir) = 0 then
+    begin
+        E := EInOutError.CreateRes(@SCannotCreateDir);
+        E.ErrorCode := 3;
+        raise E;
+    end;
+    Dir := IcsExcludeTrailingPathDelimiterW(Dir);
+    if (Length(Dir) < 3) or IcsDirExistsW(Dir)
+        or (IcsExtractFilePathW(Dir) = Dir) then Exit;
+  Result := IcsForceDirectoriesW(IcsExtractFilePathW(Dir)) and IcsCreateDirW(Dir);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsForceDirectoriesW(Dir: Utf8String): Boolean;
+begin
+    Result := IcsForceDirectoriesW(AnsiToUnicode(Dir, CP_UTF8));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsDirExistsW(const FileName: PWideChar): Boolean;
+var
+    Res : Cardinal;
+begin
+    Res := GetFileAttributesW(FileName);
+    Result := (Res <> INVALID_HANDLE_VALUE) and
+              ((Res and FILE_ATTRIBUTE_DIRECTORY) <> 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsDirExistsW(const FileName: UnicodeString): Boolean;
+begin
+    Result := IcsDirExistsW(PWideChar(FileName));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsDirExistsW(const FileName: Utf8String): Boolean; overload;
+begin
+    Result := IcsDirExistsW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function RtlCompareUnicodeString(const String1, String2: TUnicodeString;
+  CaseInSensitive: Boolean): Longint; stdcall; external 'ntdll.dll';
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Borrowed from Jordan Russell }
+function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer;
+  Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
+var
+    S1, S2: TUnicodeString;
+    Len: Integer;
+begin
+    S1.Buffer := Str1;
+    S2.Buffer := Str2;
+    while True do
+    begin
+        if Str1Length <= Str2Length then
+            Len := Str1Length
+        else
+            Len := Str2Length;
+        if Len <= 0 then
+            Break;
+        // Can only process 32K characters at a time
+        if Len > $7FF0 then
+            Len := $7FF0;
+
+        S1.Length        := Len * 2;   // Length is in bytes
+        S1.MaximumLength := S1.Length;
+        S2.Length        := S1.Length;
+        S2.MaximumLength := S1.Length;
+        Result := RtlCompareUnicodeString(S1, S2, IgnoreCase);
+        if Result <> 0 then
+            Exit;
+
+        Dec(Str1Length, Len);
+        Dec(Str2Length, Len);
+        Inc(S1.Buffer, Len);
+        Inc(S2.Buffer, Len);
+    end;
+    Result := Str1Length - Str2Length;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer;
+begin
+    Result := IcsStrCompOrdinalW(PWideChar(S1), Length(S1), PWideChar(S2),
+                             Length(S2), True);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsAnsiCompareFileNameW(const S1, S2: Utf8String): Integer;
+begin
+    Result := IcsAnsiCompareFileNameW(AnsiToUnicode(S1, CP_UTF8),
+                                      AnsiToUnicode(S2, CP_UTF8))
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrAllocW(Len: Cardinal): PWideChar;
+begin
+    Len := (Len * 2) + 4;
+    GetMem(Result, Len);
+    FillChar(Result^, Len, #0);
+    Cardinal(Pointer(Result)^) := Len;
+    Inc(Result, 2);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrScanW(const Str: PWideChar; Ch: WideChar): PWideChar;
+begin
+    Result := Str;
+    while Result^ <> Ch do
+    begin
+        if Result^ = #0 then
+        begin
+            Result := nil;
+            Exit;
+        end;
+        Inc(Result);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIsDelimiterW(const Delimiters: PWideChar;
+  S : UnicodeString; Index: Integer): Boolean;
+begin
+    Result := False;
+    if (Index <= 0) or (Index > Length(S)) then
+        Exit;
+    Result := IcsStrScanW(Delimiters, S[Index]) <> nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsLastDelimiterW(const Delimiters: PWideChar;
+  S: UnicodeString): Integer;
+begin
+    Result := Length(S);
+    while Result >= 0 do
+    begin
+        if (S[Result] <> #0) and (IcsStrScanW(Delimiters, S[Result]) <> nil) then
+            Exit;
+        Dec(Result);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;
+var
+    I: Integer;
+begin
+    I := IcsLastDelimiterW(IcsPathDriveDelimW, FileName);
+    Result := Copy(FileName, 1, I);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractFileDirW(const FileName: UnicodeString): UnicodeString;
+var
+    I: Integer;
+begin
+    I := IcsLastDelimiterW(IcsPathDriveDelimW, Filename);
+    if (I > 1) and (FileName[I] = IcsPathDelimW) and
+    (not IcsIsDelimiterW(IcsPathDriveDelimW, FileName, I - 1)) then
+      Dec(I);
+    Result :=Copy(FileName, 1, I);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractFileDriveW(const FileName: UnicodeString): UnicodeString;
+var
+    I, J: Integer;
+    Len : Integer;
+begin
+    Len := Length(FileName);
+    if (Len >= 2) and (FileName[2] = DriveDelim) then
+        Result := Copy(FileName, 1, 2)
+    else if (Len >= 2) and (FileName[1] = PathDelim) and
+            (FileName[2] = PathDelim) then
+    begin
+        J := 0;
+        I := 3;
+        while (I < Len) and (J < 2) do
+        begin
+            if FileName[I] = PathDelim then
+                Inc(J);
+            if J < 2 then
+                Inc(I);
+        end;
+        if FileName[I] = PathDelim then
+            Dec(I);
+        Result := Copy(FileName, 1, I);
+    end
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractFileNameW(const FileName: UnicodeString): UnicodeString;
+var
+    I: Integer;
+begin
+    I := IcsLastDelimiterW(IcsPathDriveDelimW, FileName);
+    Result := Copy(FileName, I + 1, MaxInt);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractFileExtW(const FileName: UnicodeString): UnicodeString;
+const
+    Delim : PWideChar = '.\:';
+var
+    I: Integer;
+begin
+    I := IcsLastDelimiterW(Delim, FileName);
+    if (I > 0) and (FileName[I] = '.') then
+        Result := Copy(FileName, I, MaxInt)
+    else
+        Result := '';
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractNameOnlyW(FileName: UnicodeString): UnicodeString; // angus
+var
+  I: Integer;
+
+  function IsPathSep (Ch: WideChar): Boolean;
+  begin
+    Result := (Ch = IcsPathDelimW) or (Ch = IcsDriveDelimW) or (Ch = '.');
+  end;
+
+begin
+  FileName := IcsExtractFileNameW (FileName);  // remove path
+  I := Length(FileName);
+  while (I > 0) and not (IsPathSep (FileName[I])) do Dec(I);  // find .
+  if (I = 0) or (FileName[I] <> '.') then I := MaxInt;
+  Result := Copy(FileName, 1, I - 1) ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsChangeFileExtW(const FileName, Extension: UnicodeString): UnicodeString;  // angus
+const
+    Delim : PWideChar = '.\:';
+var
+  I: Integer;
+begin
+  I := IcsLastDelimiterW(Delim, Filename);
+  if (I = 0) or (FileName[I] <> '.') then I := MaxInt;
+  Result := Copy(FileName, 1, I - 1) + Extension;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrLenW(Str: PWideChar): Cardinal;
+var
+    BeginP : Pointer;
+begin
+    Result := 0;
+    if Str <> nil then
+    begin
+        BeginP := Str;
+        while Str^ <> #0 do
+            Inc(Str);
+        Result := (Integer(Str) - Integer(BeginP)) div 2;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExpandFileNameW(const FileName: UnicodeString): UnicodeString;
+var
+    Name: PWideChar;
+    Buf: array[0..MAX_PATH - 1] of WideChar;
+begin
+    if GetFullPathNameW(PWideChar(FileName), Length(Buf), @Buf[0], Name) > 0 then
+    begin
+        SetLength(Result, IcsStrLenW(Buf));
+        Move(Buf, Result[1], IcsStrLenW(Buf) * 2);
+    end
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIncludeTrailingPathDelimiterW(const S : UnicodeString): UnicodeString;
+begin
+    if (Length(S) > 0) and (S[Length(S)] <> IcsPathDelimW) then
+        Result := S + IcsPathDelimW
+    else
+        Result := S;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExcludeTrailingPathDelimiterW(const S : UnicodeString): UnicodeString;
+begin
+   Result := S;
+   if (Length(S) > 0) and (S[Length(S)] = IcsPathDelimW) then
+        SetLength(Result, Length(Result) -1);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsDeleteFileW(const FileName: UnicodeString): Boolean;
+begin
+    Result := Windows.DeleteFileW(PWideChar(FileName));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsDeleteFileW(const FileName: Utf8String): Boolean;
+begin
+    Result := Windows.DeleteFileW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileGetAttrW(const FileName: UnicodeString): Integer;
+begin
+    Result := GetFileAttributesW(PWideChar(FileName));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileGetAttrW(const FileName: Utf8String): Integer;
+begin
+    Result := GetFileAttributesW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer;
+begin
+    Result := 0;
+    if not SetFileAttributesW(PWideChar(FileName), Attr) then
+        Result := GetLastError;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileSetAttrW(const FileName: Utf8String; Attr: Integer): Integer;
+begin
+    Result := 0;
+    if not SetFileAttributesW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)), Attr) then
+        Result := GetLastError;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileCreateW(const FileName: UnicodeString): Integer;
+begin
+    Result := Integer(CreateFileW(PWideChar(FileName),
+                                  GENERIC_READ or GENERIC_WRITE,
+                                  0, nil, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileCreateW(const FileName: Utf8String): Integer;
+begin
+    Result := IcsFileCreateW(AnsiToUnicode(FileName, CP_UTF8));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileCreateW(const FileName: UnicodeString; Rights: LongWord): Integer;
+begin
+    Result := IcsFileCreateW(FileName);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileCreateW(const FileName: Utf8String; Rights: LongWord): Integer;
+begin
+    Result := IcsFileCreateW(AnsiToUnicode(FileName, CP_UTF8));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileOpenW(const FileName: UnicodeString; Mode: LongWord): Integer;
+const
+    AccessMode: array[0..2] of LongWord = (
+                                            GENERIC_READ,
+                                            GENERIC_WRITE,
+                                            GENERIC_READ or GENERIC_WRITE);
+    ShareMode: array[0..4] of LongWord = (
+                                            0,
+                                            0,
+                                            FILE_SHARE_READ,
+                                            FILE_SHARE_WRITE,
+                                            FILE_SHARE_READ or FILE_SHARE_WRITE);
+begin
+    Result := -1;
+    if ((Mode and 3) <= fmOpenReadWrite) and
+       ((Mode and $F0) <= fmShareDenyNone) then
+    Result := Integer(CreateFileW(PWideChar(FileName),
+                      AccessMode[Mode and 3],
+                      ShareMode[(Mode and $F0) shr 4], nil, OPEN_EXISTING,
+                      FILE_ATTRIBUTE_NORMAL, 0));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+function IcsFileOpenW(const FileName: Utf8String; Mode: LongWord): Integer;
+begin
+    Result := IcsFileOpenW(AnsiToUnicode(FileName, CP_UTF8), Mode);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsRemoveDirW(const Dir: UnicodeString): Boolean;
+begin
+    Result := RemoveDirectoryW(PWideChar(Dir));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsRemoveDirW(const Dir: Utf8String): Boolean;
+begin
+    Result := RemoveDirectoryW(PWideChar(AnsiToUnicode(Dir, CP_UTF8)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsRenameFileW(const OldName, NewName: UnicodeString): Boolean;
+begin
+    Result := MoveFileW(PWideChar(OldName), PWideChar(NewName));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsRenameFileW(const OldName, NewName: Utf8String): Boolean;
+begin
+    Result := MoveFileW(PWideChar(AnsiToUnicode(OldName, CP_UTF8)),
+                        PWideChar(AnsiToUnicode(NewName, CP_UTF8)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileAgeW(const FileName: UnicodeString): Integer;
+var
+    Handle        : THandle;
+    FindData      : TWin32FindDataW;
+    LocalFileTime : TFileTime;
+begin
+    Handle := FindFirstFileW(PWideChar(FileName), FindData);
+    if Handle <> INVALID_HANDLE_VALUE then
+    begin
+        Windows.FindClose(Handle);
+        if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
+        begin
+            FileTimeToLocalFileTime(FindData.ftLastWriteTime, LocalFileTime);
+            if FileTimeToDosDateTime(LocalFileTime, LongRec(Result).Hi,
+                LongRec(Result).Lo) then Exit;
+        end;
+    end;
+    Result := -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileAgeW(const FileName: Utf8String): Integer;
+begin
+    Result := IcsFileAgeW(AnsiToUnicode(FileName, CP_UTF8));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileExistsW(const FileName: UnicodeString): Boolean;
+begin
+    Result := IcsFileAgeW(FileName) <> -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFileExistsW(const FileName: Utf8String): Boolean;
+begin
+    Result := IcsFileAgeW(FileName) <> -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+{ TIcsFileStreamW }
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsFileStreamW.Create(const AFileName: UnicodeString; Mode: Word);
+begin
+    Create(AFilename, Mode, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsFileStreamW.Create(const AFileName: UnicodeString; Mode: Word;
+  Rights: Cardinal);
+begin
+    if Mode = fmCreate then
+    begin
+        inherited Create(IcsFileCreateW(AFileName));
+        if Cardinal(FHandle) = INVALID_HANDLE_VALUE then
+        {$IFDEF COMPILER12_UP}
+            raise Exception.CreateResFmt(@SFCreateErrorEx,
+                                [ExpandFileName(AFileName),
+                                SysErrorMessage(GetLastError)]);
+        {$ELSE}
+            raise Exception.CreateResFmt(@SFCreateErrorEx,
+                                [IcsExpandFileNameW(AFileName),
+                                SysErrorMessage(GetLastError)]);
+        {$ENDIF}
+
+    end
+    else begin
+        inherited Create(IcsFileOpenW(AFileName, Mode));
+        if Cardinal(FHandle) = INVALID_HANDLE_VALUE then
+        {$IFDEF COMPILER12_UP}
+            raise Exception.CreateResFmt(@SFCreateErrorEx,
+                                [ExpandFileName(AFileName),
+                                SysErrorMessage(GetLastError)]);
+        {$ELSE}
+            raise Exception.CreateResFmt(@SFCreateErrorEx,
+                                [IcsExpandFileNameW(AFileName),
+                                SysErrorMessage(GetLastError)]);
+        {$ENDIF}
+    end;
+    FFileName := AFileName;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsFileStreamW.Create(const AFileName: Utf8String;
+  Mode: Word);
+begin
+    Create(AnsiToUnicode(AFileName, CP_UTF8), Mode, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsFileStreamW.Create(const AFileName: Utf8String; Mode: Word;
+  Rights: Cardinal);
+begin
+    Create(AnsiToUnicode(AFileName, CP_UTF8), Mode, Rights);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TIcsFileStreamW.Destroy;
+begin
+    if Integer(FHandle) >= 0 then
+        FileClose(FHandle);
+    inherited Destroy;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 end.

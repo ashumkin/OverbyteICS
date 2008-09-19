@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Time functions.
 Creation:     Nov 24, 1999 from Bruce Christensen <bkc51831234@hotmail.com>
               code used with his permission. Thanks.
-Version:      6.01
+Version:      6.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -58,7 +58,8 @@ Mar 10, 2008 V1.16 FPiette made some changes to prepare code for Unicode
                    GetFileAge: do not use set of char
 Apr 22, 2008 V1.17 AGarrels Removed checks for faVolumeID
 12 May 2008  V1.18 Removed function atoi it's in OverbyteIcsUtils.pas now.
-Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and later only                    
+Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and later only
+Sep 16, 2008 V6.02 Angus made a few functions UnicodeString
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -93,8 +94,8 @@ uses
     OverbyteIcsUtils;
 
 const
-    FtpSrvT_Unit       = 118;
-    CopyRight : String = ' FtpSrvT  (c) 1999-2008 F. Piette V1.18 ';
+    FtpSrvT_Unit       = 602;
+    CopyRight : String = ' FtpSrvT  (c) 1999-2008 F. Piette V6.02 ';
 
   { V1.16 Tick and Trigger constants }
   TicksPerDay      : longword =  24 * 60 * 60 * 1000 ;
@@ -108,20 +109,20 @@ type
     TFtpBigInt = {$IFDEF STREAM64} Int64 {$ELSE} Longint {$ENDIF};  { V1.13 }
 
     TIcsFileRec = record
-        FrSearchRec: TSearchRec; { sysutils record }
-        FrSubDirs: string;       { \ for base directory, else located sub directories }
-        FrDirLevel: integer;     { 0 for base directory, or level of sub dirs }
-        FrDirBaseLen: integer;   { length of basedir within FullName - used for display }
-        FrFullName: string;      { basedir, subdirs, filename - complete path }
+        FrSearchRec: TIcsSearchRecW; { OverbyteIcsUtils record }
+        FrSubDirs: UnicodeString;    { \ for base directory, else located sub directories }
+        FrDirLevel: integer;         { 0 for base directory, or level of sub dirs }
+        FrDirBaseLen: integer;       { length of basedir within FullName - used for display }
+        FrFullName: UnicodeString;   { basedir, subdirs, filename - complete path }
     end;
     TIcsFileRecs = array of TIcsFileRec ;   { lots of records }
     PTIcsFileRec = ^TIcsFileRec ;           { pointer once record added to TList }
 
 function GetLocalBiasUTC : LongInt;
-function FileUtcStr(const cFileName : String) : String;
+function FileUtcStr(const cFileName : UnicodeString) : String;
 function UTCToLocalDT(dtDT : TDateTime) : TDateTime;
-function UpdateFileAge (const FName: String; const NewDT: TDateTime): boolean;
-function UpdateUFileAge (const FName: String; const NewDT: TDateTime): boolean;
+function UpdateFileAge (const FName: UnicodeString; const NewDT: TDateTime): boolean;
+function UpdateUFileAge (const FName: UnicodeString; const NewDT: TDateTime): boolean;
 function MDTM2Date (S: String): TDateTime;
 function DecodeMlsResp (Response: String; var Fname, FType, FAttr: String;
                             var FSize: Integer; var FileUDT: TDateTime): boolean;
@@ -148,7 +149,7 @@ function IcsAddTrgMsecs (const TickCount, MilliSecs: longword): longword ;
 function IcsAddTrgSecs (const TickCount, DurSecs: integer): longword ;
 
 { V1.15 recursive directory listing and argument scanning }
-function IcsGetDirList (const Path: string; SubDirs, Hidden: boolean; var LocFiles:
+function IcsGetDirList (const Path: UnicodeString; SubDirs, Hidden: boolean; var LocFiles:
                                  TIcsFileRecs; var LocFileList: TList): integer ;
 procedure ScanFindArg (const Params: String; var Start: integer);
 function ScanGetAsciiArg (const Params: String; var Start: integer): String;
@@ -157,9 +158,9 @@ function ScanGetNextArg(const Params: String; var Start: integer): String;
 function SlashesToBackSlashes(const S : String) : String;
 function BackSlashesToSlashes(const S : String) : String;
 function IntToKbyte (Value: Int64): String;
-function GetUAgeSizeFile (const filename: string; var FileUDT: TDateTime;
+function GetUAgeSizeFile (const filename: UnicodeString; var FileUDT: TDateTime;
                                                     var FSize: Int64): boolean;
-function GetFreeSpacePath (const Path: String): int64;
+function GetFreeSpacePath (const Path: UnicodeString): int64;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -233,26 +234,26 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetFileAge(cFile : String) : Integer;
+function GetFileAge(cFile : UnicodeString) : Integer;            { V6.02 }
 var
-    Ch : Char;
+    Ch : WideChar;
 begin
     Ch := cFile[Length(cFile)];         // Unicode change
     if (Ch = '\') or (Ch = '/') then    // Unicode change
         cFile := cFile + '.';
-    Result := FileAge(cFile);
+    Result := IcsFileAgeW(cFile);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {Andreas Haas, 19.12.2006, reworked by Arno 06/12/2007 }
-function GetDirAge(const cFile : String) : Integer;
+function GetDirAge(const cFile : UnicodeString) : Integer;        { V6.02 }
 var
-    SR : TSearchRec;
+    SR : TIcsSearchRecW;
 begin
-    if FindFirst(cFile, faAnyFile, SR) = 0 then begin
+    if IcsFindFirstW(cFile, faAnyFile, SR) = 0 then begin
         Result := SR.Time;
-        SysUtils.FindClose(SR);
+        IcsFindCloseW(SR);
     end
     else
         Result := -1;
@@ -261,7 +262,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {Andreas Haas, 19.12.2006 get file or directory age, reworked by angus }
-function FileUtcStr(const cFileName : String) : String;
+function FileUtcStr(const cFileName : UnicodeString) : String;     { V6.02 }
 var
     FileDate : Integer ;
 begin
@@ -284,12 +285,12 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Set file time stamp, local time                                           }
-function UpdateFileAge(const FName: String; const NewDT: TDateTime): boolean;
+function UpdateFileAge(const FName: UnicodeString; const NewDT: TDateTime): boolean;    { V6.02 }
 var
     H: Integer;
 begin
     Result := FALSE;
-    H := FileOpen(FName, fmOpenWrite);
+    H := IcsFileOpenW(FName, fmOpenWrite);
     if H < 0 then
         Exit;
     FileSetDate(H, DateTimeToFileDate (NewDT));
@@ -300,18 +301,13 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Set file time stamp, UTC time                                             }
-function UpdateUFileAge(const FName: String; const NewDT: TDateTime): boolean;
-{$IFDEF VER80}
-begin
-    Result := FALSE;
-end;
-{$ELSE}
+function UpdateUFileAge(const FName: UnicodeString; const NewDT: TDateTime): boolean;    { V6.02 }
 var
     H, Age   : Integer;
     FileTime : TFileTime;
 begin
     Result := FALSE;
-    H      := FileOpen(FName, fmOpenWrite);
+    H      := IcsFileOpenW(FName, fmOpenWrite);
     if H < 0 then
         Exit;
     Age := DateTimeToFileDate (NewDT);
@@ -321,7 +317,6 @@ begin
     end;
     FileClose(H);
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -623,11 +618,11 @@ end;
   search path Level and InitDLen should be 0, except when called recursively
   LocFiles array should be set to length zero, generally
   returns FALSE for error or if cancelled from copyevent  }
-function IcsBuildDirList (const LocDir, LocPartName: string; SubDirs, Hidden: boolean;
+function IcsBuildDirList (const LocDir, LocPartName: UnicodeString; SubDirs, Hidden: boolean;
      Level, InitDLen: integer ; var TotFiles: integer; var LocFiles: TIcsFileRecs): boolean ;
 var
-   SearchRec: TSearchRec ;
-    curname: string;
+   SearchRec: TIcsSearchRecW ;
+    curname: UnicodeString;
     retcode: integer;
     savename: boolean;
 begin
@@ -638,7 +633,7 @@ begin
         try
 
       { loop through directory getting all file names in directory }
-            retcode := FindFirst (LocDir + LocPartName, faAnyFile, SearchRec);
+            retcode := IcsFindFirstW (LocDir + LocPartName, faAnyFile, SearchRec);
             while (retcode = 0) do
             begin
                 curname := SearchRec.Name;
@@ -675,13 +670,13 @@ begin
                         FrDirBaseLen := Pred (InitDLen);
                     end;
                 end;
-                retcode := FindNext (SearchRec);
+                retcode := IcsFindNextW (SearchRec);
             end;
         except
             Result := FALSE;
         end;
     finally
-        FindClose(SearchRec);
+        IcsFindCloseW(SearchRec);
     end;
 end;
 
@@ -692,31 +687,31 @@ end;
   equal and > 0 if Item1 is greater than Item2. }
 function CompareFNext (Item1, Item2: Pointer): Integer;
 var
-    Sort1, Sort2: string ;
+    Sort1, Sort2: UnicodeString ;
 begin
 { using fullname might be faster, ! as last path delim makes files sort before dirs }
     Sort1  := PTIcsFileRec (Item1).FrSubDirs + '!' + PTIcsFileRec (Item1).FrSearchRec.Name;
     Sort2  := PTIcsFileRec (Item2).FrSubDirs + '!' + PTIcsFileRec (Item2).FrSearchRec.Name;
-    Result := CompareText (Sort1, Sort2);  // case insensitive
+    Result := WideCompareText (Sort1, Sort2);  // case insensitive
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { V1.15 builds sorted list of files in a directory and sub directories, optional
   search path returns total files, or -1 for error }
-function IcsGetDirList (const Path: string; SubDirs, Hidden: boolean;
+function IcsGetDirList (const Path: UnicodeString; SubDirs, Hidden: boolean;
                         var LocFiles: TIcsFileRecs; var LocFileList: TList): integer ;
 var
     I, totfiles: integer ;
     flag: boolean ;
-    LocDir, LocPartName: string;
+    LocDir, LocPartName: UnicodeString;
 begin
     SetLength(LocFiles, 1000);
     totfiles := 0 ;
     if not Assigned (LocFileList) then LocFileList := TList.Create ;
     LocFileList.Clear ;
-    LocDir := ExtractFilePath (Path);
-    LocPartName := ExtractFileName (Path);
+    LocDir := IcsExtractFilePathW (Path);
+    LocPartName := IcsExtractFileNameW (Path);
     if LocPartName = '' then LocPartName := '*.*';
     flag := IcsBuildDirList (LocDir, LocPartName, SubDirs, Hidden,
                              0, 0, totfiles, LocFiles);
@@ -896,15 +891,15 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { get file written UTC DateTime and size in bytes - no change for summer time }
-function GetUAgeSizeFile (const filename: string; var FileUDT: TDateTime;
+function GetUAgeSizeFile (const filename: UnicodeString; var FileUDT: TDateTime;                { V6.02 }
                                                     var FSize: Int64): boolean;
 var
    SResult: integer ;
-   SearchRec: TSearchRec ;
+   SearchRec: TIcsSearchRecW ;
    TempSize: TULargeInteger ;  { 64-bit integer record }
 begin
    Result := FALSE ;
-   SResult := SysUtils.FindFirst(filename, faAnyFile, SearchRec);
+   SResult := IcsFindFirstW(filename, faAnyFile, SearchRec);
    if SResult = 0 then begin
         TempSize.LowPart  := SearchRec.FindData.nFileSizeLow ;
         TempSize.HighPart := SearchRec.FindData.nFileSizeHigh ;
@@ -912,18 +907,18 @@ begin
         FileUDT := FileTimeToDateTime (SearchRec.FindData.ftLastWriteTime);
         Result            := TRUE ;
    end;
-   SysUtils.FindClose(SearchRec);
+   IcsFindCloseW(SearchRec);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { get free space for path or drive }
-function GetFreeSpacePath (const Path: String): int64;
+function GetFreeSpacePath (const Path: UnicodeString): int64;                  { V6.02 }
 var
     TotalSpace, FreeSpace : Int64;
 begin
     Result := -1;
-    if not GetDiskFreeSpaceEx (Pchar (Path), FreeSpace, TotalSpace, nil) then Exit;
+    if not GetDiskFreeSpaceExW (PWideChar (Path), FreeSpace, TotalSpace, nil) then Exit;
     Result := FreeSpace;
 end;
 
