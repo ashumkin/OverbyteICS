@@ -3,13 +3,13 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.13
+Version:      1.16
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2002-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
-              <francois.piette@overbyte.be> 
+              <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
               implied warranty.  In no event will the author be held liable
@@ -65,7 +65,7 @@ Aug 23, 2008 Utf-8 functions modified RawByteString rather than AnsiString.
 Aug 27, 2008 Arno Garrels added WideString functions and other stuff.
 Sep 11, 2008 Angus added more widestring functions
              No range checking so they all work (IcsFileGetAttrW in particular)
-Sep 19, 2008 Angus still adding WideString functions
+Sep 20, 2008 V1.16 Angus still adding WideString functions
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -217,8 +217,8 @@ type
     function IcsFileAgeW(const FileName: Utf8String): Integer; overload;
     function IcsFileExistsW(const FileName: UnicodeString): Boolean; overload;
     function IcsFileExistsW(const FileName: Utf8String): Boolean; overload;
-    function IcsLowerCaseW(const S: UnicodeString): UnicodeString;
-    function IcsUpperCaseW(const S: UnicodeString): UnicodeString;
+    function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
+    function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
 
 implementation
 
@@ -1483,7 +1483,8 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsLowerCaseW(const S: UnicodeString): UnicodeString;
+{ Note: despite the name, this is a full Unicode function changing non-ANSI characters }
+function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;
 var
   Len: Integer;
 begin
@@ -1493,7 +1494,8 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsUpperCaseW(const S: UnicodeString): UnicodeString;
+{ Note: despite the name, this is a full Unicode function changing non-ANSI characters }
+function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;
 var
   Len: Integer;
 begin
