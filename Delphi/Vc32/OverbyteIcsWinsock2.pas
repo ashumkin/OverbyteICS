@@ -43,6 +43,8 @@ History:
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 Aug 05, 2008 F. Piette added a cast to avoid warning for AnsiString to
              String implicit convertion
+Sep 21, 2008 Arno - Removed $EXTERNALSYM from some winsock2 symbols
+             (CBuilder compat.)
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWinsock2;
@@ -93,7 +95,7 @@ uses
   OverbyteIcsLibrary,
   OverbyteIcsTypes,
   OverbyteIcsWinsock,
-  OverbyteIcsWSocket;
+  OverbyteIcsWSocket; 
 
 const
     WSocket2Version             = 100;
@@ -118,7 +120,7 @@ type
         sa_data     : array [0..13] of Char;  // up to 14 bytes of direct address
     end;
 
-    {$EXTERNALSYM in6_addr}
+    //{$EXTERNALSYM in6_addr}
     in6_addr = record
     case Integer of
         0: (Byte     : array [0..15] of u_char);
@@ -130,7 +132,7 @@ type
     TIn6Addr = in6_addr;
     PIn6Addr = ^in6_addr;
 
-    {$EXTERNALSYM sockaddr_in6_old}
+    //{$EXTERNALSYM sockaddr_in6_old}
     sockaddr_in6_old = record
         sin6_family   : short;    // AF_INET6
         sin6_port     : u_short;  // Transport level port number
@@ -140,7 +142,7 @@ type
     TSockAddrIn6Old = sockaddr_in6_old;
     PSockAddrIn6Old = ^sockaddr_in6_old;
 
-    {$EXTERNALSYM sockaddr_gen}
+    //{$EXTERNALSYM sockaddr_gen}
     sockaddr_gen = record
     case Integer of
         0: (Address    : sockaddr);
@@ -150,14 +152,14 @@ type
     TSockAddrGen = sockaddr_gen;
     PSockAddrGen = ^sockaddr_gen;
 
-    {$EXTERNALSYM _INTERFACE_INFO}
+    //{$EXTERNALSYM _INTERFACE_INFO}
     _INTERFACE_INFO = record
         iiFlags            : u_long;        // Interface flags
         iiAddress          : sockaddr_gen;  // Interface address
         iiBroadcastAddress : sockaddr_gen;  // Broadcast address
         iiNetmask          : sockaddr_gen;  // Network mask
     end;
-    {$EXTERNALSYM INTERFACE_INFO}
+    //{$EXTERNALSYM INTERFACE_INFO}
     INTERFACE_INFO = _INTERFACE_INFO;
     TInterfaceInfo = INTERFACE_INFO;
     PInterfaceInfo = ^INTERFACE_INFO;
