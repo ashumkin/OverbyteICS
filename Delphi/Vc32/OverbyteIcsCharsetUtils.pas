@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      1.05
+Version:      1.06
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -71,6 +71,7 @@ Jul 29, 2008 V1.02 A. Garrels added global var IcsSystemCodePage. Changed type
 Aug 03, 2008 V1.03 A. Garrels changed alias CsuString to use AnsiString.
 Aug 08, 2008 V1.04 A. Garrels added some code page helper functions.
 Aug 11, 2008 V1.05 A. Garrels - Type AnsiString rolled back to String.
+Sep 21, 2008 V1.06 A. Garrels - Compile GetCPInfoEx() conditionally (available since 2009)
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try
@@ -340,6 +341,7 @@ type
     end;
     TCharsetInfos = array of TCharsetInfo;
 
+{$IFNDEF COMPILER12_UP}
     PCPInfoExA = ^TCPInfoExA;
     {$EXTERNALSYM _CPINFOEXA}
     _CPINFOEXA = record
@@ -368,18 +370,18 @@ type
     {$EXTERNALSYM CPINFOEXW}
     CPINFOEXW = _CPINFOEXW;
 
-{$IFDEF UNICODE}
+  {$IFDEF UNICODE}
     PCPInfoEx = PCPInfoExW;
     {$EXTERNALSYM CPINFOEX}
     CPINFOEX  = CPINFOEXW;
     TCPInfoEx = TCPInfoExW;
-{$ELSE}
+  {$ELSE}
     PCPInfoEx = PCPInfoExA;
     {$EXTERNALSYM CPINFOEX}
     CPINFOEX  = CPINFOEXA;
     TCPInfoEx = TCPInfoExA;
+  {$ENDIF}
 {$ENDIF}
-
     TCodePageObj = class
     private
         FCodePage     : Cardinal;
@@ -406,10 +408,14 @@ function  GetThreadAnsiCodePage: Cardinal;
 function  GetThreadOemCodePage: Cardinal;
 function  GetUserDefaultAnsiCodePage: Cardinal;
 function  GetUserDefaultOemCodePage: Cardinal;
-
-function  GetCPInfoExA(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExA): LongBOOL; stdcall;
-function  GetCPInfoExW(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoExW): LongBOOL; stdcall;
-function  GetCPInfoEx(CodePage: UINT; dwFlags : DWORD; lpCPInfoEx: PCPInfoEx): LongBOOL; stdcall;
+{$IFNDEF COMPILER12_UP}
+{$EXTERNALSYM GetCPInfoExA}
+function  GetCPInfoExA(CodePage: UINT; dwFlags : DWORD; var lpCPInfoEx: TCPInfoExA): BOOL; stdcall;
+{$EXTERNALSYM GetCPInfoExW}
+function  GetCPInfoExW(CodePage: UINT; dwFlags : DWORD; var lpCPInfoEx: TCPInfoExW): BOOL; stdcall;
+{$EXTERNALSYM GetCPInfoEx}
+function  GetCPInfoEx(CodePage: UINT; dwFlags : DWORD; var lpCPInfoEx: TCPInfoEx): BOOL; stdcall;
+{$ENDIF}
 
 var
     IcsSystemCodePage     : Cardinal;
@@ -424,10 +430,11 @@ var
 threadvar
     CPList : TObjectList;
 
+{$IFNDEF COMPILER12_UP}
 function GetCPInfoExW; external kernel32 name 'GetCPInfoExW';
 function GetCPInfoExA; external kernel32 name 'GetCPInfoExA';
 function GetCPInfoEx;  external kernel32 name {$IFDEF UNICODE}'GetCPInfoExW' {$ELSE} 'GetCPInfoExA' {$ENDIF};
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsValidAnsiCodePage(ACodePage: Cardinal): Boolean;
@@ -507,7 +514,7 @@ begin
     Cp.FCodePage := StrToIntDef(ACodePage, 0);
     if (Cp.CodePage <> 0) then
     begin
-        if GetCPInfoEx(Cp.CodePage, 0, @Info) then
+        if GetCPInfoEx(Cp.CodePage, 0, Info) then
         begin
             CP.FCodePageName := PChar(@Info.CodePageName[0]);
             CPList.Add(CP);
