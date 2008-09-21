@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V6.09
+Version:      V6.10
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -863,9 +863,16 @@ May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
 Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
 Aug 27, 2008 V6.08 A. Garrels added UTF-8 and code page support.
 Sep 20, 2008 V6.09 Angus fixed minor widestring bugs, updated FEAT comments for various FTP servers
-                   changed MdtmyyAsync so it no longer adds +0 since newer Serv-U then fails
-                   added FTP commands HOST hostname (before logon) and REIN (re-initialise connection)
-                   added ConnectHost that does Open/Host/User/Pass
+             changed MdtmyyAsync so it no longer adds +0 since newer Serv-U then fails
+             added FTP commands HOST hostname (before logon) and REIN (re-initialise connection)
+             added ConnectHost that does Open/Host/User/Pass
+Sep 21, 2008 V6.10 Angus made OnCommand always Unicode and OnDisplay/OnResponse always UTF8
+             OnCommand event is now UnicodeString so not backward compatible (but not often used)
+             simplified sending UTF8 commands for D2007 and earlier, so all arguments are sent UTF8
+                and OnDisplay is consistent for all compilers
+
+
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -948,9 +955,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 609;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.09 ';
-  FtpClientId : String = 'ICS FTP Client V6.09 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 610;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.10 ';
+  FtpClientId : String = 'ICS FTP Client V6.10 ';   { V2.113 sent with CLNT command  }
 
 const
   BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1045,7 +1052,7 @@ type
                               var Abort : Boolean) of object;
 {$ENDIF}
   TFtpCommand     = procedure(Sender    : TObject;
-                              var Cmd   : String) of object;
+                              var Cmd   : UnicodeString) of object;   { V6.10 } 
   TFtpRequestDone = procedure(Sender    : TObject;
                               RqType    : TFtpRequest;
                               ErrCode   : Word) of object;
@@ -1118,6 +1125,7 @@ type
     FReceiveBuffer      : array [0..FTP_RCV_BUF_SIZE - 1] of AnsiChar;
     FReceiveLen         : Integer;
     FLastResponse       : String;
+    FLastRawResponse    : RawByteString;   { V6.10 }
     FLastResponseSave   : String;  { To save FLastResponse when quitting }
     FPasvResponse       : String;  { To fix REST + PASV transfers }
     FStatusCodeSave     : LongInt; { To save FStatusCode when quitting }
@@ -1204,7 +1212,7 @@ type
     procedure   DataSocketPutDataSent(Sender: TObject; ErrCode : word);
     procedure   DataSocketPutSessionAvailable(Sender: TObject; ErrCode : word);
     procedure   DataSocketPutSessionClosed(Sender: TObject; ErrCode : word);
-    procedure   SendCommand(Cmd : String); virtual;
+    procedure   SendCommand(Cmd : UnicodeString); virtual;
     procedure   TriggerDisplay(Msg : String); virtual;
     procedure   TriggerReadyToTransmit(var bCancel : Boolean); virtual;
     procedure   TriggerDisplayFile(Msg : String); virtual;
@@ -1224,7 +1232,7 @@ type
     procedure   PortAsync; virtual;
     procedure   DoneQuitAsync;
     procedure   ExecAsync(RqType      : TFtpRequest;
-                          Cmd         : String;
+                          Cmd         : UnicodeString;
                           OkResponses : array of Word;
                           DoneAsync   : TFtpNextProc);
     procedure   NextExecAsync;
@@ -1892,7 +1900,7 @@ begin
       ftpCombAsync: result:='CombAsync';
       ftpXMd5Async: result:='XMd5Async';
       ftpReinAsync: result:='ReinAsync';
-      ftpHostAsync: result:='XHostAsync';
+      ftpHostAsync: result:='HostAsync';
 {$IFDEF USE_SSL}
       ftpCccAsync: result:='CCCAsync';
       ftpAuthAsync: result:='AuthAsync';
@@ -2373,6 +2381,7 @@ begin
         on E:Exception do begin
             FLastResponse := 'Unable to open local file ' +
                                            FLocalFileName + ': ' + E.Message;
+            FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
             FStatusCode   := 550;
             SetErrorMessage;
             FRequestResult := FStatusCode;
@@ -2499,7 +2508,8 @@ begin
     if Pos('Will attempt to restart', FLastResponse) > 0 then
         TriggerDisplay('< DEBUG !');
 
-    TriggerDisplay('< ' + FLastResponse);
+ {   TriggerDisplay('< ' + FLastResponse);  }
+    TriggerDisplay('< ' + FLastRawResponse);  { V6.10 UTF8 }
 end;
 
 
@@ -2555,17 +2565,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SendCommand(Cmd : String);
+procedure TCustomFtpCli.SendCommand(Cmd : UnicodeString);
+var
+    CmdUtf8: RawByteString;
 begin
-    if Assigned(FOnCommand) then
-        FOnCommand(Self, Cmd);
-    TriggerDisplay('> ' + Cmd);
+    if Assigned(FOnCommand) then FOnCommand(Self, Cmd);           { Unicode event }
+    CmdUtf8 := UnicodeToAnsi(Cmd, FCodePage);   { V6.10 }
+    TriggerDisplay('> ' + CmdUtf8);      { UTF8 event }
     if FControlSocket.State = wsConnected then
-    {$IFDEF COMPILER12_UP}
-        FControlSocket.SendStr(Cmd + #13#10, FCodePage)
-    {$ELSE}
-        FControlSocket.SendStr(Cmd + #13#10)
-    {$ENDIF}
+        FControlSocket.SendStr(CmdUtf8 + #13#10)  { V6.10 }
     { Quit when not connected never returned. }                { 01/14/06 AG}
     else begin
         if cmd = 'QUIT' then
@@ -2578,6 +2586,7 @@ begin
          FConnected     := FALSE;
          FRequestResult := FStatusCode;
          FLastResponse  := IntToStr(FStatusCode) + ' not connected';
+         FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
          if FStatusCode = 550 then begin
             SetErrorMessage;
             TriggerRequestDone(550);
@@ -2647,7 +2656,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ExecAsync(
     RqType      : TFtpRequest;
-    Cmd         : String;         { Command to execute                      }
+    Cmd         : UnicodeString;  { Command to execute                      }
     OkResponses : array of Word;  { List of responses like '200 221 342'    }
     DoneAsync   : TFtpNextProc);  { What to do when done                    }
 var
@@ -2825,6 +2834,7 @@ begin
                 FNextRequest   := nil;
                 FRequestResult := FStatusCode;
                 FLastResponse  := IntToStr(FStatusCode) + ' ' + E.Message;
+                FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
                 SetErrorMessage;
                 if Assigned(FDoneAsync) then
                     FDoneAsync
@@ -2875,11 +2885,7 @@ begin
         Exit;
     end;
     FFctPrv := ftpFctCwd;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpCwdAsync, 'CWD '+ FHostDirName, [200, 250, 257], nil);
-{$ELSE}
-    ExecAsync(ftpCwdAsync, 'CWD '+ UnicodeToAnsi(FHostDirName, FCodePage), [200, 250, 257], nil);
-{$ENDIF}
 end;
 
 
@@ -2909,7 +2915,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.PassAsync;
 var
-    NewPass: string;
+    NewPass: String;
 begin
     if Length(FPassword) <= 0 then begin
         HandleError('Password empty');
@@ -3007,11 +3013,7 @@ procedure TCustomFtpCli.SizeAsync;
 begin
     FSizeResult := 0;
     FFctPrv := ftpFctSize;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSizeAsync, 'SIZE ' + FHostFileName, [213], nil);
-{$ELSE}
-    ExecAsync(ftpSizeAsync, 'SIZE ' + UnicodeToAnsi(FHostFileName, FCodePage), [213], nil);
-{$ENDIF}
 end;
 
 
@@ -3043,11 +3045,7 @@ end;
 procedure TCustomFtpCli.MkdAsync;
 begin
     FFctPrv := ftpFctMkd;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMkdAsync, 'MKD ' + FHostFileName, [200, 250, 257], nil);  { V2.100 }
-{$ELSE}
-    ExecAsync(ftpMkdAsync, 'MKD ' + UnicodeToAnsi(FHostFileName, FCodePage), [200, 250, 257], nil);  { V2.100 }
-{$ENDIF}
 end;
 
 
@@ -3055,11 +3053,7 @@ end;
 procedure TCustomFtpCli.RmdAsync;
 begin
     FFctPrv := ftpFctRmd;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpRmdAsync, 'RMD ' + FHostFileName, [200, 250, 257], nil);  { V2.100 }
-{$ELSE}
-    ExecAsync(ftpRmdAsync, 'RMD ' + UnicodeToAnsi(FHostFileName, FCodePage), [200, 250, 257], nil);  { V2.100 }
-{$ENDIF}
 end;
 
 
@@ -3067,11 +3061,7 @@ end;
 procedure TCustomFtpCli.DeleAsync;
 begin
     FFctPrv := ftpFctDele;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpDeleAsync, 'DELE ' + FHostFileName, [200, 250, 257], nil); { V2.100 }
-{$ELSE}
-    ExecAsync(ftpDeleAsync, 'DELE ' + UnicodeToAnsi(FHostFileName, FCodePage), [200, 250, 257], nil); { V2.100 }
-{$ENDIF}
 end;
 
 
@@ -3087,11 +3077,7 @@ end;
 procedure TCustomFtpCli.QuoteAsync;
 begin
     FFctPrv := ftpFctQuote;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpQuoteAsync, FLocalFileName, [0], nil);
-{$ELSE}
-    ExecAsync(ftpQuoteAsync, UnicodeToAnsi(FLocalFileName, FCodePage), [0], nil);
-{$ENDIF}
 end;
 
 
@@ -3115,11 +3101,7 @@ end;
 procedure TCustomFtpCli.RenFromAsync;
 begin
     FFctPrv := ftpFctRenFrom;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpRenFromAsync, 'RNFR ' + FHostFileName, [350], nil);
-{$ELSE}
-    ExecAsync(ftpRenFromAsync, 'RNFR ' + UnicodeToAnsi(FHostFileName, FCodePage), [350], nil);
-{$ENDIF}
 end;
 
 
@@ -3127,11 +3109,7 @@ end;
 procedure TCustomFtpCli.RenToAsync;
 begin
     FFctPrv := ftpFctRenTo;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpRenToAsync, 'RNTO ' + FLocalFileName, [200, 250, 257], nil);
-{$ELSE}
-    ExecAsync(ftpRenToAsync, 'RNTO ' + UnicodeToAnsi(FLocalFileName, FCodePage), [200, 250, 257], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3139,11 +3117,7 @@ procedure TCustomFtpCli.MlstAsync;     { V2.90 machine list one file        }
 begin
     FFctPrv   := ftpFctMlst;
     FRemFacts := '';
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMlstAsync, 'MLST ' + FHostFileName, [250], nil); { V2.100 }
-{$ELSE}
-    ExecAsync(ftpMlstAsync, 'MLST ' + UnicodeToAnsi(FHostFileName, FCodePage), [250], nil); { V2.100 }
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3157,17 +3131,13 @@ end;
 procedure TCustomFtpCli.MdtmAsync;     { V2.90 get file modification time   }
 begin
     FFctPrv := ftpFctMdtm;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMdtmAsync, 'MDTM ' + FHostFileName, [213], nil); { V2.100 }
-{$ELSE}
-    ExecAsync(ftpMdtmAsync, 'MDTM ' + UnicodeToAnsi(FHostFileName, FCodePage), [213], nil); { V2.100 }
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.MdtmyyAsync;   { V2.90 set file modification time - RhinoSoft Serv-U }
 var
-    S: String;
+    S: UnicodeString;
 begin
     if FRemFileDT < 10 then begin
         HandleError('Modification date empty');
@@ -3175,17 +3145,13 @@ begin
     end;
     FFctPrv := ftpFctMdtmyy;
     S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT) {+ '+0' }; // V6.09 latest Serv-U objects to +   { no time offset=UTC }
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMdtmyyAsync, 'MDTM ' + S + ' ' + FHostFileName, [213, 253], nil);  { V2.100 }
-{$ELSE}
-    ExecAsync(ftpMdtmyyAsync, 'MDTM ' + S + ' ' + UnicodeToAnsi(FHostFileName, FCodePage), [213, 253], nil);  { V2.100 }
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.MfmtAsync;   { V2.94 modify file modification time }
 var
-    S: String;
+    S: UnicodeString;
 begin
     if FRemFileDT < 10 then begin
         HandleError('Modification date empty');
@@ -3193,35 +3159,23 @@ begin
     end;
     FFctPrv := ftpFctMfmt;
     S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT);  { UTC }
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMfmtAsync, 'MFMT ' + S + ' ' + FHostFileName, [213], nil);  { V2.100 }
-{$ELSE}
-    ExecAsync(ftpMfmtAsync, 'MFMT ' + S + ' ' + UnicodeToAnsi(FHostFileName, FCodePage), [213], nil);  { V2.100 }
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.Md5Async;     { V2.94 get MD5 hash sum   }
 begin
     FFctPrv := ftpFctMd5;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpMd5Async, 'MD5 ' + FHostFileName, [251], nil);
-{$ELSE}
-    ExecAsync(ftpMd5Async, 'MD5 ' + UnicodeToAnsi(FHostFileName, FCodePage), [251], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.XMd5Async;     { V2.113 get MD5 hash sum with optional start and end }
 var
-    S: String;
+    S: UnicodeString;
 begin
     FFctPrv := ftpFctMd5;
-{$IFDEF COMPILER12_UP}
     S := '"' + FHostFileName + '"';
-{$ELSE}
-    S := '"' + UnicodeToAnsi(FHostFileName, FCodePage) + '"';
-{$ENDIF}
     if (FPosStart >= 0) and (FPosEnd > FPosStart) then
              S := S + ' ' + IntToStr(FPosStart) + ' ' + IntToStr(FPosEnd);
     ExecAsync(ftpMd5Async, 'XMD5 ' + S, [250], nil);
@@ -3250,14 +3204,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.XCrcAsync;     { V2.107 get CRC32 hash sum, V2.113 with optional start and end  }
 var
-    S: String;
+    S: UnicodeString;
 begin
     FFctPrv := ftpFctXCrc;
-{$IFDEF COMPILER12_UP}
     S := '"' + FHostFileName + '"';
-{$ELSE}
-    S := '"' + UnicodeToAnsi(FHostFileName, FCodePage) + '"';
-{$ENDIF}
     if (FPosStart >= 0) and (FPosEnd > FPosStart) then
              S := S + ' ' + IntToStr(FPosStart) + ' ' + IntToStr(FPosEnd);
     ExecAsync(ftpXCrcAsync, 'XCRC ' + S, [250], nil);
@@ -3281,33 +3231,21 @@ end;
 procedure TCustomFtpCli.CombAsync;     { V2.113  combine file names  }
 begin
     FFctPrv := ftpFctClnt;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpCombAsync, 'COMB ' + FHostFileName, [200], nil);
-{$ELSE}
-    ExecAsync(ftpCombAsync, 'COMB ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SitePaswdAsync;     { V2.113  change password }
 begin
     FFctPrv := ftpFctSitePaswd;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSitePaswdAsync, 'SITE PSWD ' + FPassWord + ' ' + FHostFileName, [200], nil);
-{$ELSE}
-    ExecAsync(ftpSitePaswdAsync, 'SITE PSWD ' + FPassWord + ' ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SiteExecAsync;    { V2.113  run program  }
 begin
     FFctPrv := ftpFctSiteExec;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteExecAsync, 'SITE EXEC ' + FHostFileName, [200], nil);
-{$ELSE}
-    ExecAsync(ftpSiteExecAsync, 'SITE EXEC ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3315,11 +3253,7 @@ procedure TCustomFtpCli.SiteIndexAsync;     { V2.113  list files and dirs recurs
 begin
     FFctPrv := ftpFctSiteIndex;
     CreateLocalFileStream;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteIndexAsync, 'SITE INDEX ' + FHostFileName, [200], nil);
-{$ELSE}
-    ExecAsync(ftpSiteIndexAsync, 'SITE INDEX ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3333,11 +3267,7 @@ end;
 procedure TCustomFtpCli.SiteMsgAsync;      { V2.113  send message }
 begin
     FFctPrv := ftpFctSiteMsg;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteMsgAsync, 'SITE MSG ' + FHostFileName, [200], nil);
-{$ELSE}
-    ExecAsync(ftpSiteMsgAsync, 'SITE MSG ' + UnicodeToAnsi(FHostFileName, FCodePage), [200], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3347,11 +3277,7 @@ begin
 { data will be returned on control channel so we need stream to write it }
     FFctPrv := ftpFctSiteCmlsd;
     CreateLocalFileStream;
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpSiteCmlsdAsync, 'SITE CMLSD ' + FHostFileName, [200,250], nil);
-{$ELSE}
-    ExecAsync(ftpSiteCmlsdAsync, 'SITE CMLSD ' + UnicodeToAnsi(FHostFileName, FCodePage), [200,250], nil);
-{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3372,11 +3298,7 @@ begin
     else
         S := FHostName;
  { note: responses 504 and 530 are really domain not found but don't stop login }
-{$IFDEF COMPILER12_UP}
     ExecAsync(ftpHostAsync, 'HOST ' + S, [220,421,500,502,504,530,550], nil);
-{$ELSE}
-    ExecAsync(ftpHostAsync, 'HOST ' + UnicodeToAnsi(S, FCodePage), [220,421,500,502,504,530,550], nil);
-{$ENDIF}
 end;
 
 
@@ -4125,6 +4047,7 @@ begin
         FLastResponse := 'Unable to establish data connection - ' +
                          GetWinsockErr(ErrCode);
         FStatusCode   := 550;
+        FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
         SetErrorMessage;
         FDataSocket.Close;
         FRequestResult := FStatusCode;
@@ -4175,6 +4098,7 @@ begin
         FLastResponse := 'Unable to establish data connection - ' +
                          GetWinsockErr(ErrCode);
         FStatusCode   := 550;
+        FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
         SetErrorMessage;
         FDataSocket.Close;
         FRequestResult := FStatusCode;
@@ -4199,17 +4123,9 @@ begin
     FNext := Next1PutAsync;
 
     if FAppendFlag then
-    {$IFDEF COMPILER12_UP}
         SendCommand('APPE ' + FHostFileName)
-    {$ELSE}
-        SendCommand('APPE ' + UnicodeToAnsi(FHostFileName, FCodePage))
-    {$ENDIF}
     else
-    {$IFDEF COMPILER12_UP}
         SendCommand('STOR ' + FHostFileName);
-    {$ELSE}
-        SendCommand('STOR ' + UnicodeToAnsi(FHostFileName, FCodePage));
-    {$ENDIF}
 end;
 
 
@@ -4900,6 +4816,7 @@ begin
                 if NewPos <> FResumeAt then begin
                     FLastResponse := 'Unable to set resume position in local file';
                     FStatusCode   := 550;
+                    FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
                     SetErrorMessage;
                     FDataSocket.Close;
                     FRequestResult := FStatusCode;
@@ -4933,7 +4850,10 @@ begin
 {$ENDIF}
             FLastResponse := 'Unable to open local file ' +
                                            FLocalFileName + ': ' + E.Message; { V2.101}
+            FLastRawResponse := RawByteString('Unable to open local file ' +
+                   UnicodeToAnsi(FLocalFileName, FCodePage) + ': ' + E.Message);  { V6.10 }
             FStatusCode   := 550;
+            FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
             SetErrorMessage;
             FDataSocket.Close;
             FRequestResult := FStatusCode;
@@ -4970,6 +4890,7 @@ begin
             on E:Exception do begin
                 FLastResponse := '550 ' + E.ClassName + ': ' + E.Message;
                 FStatusCode   := 550;
+                FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
                 SetErrorMessage;
                 FDataSocket.Close;
                 FRequestResult := FStatusCode;
@@ -4982,11 +4903,7 @@ begin
     StateChange(ftpWaitingResponse);
     FNext := Next1GetAsync;
     if Length(FHostFileName) > 0 then
-    {$IFDEF COMPILER12_UP}
         SendCommand(FGetCommand + ' ' + FHostFileName)
-    {$ELSE}
-        SendCommand(FGetCommand + ' ' + UnicodeToAnsi(FHostFileName, FCodePage))
-    {$ENDIF}    
     else
         SendCommand(FGetCommand);
 end;
@@ -5165,6 +5082,7 @@ begin
         if NewPos <> FResumeAt then begin
             FLastResponse := 'Unable to set resume position in local file';
             FStatusCode   := 550;
+            FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
             SetErrorMessage;
             FDataSocket.Close;
             FRequestResult := FStatusCode;
@@ -5175,6 +5093,8 @@ begin
         on E:Exception do begin
             FLastResponse := 'Unable to open local file ' +
                                            FLocalFileName + ': ' + E.Message; { V2.101}
+            FLastRawResponse := RawByteString('Unable to open local file ' +
+                   UnicodeToAnsi(FLocalFileName, FCodePage) + ': ' + E.Message);  { V6.10 }
             FStatusCode   := 426;
             SetErrorMessage;           { 27/03/07 }
             TriggerDisplay('! ' + FErrorMessage);
@@ -5247,6 +5167,7 @@ begin
         except
             on E:Exception do begin
                 FLastResponse := '426 ' + E.ClassName + ': ' + E.Message;
+                FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
                 FStatusCode   := 426;
                 SetErrorMessage;
                 FDataSocket.Close;
@@ -5262,17 +5183,9 @@ begin
     FNext := Next1PutAsync;
 
     if FAppendFlag then
-    {$IFDEF COMPILER12_UP}
         SendCommand('APPE ' + FHostFileName)
-    {$ELSE}
-        SendCommand('APPE ' + UnicodeToAnsi(FHostFileName, FCodePage))
-    {$ENDIF}
     else
-    {$IFDEF COMPILER12_UP}
         SendCommand('STOR ' + FHostFileName);
-    {$ELSE}
-        SendCommand('STOR ' + UnicodeToAnsi(FHostFileName, FCodePage));
-    {$ENDIF}
 end;
 
 
@@ -5485,6 +5398,7 @@ begin
         FLastResponse  := '500 DNS lookup error - ' + GetWinsockErr(ErrCode) ;
         FStatusCode    := 500;
         FRequestResult :=  FStatusCode;    { 21/05/99 }
+        FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
         SetErrorMessage;
         TriggerRequestDone(ErrCode);
     end
@@ -5509,6 +5423,7 @@ begin
                 FLastResponse := '500 ' + E.ClassName + ': ' + E.Message;
                 FStatusCode   := 500;
                 FRequestResult :=  FStatusCode;    { 21/05/99 }
+                FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
                 SetErrorMessage;
                 TriggerRequestDone(FStatusCode);
             end;
@@ -5526,6 +5441,7 @@ begin
         FLastResponse  := '500 Connect error - ' + GetWinsockErr(ErrCode) ;
         FStatusCode    := 500;
         FRequestResult := FStatusCode;  { Heedong Lim, 05/14/1999 }
+        FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
         SetErrorMessage; { Heedong Lim, 05/14/1999 }
         FNextRequest   := nil;
         TriggerRequestDone(ErrCode);
@@ -5589,15 +5505,23 @@ begin
         Len := MultiByteToWideChar(ACodePage, 0, @FReceiveBuffer[0], I - 2, nil, 0);
         SetLength(FLastResponse, Len);
         if Len > 0 then
+        begin
+            FLastRawResponse := Copy(FReceiveBuffer, 1, I - 1);   { V6.10 }
             MultiByteToWideChar(ACodePage, 0, @FReceiveBuffer[0], I - 2,
                                 Pointer(FLastResponse), Len);
+        end
+        else
+            FLastRawResponse := '';
     {$ELSE}
+      { why are we ignored UTF8 responses for D2007 and earlier ?? }
         FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
+        FLastRawResponse := FLastResponse ;       { V6.10 }
     {$ENDIF}
         { Remove trailing control chars }
         while (Length(FLastResponse) > 0) and
               IsCRLF(FLastResponse[Length(FLastResponse)]) do
              SetLength(FLastResponse, Length(FLastResponse) - 1);
+        SetLength(FLastRawResponse, Length(FLastResponse));  { V6.10 }
 
         if not (FFctPrv in [ftpFctSiteCmlsd, ftpFctSiteIndex]) then begin  { V2.113 don't save SITE list commands, too long }
 
@@ -5795,6 +5719,7 @@ begin
                               GetWinsockErr(ErrCode) ;
             FStatusCode    := 500;
             FRequestResult :=  FStatusCode;    { 06 apr 2002 }
+            FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
             SetErrorMessage;
         end;
         TriggerRequestDone(FRequestResult);
@@ -6558,6 +6483,7 @@ begin
         DisplayLastResponse;
         FStatusCode    := 535;
         FRequestResult := FStatusCode;
+        FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
         SetErrorMessage;
     end
     else
@@ -6640,6 +6566,7 @@ begin
         FRequestResult := ErrCode;
         FLastResponse  := IntToStr(ErrCode) + ' Bidirectional SSL shutdown failed';
         FNextRequest   := nil;
+        FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
         SetErrorMessage;
     end;
     if Assigned(FDoneAsync) then
@@ -6761,6 +6688,7 @@ begin
                 FStatusCode    := 550;
                 FRequestResult := FStatusCode;
                 FLastResponse  := IntToStr(FStatusCode) + ' ' + E.Message;
+                FLastRawResponse := RawByteString(FLastResponse); { V6.10 }
                 SetErrorMessage; { Heedong Lim, 05/14/1999 }
                 FNextRequest   := nil;
                 TriggerRequestDone(FRequestResult);
