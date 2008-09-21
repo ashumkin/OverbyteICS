@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.16
+Version:      1.17
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -66,6 +66,7 @@ Aug 27, 2008 Arno Garrels added WideString functions and other stuff.
 Sep 11, 2008 Angus added more widestring functions
              No range checking so they all work (IcsFileGetAttrW in particular)
 Sep 20, 2008 V1.16 Angus still adding WideString functions
+Sep 21, 2008 V1.17 Link RtlCompareUnicodeString() dynamically at run-time
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -120,12 +121,14 @@ type
         FindData    : TWin32FindDataW;
     end;
 
-    TUnicodeString = record
+    TUnicode_String = record
         Length        : Word;
         MaximumLength : Word;
         Buffer        : PWideChar;
     end;
-    PUnicodeString = ^TUnicodeString;
+    PUnicode_String = ^TUnicode_String;
+
+    TRtlCompareUnicodeString = function(String1, String2: PUnicode_String; CaseInSensitive: Boolean): LongInt; stdcall;
 
     TIcsFileStreamW = class(THandleStream)
     private
@@ -219,19 +222,27 @@ type
     function IcsFileExistsW(const FileName: Utf8String): Boolean; overload;
     function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
+    // NT4 and better
+    function  RtlCompareUnicodeString(String1 : PUNICODE_STRING;
+        String2 : PUNICODE_STRING; CaseInsensitive : BOOLEAN): LongInt; stdcall;
 
 implementation
 
 const
-    DefaultFailChar : AnsiChar = '?';
-    CP_UTF16Le = 1200;
-    CP_UTF16Be = 1201;
-    CP_UTF8    = 65001;
-
+    NTDLL                       = 'ntdll.dll';
+    DefaultFailChar : AnsiChar  = '?';
+    CP_UTF16Le                  = 1200;
+    CP_UTF16Be                  = 1201;
+    {$EXTERNALSYM CP_UTF8}
+    CP_UTF8                     = Windows.CP_UTF8;
     IcsPathDelimW       : WideChar  = '\';
     IcsDriveDelimW      : WideChar  = ':';
     IcsPathDriveDelimW  : PWideChar = '\:';
     IcsPathSepW         : WideChar  = ';';
+
+var
+    hNtDll : THandle = 0;
+    _RtlCompareUnicodeString : Pointer = nil;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsUsAscii(const Str: RawByteString): Boolean;
@@ -1034,8 +1045,25 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function RtlCompareUnicodeString(const String1, String2: TUnicodeString;
-  CaseInSensitive: Boolean): Longint; stdcall; external 'ntdll.dll';
+function RtlCompareUnicodeString(String1, String2: PUnicode_String;
+  CaseInSensitive: Boolean): LongInt; stdcall;
+begin
+    { Supported OS: NT4 and better! }
+    if _RtlCompareUnicodeString = nil then
+    begin
+        if hNtDll = 0 then
+        begin
+            hNtDll := GetModuleHandle(NTDLL);
+            if hNtDll = 0 then
+                RaiseLastOsError;
+        end;
+        _RtlCompareUnicodeString := GetProcAddress(hNtDll, 'RtlCompareUnicodeString');
+        if _RtlCompareUnicodeString = nil then
+            RaiseLastOsError;
+    end;
+    Result := TRtlCompareUnicodeString(_RtlCompareUnicodeString)(
+                                        String1, String2, CaseInsensitive);
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1043,7 +1071,7 @@ function RtlCompareUnicodeString(const String1, String2: TUnicodeString;
 function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer;
   Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
 var
-    S1, S2: TUnicodeString;
+    S1, S2: TUnicode_String;
     Len: Integer;
 begin
     S1.Buffer := Str1;
@@ -1064,7 +1092,7 @@ begin
         S1.MaximumLength := S1.Length;
         S2.Length        := S1.Length;
         S2.MaximumLength := S1.Length;
-        Result := RtlCompareUnicodeString(S1, S2, IgnoreCase);
+        Result := RtlCompareUnicodeString(@S1, @S2, IgnoreCase);
         if Result <> 0 then
             Exit;
 
