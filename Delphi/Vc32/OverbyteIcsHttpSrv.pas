@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      6.07
+Version:      6.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -211,8 +211,8 @@ Apr 30, 2008 V6.04 A. Garrels - Function names adjusted according to changes in
 May 15, 2008 V6.05 A. Garrels added function StreamReadStrA.
              Some type changes from String to AnsiString of published properties.
 Jul 13, 2008 V6.06 Revised socket names used for debugging purpose.
-Aug 11, 2008 V6.06 A. Garrels - Type AnsiString rolled back to String.
-
+Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
+Sep 21, 2008 V6.08 A. Garrels removed a DELPHI4 conditional (CBuilder compat.) 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -285,8 +285,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 607;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.07 ';
+    THttpServerVersion = 608;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.08 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -380,7 +380,7 @@ type
         procedure SetItems(NIndex: Integer; const Value: THttpRange);
     public
         destructor Destroy; override;
-        procedure  Clear; {$IFDEF DELPHI4_UP}override; {$ENDIF}
+        procedure  Clear; override;
         procedure Assign(Source: THttpRangeList);
         function  CreateRangeStream(SourceStream    : TStream;
                                     ContentString   : String;
