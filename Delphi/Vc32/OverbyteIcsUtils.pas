@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.17
+Version:      1.18
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -67,6 +67,7 @@ Sep 11, 2008 Angus added more widestring functions
              No range checking so they all work (IcsFileGetAttrW in particular)
 Sep 20, 2008 V1.16 Angus still adding WideString functions
 Sep 21, 2008 V1.17 Link RtlCompareUnicodeString() dynamically at run-time
+Sep 27, 2008 V1.18 Arno fixed a bug in StringToUtf8.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -786,7 +787,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString;
 begin
-    Result := ConvertCodepage(Str, CP_UTF8, ACodePage);
+    Result := ConvertCodepage(Str, ACodePage, CP_UTF8);
 end;
 
 
