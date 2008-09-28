@@ -2,12 +2,12 @@
 
 Author:       François PIETTE
 Creation:     Aug 08, 2004 (extracted from various ICS components)
-Version:      6.00
+Version:      6.01
 Description:  This unit contain support routines for URL handling.
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -38,6 +38,9 @@ Legal issues: Copyright (C) 1997-2007 by François PIETTE
 
 History:
 Mar 26, 2006 V6.00 New version 6 started
+Sep 28, 2008 V6.01 A. Garrels modified UrlEncode() and UrlDecode() to support
+             UTF-8 encoding. Moved IsDigit, IsXDigit, XDigit, htoi2 and htoin
+             to OverbyteIcsUtils.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -68,18 +71,20 @@ uses
 {$ELSE}
     WinTypes, WinProcs,
 {$ENDIF}
-    SysUtils;
+    {SysUtils,} OverbyteIcsUtils, OverbyteIcsLibrary;
 
 const
-    IcsUrlVersion        = 600;
-    CopyRight : String   = ' TIcsURL (c) 1997-2007 F. Piette V6.00 ';
+    IcsUrlVersion        = 601;
+    CopyRight : String   = ' TIcsURL (c) 1997-2008 F. Piette V6.01 ';
 
 { Syntax of an URL: protocol://[user[:password]@]server[:port]/path }
 procedure ParseURL(const URL : String;
                    var Proto, User, Pass, Host, Port, Path : String);
 function  Posn(const s, t : String; count : Integer) : Integer;
-function  UrlEncode(S : String) : String;
-function  UrlDecode(S : String) : String;
+function  UrlEncode(const S : String) : String;
+function  UrlDecode(const S : String) : String;
+(* Moved to OverbyteIcsUtils where there are Char and WideChar overloads.
+   The same functions are used be the THttpSrv.
 function  IsDigit(Ch : Char) : Boolean;
 function  IsXDigit(Ch : char) : Boolean;
 function  XDigit(Ch : char) : Integer;
@@ -89,6 +94,7 @@ function  htoi2(Ch1, Ch2: Char) : Integer;
 function  htoin(value : PChar; len : Integer) : Integer;
 function  htoi2(value : PChar) : Integer;
 {$ENDIF}
+*)
 
 implementation
 
@@ -210,7 +216,7 @@ begin
     p := pos('://', url);
     q := p;
     if p <> 0 then begin
-        S := LowerCase(Copy(url, 1, p - 1));
+        S := _LowerCase(Copy(url, 1, p - 1));
         for i := 1 to Length(S) do begin
             if not (AnsiChar(S[i]) in UriProtocolSchemeAllowedChars) then begin
                 q := i;
@@ -233,7 +239,7 @@ begin
                 Exit;
             end;
         end
-        else if LowerCase(Copy(url, 1, 5)) = 'http:' then begin
+        else if _LowerCase(Copy(url, 1, 5)) = 'http:' then begin
             proto := 'http';
             p     := 6;
             if (Length(url) > 6) and (url[7] <> '/') then begin
@@ -242,13 +248,13 @@ begin
                 Exit;
             end;
         end
-        else if LowerCase(Copy(url, 1, 7)) = 'mailto:' then begin
+        else if _LowerCase(Copy(url, 1, 7)) = 'mailto:' then begin
             proto := 'mailto';
             p := pos(':', url);
         end;
     end
     else begin
-        proto := LowerCase(Copy(url, 1, p - 1));
+        proto := _LowerCase(Copy(url, 1, p - 1));
         inc(p, 2);
     end;
     s := Copy(url, p + 1, Length(url));
@@ -294,21 +300,40 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlEncode(S : String) : String;
+function UrlEncode(const S : String) : String;
 var
-    I : Integer;
+    I, J   : Integer;
+    U8Str  : AnsiString;
+    RStr   : AnsiString;
+    HexStr : String[2];
 begin
-    Result := '';
-    for I := 1 to Length(S) do begin
-        if AnsiChar(S[I]) in ['0'..'9', 'A'..'Z', 'a'..'z'] then
-            Result := Result + S[I]
+    U8Str := StringToUtf8(S);
+    SetLength(RStr, Length(U8Str) * 3);
+    J := 0;
+    for I := 1 to Length(U8Str) do begin
+        case U8Str[I] of
+            '0'..'9', 'A'..'Z', 'a'..'z' :
+                begin
+                    Inc(J);
+                    RStr[J] := U8Str[I];
+                end
         else
-            Result := Result + '%' + IntToHex(Ord(S[I]), 2);
+            Inc(J);
+            RStr[J] := '%';
+            HexStr  := IcsIntToHexA(Ord(U8Str[I]), 2);
+            Inc(J);
+            RStr[J] := HexStr[1];
+            Inc(J);
+            RStr[J] := HexStr[2];
+        end;
     end;
+    SetLength(RStr, J);
+    Result := String(RStr);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 function UrlDecode(S : String) : String;
 var
     I  : Integer;
@@ -332,8 +357,46 @@ begin
         Inc(I);
     end;
 end;
+*)
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function UrlDecode(const S : String) : String;
+var
+    I, J, L : Integer;
+    U8Str   : AnsiString;
+    Ch      : AnsiChar;
+begin
+    L := Length(S);
+    SetLength(U8Str, L);
+    I := 1;
+    J := 0;
+    while (I <= L) and (S[I] <> '&') do begin
+        Ch := AnsiChar(S[I]);
+        if Ch = '%' then begin
+            Ch := AnsiChar(htoi2(PChar(@S[I + 1])));
+            Inc(I, 2);
+        end
+        else if Ch = '+' then
+            Ch := ' ';
+        Inc(J);
+        U8Str[J] := Ch;
+        Inc(I);
+    end;
+    SetLength(U8Str, J);
+{$IFDEF COMPILER12_UP}
+    if IsUtf8Valid(U8Str) then
+        Result := Utf8ToStringW(U8Str)
+    else
+        Result := AnsiToUnicode(U8Str, CP_ACP);
+{$ELSE}
+    if IsUtf8Valid(U8Str) then
+        Result := Utf8ToStringA(U8Str)
+    else
+        Result := U8Str;
+{$ENDIF}
+end;
 
 
+(*
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsDigit(Ch : Char) : Boolean;
 begin
@@ -390,7 +453,7 @@ begin
     Result := htoin(value, 2);
 end;
 {$ENDIF}
-
+*)
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 end.
