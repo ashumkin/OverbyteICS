@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.18
+Version:      1.19
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -68,6 +68,10 @@ Sep 11, 2008 Angus added more widestring functions
 Sep 20, 2008 V1.16 Angus still adding WideString functions
 Sep 21, 2008 V1.17 Link RtlCompareUnicodeString() dynamically at run-time
 Sep 27, 2008 V1.18 Arno fixed a bug in StringToUtf8.
+Sep 28, 2008 V1.19 A. Garrels Moved IsDigit, IsXDigit, XDigit, htoi2 and htoin
+             from OverbyteIcsUrl and added overloads. Fixed a bug in
+             ConvertCodepage().
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -173,6 +177,14 @@ type
     function  IsUtf8Valid(const Str: RawByteString): Boolean; overload;
     function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload;
     function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
+    function  htoin(Value : PWideChar; Len : Integer) : Integer; overload;
+    function  htoin(Value : PAnsiChar; Len : Integer) : Integer; overload;
+    function  htoi2(value : PWideChar): Integer; overload;
+    function  htoi2(value : PAnsiChar): Integer; overload;
+    function  IsXDigit(Ch : WideChar): Boolean; overload;
+    function  IsXDigit(Ch : AnsiChar): Boolean; overload;
+    function  XDigit(Ch : WideChar): Integer; overload;
+    function  XDigit(Ch : AnsiChar): Integer; overload;
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
     function IcsFileCreateW(const FileName: Utf8String): Integer; overload;
@@ -751,9 +763,6 @@ var
     FreeFlag : Boolean;
 begin
     sLen := Length(Str);
-{$IFDEF COMPILER12_UP}
-    SrcCodePage := PWord(Integer(Result) - 12)^;
-{$ENDIF}
     if (sLen = 0) or (SrcCodePage = DstCodePage) then
     begin
         Result := Str;
@@ -775,11 +784,13 @@ begin
     sLen := WideCharToMultiByte(DstCodePage, 0, P, dLen, nil, 0, nil, nil);
     SetLength(Result, sLen);
     if sLen > 0 then
+    begin
         WideCharToMultiByte(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
-    {$IFDEF COMPILER12_UP}
+      {$IFDEF COMPILER12_UP}
         if DstCodePage <> CP_ACP then
             PWord(Integer(Result) - 12)^ := DstCodePage;
-    {$ENDIF}
+      {$ENDIF}
+    end;
     if FreeFlag then FreeMem(P);
 end;
 
@@ -911,6 +922,91 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function XDigit(Ch : WideChar) : Integer;
+begin
+    case Ch of
+        '0'..'9' : Result := Ord(Ch) - Ord('0');
+    else
+        Result := (Ord(Ch) and 15) + 9;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function XDigit(Ch : AnsiChar) : Integer;
+begin
+    case Ch of
+        '0'..'9' : Result := Ord(Ch) - Ord('0');
+    else
+        Result := (Ord(Ch) and 15) + 9;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsXDigit(Ch : WideChar) : Boolean;
+begin
+    Result := ((Ch >= '0') and (Ch <= '9')) or
+              ((Ch >= 'a') and (Ch <= 'f')) or
+              ((Ch >= 'A') and (Ch <= 'F'));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsXDigit(Ch : AnsiChar) : Boolean;
+begin
+    Result := ((Ch >= '0') and (Ch <= '9')) or
+              ((Ch >= 'a') and (Ch <= 'f')) or
+              ((Ch >= 'A') and (Ch <= 'F'));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function htoin(Value : PWideChar; Len : Integer) : Integer;
+var
+    I : Integer;
+begin
+    Result := 0;
+    I      := 0;
+    while (I < Len) and (Value[I] = ' ') do
+        I := I + 1;
+    while (I < len) and (IsXDigit(Value[I])) do begin
+        Result := Result * 16 + XDigit(Value[I]);
+        I := I + 1;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function htoin(Value : PAnsiChar; Len : Integer) : Integer;
+var
+    I : Integer;
+begin
+    Result := 0;
+    I      := 0;
+    while (I < Len) and (Value[I] = ' ') do
+        I := I + 1;
+    while (I < len) and (IsXDigit(Value[I])) do begin
+        Result := Result * 16 + XDigit(Value[I]);
+        I := I + 1;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function htoi2(Value : PWideChar) : Integer;
+begin
+    Result := htoin(Value, 2);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function htoi2(Value : PAnsiChar) : Integer;
+begin
+    Result := htoin(Value, 2);
+end;
+
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure IcsFindCloseW(var F: TIcsSearchRecW);
 begin
