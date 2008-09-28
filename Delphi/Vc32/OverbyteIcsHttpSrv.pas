@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      6.08
+Version:      6.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -212,7 +212,12 @@ May 15, 2008 V6.05 A. Garrels added function StreamReadStrA.
              Some type changes from String to AnsiString of published properties.
 Jul 13, 2008 V6.06 Revised socket names used for debugging purpose.
 Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
-Sep 21, 2008 V6.08 A. Garrels removed a DELPHI4 conditional (CBuilder compat.) 
+Sep 21, 2008 V6.08 A. Garrels removed a DELPHI4 conditional (CBuilder compat.)
+Sep 28, 2008 V6.09 A. Garrels modified UrlEncode(), UrlDecode() and
+             ExtractURLEncodedValue() to support UTF-8 encoding. Moved IsDigit,
+             IsXDigit, XDigit, htoi2 and htoin to OverbyteIcsUtils.
+             Fixed an AV in TextToHtmlText() with characters above #255.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -285,8 +290,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 608;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.08 ';
+    THttpServerVersion = 609;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.09 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -1115,9 +1120,6 @@ function ExtractURLEncodedValue(
     var Value : String): Boolean;  { Where to put variable value            }
 function UrlEncode(const S : String) : String;
 function UrlDecode(const Url : String) : String;
-function htoi2(value : PChar) : Integer;
-function IsXDigit(Ch : char) : Boolean;
-function XDigit(Ch : char) : Integer;
 function FileDate(FileName : String) : TDateTime;
 function RFC1123_Date(aDate : TDateTime) : String;
 function DocumentToContentType(FileName : String) : String;
@@ -3614,48 +3616,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function XDigit(Ch : Char) : Integer;
-begin
-    if (Ch >= '0') and (Ch <= '9') then
-        Result := Ord(Ch) - Ord('0')
-    else
-        Result := (Ord(Ch) and 15) + 9;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsXDigit(Ch : Char) : Boolean;
-begin
-    Result := ((Ch >= '0') and (Ch <= '9')) or
-              ((Ch >= 'a') and (Ch <= 'f')) or
-              ((Ch >= 'A') and (Ch <= 'F'));
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function htoin(Value : PChar; Len : Integer) : Integer;
-var
-    I : Integer;
-begin
-    Result := 0;
-    I      := 0;
-    while (I < Len) and (Value[I] = ' ') do
-        I := I + 1;
-    while (I < len) and (IsXDigit(Value[I])) do begin
-        Result := Result * 16 + XDigit(Value[I]);
-        I := I + 1;
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function htoi2(Value : PChar) : Integer;
-begin
-    Result := htoin(Value, 2);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Retrieve a single value by name out of an URL encoded data stream         }
 { In the stream, every space is replaced by a '+'. The '%' character is     }
 { an escape character. The next two are 2 digits hexadecimal codes ascii    }
@@ -3670,8 +3630,9 @@ function ExtractURLEncodedValue(
 var
     NameLen  : Integer;
     FoundLen : Integer; {tps}
-    Ch       : Char;
+    Ch       : AnsiChar;
     P, Q     : PChar;
+    U8Str    : AnsiString;
 begin
     Result  := FALSE;
     Value   := '';
@@ -3679,7 +3640,7 @@ begin
         Exit;
 
     NameLen := Length(Name);
-
+    U8Str := '';
     P := Msg;
     while P^ <> #0 do begin
         Q := P;
@@ -3691,14 +3652,14 @@ begin
         if (_StrLIComp(Q, @Name[1], NameLen) = 0) and
            (NameLen = FoundLen) then begin  {tps}
             while (P^ <> #0) and (P^ <> '&') do begin
-                Ch := P^;
+                Ch := AnsiChar(Ord(P^)); // should contain nothing but < ord 128
                 if Ch = '%' then begin
-                    Ch := chr(htoi2(P + 1));
+                    Ch := AnsiChar(htoi2(P + 1));
                     Inc(P, 2);
                 end
                 else if Ch = '+' then
                     Ch := ' ';
-                Value := Value + Ch;
+                U8Str := U8Str + Ch;
                 Inc(P);
             end;
             Result := TRUE;
@@ -3709,6 +3670,17 @@ begin
         if P^ = '&' then
             Inc(P);
     end;
+{$IFDEF COMPILER12_UP}
+    if IsUtf8Valid(U8Str) then
+        Value := Utf8ToStringW(U8Str)
+    else
+        Value := AnsiToUnicode(U8Str, CP_ACP);
+{$ELSE}
+    if IsUtf8Valid(U8Str) then
+        Value := Utf8ToStringA(U8Str)
+    else
+        Value := U8Str;
+{$ENDIF}
 end;
 
 
@@ -3914,8 +3886,11 @@ begin
             Result := Result + Copy(Src, J, I - J);
             Exit;
         end;
-        Result := Result + Copy(Src, J, I - J) + '&' +
-                  String(HtmlSpecialChars[Ord(Src[I])]) + ';';
+        if Ord(Src[I]) > High(HtmlSpecialChars) then  // Avoids AV !!
+            Result := Result + '?'
+        else
+            Result := Result + Copy(Src, J, I - J) + '&' +
+                    String(HtmlSpecialChars[Ord(Src[I])]) + ';';
         Inc(I);
     end;
 end;
@@ -4054,56 +4029,71 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function UrlEncode(const S : String) : String;
 var
-    I : Integer;
-    Ch : Char;
+    I, J : Integer;
+    U8Str: AnsiString;
+    RStr : AnsiString;
+    HexStr: String[2];
 begin
-    Result := '';
-    for I := 1 to Length(S) do begin
-        Ch := S[I];
-        if ((Ch >= '0') and (Ch <= '9')) or
-           ((Ch >= 'a') and (Ch <= 'z')) or
-           ((Ch >= 'A') and (Ch <= 'Z')) or
-           (Ch = '.') then
-            Result := Result + Ch
+    U8Str := StringToUtf8(S);
+    SetLength(RStr, Length(U8Str) * 3);
+    J := 0;
+    for I := 1 to Length(U8Str) do begin
+        case U8Str[I] of
+            '0'..'9', 'a'..'z', 'A'..'Z', '.' :
+                begin
+                    Inc(J);
+                    RStr[J] := U8Str[I];
+                end
         else
-            Result := Result + '%' + _IntToHex(Ord(Ch), 2);
+            Inc(J);
+            RStr[J] := '%';
+            HexStr  := IcsIntToHexA(Ord(U8Str[I]), 2);
+            Inc(J);
+            RStr[J] := HexStr[1];
+            Inc(J);
+            RStr[J] := HexStr[2];
+        end;
     end;
+    SetLength(RStr, J);
+    Result := String(RStr);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function UrlDecode(const Url : String) : String;
 var
-    I, J, K, L : Integer;
+    I, J, L : Integer;
+    U8Str : AnsiString;
+    Ch : AnsiChar;
 begin
-    Result := Url;
-    L      := Length(Result);
-    I      := 1;
-    K      := 1;
-    while TRUE do begin
-        J := I;
-        while (J <= Length(Result)) and (Result[J] <> '%') do begin
-            if J <> K then
-                Result[K] := Result[J];
-            Inc(J);
-            Inc(K);
-        end;
-        if J > Length(Result) then
-            break;                   { End of string }
-        if J > (Length(Result) - 2) then begin
-            while J <= Length(Result) do begin
-                Result[K] := Result[J];
-                Inc(J);
-                Inc(K);
-            end;
-            break;
-        end;
-        Result[K] := Char(htoi2(@Result[J + 1]));
-        Inc(K);
-        I := J + 3;
-        Dec(L, 2);
+    L := Length(Url);
+    SetLength(U8Str, L);
+    I := 1;
+    J := 0;
+    while (I <= L) do begin
+        Ch := AnsiChar(Url[I]);
+        if Ch = '%' then begin
+            Ch := AnsiChar(htoi2(PChar(@Url[I + 1])));
+            Inc(I, 2);
+        end
+        else if Ch = '+' then
+            Ch := ' ';
+        Inc(J);
+        U8Str[J] := Ch;
+        Inc(I);
     end;
-    SetLength(Result, L);
+    SetLength(U8Str, J);
+{$IFDEF COMPILER12_UP}
+    if IsUtf8Valid(U8Str) then
+        Result := Utf8ToStringW(U8Str)
+    else
+        Result := AnsiToUnicode(U8Str, CP_ACP);
+{$ELSE}
+    if IsUtf8Valid(U8Str) then
+        Result := Utf8ToStringA(U8Str)
+    else
+        Result := U8Str;
+{$ENDIF}
 end;
 
 
