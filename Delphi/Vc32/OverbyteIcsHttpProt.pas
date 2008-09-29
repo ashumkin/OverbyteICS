@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      6.00.7
+Version:      6.00.8
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -395,6 +395,8 @@ Jul 17, 2008 V6.00.6 A. Garrels made a few changes to prepare code for Unicode,
 Sep 28, 2008 V6.00.7 Maurizio Lotauro fixed a bug with premature received
              401/407 responses while data was still being sent with POST and PUT
              requests. A. Garrels small fix in SendCommand().
+Sep 29, 2008 V6.00.8 A. Garrels added OverbyteIcsUtils to the uses clause
+             for all compilers.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -459,14 +461,12 @@ uses
     OverbyteIcsLogger,
 {$ENDIF}
     OverbyteIcsUrl, OverbyteIcsTypes,
-{$IFDEF COMPILER12_UP}
     OverbyteIcsUtils,
-{$ENDIF}
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
     HttpCliVersion       = 600;
-    CopyRight : String   = ' THttpCli (c) 1997-2008 F. Piette V6.00.7 ';
+    CopyRight : String   = ' THttpCli (c) 1997-2008 F. Piette V6.00.8 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
