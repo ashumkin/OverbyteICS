@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.18
+Version:      6.19
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -334,7 +334,9 @@ Jul 29, 2008 V6.16  A. Garrels replaced the various calls to GetAcp by new globa
 Aug 03, 2008 V6.17  A.Garrels - Components use Ansi buffers internally.
                     More string conversions, however OnGetData works again.
 Aug 11, 2008 V6.18  A. Garrels - Type AnsiString rolled back to String.
-                    
+Oct 01, 2008 V6.19  A. Garrels fixed a ERangeError and took escaped quotation
+                    marks into account in RcptNameAdd().
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -390,8 +392,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 618;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.18 ';
+  SmtpCliVersion     = 619;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.19 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -2529,6 +2531,68 @@ procedure TCustomSmtpClient.RcptNameAdd(
 var
     Buf  : String;
     I, J : Integer;
+    n, L : Integer;
+    Addr : String;
+begin
+    for n := 1 to 3 do begin
+       { If there is a syntax error in the lists only those will fail }
+        case n of
+            1 : Buf := ToList;
+            2 : Buf := CcList;
+            else
+                Buf := BccList;
+        end;
+        I := 1;
+        L := Length(Buf);
+        while (I <= L) do begin
+            { Skip spaces }
+            if Buf[I] = ' ' then begin
+                Inc(I);
+                Continue;
+            end;
+            J := I;
+            while I <= L do begin
+                if (Buf[I] = '"') and
+                   (not ((I > 1) and (Buf[I - 1] = '\'))) then begin
+                    { Start of quoted string, skip until end of quote }
+                    Inc(I);
+                    while (I <= L) and
+                     ((Buf[I] <> '"') or ((Buf[I] = '"') and (Buf[I - 1] = '\'))) do
+                        Inc(I);
+                end;
+
+                if (I >= L) or
+                   ((I <= L) and (IsCharInSysCharSet(Buf[I], SmtpEMailSeparators))) then
+                begin
+                    if (I <= L) and (IsCharInSysCharSet(Buf[I], SmtpEMailSeparators)) then
+                        Addr := Trim(Copy(Buf, J, I - J))
+                    else
+                        Addr := Trim(Copy(Buf, J, L - J + 1));
+                    if Length(Addr) > 0 then
+                        RcptName.Add(Addr);
+                    Inc(I);
+                    Break;
+                end;
+                Inc(I);
+            end;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ This function will raise an ERangeError if the string passed contains an  }
+{ opening quotation mark without a closing one at the line marked below.    }
+{ Bug condition: foo" <bar@mail.com>                                        }
+{ It may produce garbage upon syntax errors, however no exceptions. (AG)    }
+(*
+procedure TCustomSmtpClient.RcptNameAdd(
+    const ToList  : String;
+    const CcList  : String;
+    const BccList : String);
+var
+    Buf  : String;
+    I, J : Integer;
     Adr  : String;
 begin
     Buf := ToList + ';' + CcList + ';' + BccList;
@@ -2549,7 +2613,7 @@ begin
                 Inc(I);
             end;
             if (I >= Length(Buf)) or
-               IsCharInSysCharSet(Buf[I], SmtpEMailSeparators) then begin
+               IsCharInSysCharSet(Buf[I], SmtpEMailSeparators) then begin  <= !!
                 if IsCharInSysCharSet(Buf[I], SmtpEMailSeparators) then
                     Adr := Trim(Copy(Buf, J, I - J))
                 else
@@ -2563,7 +2627,7 @@ begin
         end;
     end;
 end;
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.RcptToNext;
