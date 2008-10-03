@@ -1,9 +1,9 @@
 object FtpReceiveForm: TFtpReceiveForm
-  Left = 436
-  Top = 103
+  Left = 80
+  Top = 113
   Caption = 'FTP - http://www.overbyte.be'
-  ClientHeight = 546
-  ClientWidth = 621
+  ClientHeight = 507
+  ClientWidth = 624
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,9 +18,9 @@ object FtpReceiveForm: TFtpReceiveForm
   TextHeight = 16
   object DisplayMemo: TMemo
     Left = 0
-    Top = 376
-    Width = 621
-    Height = 170
+    Top = 356
+    Width = 624
+    Height = 151
     Hint = 'This area show the activity with the host'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -35,13 +35,14 @@ object FtpReceiveForm: TFtpReceiveForm
     ScrollBars = ssBoth
     ShowHint = True
     TabOrder = 2
-    ExplicitHeight = 155
+    ExplicitWidth = 619
+    ExplicitHeight = 160
   end
   object Panel1: TPanel
     Left = 0
     Top = 149
-    Width = 621
-    Height = 227
+    Width = 624
+    Height = 207
     Align = alTop
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -50,6 +51,7 @@ object FtpReceiveForm: TFtpReceiveForm
     Font.Style = []
     ParentFont = False
     TabOrder = 1
+    ExplicitWidth = 619
     object InfoLabel: TLabel
       Left = 512
       Top = 6
@@ -1194,56 +1196,11 @@ object FtpReceiveForm: TFtpReceiveForm
       TabOrder = 71
       Text = 'MaxKB'
     end
-    object ConnectHostAsyncButton: TButton
-      Left = 8
-      Top = 204
-      Width = 81
-      Height = 17
-      Caption = 'Connect Host'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 72
-      OnClick = ConnectHostAsyncButtonClick
-    end
-    object HostAsyncButton: TButton
-      Left = 90
-      Top = 204
-      Width = 81
-      Height = 17
-      Caption = 'Host'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 73
-      OnClick = HostAsyncButtonClick
-    end
-    object ReinAsyncButton: TButton
-      Left = 172
-      Top = 204
-      Width = 81
-      Height = 17
-      Caption = 'Reinitialize'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 74
-      OnClick = ReinAsyncButtonClick
-    end
   end
   object Panel2: TPanel
     Left = 0
     Top = 0
-    Width = 621
+    Width = 624
     Height = 149
     Align = alTop
     Font.Charset = DEFAULT_CHARSET
@@ -1253,6 +1210,7 @@ object FtpReceiveForm: TFtpReceiveForm
     Font.Style = []
     ParentFont = False
     TabOrder = 0
+    ExplicitWidth = 619
     object Label1: TLabel
       Left = 11
       Top = 12
@@ -1352,13 +1310,6 @@ object FtpReceiveForm: TFtpReceiveForm
       Height = 13
       Caption = 'Account'
     end
-    object Label14: TLabel
-      Left = 504
-      Top = 96
-      Width = 53
-      Height = 13
-      Caption = 'CodePage:'
-    end
     object HostNameEdit: TEdit
       Left = 72
       Top = 8
@@ -1442,7 +1393,7 @@ object FtpReceiveForm: TFtpReceiveForm
       ParentFont = False
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 10
+      TabOrder = 9
     end
     object LocalFileEdit: TEdit
       Left = 72
@@ -1458,7 +1409,7 @@ object FtpReceiveForm: TFtpReceiveForm
       ParentFont = False
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 8
+      TabOrder = 7
       Text = 'LocalFileEdit'
     end
     object BinaryCheckBox: TCheckBox
@@ -1478,7 +1429,7 @@ object FtpReceiveForm: TFtpReceiveForm
       ParentShowHint = False
       ShowHint = True
       State = cbChecked
-      TabOrder = 9
+      TabOrder = 8
     end
     object HostDirEdit: TEdit
       Left = 72
@@ -1523,7 +1474,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Font.Name = 'MS Sans Serif'
       Font.Style = []
       ParentFont = False
-      TabOrder = 11
+      TabOrder = 10
     end
     object PassiveCheckBox: TCheckBox
       Left = 480
@@ -1537,7 +1488,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Font.Name = 'MS Sans Serif'
       Font.Style = []
       ParentFont = False
-      TabOrder = 12
+      TabOrder = 11
     end
     object NoAutoResumeAtCheckBox: TCheckBox
       Left = 480
@@ -1551,14 +1502,14 @@ object FtpReceiveForm: TFtpReceiveForm
       Font.Name = 'MS Sans Serif'
       Font.Style = []
       ParentFont = False
-      TabOrder = 13
+      TabOrder = 12
     end
     object DataPortRangeStartEdit: TEdit
       Left = 72
       Top = 60
       Width = 57
       Height = 21
-      TabOrder = 14
+      TabOrder = 13
       Text = 'DataPortRangeStartEdit'
     end
     object DataPortRangeEndEdit: TEdit
@@ -1566,7 +1517,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Top = 60
       Width = 53
       Height = 21
-      TabOrder = 15
+      TabOrder = 14
       Text = 'DataPortRangeEndEdit'
     end
     object AccountEdit: TEdit
@@ -1586,30 +1537,11 @@ object FtpReceiveForm: TFtpReceiveForm
       TabOrder = 4
       Text = 'AccountEdit'
     end
-    object CodePageEdit: TEdit
-      Left = 560
-      Top = 92
-      Width = 57
-      Height = 21
-      Hint = '0 = System default code page, 65001 = UTF-8'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      ParentShowHint = False
-      ShowHint = True
-      TabOrder = 7
-      Text = 'CodePageEdit'
-      OnChange = CodePageEditChange
-    end
   end
   object FtpClient1: TFtpClient
     Timeout = 15
     MultiThreaded = False
     Port = 'ftp'
-    CodePage = 0
     DataPortRangeStart = 0
     DataPortRangeEnd = 0
     LocalAddr = '0.0.0.0'

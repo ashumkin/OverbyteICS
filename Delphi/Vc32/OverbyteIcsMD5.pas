@@ -5,7 +5,7 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      6.08
+Version:      6.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -57,7 +57,6 @@ July 2007    V6.04 changes for .net compatibility
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 17 Apr, 2008 MD5UpdateBuffer String to AnsiString type-change.
 Aug 05, 2008 V6.07 F. Piette added casts to AnsiString to avoid warnings
-Sept 15, 2008 V6.08 Angus changed file names to UnicodeStrings for Unicode
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -71,11 +70,11 @@ unit OverbyteIcsMD5;
 interface
 
 uses
-    SysUtils, Classes, OverbyteIcsUtils;
+    SysUtils, Classes;
 
 const
-    MD5Version         = 608;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2008 F. Piette V6.08 ';
+    MD5Version         = 607;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2008 F. Piette V6.07 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}
@@ -147,12 +146,12 @@ function StrMD5(Buffer : String): String;
 overload;
 function StrMD5(Buffer : AnsiString): AnsiString; overload;
 {$ENDIF}
-function FileMD5(const Filename: UnicodeString; Mode: Word = DefaultMode) : AnsiString; overload;
-function FileMD5(const Filename: UnicodeString; Obj: TObject; ProgressCallback: TMD5Progress;
+function FileMD5(const Filename: String; Mode: Word = DefaultMode) : AnsiString; overload;
+function FileMD5(const Filename: String; Obj: TObject; ProgressCallback: TMD5Progress;
                                            Mode: Word = DefaultMode) : AnsiString; overload;
-function FileMD5(const Filename: UnicodeString; StartPos, EndPos: Int64;
+function FileMD5(const Filename: String; StartPos, EndPos: Int64;
                                  Mode: Word = DefaultMode) : AnsiString; overload; { V6.05 }
-function FileMD5(const Filename: UnicodeString; Obj: TObject; ProgressCallback : TMD5Progress;
+function FileMD5(const Filename: String; Obj: TObject; ProgressCallback : TMD5Progress;
         StartPos, EndPos: Int64;  Mode: Word = DefaultMode): AnsiString; overload; { V6.05 }
 function FileListMD5(FileList: TStringList; Obj: TObject;
     ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
@@ -572,7 +571,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  {  { V6.05 }
 {$IFDEF SAFE}
 function FileMD5(
-    const Filename   : UnicodeString;
+    const Filename   : String;
     Obj              : TObject;
     ProgressCallback : TMD5Progress;
     StartPos, EndPos : Int64;              { V6.05 }
@@ -587,14 +586,14 @@ var
     MD5Digest  : TMD5Digest;
     MD5Context : TMD5Context;
     Buf        : TBytes;
-    Stream     : TIcsFileStreamW;
+    Stream     : TFileStream;
     Cancel     : Boolean;
     FSize      : Int64;
 begin
     Result := '';
 
     { Open file }
-    Stream := TIcsFileStreamW.Create(Filename, Mode);  { V6.06 not necessarily share locked }
+    Stream := TFileStream.Create(Filename, Mode);  { V6.06 not necessarily share locked }
     try
         { Allocate buffer to read file }
         SetLength(Buf, ChunkSize);
@@ -646,7 +645,7 @@ begin
 end;
 {$ELSE}
 function FileMD5(
-    const Filename   : UnicodeString;
+    const Filename   : String;
     Obj              : TObject;
     ProgressCallback : TMD5Progress;
     StartPos, EndPos : Int64;              { V6.05 }
@@ -665,14 +664,14 @@ var
     MD5Digest  : TMD5Digest;
     MD5Context : TMD5Context;
     Buf        : ^Byte;
-    Stream     : TIcsFileStreamW;
+    Stream     : TFileStream;
     Cancel     : Boolean;
     FSize      : Int64;
 begin
     Result := '';
 
     { Open file }
-    Stream := TIcsFileStreamW.Create(Filename, Mode);  { V6.06 not necessarily share locked }
+    Stream := TFileStream.Create(Filename, Mode);  { V6.06 not necessarily share locked }
 
     try
         { Allocate buffer to read file }
@@ -730,20 +729,20 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function FileMD5(const Filename: UnicodeString; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
+function FileMD5(const Filename: String; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5 (FileName, 0, 0, Mode);
         end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function FileMD5(const Filename: UnicodeString; StartPos, EndPos: Int64;
+function FileMD5(const Filename: String; StartPos, EndPos: Int64;
                                     Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5(Filename, Nil, Nil, StartPos, EndPos, Mode);
         end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.05 }
-function FileMD5(const Filename: UnicodeString; Obj: TObject;
+function FileMD5(const Filename: String; Obj: TObject;
     ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5(Filename, Obj, ProgressCallback, 0, 0, Mode);

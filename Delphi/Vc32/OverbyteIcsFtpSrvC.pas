@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpCtrlSocket component. It handle the client connection for
               the TFtpServer component.
 Creation:     April 21, 1998
-Version:      6.06
+Version:      6.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -93,8 +93,6 @@ May 15, 2008 V1.61 AGarrels type change of some published String properties
 Jul 10, 2008 V6.03 bumped version to match OverbyteFtpCli
 Jul 13, 2008 V6.04 Made ReadCount a public property
 Aug 11, 2008 V6.05 A. Garrels - Type AnsiString rolled back to String.
-Sep 17, 2008 V6.06 Angus some initial changes for Unicode directory listings
-
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -157,7 +155,9 @@ uses
     OverbyteIcsMd5, { AG V1.46}
     OverbyteIcsCRC,        { angus V1.54 }
     OverbyteIcsOneTimePw,  { V1.54 }
+{$IFDEF COMPILER12_UP}
     OverbyteIcsUtils,
+{$ENDIF}
     OverbyteIcsWinsock, OverbyteIcsWSocket, OverbyteIcsWSockBuf;
 
 const
@@ -451,7 +451,7 @@ type
 
 function  IsUNC(S : String) : Boolean;
 procedure PatchIE5(var S : String);
-function FormatFactsDirEntry(F : TIcsSearchRecW; const FileName: UnicodeString) : UnicodeString;  { angus 1.54  }
+function FormatFactsDirEntry(F : TSearchRec; const FileName: string) : String;  { angus 1.54  }
 {$IFDEF VER80}
 function ExtractFileDir(const FileName: String): String;
 function ExtractFileDrive(const FileName: String): String;
@@ -954,7 +954,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function FormatUnixDirEntry(F : TIcsSearchRecW; const FileName: UnicodeString) : UnicodeString;
+function FormatUnixDirEntry(F : TSearchRec; const FileName: string) : String;
 var
     Attr             : String;
     Ext              : String;
@@ -1059,7 +1059,7 @@ size=0;type=dir;perm=fdelcmp;create=20020805160304;modify=20031002133003; sql lo
 size=70806;type=file;perm=fdrwa;create=20030718113340;modify=20031001185600; vehinfiles.zip
 size=0;type=dir;perm=fdelcmp;create=20020801100314;modify=20031004124403; zip logs  }
 
-function FormatFactsDirEntry(F : TIcsSearchRecW; const FileName: UnicodeString) : UnicodeString;  { angus V1.38, 1.54 added FileName }
+function FormatFactsDirEntry(F : TSearchRec; const FileName: string) : String;  { angus V1.38, 1.54 added FileName }
 var
     SizeStr : String;
 begin
@@ -1126,9 +1126,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpCtrlSocket.BuildDirectory(const Path : String);     { angus 1.54  }
 var
-    F          : TIcsSearchRecW;
+    F          : TSearchRec;
     Status     : Integer;
-    Buf        : UnicodeString;
+    Buf        : String;
     LocFiles   : TIcsFileRecs;  { angus 1.54 dynamic array of File Records }
     LocFileList: TList;         { angus 1.54 sorted pointers to File Records }
     I          : Integer;
@@ -1179,9 +1179,9 @@ begin
     end
     else begin
         if DirListHidden then
-            Status := IcsFindFirstW(DirListPath, faAnyFile, F)
+            Status := FindFirst(DirListPath, faAnyFile, F)
         else
-            Status := IcsFindFirstW(DirListPath, faArchive + faDirectory, F);
+            Status := FindFirst(DirListPath, faArchive + faDirectory, F);
         while Status = 0 do begin
             if DirListType = ListTypeUnix then               { angus V1.38 }
                 Buf := FormatUnixDirEntry(F, F.Name)
@@ -1195,9 +1195,9 @@ begin
                 //DataStream.Write(Buf[1], Length(Buf));
                 DataStreamWriteString(Buf);
             end;
-            Status := IcsFindNextW(F);
+            Status := FindNext(F);
         end;
-        IcsFindCloseW(F);
+        FindClose(F);
     end;
 end;
 
