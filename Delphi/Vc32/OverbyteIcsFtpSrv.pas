@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      6.08
+Version:      6.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -317,7 +317,7 @@ Jul 13, 2008 V6.04 Revised socket names used for debugging purpose
 Aug 04, 2008 V6.07 A. Garrels - CommandAUTH TLS sent Unicode response.
              Removed some getter and setters, they are no longer needed.
 Aug 11, 2008 V6.08 A. Garrels - Type AnsiString rolled back to String. 
- 
+Sep 21, 2008 V6.11 Arno removed some old compiler switches (CBuilder compat.)
 
 Angus pending -
 CRC on the fly
@@ -408,8 +408,8 @@ uses
     OverbyteIcsLibrary;    { AG V6.04 }
 
 const
-    FtpServerVersion         = 608;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.08 ';
+    FtpServerVersion         = 611;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V6.11 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
 
 type
@@ -429,21 +429,7 @@ type
 
     PBoolean = ^Boolean;
     FtpServerException  = class(Exception);
-{ Various Delphi and C++Builder version handle string parameter passed as var }
-{ differently. To get application code compatible across all versions, we     }
-{ need to define our own string type. We use the larger we can with the given }
-{ compiler version. btw: the 255 limit is not a problem because it applies to }
-{ the command lines sent to the server and 255 should be enough except if     }
-{ you use incredibly long file names.                                         }
-{$IFDEF DELPHI3_UP}
     TFtpString = type String;
-{$ELSE}
-    TFtpString = String[255];
-{$ENDIF}
-{$IFDEF VER80}
-    WPARAM = WORD;
-    LPARAM = DWORD;
-{$ENDIF}
     TFtpCtrlSocketClass = class of TFtpCtrlSocket;
     TFtpSrvAuthenticateEvent  =  procedure (Sender   : TObject;
                                             Client   : TFtpCtrlSocket;
