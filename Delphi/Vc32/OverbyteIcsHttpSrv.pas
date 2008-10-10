@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      6.09
+Version:      6.10
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -217,7 +217,7 @@ Sep 28, 2008 V6.09 A. Garrels modified UrlEncode(), UrlDecode() and
              ExtractURLEncodedValue() to support UTF-8 encoding. Moved IsDigit,
              IsXDigit, XDigit, htoi2 and htoin to OverbyteIcsUtils.
              Fixed an AV in TextToHtmlText() with characters above #255.
-
+Oct 10, 2008 V6.10 A. Garrels fixed TextToHtmlText() to work in all locales.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -290,8 +290,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 609;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.09 ';
+    THttpServerVersion = 610;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V6.10 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -3496,15 +3496,17 @@ begin
 
     Result   := '<HTML>' + #13#10 +
                 '<HEAD>' + #13#10 +
+                  '' + #13#10 +
                   '<STYLE TYPE="text/css">' + #13#10 +
-                    '.dirline { font-family: arial; font-size: normal; color: black }' + #13#10 +
+                    '.dirline { font-family: arial; color: black; font-style: normal; }' + #13#10 +
                   '</STYLE>' + #13#10 +
                   '<TITLE>Directory List</TITLE>' + #13#10 +
+                  //'<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' + #13#10 +
                 '</HEAD>' + #13#10 +
               '<BODY><P>Directory of ' +
-    TextToHtmlText(DosPathToUnixPath(AbsolutisePath(UnixPathToDosPath(Path)))) +
-                       ':</P><P CLASS=dirline>' + #13#10 +
-              '<TABLE>' + #13#10;
+    TextToHtmlText(DosPathToUnixPath(AbsolutisePath(UnixPathToDosPath(UrlDecode(Path))))) +
+                       ':</P>' + #13#10 +
+              '<TABLE CLASS="dirline">' + #13#10;
     if Path = '/' then
         ParentDir := ''
     else if Path[Length(Path)] = '/' then
@@ -3542,7 +3544,7 @@ begin
                            _IntToStr(TotalBytes) + ' byte(s)</TD></TR>';
     end;
 
-    Result := Result + '</TABLE></P></BODY></HTML>' + #13#10;
+    Result := Result + '</TABLE></BODY></HTML>' + #13#10;
 end;
 
 
@@ -3844,18 +3846,22 @@ const
 var
     I, J : Integer;
     Sub  : String;
+    Temp : UnicodeString;
 begin
     Result := '';
+    { Convert the ANSI string to Unicode with default code page in D7-D2007 !!  }
+    { HTML entities represent iso-8859-1 (Latin1) and Unicode character numbers }
+    Temp := Src;
     I := 1;
-    while I <= Length(Src) do begin
+    while I <= Length(Temp) do begin
         J   := I;
         Sub := '';
-        while (I <= Length(Src)) and (Ord(Src[I]) < Low(HtmlSpecialChars)) do begin
-            case Src[I] of
+        while (I <= Length(Temp)) and (Ord(Temp[I]) < Low(HtmlSpecialChars)) do begin
+            case Temp[I] of
             ' '  : begin
-                       if (I > 1) and (Src[I - 1] = ' ') then begin
+                       if (I > 1) and (Temp[I - 1] = ' ') then begin
                            { Replace multiple spaces by &nbsp; }
-                           while (I <= Length(Src)) and (Src[I] = ' ') do begin
+                           while (I <= Length(Temp)) and (Temp[I] = ' ') do begin
                                Sub := Sub + '&nbsp;';
                                Inc(I);
                            end;
@@ -3875,22 +3881,22 @@ begin
                 Inc(I);
             end;
             if Length(Sub) > 0 then begin
-                Result := Result + Copy(Src, J, I - J) + Sub;
+                Result := Result + Copy(Temp, J, I - J) + Sub;
                 Inc(I);
                 J      := I;
                 Sub    := '';
             end;
         end;
 
-        if I > Length(Src) then begin
-            Result := Result + Copy(Src, J, I - J);
+        if I > Length(Temp) then begin
+            Result := Result + Copy(Temp, J, I - J);
             Exit;
         end;
-        if Ord(Src[I]) > High(HtmlSpecialChars) then  // Avoids AV !!
-            Result := Result + '?'
+        if Ord(Temp[I]) > 255 then
+            Result := Result + Copy(Temp, J, I - J) + '&#' + _IntToStr(Ord(Temp[I])) + ';'
         else
-            Result := Result + Copy(Src, J, I - J) + '&' +
-                    String(HtmlSpecialChars[Ord(Src[I])]) + ';';
+            Result := Result + Copy(Temp, J, I - J) + '&' +
+                    String(HtmlSpecialChars[Ord(Temp[I])]) + ';';
         Inc(I);
     end;
 end;
