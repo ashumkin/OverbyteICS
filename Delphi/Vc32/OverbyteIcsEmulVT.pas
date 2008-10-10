@@ -5,7 +5,7 @@ Description:  Delphi component which does Ansi terminal emulation
               Not every escape sequence is implemented, but a large subset.
 Author:       François PIETTE
 Creation:     May, 1996
-Version:      7.00
+Version:      7.01
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -88,6 +88,8 @@ Jul 20, 2008 V6.03 F. Piette made some more changes for UniCode
                    emulator.
 Aug 15, 2008 V7.00 Delphi 2009 (Unicode) support. The terminal is not
              unicode, but the component support unicode strings.
+Oct 03, 2008 V7.01 A. Garrels moved IsCharInSysCharSet, xdigit and xdigit2
+                   to OverbyteIcsUtils.pas.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -122,11 +124,12 @@ uses
 {$ELSE}
     WinTypes, WinProcs,
 {$ENDIF}
-    SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ClipBrd;
+    SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ClipBrd,
+    OverbyteIcsUtils;
 
 const
-  EmulVTVersion      = 700;
-  CopyRight : String = ' TEmulVT (c) 1996-2008 F. Piette V7.00 ';
+  EmulVTVersion      = 701;
+  CopyRight : String = ' TEmulVT (c) 1996-2008 F. Piette V7.01 ';
   MAX_ROW            = 50;
   MAX_COL            = 160;
   NumPaletteEntries  = 16;
@@ -903,39 +906,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsCharInSysCharSet(Ch : Char; const MySet : TSysCharSet) : Boolean;
-begin
-{$IF SIZEOF(CHAR) > 1}
-    if Ord(Ch) > 255 then
-        Result := FALSE
-    else
-{$IFEND}
-        Result := AnsiChar(Ch) in MySet;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function xdigit(Ch : Char) : integer;
-begin
-    if (ch >= '0') and (Ch <= '9') then
-        Result := Ord(ch) - ord('0')
-    else if (ch >= 'A') and (Ch <= 'Z') then
-        Result := Ord(ch) - Ord('A') + 10
-    else if (ch >= 'a') and (Ch <= 'z') then
-        Result := Ord(ch) - Ord('a') + 10
-    else
-        Result := 0;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function xdigit2(S : PChar) : integer;
-begin
-    Result := 16 * xdigit(S[0]) + xdigit(S[1]);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FuncKeyValueToString(var S : TFuncKeyValue) : String;
 var
     I : Integer;
@@ -962,7 +932,7 @@ begin
         if (S[I] = '\') and
            ((I + 3) <= Length(S)) and
            (S[I + 1] = 'x') then begin
-            Result := Result + chr(xdigit2(@S[I + 2]));
+            Result := Result + chr(XDigit2(PChar(@S[I + 2])));
             I := I + 3;
         end
         else
@@ -1072,7 +1042,7 @@ begin
                 J  := 1;
                 T  := GetToken(S, J, ',');
                 if (Length(T) > 0) and (T[1] <> ';') then begin
-                    sc := xdigit2(@T[1]);
+                    sc := XDigit2(PChar(@T[1]));
                     if sc <> 0 then begin
                         ScanCode := chr(sc);
                         Inc(J);

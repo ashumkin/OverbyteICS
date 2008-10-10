@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      6.10
+Version:      6.11
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -73,6 +73,8 @@ Jul 24, 2008 V6.08  A. Garrels - NeedsEncoding() returned "False" for character
                     #127.
 Aug 03, 2008 v6.09  A. Garrels changed some string types again.
 Aug 11, 2008 V6.10  A. Garrels - Base64Encode() changed.
+Oct 03, 2008 V6.10  A. Garrels moved IsCharInSysCharSet to OverbyteIcsUtils.pas,
+                    simplified Set-stuff for.NET.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -80,6 +82,8 @@ unit OverbyteIcsMimeUtils;
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
+{$H+}           { Use long strings                    }
+{$J+}           { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
@@ -93,10 +97,6 @@ unit OverbyteIcsMimeUtils;
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
     {$DEFINE USE_BUFFERED_STREAM}
-{$ENDIF}
-{$IFNDEF VER80}   { Not for Delphi 1                    }
-    {$H+}         { Use long strings                    }
-    {$J+}         { Allow typed constant to be modified }
 {$ENDIF}
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
@@ -119,34 +119,20 @@ uses
     OverbyteIcsUtils,
     OverbyteIcsLibrary;
 
-type
-{$IFDEF CLR}
-    // DotNet has 16 bits characters which are not allowed in sets
-    // So we must use bytes
-    TSetType    = Byte;
-    TSysCharSet = set of Byte;
-{$ELSE}
-    TSetType    = Char;
-    TSysCharSet = set of AnsiChar;
-{$ENDIF}
-
 const
-    TMimeUtilsVersion = 610;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.10 ';
+    TMimeUtilsVersion = 611;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.11 ';
 
-{$IFDEF CLR}
-    SpecialsRFC822 : TSysCharSet = [Ord('('), Ord(')'), Ord('<'), Ord('>'), Ord('@'), Ord(','), Ord(';'), Ord(':'),
-                                    Ord('\'), Ord('"'), Ord('['), Ord(']'), Ord('.')];
-    CrLfSet : TSysCharSet = [13, 10];
-    QuotedCharSet : TSysCharSet = [Ord('?'), Ord('='), Ord(' '), Ord('_')];
-    BreakCharsSet : TSysCharSet = [9, 32, Ord(';'), Ord(','), Ord('>'), Ord(']')];
-{$ELSE}
-    SpecialsRFC822 : TSysCharSet = ['(', ')', '<', '>', '@', ',', ';', ':',
-                                    '\', '"', '[', ']', '.'];
-    CrLfSet : TSysCharSet = [#13, #10];
-    QuotedCharSet : TSysCharSet = ['?', '=', ' ', '_'];
-    BreakCharsSet : TSysCharSet = [#9, #32, ';', ',', '>', ']'];
-{$ENDIF}
+    { Explicit type cast to Ansi works in .NET as well }
+    SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
+                AnsiChar('>'), AnsiChar('@'), AnsiChar(','), AnsiChar(';'),
+                AnsiChar(':'), AnsiChar('\'), AnsiChar('"'), AnsiChar('['),
+                AnsiChar(']'), AnsiChar('.')];
+    CrLfSet : TSysCharSet = [AnsiChar(#13), AnsiChar(#10)];
+    QuotedCharSet : TSysCharSet = [AnsiChar('?'), AnsiChar('='), AnsiChar(' '),
+                                   AnsiChar('_')];
+    BreakCharsSet : TSysCharSet = [AnsiChar(#9), AnsiChar(#32), AnsiChar(';'),
+                                   AnsiChar(','), AnsiChar('>'), AnsiChar(']')];
 
     HexTable : array[0..15] of Char = ('0','1','2','3','4','5','6','7','8','9',
                                         'A','B','C','D','E','F');      {HLX}
@@ -287,8 +273,6 @@ procedure FoldHdrLine(HdrLines      : TStrings;                             {AG}
 function FoldString(const Input : String;                                   {AG}
                     BreakCharsSet : TSysCharSet;
                     MaxCol      : Integer): String;
-
-function IsCharInSysCharSet(Ch : TSetType; const MySet : TSysCharSet) : Boolean;
 
 implementation
 
@@ -1144,7 +1128,7 @@ begin
     Result        := '';
     while cPos <= LineLen do begin
         CurChar := Line[cPos];
-        if IsCharInSysCharSet(TSetType(CurChar), LeadBytes) then begin
+        if IsCharInSysCharSet(CurChar, LeadBytes) then begin
             L := CharLength(Line, cPos) div SizeOf(Char) -1;
             Inc(cPos, L);
             Inc(Col, L);
@@ -1161,12 +1145,12 @@ begin
                     end;
                 end
             end
-            else if IsCharInSysCharSet(TSetType(CurChar),
+            else if IsCharInSysCharSet(CurChar,
                                        BreakingChars) then begin
                 if QuoteChar = #0 then
                     BreakPos := cPos;
             end
-            else if IsCharInSysCharSet(TSetType(CurChar), QuoteChars) then begin
+            else if IsCharInSysCharSet(CurChar, QuoteChars) then begin
                 if CurChar = QuoteChar then begin
                     QuoteChar := #0;
                     if ForceBreak and (Col >= MaxCol) and (BreakPos = 0) then
@@ -1186,14 +1170,14 @@ begin
         Inc(cPos);
         Inc(Col);
 
-        if (not IsCharInSysCharSet(TSetType(QuoteChar), QuoteChars)) and
+        if (not IsCharInSysCharSet(QuoteChar, QuoteChars)) and
            (ExistingBreak or
            ((Col > MaxCol) and (BreakPos >= LinePos))) then begin
             if ExistingBreak then
                 Result := Copy(Line, LinePos, BreakPos - LinePos + 1 - BreakLen)
             else
                 Result := Copy(Line, LinePos, BreakPos - LinePos + 1);
-            if (not IsCharInSysCharSet(TSetType(CurChar), QuoteChars)) or
+            if (not IsCharInSysCharSet(CurChar, QuoteChars)) or
                (ExistingBreak) then begin
                 if cPos <= LineLen then begin
                     if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
@@ -1245,7 +1229,7 @@ begin
     Result        := '';
     while cPos <= LineLen do begin
         CurChar := Line[cPos];
-        if IsCharInSysCharSet(TSetType(CurChar), LeadBytes) then begin
+        if IsCharInSysCharSet(CurChar, LeadBytes) then begin
             L := CharLength(Line, cPos) div SizeOf(Char) -1;
             Inc(cPos, L);
             Inc(Col, L);
@@ -1262,12 +1246,12 @@ begin
                     end;
                 end
             end
-            else if IsCharInSysCharSet(TSetType(CurChar),
+            else if IsCharInSysCharSet(CurChar,
                                        BreakingChars) then begin
                 if QuoteChar = #0 then
                     BreakPos := cPos;
             end
-            else if IsCharInSysCharSet(TSetType(CurChar), QuoteChars) then begin
+            else if IsCharInSysCharSet(CurChar, QuoteChars) then begin
                 if CurChar = QuoteChar then begin
                     QuoteChar := #0;
                     if ForceBreak and (Col >= MaxCol) and (BreakPos = 0) then
@@ -1287,14 +1271,14 @@ begin
         Inc(cPos);
         Inc(Col);
 
-        if (not IsCharInSysCharSet(TSetType(QuoteChar), QuoteChars)) and
+        if (not IsCharInSysCharSet(QuoteChar, QuoteChars)) and
            (ExistingBreak or
            ((Col > MaxCol) and (BreakPos >= LinePos))) then begin
             if ExistingBreak then
                 Result := Copy(Line, LinePos, BreakPos - LinePos + 1 - BreakLen)
             else
                 Result := Copy(Line, LinePos, BreakPos - LinePos + 1);
-            if (not IsCharInSysCharSet(TSetType(CurChar), QuoteChars)) or
+            if (not IsCharInSysCharSet(CurChar, QuoteChars)) or
                (ExistingBreak) then begin
                 if cPos <= LineLen then begin
                     if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
@@ -1706,18 +1690,6 @@ begin
                                                           BreakCharsSet,
                                                           MaxCol,
                                                           [], rPos))
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsCharInSysCharSet(Ch : TSetType; const MySet : TSysCharSet) : Boolean;
-begin
-{$IF SIZEOF(CHAR) > 1}
-    if Ord(Ch) > 255 then
-        Result := FALSE
-    else
-{$IFEND}
-        Result := AnsiChar(Ch) in MySet;
 end;
 
 

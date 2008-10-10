@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.19
+Version:      1.20
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -71,7 +71,8 @@ Sep 27, 2008 V1.18 Arno fixed a bug in StringToUtf8.
 Sep 28, 2008 V1.19 A. Garrels Moved IsDigit, IsXDigit, XDigit, htoi2 and htoin
              from OverbyteIcsUrl and added overloads. Fixed a bug in
              ConvertCodepage().
-
+Oct 03, 2008 V1.20 A. Garrels moved some double helper functions to this unit.
+             Added symbol USE_INLINE that enables inlining.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -148,18 +149,18 @@ type
     end;
 
     function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiString; overload;
-    function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString;  overload;
+    function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString): UnicodeString; overload;
     function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
-    function  UnicodeToAnsi(const Str: UnicodeString): RawByteString; overload;
+    function  UnicodeToAnsi(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString; overload;
-    function  AnsiToUnicode(const Str: RawByteString): UnicodeString; overload;
+    function  AnsiToUnicode(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
-    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; overload;
-    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
-    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal): Integer; overload;
-    function  StreamWriteString(AStream: TStream; const Str: UnicodeString): Integer; overload;
+    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  IsUsAscii(const Str: RawByteString): Boolean; overload;
     function  IsUsAscii(const Str: UnicodeString): Boolean; overload;
     procedure IcsAppendStr(var Dest: RawByteString; const Src: RawByteString);
@@ -169,29 +170,47 @@ type
     function  atoi64(const Str: RawByteString): Int64; overload;
     function  atoi64(const Str: UnicodeString): Int64; overload;
 {$ENDIF}
-    function  StringToUtf8(const Str: UnicodeString): RawByteString; overload;
-    function  StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString; overload;
-    function  Utf8ToStringW(const Str: RawByteString): UnicodeString;
-    function  Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString;
+    function  StringToUtf8(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  Utf8ToStringW(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
-    function  IsUtf8Valid(const Str: RawByteString): Boolean; overload;
+    function  IsUtf8Valid(const Str: RawByteString): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload;
+    function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar;
+    function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar;
     function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
-    function  htoin(Value : PWideChar; Len : Integer) : Integer; overload;
-    function  htoin(Value : PAnsiChar; Len : Integer) : Integer; overload;
+    function  htoin(Value : PWideChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  htoin(Value : PAnsiChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  htoi2(value : PWideChar): Integer; overload;
     function  htoi2(value : PAnsiChar): Integer; overload;
     function  IsXDigit(Ch : WideChar): Boolean; overload;
     function  IsXDigit(Ch : AnsiChar): Boolean; overload;
     function  XDigit(Ch : WideChar): Integer; overload;
     function  XDigit(Ch : AnsiChar): Integer; overload;
+    function  IsCharInSysCharSet(Ch : WideChar; const ASet : TSysCharSet) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsCharInSysCharSet(Ch : AnsiChar; const ASet : TSysCharSet) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsDigit(Ch : WideChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsDigit(Ch : AnsiChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsSpace(Ch : WideChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsSpace(Ch : AnsiChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsCRLF(Ch : WideChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsCRLF(Ch : AnsiChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsSpaceOrCRLF(Ch : WideChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IsSpaceOrCRLF(Ch : AnsiChar) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  XDigit2(S : PChar) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  stpblk(PValue : PWideChar) : PWideChar; overload;
+    function  stpblk(PValue : PAnsiChar) : PAnsiChar; overload;
+    function  IcsStrNextChar(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+    function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer;
+
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
-    function IcsFileCreateW(const FileName: Utf8String): Integer; overload;
+    function IcsFileCreateW(const FileName: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileCreateW(const FileName: UnicodeString; Rights: LongWord): Integer; overload;
-    function IcsFileCreateW(const FileName: Utf8String; Rights: LongWord): Integer; overload;
+    function IcsFileCreateW(const FileName: Utf8String; Rights: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileOpenW(const FileName: UnicodeString; Mode: LongWord): Integer; overload;
-    function IcsFileOpenW(const FileName: Utf8String; Mode: LongWord): Integer; overload;
+    function IcsFileOpenW(const FileName: Utf8String; Mode: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsStrScanW(const Str: PWideChar; Ch: WideChar): PWideChar;
     function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;
     function IcsExtractFileDirW(const FileName: UnicodeString): UnicodeString;
@@ -203,36 +222,36 @@ type
     function IcsChangeFileExtW(const FileName, Extension: UnicodeString): UnicodeString;  // angus
     function IcsStrAllocW(Len: Cardinal): PWideChar;
     function IcsStrLenW(Str: PWideChar): Cardinal;
-    function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer; overload;
-    function IcsAnsiCompareFileNameW(const S1, S2: Utf8String): Integer; overload;
+    function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsAnsiCompareFileNameW(const S1, S2: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
     function IcsDirExistsW(const FileName: PWideChar): Boolean; overload;
-    function IcsDirExistsW(const FileName: UnicodeString): Boolean; overload;
-    function IcsDirExistsW(const FileName: Utf8String): Boolean; overload;
-    function IcsFindFirstW(const Path: UnicodeString; Attr: Integer; var  F: TIcsSearchRecW): Integer; overload;
-    function IcsFindFirstW(const Path: Utf8String; Attr: Integer; var  F: TIcsSearchRecW): Integer; overload;
+    function IcsDirExistsW(const FileName: UnicodeString): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsDirExistsW(const FileName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFindFirstW(const Path: UnicodeString; Attr: Integer; var F: TIcsSearchRecW): Integer; overload;
+    function IcsFindFirstW(const Path: Utf8String; Attr: Integer; var F: TIcsSearchRecW): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     procedure IcsFindCloseW(var F: TIcsSearchRecW);
     function IcsFindNextW(var F: TIcsSearchRecW): Integer;
     function IcsIncludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
     function IcsExcludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
     function IcsFileGetAttrW(const FileName: UnicodeString): Integer; overload;
-    function IcsFileGetAttrW(const FileName: Utf8String): Integer; overload;
+    function IcsFileGetAttrW(const FileName: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer; overload;
-    function IcsFileSetAttrW(const FileName: Utf8String; Attr: Integer): Integer;  overload;
+    function IcsFileSetAttrW(const FileName: Utf8String; Attr: Integer): Integer;  {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsDeleteFileW(const FileName: UnicodeString): Boolean; overload;
-    function IcsDeleteFileW(const FileName: Utf8String): Boolean; overload;
+    function IcsDeleteFileW(const FileName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsRenameFileW(const OldName, NewName: UnicodeString): Boolean; overload;
-    function IcsRenameFileW(const OldName, NewName: Utf8String): Boolean; overload;
+    function IcsRenameFileW(const OldName, NewName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsForceDirectoriesW(Dir: UnicodeString): Boolean; overload;
-    function IcsForceDirectoriesW(Dir: Utf8String): Boolean; overload;
+    function IcsForceDirectoriesW(Dir: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsCreateDirW(const Dir: UnicodeString): Boolean; overload;
-    function IcsCreateDirW(const Dir: Utf8String): Boolean; overload;
+    function IcsCreateDirW(const Dir: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsRemoveDirW(const Dir: UnicodeString): Boolean; overload;
-    function IcsRemoveDirW(const Dir: Utf8String): Boolean; overload;
+    function IcsRemoveDirW(const Dir: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileAgeW(const FileName: UnicodeString): Integer; overload;
-    function IcsFileAgeW(const FileName: Utf8String): Integer; overload;
+    function IcsFileAgeW(const FileName: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileExistsW(const FileName: UnicodeString): Boolean; overload;
-    function IcsFileExistsW(const FileName: Utf8String): Boolean; overload;
+    function IcsFileExistsW(const FileName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
     // NT4 and better
@@ -922,6 +941,81 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ The return value is a pointer to the preceding character in the string, or  }
+{ to the first character in the string if the Current parameter equals the    }
+{ Start parameter.                                                            }
+function IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar;
+var
+    Ch   : Byte;
+    Cnt  : Integer;
+    Size : Integer;
+begin
+    Result := Current;
+    Cnt    := 0;
+    while (Integer(Result) > Integer(Start)) do
+    begin
+        Dec(Result);
+        Inc(Cnt);
+        Ch := Byte(Result^);
+        case Ch of
+            $00..$7F: Size := 1; //
+            $C2..$DF: Size := 2; // 110x xxxx C0 - DF
+            $E0..$EF: Size := 3; // 1110 xxxx E0 - EF
+            $F0..$F7: Size := 4; // 1111 0xxx F0 - F7 // outside traditional UNICODE
+         //   $F8..$FB: Size := 5; // 1111 10xx F8 - FB // outside UTF-16
+         //   $FC..$FD: Size := 6; // 1111 110x FC - FD // outside UTF-16
+        else
+            Size := 0; // Illegal leading character.
+        end;
+        if (Size = Cnt) then
+            Exit
+        else if (Size > 0) and (Size <> Cnt) then
+           Cnt := 0;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar;
+begin
+    Result := Str;
+    if Result^ = #0 then
+        Exit;
+    if (Byte(Result^) and $C0) = $C0 then       // UTF-8 start byte
+    begin
+        Inc(Result);
+        while (Byte(Result^) and $C0) = $80 do
+            Inc(Result);
+    end
+    else if (Byte(Result^) and $80) = $80 then  // UTF-8 trail byte
+    begin
+        Inc(Result);
+        while (Byte(Result^) and $C0) = $80 do
+            Inc(Result);
+    end
+    else                                        // US-ASCII
+        Inc(Result);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrNextChar(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+begin
+    if ACodePage = CP_UTF8 then
+        Result := IcsCharNextUtf8(Str)
+    else
+        Result := CharNextExA(Word(ACodePage), Str, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer;
+begin
+    Result := Integer(IcsStrNextChar(Str, ACodePage)) - Integer(Str);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function XDigit(Ch : WideChar) : Integer;
 begin
     case Ch of
@@ -940,6 +1034,13 @@ begin
     else
         Result := (Ord(Ch) and 15) + 9;
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function XDigit2(S : PChar) : Integer;
+begin
+    Result := 16 * XDigit(S[0]) + XDigit(S[1]);
 end;
 
 
@@ -1004,6 +1105,95 @@ end;
 function htoi2(Value : PAnsiChar) : Integer;
 begin
     Result := htoin(Value, 2);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsCharInSysCharSet(Ch : WideChar; const ASet : TSysCharSet) : Boolean;
+begin
+    Result := (Ord(Ch) < 256) and (AnsiChar(Ch) in ASet);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsCharInSysCharSet(Ch : AnsiChar; const ASet : TSysCharSet) : Boolean;
+begin
+    Result := Ch in ASet;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsDigit(Ch : WideChar) : Boolean;
+begin
+    Result := (Ch >= '0') and (Ch <= '9');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsDigit(Ch : AnsiChar) : Boolean;
+begin
+    Result := Ch in ['0'..'9'];
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsSpace(Ch : WideChar) : Boolean;
+begin
+    Result := (Ch = ' ') or (Ch = #9);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsSpace(Ch : AnsiChar) : Boolean;
+begin
+    Result := Ch in [' ', #9];
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsCRLF(Ch : WideChar) : Boolean;
+begin
+    Result := (Ch = #10) or (Ch = #13);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsCRLF(Ch : AnsiChar) : Boolean;
+begin
+    Result := Ch in [#10, #13];
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsSpaceOrCRLF(Ch : WideChar) : Boolean;
+begin
+    Result := (Ch = ' ') or (Ch = #9) or (Ch = #10) or (Ch = #13);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsSpaceOrCRLF(Ch : AnsiChar) : Boolean;
+begin
+    Result := Ch in [' ', #9, #10, #13];
+
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function stpblk(PValue : PWideChar) : PWideChar;
+begin
+    Result := PValue;
+    while IsSpaceOrCRLF(Result^) do
+        Inc(Result);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function stpblk(PValue : PAnsiChar) : PAnsiChar;
+begin
+    Result := PValue;
+    while IsSpaceOrCRLF(Result^) do
+        Inc(Result);
 end;
 
 

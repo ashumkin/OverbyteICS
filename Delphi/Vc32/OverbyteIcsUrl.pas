@@ -83,18 +83,6 @@ procedure ParseURL(const URL : String;
 function  Posn(const s, t : String; count : Integer) : Integer;
 function  UrlEncode(const S : String) : String;
 function  UrlDecode(const S : String) : String;
-(* Moved to OverbyteIcsUtils where there are Char and WideChar overloads.
-   The same functions are used be the THttpSrv.
-function  IsDigit(Ch : Char) : Boolean;
-function  IsXDigit(Ch : char) : Boolean;
-function  XDigit(Ch : char) : Integer;
-{$IFDEF CLR}
-function  htoi2(Ch1, Ch2: Char) : Integer;
-{$ELSE}
-function  htoin(value : PChar; len : Integer) : Integer;
-function  htoi2(value : PChar) : Integer;
-{$ENDIF}
-*)
 
 implementation
 
@@ -396,64 +384,6 @@ begin
 end;
 
 
-(*
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : Char) : Boolean;
-begin
-    Result := (AnsiChar(Ch) in ['0'..'9']);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsXDigit(Ch : char) : Boolean;
-begin
-    Result := (AnsiChar(Ch) in ['0'..'9']) or
-              (AnsiChar(Ch) in ['a'..'f']) or
-              (AnsiChar(ch) in ['A'..'F']);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function XDigit(Ch : char) : Integer;
-begin
-    if AnsiChar(Ch) in ['0'..'9'] then
-        Result := ord(Ch) - ord('0')
-    else
-        Result := (ord(Ch) and 15) + 9;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF WIN32}
-function htoin(value : PChar; len : Integer) : Integer;
-var
-    i : Integer;
-begin
-    Result := 0;
-    i      := 0;
-    while (i < len) and (Value[i] = ' ') do
-        i := i + 1;
-    while (i < len) and (isxDigit(Value[i])) do begin
-        Result := Result * 16 + xdigit(Value[i]);
-        i := i + 1;
-    end;
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF CLR}
-function htoi2(Ch1, Ch2: Char) : Integer;
-begin
-    Result := (xdigit(Ch1) shl 4) + xdigit(ch2);
-end;
-{$ELSE}
-function htoi2(value : PChar) : Integer;
-begin
-    Result := htoin(value, 2);
-end;
-{$ENDIF}
-*)
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 end.

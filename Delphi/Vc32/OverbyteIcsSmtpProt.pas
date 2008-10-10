@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.19
+Version:      6.20
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -336,7 +336,8 @@ Aug 03, 2008 V6.17  A.Garrels - Components use Ansi buffers internally.
 Aug 11, 2008 V6.18  A. Garrels - Type AnsiString rolled back to String.
 Oct 01, 2008 V6.19  A. Garrels fixed a ERangeError and took escaped quotation
                     marks into account in RcptNameAdd().
-
+Oct 03, 2008 V6.20  A. Garrels moved IsCharInSysCharSet, IsDigit, IsSpace, IsSpaceOrCRLF
+                    and stpblk to OverbyteIcsUtils.pas.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -392,8 +393,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 619;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.19 ';
+  SmtpCliVersion     = 620;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.20 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -1160,48 +1161,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsCharInSysCharSet(Ch : Char; const MySet : TSysCharSet) : Boolean;
-begin
-{$IF SIZEOF(CHAR) > 1}
-    if Ord(Ch) > 255 then
-        Result := FALSE
-    else
-{$IFEND}
-        Result := AnsiChar(Ch) in MySet;
-end;
 
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : Char) : Boolean;
-begin
-    Result := (Ch >= '0') and (Ch <= '9');
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpace(Ch : Char) : Boolean;
-begin
-    Result := (Ch = ' ') or (Ch = #9);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpaceOrCRLF(Ch : Char) : Boolean;
-begin
-    Result := (Ch = ' ') or (Ch = #9) or (Ch = #10) or (Ch = #13);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function stpblk(PValue : PChar) : PChar;
-begin
-    Result := PValue;
-    while IsSpaceOrCRLF(Result^) do
-        Inc(Result);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$I+}   { Activate I/O check (EInOutError exception generated) }
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

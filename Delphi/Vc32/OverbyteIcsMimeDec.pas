@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      6.04
+Version:      6.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -249,6 +249,8 @@ Mar 10, 2008  V6.03 Francois Piette made some changes to prepare code
                     for Unicode.
 Aug 02, 2008  V6.04 A. Garrels made some changes to prepare code
               for Unicode.
+Oct 03, 2008 V6.10 A. Garrels moved IsCharInSysCharSet, IsSpaceChar and
+             IsCrLfChar to OverbyteIcsUtils.pas.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -282,11 +284,11 @@ uses
 {$ELSE}
     WinTypes, WinProcs,
 {$ENDIF}
-    SysUtils, Classes, OverByteIcsLibrary;
+    SysUtils, Classes, OverByteIcsLibrary, OverbyteIcsUtils;
 
 const
-    MimeDecodeVersion  = 604;
-    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V6.04 ';
+    MimeDecodeVersion  = 605;
+    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V6.05 ';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -468,11 +470,8 @@ procedure Register;
 
 function GetToken(Src : PAnsiChar; var Dst : AnsiString; var Delim : AnsiChar) : PAnsiChar;
 function GetHeaderValue(X : PAnsiChar) : AnsiString;
-function IsSpaceChar(Ch : AnsiChar) : Boolean;
-function IsCrLfChar(Ch : AnsiChar) : Boolean;
 function IsCrLf1Char(Ch : AnsiChar) : Boolean;
 function IsCrLf1OrSpaceChar(Ch : AnsiChar) : Boolean;
-function IsCharInSysCharSet(Ch : AnsiChar; const MySet : TSysCharSet) : Boolean;
 
 implementation
 
@@ -729,11 +728,11 @@ begin
     Len          := StrLen(FCurrentData);
 
     { Remove spaces at the end of line }
-    while (Len > 0) and IsSpaceChar(FCurrentData[Len - 1]) do
+    while (Len > 0) and IsSpace(FCurrentData[Len - 1]) do
         Dec(Len);
 
     { Skip white spaces at the start of line }
-    while (SourceIndex < Len) and IsSpaceChar(FCurrentData[SourceIndex]) do
+    while (SourceIndex < Len) and IsSpace(FCurrentData[SourceIndex]) do
         Inc(SourceIndex);
 
     { Decode until end of line. Replace coded chars by decoded ones       }
@@ -1161,7 +1160,7 @@ begin
             Inc(Result);
         end;
     end;
-    if IsSpaceChar(Delim) then begin
+    if IsSpace(Delim) then begin
         Result := stpblk(Result);
         if IsCharInSysCharSet(Result^, [':', ';', '=', #9]) then
             Inc(Result);
@@ -1184,7 +1183,7 @@ begin
         Dst := Dst + _LowerCase(Result^);
         Inc(Result);
     end;
-    if IsSpaceChar(Delim) then begin
+    if IsSpace(Delim) then begin
         Result := stpblk(Result);
         if IsCharInSysCharSet(Result^, [':', ';', '=', #9]) then begin
             {AS: Take delimiter after space }
@@ -1227,7 +1226,7 @@ begin
         Dst := Dst + _LowerCase(Result^);
         Inc(Result);
     end;
-    if IsSpaceChar(Delim) then begin
+    if IsSpace(Delim) then begin
         Result := stpblk(Result);
         if IsCharInSysCharSet(Result^, [':', ';', '=', #9]) then begin
             Delim := Result^;
@@ -1430,7 +1429,7 @@ begin
 
     { A header line can't begin with a space nor tab char. If we got that }
     { then we consider the header as begin finished and process line      }
-    if FHeaderFlag and IsSpaceChar(FCurrentData[0]) then begin
+    if FHeaderFlag and IsSpace(FCurrentData[0]) then begin
         TriggerPartHeaderEnd;
         FHeaderFlag        := FALSE;
         FLineNum           := 0;
@@ -1757,8 +1756,8 @@ begin
                 end;
 
                 if I < nLast then begin
-                    if (not IsCrLfChar(FBuffer[nStart])) and  { 27/08/98 }
-                       IsSpaceChar(FBuffer[I + 1]) then begin
+                    if (not IsCrLf(FBuffer[nStart])) and  { 27/08/98 }
+                       IsSpace(FBuffer[I + 1]) then begin
                         { We have a continuation line, replace CR, LF, TAB }
                         { by #1 which will be handled in GetHeaderValue    }
                         FBuffer[I] := #1;
@@ -1793,20 +1792,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpaceChar(Ch : AnsiChar) : Boolean;
-begin
-    Result := (Ch = ' ') or (Ch = #9);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsCrLfChar(Ch : AnsiChar) : Boolean;
-begin
-    Result := (Ch = #10) or (Ch = #13);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsCrLf1Char(Ch : AnsiChar) : Boolean;
 begin
     Result := (Ch = #10) or (Ch = #13) or
@@ -1820,13 +1805,6 @@ begin
     Result := (Ch = #10) or (Ch = #13) or
               (Ch = #1) or                  // #1 is used to handle line break
               (Ch = ' ') or (Ch = #9);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsCharInSysCharSet(Ch : AnsiChar; const MySet : TSysCharSet) : Boolean;
-begin
-    Result := Ch in MySet;
 end;
 
 

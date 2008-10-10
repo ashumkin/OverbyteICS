@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V6.07
+Version:      V6.10
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -778,6 +778,8 @@ May 02, 2008 V6.05 A.Garrels changed code to get the temporary directory for
 May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
              Some type changes from String to AnsiString of published properties.
 Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
+Oct 03, 2008 V6.10 A. Garrels moved IsDigit, IsCRLF, IsSpaceOrCRLF and StpBlk
+                   to OverbyteIcsUtils.pas.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1857,39 +1859,6 @@ begin
     else
         Result := -1;
 {$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : Char) : Boolean;
-begin
-    Result := (Ch >= '0') and (Ch <= '9');
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsCRLF(Ch : Char) : Boolean;
-begin
-    Result := (Ch = #10) or (Ch = #13);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpaceOrCRLF(Ch : Char) : Boolean;
-begin
-    Result := (Ch = ' ') or (Ch = #9) or (Ch = #10) or (Ch = #13);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Step over blank spaces                                                    }
-function StpBlk(Data : PChar) : PChar;
-begin
-    Result := Data;
-    if Result <> nil then begin
-        while (Result^ <> #0) and IsSpaceOrCRLF(Result^) do
-            Inc(Result);
-    end;
 end;
 
 
