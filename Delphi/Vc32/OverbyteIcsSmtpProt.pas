@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      6.20
+Version:      7.21
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -338,6 +338,12 @@ Oct 01, 2008 V6.19  A. Garrels fixed a ERangeError and took escaped quotation
                     marks into account in RcptNameAdd().
 Oct 03, 2008 V6.20  A. Garrels moved IsCharInSysCharSet, IsDigit, IsSpace, IsSpaceOrCRLF
                     and stpblk to OverbyteIcsUtils.pas.
+Oct 04, 2008 V7.21  A. Garrels fixed conversion of Unicode file names to Ansi
+                    in TSmtpCli. Bumped version number to v7.
+
+ToDo:
+The THtmlSmtpCli still sends file names in headers converted with default
+system code page. It also does not inline encode and fold too long headerlines.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -393,8 +399,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 620;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V6.20 ';
+  SmtpCliVersion     = 721;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V7.21 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -3535,8 +3541,8 @@ begin
         FEmailBody.Add('--' + String(FMimeBoundary));
         FEmailBody.Add('Content-Type: ' + sContentType + ';');
         {AG start}
-        { In order to not TriggerAttachHeader with a modified filename we copy }
-        sLine := AnsiString(sFileName);
+        { In order to not TriggerAttachHeader with a modified filename we add }
+        { inline encoding and folding to a copy.                              }
         if not FAllow8bitChars and NeedsEncoding(sFileName) then begin
             if (FEncoding = smtpEncBase64) then
                 EncType := 'B'
@@ -3555,17 +3561,19 @@ begin
                                      75 - 12,
                                      FFoldHeaders);
         {$ENDIF}
-        end else
+        end
+        else begin
         {$IFDEF UNICODE}
-            if Integer(FCodePage) <> DefaultSystemCodePage then
-                sFileName := UnicodeString(UnicodeToAnsi(sFileName, FCodePage));
+            sLine := UnicodeToAnsi(sFileName, FCodePage);
+        {$ELSE}
+            sLine := sFileName;
         {$ENDIF}
-            if (Length(sFileName) + 12 > 76) and FFoldHeaders then
-                sLine := AnsiString(FoldString(sFileName,
+            if FFoldHeaders and (Length(sLine) + 12 > 76) then
+                sLine := FoldString(sLine,
                                     [#32, 'A'..'Z', 'a'..'z', '0'..'9'],
-                                    75 - 12));
+                                    75 - 12);
+        end;
         {AG end}
-        {FEmailBody.Add(#9'name="' + sFileName + '"');}                    {AG}
         FEmailBody.Add(#9'name="' + String(sLine) + '"');                  {AG}
         if FAttachmentEncoding = smtpEncodeBase64 then                     {AG}
             FEmailBody.Add('Content-Transfer-Encoding: base64')            {AG}
@@ -3574,8 +3582,7 @@ begin
         else
             FEmailBody.Add('Content-Transfer-Encoding: 7bit');             {AG}
         FEmailBody.Add('Content-Disposition: attachment;');
-        {FEmailBody.Add(#9'filename="' + sFileName + '"');}                {AG}
-        FEmailBody.Add(#9'filename="' + String(sLine) + '"');                      {AG}
+        FEmailBody.Add(#9'filename="' + String(sLine) + '"');              {AG}
         TriggerAttachHeader(FCurrentFile, sFileName, FEmailBody);
         FEmailBody.Add('');
         FFileStarted := TRUE;
@@ -3673,7 +3680,11 @@ begin
     if FMailMsgText.CurrentIdx > 0 then begin
         if (FEncoding in [smtpEnc7bit, smtpEnc8bit]) and (not FAllow8bitChars) and
            FMailMsgText.FNeedsEncoding then
-            FEncoding := smtpEncQuotedPrintable;
+            FEncoding := smtpEncQuotedPrintable
+        else if (FEncoding = smtpEnc7bit) and FAllow8bitChars and
+             FMailMsgText.FNeedsEncoding then
+            FEncoding := smtpEnc8bit;
+
         FMailMsgText.Encoding := FEncoding;
     end;
     FEmailBody.Clear;
@@ -4170,8 +4181,8 @@ begin
                     FsContentType := FilenameToContentType(FsFileName);
                     TriggerAttachContentType(FCurrentFile, FsFileName, FsContentType);
                     TriggerAttachContentTypeEh(FCurrentFile, FsFileName, FsContentType);
-                    StrPCopy(MsgLine, 'Content-Type: ' + FsContentType +
-                                      ';' +#13#10#9 + 'name="' + FsFileName + '"');
+                    StrPCopy(PAnsiChar(MsgLine), 'Content-Type: ' + AnsiString(FsContentType) +
+                                      ';' + #13#10#9 + 'name="' + AnsiString(FsFileName) + '"');
                 end;
             3:  begin
                     if FAttachmentEncoding = smtpEncodeBase64 then          {AG}
@@ -4369,7 +4380,10 @@ begin
         if FMailMsgText.CurrentIdx > 0 then begin
             if (FEncoding in [smtpEnc7bit, smtpEnc8bit]) and
                (not FAllow8bitChars) and FMailMsgText.NeedsEncoding then
-                FEncoding := smtpEncQuotedPrintable;
+                FEncoding := smtpEncQuotedPrintable
+            else if (FEncoding = smtpEnc7bit) and FAllow8bitChars and
+                     FMailMsgText.FNeedsEncoding then
+                FEncoding := smtpEnc8bit;
             FMailMsgText.Encoding := FEncoding;
         end;
     end;

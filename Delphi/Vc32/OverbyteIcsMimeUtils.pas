@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      6.11
+Version:      7.12
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -73,8 +73,11 @@ Jul 24, 2008 V6.08  A. Garrels - NeedsEncoding() returned "False" for character
                     #127.
 Aug 03, 2008 v6.09  A. Garrels changed some string types again.
 Aug 11, 2008 V6.10  A. Garrels - Base64Encode() changed.
-Oct 03, 2008 V6.10  A. Garrels moved IsCharInSysCharSet to OverbyteIcsUtils.pas,
+Oct 03, 2008 V6.11  A. Garrels moved IsCharInSysCharSet to OverbyteIcsUtils.pas,
                     simplified Set-stuff for.NET.
+Oct 11, 2008 V7.12  A. Garrels added an AnsiString overload to FoldString().
+                    Bumped version number to v7.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -120,8 +123,8 @@ uses
     OverbyteIcsLibrary;
 
 const
-    TMimeUtilsVersion = 611;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V6.11 ';
+    TMimeUtilsVersion = 712;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V7.12 ';
 
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
@@ -270,9 +273,14 @@ function StrEncodeQPEx(const Buf   : UnicodeString;
 procedure FoldHdrLine(HdrLines      : TStrings;                             {AG}
                       const HdrLine : String);
 
-function FoldString(const Input : String;                                   {AG}
+function FoldString(const Input : AnsiString;                               {AG}
                     BreakCharsSet : TSysCharSet;
-                    MaxCol      : Integer): String;
+                    MaxCol      : Integer): AnsiString; overload;
+{$IFDEF COMPILER12_UP}
+function FoldString(const Input : UnicodeString;
+                    BreakCharsSet : TSysCharSet;
+                    MaxCol      : Integer): UnicodeString; overload;
+{$ENDIF}
 
 implementation
 
@@ -1411,7 +1419,7 @@ begin
     if DoFold and (MaxCol < 25) then
         MaxCol := 25;
 
-    if Length(CharSet) < 4 then
+    if Length(CharSet) < 2 then // MIME charset strings of length 2 exist.
         raise Exception.Create('Function ''HdrEncodeInLine'', invalid CharSet: ' +
                                 '' + Charset + '');
     if not (Byte(EncType) in [Ord('Q'), Ord('B')]) then
@@ -1675,9 +1683,28 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *} {AG}
-function FoldString(const Input : String;
+function FoldString(const Input : AnsiString;
                     BreakCharsSet : TSysCharSet;
-                    MaxCol      : Integer): String;
+                    MaxCol      : Integer): AnsiString;
+var
+    rPos : Integer;
+begin
+    rPos := 1;
+    if rPos <= Length(Input) then
+        Result := _Trim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
+                       BreakCharsSet, MaxCol, [], rPos));
+    while rPos <= Length(Input) do
+        Result := Result + AnsiString(#13#10#09) +
+                  _Trim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
+                                      BreakCharsSet, MaxCol, [], rPos));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function FoldString(const Input : UnicodeString;
+                    BreakCharsSet : TSysCharSet;
+                    MaxCol      : Integer): UnicodeString;
 var
     rPos : Integer;
 begin
@@ -1691,7 +1718,7 @@ begin
                                                           MaxCol,
                                                           [], rPos))
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
