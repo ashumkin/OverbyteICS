@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      6.05
+Version:      7.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -249,8 +249,15 @@ Mar 10, 2008  V6.03 Francois Piette made some changes to prepare code
                     for Unicode.
 Aug 02, 2008  V6.04 A. Garrels made some changes to prepare code
               for Unicode.
-Oct 03, 2008 V6.10 A. Garrels moved IsCharInSysCharSet, IsSpaceChar and
-             IsCrLfChar to OverbyteIcsUtils.pas.
+Oct 03, 2008  V6.10 A. Garrels moved IsCharInSysCharSet, IsSpaceChar and
+              IsCrLfChar to OverbyteIcsUtils.pas (and removed Char suffix).
+Oct 11, 2008  V7.11 Angus added TMimeDecodeEx component which extends TMimeDecode by
+              decoding a MIME file or stream into a PartInfos array with TotParts
+              and HeaderLines StringList without the application needing to use any events
+              Also added functions to decode email MIME header lines with RFC2047 encoded words
+              DecodeHeaderLine returns 8-bit raw text and MimeCharSet
+              DecodeHeaderLineWide returns Unicode text
+              See OverbyteIcsMimeDemo1 for TMimeDecodeEx and DecodeHeaderLine examples
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -284,11 +291,11 @@ uses
 {$ELSE}
     WinTypes, WinProcs,
 {$ENDIF}
-    SysUtils, Classes, OverByteIcsLibrary, OverbyteIcsUtils;
+    SysUtils, Classes, OverByteIcsLibrary, OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 605;
-    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V6.05 ';
+    MimeDecodeVersion  = 711;
+    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.11';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -466,6 +473,60 @@ type
                                                      write FOnInlineDecodeEnd;
     end;
 
+ { V7.11 MIME Part Information record }
+    TPartInfo = record
+        PContentType: AnsiString ;
+        PCharset: AnsiString ;
+        PApplType: AnsiString ;
+        PName: AnsiString ;
+        PEncoding: AnsiString ;
+        PDisposition: AnsiString ;
+        PFileName: AnsiString ;
+        PartStream: TMemoryStream ;
+        PSize: integer ;
+    end ;
+
+{ V7.11 Decode file or stream into MIME Part Information records, also MIME Header decoding }
+   TMimeDecodeEx = class(TComponent)
+      private
+        { Private declarations }
+        procedure MimeDecodeHeaderLine(Sender: TObject);
+        procedure MimeDecodePartBegin(Sender: TObject);
+        procedure MimeDecodePartEnd(Sender: TObject);
+        procedure MimeDecodePartLine(Sender: TObject; Data: Pointer; DataLen: Integer);
+      protected
+        { Protected declarations }
+        FMimeDecode: TMimeDecode;
+        FMaxParts: integer ;                   // initial maximum MIME parts
+        FTotParts: integer ;                   // number of parts in current body
+        FDecParts: integer ;                   // number of parts decoded (no more than fMaxParts)
+        FPartLineRes: AnsiString ;
+        function GetPartInfo (Index: Integer): TPartInfo ;
+      public
+        { Public declarations }
+        FHeaderLines: TStrings;
+        PartInfos: array of TPartInfo ;        // body part info records, one per part, read this to get content
+        constructor Create (Aowner: TComponent) ; override ;
+        destructor  Destroy ; override ;
+        procedure Initialise ;
+        procedure Reset ;
+        procedure DecodeFileEx (FileName : String);
+        procedure DecodeStreamEx (aStream : TStream);
+        function DecEncodeWord (const Value: AnsiString; const Etype: AnsiChar): AnsiString ;
+        function DecodeHeaderLine (const Value: AnsiString; var CharSet: AnsiString): AnsiString ;
+        function DecodeHeaderLineWide (const Value: AnsiString): UnicodeString ;
+
+      published
+        { Published declarations }
+        property MimeDecode: TMimeDecode            read FMimeDecode ;
+//        property Parts [Index: Integer]: TPartInfo  read GetPartInfo ;  // sure this is OK, but D2007 complains
+        property HeaderLines: TStrings              read FHeaderLines;
+        property MaxParts: integer                  read FMaxParts write FMaxParts ;
+        property TotParts: integer                  read FTotParts ;
+        property DecParts: integer                  read FDecParts ;
+      end;
+
+
 procedure Register;
 
 function GetToken(Src : PAnsiChar; var Dst : AnsiString; var Delim : AnsiChar) : PAnsiChar;
@@ -496,7 +557,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure Register;
 begin
-    RegisterComponents('FPiette', [TMimeDecode]);
+    RegisterComponents('FPiette', [TMimeDecode, TMimeDecodeEx]);
 end;
 
 
@@ -680,6 +741,7 @@ begin
             DecodedBuf[DecodedIndex] := #13;
             Inc(DecodedIndex);
             DecodedBuf[DecodedIndex] := #10;
+            SetLength(DecodedBuf, DecodedIndex);
             ProcessDecodedLine(@DecodedBuf[1], DecodedIndex);
             break;
         end;
@@ -690,6 +752,7 @@ begin
             if Ch = #0 then begin
 {*** Changed 20030806 ***}
                 { process without #13#10 adding }
+                SetLength(DecodedBuf, DecodedIndex-1);
                 ProcessDecodedLine(@DecodedBuf[1], DecodedIndex-1);
                 break;
 {***         ***}
@@ -1788,6 +1851,244 @@ begin
     end;
 
     MessageEnd;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.11 Extended MIME decoding that save all parts into arrays }
+constructor TMimeDecodeEx.Create(Aowner:TComponent);
+begin
+    inherited Create(AOwner);
+    FMimeDecode := TMimeDecode.Create (Self);
+    FHeaderLines := TStringList.Create;
+    FMaxParts := 10 ;
+    FMimeDecode.OnHeaderLine := MimeDecodeHeaderLine ;
+    FMimeDecode.OnPartBegin := MimeDecodePartBegin ;
+    FMimeDecode.OnPartEnd := MimeDecodePartEnd ;
+    FMimeDecode.OnPartLine := MimeDecodePartLine ;
+    SetLength (PartInfos, 0) ;
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TMimeDecodeEx.Destroy;
+begin
+    Reset;
+    FreeAndNil (FHeaderLines);
+    FreeAndNil (FMimeDecode);
+    inherited Destroy;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeEx.Reset ;
+var
+    I: integer ;
+begin
+    FHeaderLines.Clear ;
+    if Length (PartInfos) > 0 then
+    begin
+        for I := 0 to Pred (Length (PartInfos)) do
+                     FreeAndNil (PartInfos[I].PartStream) ;
+    end ;
+    SetLength (PartInfos, 0) ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Initialise arrays and streams ready to decode MIME }
+procedure TMimeDecodeEx.Initialise ;
+var
+    I: integer ;
+begin
+    Reset ;
+    SetLength (PartInfos, FMaxParts) ;
+    for I := 0 to Pred (FMaxParts) do
+                PartInfos [I].PartStream := TMemoryStream.Create ;
+    FTotParts := 0 ;
+    FDecParts := 0 ;
+end ;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Initialise arrays and streams ready to decode MIME }
+procedure TMimeDecodeEx.MimeDecodeHeaderLine(Sender: TObject);
+begin
+ // strip #1 that replaced CR/LF/TAB for continuation lines
+    FHeaderLines.Add (GetHeaderValue (FMimeDecode.CurrentData));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ found a new MIME part, extend array if necessary, set PartStream ready for content }
+procedure TMimeDecodeEx.MimeDecodePartBegin(Sender: TObject);
+var
+    pnr: integer ;
+begin
+    pnr := FMimeDecode.PartNumber ;
+    FTotParts := pnr + 1 ;
+    if pnr >= FMaxParts then
+    begin
+        inc (FMaxParts) ;
+        SetLength (PartInfos, FMaxParts) ;
+        PartInfos [FMaxParts - 1].PartStream := TMemoryStream.Create ;
+    end;
+    FDecParts := pnr + 1 ;
+    PartInfos [pnr].PartStream.Clear ;
+    FMimeDecode.DestStream := PartInfos [pnr].PartStream ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ fisished reading MIME part, reset PartStream to start and keep stuff about part }
+procedure TMimeDecodeEx.MimeDecodePartEnd(Sender: TObject);
+var
+    pnr: integer ;
+begin
+    pnr := FMimeDecode.PartNumber ;
+    if pnr >= FMaxParts then exit ; //sanity check
+    with PartInfos [pnr] do
+    begin
+        PartStream.Seek (soFromBeginning, 0) ;
+        PSize := PartStream.Size ;
+        if pnr = 0 then  // main body
+        begin
+            PContentType := FMimeDecode.ContentType ;
+            PCharset := FMimeDecode.Charset ;
+            PApplType := FMimeDecode.ApplicationType ;
+            PName := FMimeDecode.HeaderName ;
+            PEncoding := FMimeDecode.Encoding ;
+            PDisposition := FMimeDecode.Disposition ;
+            PFileName := FMimeDecode.FileName ;
+        end
+        else
+        begin           // real part
+            PContentType := FMimeDecode.PartContentType ;
+            PCharset := FMimeDecode.PartCharset ;
+            PApplType := FMimeDecode.ApplicationType ;
+            PName := FMimeDecode.PartName ;
+            PEncoding := FMimeDecode.PartEncoding ;
+            PDisposition := FMimeDecode.PartDisposition ;
+            PFileName := FMimeDecode.PartFileName ;
+        end ;
+    end ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.11 Decode MIME file into PartInfos and PartStreams arrays with TotParts }
+procedure TMimeDecodeEx.DecodeFileEx (FileName: String);
+begin
+    Initialise ;
+    FMimeDecode.DecodeFile (FileName) ;
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.11 Decode MIME stream into PartInfos and PartStreams arrays with TotParts }
+procedure TMimeDecodeEx.DecodeStreamEx (aStream: TStream);
+begin
+    Initialise ;
+    FMimeDecode.DecodeStream (aStream) ;
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeEx.MimeDecodePartLine(Sender: TObject; Data: Pointer;
+  DataLen: Integer);
+begin
+    FPartLineRes := PAnsiChar (Data) ;
+    SetLength (FPartLineRes, DataLen) ;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.11 decode text within a MIME header line, confusingly called a word }
+function TMimeDecodeEx.DecEncodeWord (const Value: AnsiString; const Etype: AnsiChar): AnsiString ;
+var
+    S: AnsiString;
+    I: integer;
+begin
+    result := '' ;
+    if Length (Value) = 0 then exit ;
+    S := Value ;
+    FMimeDecode.DestStream := Nil ;
+    if Etype = 'q' then
+    begin
+        for I := 1 to Length (S) do  // restore spaces
+        begin
+            if S [I] = '_' then S [I] := ' ' ;
+        end ;
+        FMimeDecode.CurrentData := PAnsiChar (S) ;
+        FMimeDecode.ProcessLineQuotedPrintable ;  // returns CRLF on end which we need to trim
+        result := Trim (FPartLineRes) ;
+    end
+    else if Etype = 'b' then
+    begin
+        FMimeDecode.CurrentData := PAnsiChar (S) ;
+        FMimeDecode.ProcessLineBase64 ;
+        result := FPartLineRes ;
+    end ;
+end ;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.11 decode a MIME header line into 8-bit raw text, returning character set name }
+{ note - assumes entire header is same character set, or mixed with ASCII }
+{ See OverbyteIcsMimeDemo1 for examples of encoded header lines }
+function TMimeDecodeEx.DecodeHeaderLine (const Value: AnsiString; var CharSet: AnsiString): AnsiString ;
+var
+    enstart, enend, typestart: integer ;
+    S, entext, entype: AnsiString ;
+begin
+    result := '' ;
+    S := Value ;
+    CharSet := '' ;
+    while S <> '' do
+    begin
+        enstart := Pos ('=?', S) ;                       // start of encoded word
+        enend := Pos ('?=', S) ;                         // end of encoded word
+        if (enend <= enstart) or (enstart < 1) then      // no (more) encoded text, give up
+        begin
+            result := result + S ;
+            exit ;
+        end ;
+        if enstart > 1 then
+            result := result + Trim (Copy (S, 1, enstart - 1));  // text before encoded word, keep it, but not spaces
+        S := Copy (S, enstart + 2, 999) ;                        // remove up to and including =?
+        enend := Pos ('?=', S) ;                                 // end of encoded word, again
+        typestart := Pos ('?', S) ;                              // look for ? after character set
+        if (typestart >= enend) then                             // no more legal encoded text, give up
+        begin
+            result := result + S ;
+            exit ;
+        end ;
+        if typestart > 4 then CharSet := LowerCase (Copy (S, 1, typestart - 1)) ;  // character set
+        entype := LowerCase (Copy (S, typestart, 3)) ;                             // encoding type
+        entext := Copy (S, typestart + 3, enend - typestart - 3) ;                 // encoded text only
+        S := Copy (S, enend + 2, 999) ;                                            // remove encoded word
+        if entype = '?b?' then
+            result := result + DecEncodeWord (entext, 'b')   // Base64
+        else if entype = '?q?' then
+            result := result + DecEncodeWord (entext, 'q')   // QuotedPrintable
+        else
+            result := result + entext ;                       // unknown encoding type, usually just ASCII
+    end ;
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.11 decode a MIME header line into Unicode }
+function TMimeDecodeEx.DecodeHeaderLineWide (const Value: AnsiString): UnicodeString ;
+var
+    DecValue: RawByteString ;
+    CharSet: AnsiString ;
+    CodePage: Cardinal ;
+begin
+    DecValue := DecodeHeaderLine (Value, CharSet) ;
+    if CharSet = '' then
+        CodePage := CP_ACP
+    else
+        CodePage := MimeCharsetToCodePage (CharSet) ;
+    Result := AnsiToUnicode (DecValue, CodePage) ;
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TMimeDecodeEx.GetPartInfo (Index: Integer): TPartInfo ;
+begin
+    if Index >= fTotParts then exit;
+    result := PartInfos [Index] ;    
 end;
 
 

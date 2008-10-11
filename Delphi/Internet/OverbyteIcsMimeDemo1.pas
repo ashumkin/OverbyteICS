@@ -7,7 +7,7 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      1.05
+Version:      7.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -43,6 +43,10 @@ May 04, 2002  V1.03 Adapted InLineDecodeLine event to new Len argument.
               Added file store for UUEncoded files.
 Nov 01, 2002  V1.04 Changed PChar arguments to Pointer to work around Delphi 7
               bug with PAnsiChar<->PChar (change has be done in component).
+Oct 11, 2008  V7.00 Angus added MIME header encoding and decoding
+              Added TMimeDecodeEx test button (uses no events)
+              Fixed MimeDecode1InlineDecode events for D2009 (still Ansi)
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -53,11 +57,11 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, IniFiles,
-  OverbyteIcsMimeUtils, OverbyteIcsMimeDec;
+  OverbyteIcsMimeUtils, OverbyteIcsMimeDec, OverbyteIcsUtils;
 
 const
-  MimeDemoVersion    = 104;
-  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V1.04 ';
+  MimeDemoVersion    = 700;
+  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.00 ';
 
 type
   TMimeDecodeForm = class(TForm)
@@ -72,6 +76,11 @@ type
     Label2: TLabel;
     Decode64Button: TButton;
     Encode64Button: TButton;
+    DecAutoHeaderButton: TButton;
+    DecOneHeaderButton: TButton;
+    EncodeOneHdrButton: TButton;
+    DecodeFileExButton: TButton;
+    MimeDecodeEx1: TMimeDecodeEx;
     procedure DecodeButtonClick(Sender: TObject);
     procedure MimeDecode1PartBegin(Sender: TObject);
     procedure MimeDecode1PartEnd(Sender: TObject);
@@ -88,13 +97,17 @@ type
     procedure MimeDecode1PartHeaderBegin(Sender: TObject);
     procedure MimeDecode1PartHeaderEnd(Sender: TObject);
     procedure MimeDecode1InlineDecodeBegin(Sender: TObject;
-                                           Filename: String);
+                                           Filename: AnsiString);
     procedure MimeDecode1InlineDecodeEnd(Sender: TObject;
-                                         Filename: String);
+                                         Filename: AnsiString);
     procedure MimeDecode1InlineDecodeLine(Sender: TObject;
                                           Line: Pointer; Len : Integer);
     procedure Decode64ButtonClick(Sender: TObject);
     procedure Encode64ButtonClick(Sender: TObject);
+    procedure DecAutoHeaderButtonClick(Sender: TObject);
+    procedure DecOneHeaderButtonClick(Sender: TObject);
+    procedure EncodeOneHdrButtonClick(Sender: TObject);
+    procedure DecodeFileExButtonClick(Sender: TObject);
   private
     FInitialized   : Boolean;
     FIniFileName   : String;
@@ -119,6 +132,7 @@ const
     KeyWidth      = 'Width';
     KeyHeight     = 'Height';
     KeyFile       = 'FileName';
+    KeyText       = 'TextEdit';
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -142,7 +156,8 @@ begin
         Left      := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
         Width     := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height    := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        FileEdit.Text := IniFile.ReadString(SectionData,  KeyFile,   '');
+        FileEdit.Text := IniFile.ReadString(SectionData,  KeyFile,   'mime-demo1.txt');
+        TextEdit.Text := IniFile.ReadString(SectionData,  KeyText,   'some text to encode');
         IniFile.Free;
     end;
 end;
@@ -159,6 +174,7 @@ begin
     IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
     IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
     IniFile.WriteString(SectionData,    KeyFile,   FileEdit.Text);
+    IniFile.WriteString(SectionData,    KeyText,   TextEdit.Text);
     IniFile.Free;
 end;
 
@@ -175,9 +191,6 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.Display(Msg: String);
 begin
-    { TMemo cannot hold too much data. Limit to 400 lines }
-    if Memo1.Lines.count > 400 then
-        Memo1.Clear;
     Memo1.Lines.Add(Msg);
 end;
 
@@ -254,12 +267,6 @@ begin
 end;
 
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMimeDecodeForm.ClearButtonClick(Sender: TObject);
-begin
-    Memo1.Clear;
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1HeaderLine(Sender: TObject);
@@ -303,7 +310,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1InlineDecodeBegin(
    Sender   : TObject;
-   FileName : String);
+   FileName : AnsiString);
 begin
     Display('--------- INLINE begin. Filename is ''' + FileName + '''');
     Display('');
@@ -317,7 +324,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1InlineDecodeEnd(
    Sender   : TObject;
-   Filename : String);
+   Filename : AnsiString);
 begin
     Display('--------- INLINE end');
     { Close file, if any }
@@ -385,6 +392,118 @@ begin
     TextEdit.Text := Buf;
     Memo1.Lines.Add(Buf);
 end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+{ few examples of encoded header lines (koi8-r is Cyrillic, GB2312 is Chinese,
+8859-1 is Latin/Western European, 8859-5 is Latin/Cyrillic, 8859-6 is Latin/Arabic,
+windows-1252 is a superset of 8859-1, see OverbyteIcsCharsetUtils for a full list  )  }
+
+const
+    TotHeaders = 23 ;
+var
+    TestHeaders: array [1..TotHeaders] of string = (
+        '=?US-ASCII?Q?Keith_Moore?= <moore@cs.utk.edu>',
+        '=?ISO-8859-1?Q?Andr=E9?= Pirard <PIRARD@vm1.ulg.ac.be>',
+        '=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=',
+        '=?ISO-8859-2?B?dSB1bmRlcnN0YW5kIHRoZSBleGFtcGxlLg==?=',
+        '=?ISO-8859-1?Q?a?= b=?ISO-8859-1?Q?a_b?=',
+        '=?ISO-8859-1?Q?a?=  =?ISO-8859-1?Q?b?=',
+        '=?iso-8859-1?q?Fred=20Mace?= <fredmace@yahoo.co.uk>',
+        '=?ISO-8859-1?Q?Re=3A_=5Btwsocket=5D?= Encoded mail headers',
+        '=?ISO-8859-1?B?aGk=?=',
+        '=?GB2312?B?yczO8cOz0tc=?= <hk@163.com>',
+        '=?GB2312?B?sOzA7c/juNvTosPAufq8yrmry77Qrbvh?=',
+        '=?utf-8?B?TWljcm9zb2Z0IE91dGxvb2sgVGVzdCBNZXNzYWdl?=',
+        '=?ISO-8859-1?b?UmU6S2V5cyB0byBzdGF5aW5nIHlvdW5n?=',
+        '=?iso-8859-5?B?+szB1MEg4s/U18nOwQ==?= <dnevnik@liveinternet.ru>',
+        '"eap2s@mtsu.eduruss.txt}" <dunman@magsys.co.uk>',
+        '=?koi8-r?B?9C7yLiDs1cLRztPLycog?= <yujiko@barryland.com>',
+        '=?koi8-r?B?NSDUy8EuIMTM0SDP0sfBzsnawdTP0s/XICDQ0sHaxM7Jy8/XIMkgzQ==?=',
+        '=?windows-1252?Q?Don=92t_be_Blue!_Heat_up_October_with_these_Scorching_Deals_Only_at_Screwfix_?=',
+        '=?iso-8859-1?Q?Integral_512MB_Pen_Drives_For_Just_=A31.29?=',
+        '=?utf-8?B?QW5ndXMgZmFpdCBsYSBmw6p0ZSDDoCBGcmFuw6dvaXMgcXVhbmQgbCfDqXTDqSBhcnJpdmU=?=',
+        '=?utf-8?Q?Angus_fait_la_f=C3=AAte_=C3=A0_Fran=C3=A7ois_quand_l''=C3=A9t=C3=A9_arrive?=',  // note escaped '' added
+        '=?iso-8859-1?B?QW5ndXMgZmFpdCBsYSBm6nRlIOAgRnJhbudvaXMgcXVhbmQgbCfpdOkgYXJyaXZl?=',
+        '=?iso-8859-1?Q?Angus_fait_la_f=EAte_=E0_Fran=E7ois_quand_l''=E9t=E9_arrive?=' );          // note escaped '' added
+
+procedure TMimeDecodeForm.DecAutoHeaderButtonClick(Sender: TObject);
+var
+    I: integer;
+    DecStr, CharSet: AnsiString;
+begin
+    Display('Auto decoding test MIME Encoded Header Lines');
+    for I := 1 to TotHeaders do begin
+        DecStr := MimeDecodeEx1.DecodeHeaderLine (TestHeaders[I], CharSet);
+        Display('Raw Header: ' + TestHeaders[I]);
+        Display('8-bit Header: ' + DecStr + ' [CharSet=' + CharSet + ']');
+        Display('Unicode Header: ' + MimeDecodeEx1.DecodeHeaderLineWide (TestHeaders[I]));
+        Display('');
+    end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeForm.DecOneHeaderButtonClick(Sender: TObject);
+var
+    DecStr, CharSet: AnsiString;
+begin
+    DecStr := MimeDecodeEx1.DecodeHeaderLine (TextEdit.Text, CharSet);
+    Display('Raw Header: ' + TextEdit.Text);
+    Display('8-bit Header: ' + DecStr + ' [CharSet=' + CharSet + ']');
+    Display('Unicode Header: ' + MimeDecodeEx1.DecodeHeaderLineWide (TextEdit.Text));
+    Display('');
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeForm.EncodeOneHdrButtonClick(Sender: TObject);
+var
+    U8String: RawByteString;
+begin
+    Display('Raw Text: ' + TextEdit.Text);
+    U8String := StringToUtf8 (TextEdit.Text);
+    Display('UTF-8 Text: ' + U8String);
+    Display('UTF-8 Binary: ' + HdrEncodeInLine(U8String,
+                                    SpecialsRFC822, 'B', 'utf-8', 72, false));
+    Display('UTF-8 Quoted: ' + HdrEncodeInLine(U8String,
+                                    SpecialsRFC822, 'Q', 'utf-8', 72, false));
+    Display('ISO-8859-1 Binary: ' + HdrEncodeInLine(TextEdit.Text,
+                                SpecialsRFC822, 'B', 'iso-8859-1', 72, false));
+    Display('ISO-8859-1 Quoted: ' + HdrEncodeInLine(TextEdit.Text,
+                                SpecialsRFC822, 'Q', 'iso-8859-1', 72, false));
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeForm.DecodeFileExButtonClick(Sender: TObject);
+var
+    I: integer;
+begin
+    Display('MIME Decoding ' + FileEdit.Text);
+    MimeDecodeEx1.DecodeFileEx(FileEdit.Text);   // decodes without using events, into arrays, see below
+    Display('Total header lines found: ' + IntToStr (MimeDecodeEx1.HeaderLines.Count) +
+                             ', Length ' + IntToStr (MimeDecodeEx1.MimeDecode.LengthHeader));
+    if MimeDecodeEx1.DecParts = 0 then
+        Display('No parts found to decode')
+    else begin
+        for I := 0 to Pred (MimeDecodeEx1.DecParts) do begin
+            with MimeDecodeEx1.PartInfos [I] do begin
+                Display('Part ' + IntToStr (I) +  ', Content: ' + PContentType +
+                    ', Size: ' + IntToStr (PartStream.Size) +
+                    ', Name: ' + PName + ', FileName: ' + PFileName +
+                    ', Encoding: ' + PEncoding + ', Charset: ' + PCharset);
+                 // the content of each part is in PartStream
+                 // but we don't attempt to display it here, only the size
+            end;
+        end;
+        MimeDecodeEx1.Reset ;  // clear streams to free memory
+    end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeForm.ClearButtonClick(Sender: TObject);
+begin
+    Memo1.Clear;
+end;
+
 
 end.
 
