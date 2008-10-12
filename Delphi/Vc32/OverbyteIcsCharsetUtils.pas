@@ -290,6 +290,7 @@ type
       EUC_JP,
       GB_2312_80,
       GB_2312,
+      EUC_CN,
       KOI8_R,
       KOI8_U,
       UTF_16LE,
@@ -628,7 +629,8 @@ begin
         50229 :  Result := ISO_2022_CN_EXT;
 
         51932 :  Result := EUC_JP;
-        51936 :  Result := GB_2312;
+        52936 :  Result := GB_2312;
+        51936 :  Result := EUC_CN;
 
         65000 :  Result := UTF_7;
         65001 :  Result := UTF_8;
@@ -755,7 +757,7 @@ begin
     IcsSystemIsSingleByte := IcsSystemMaxCharSize = 1;
     //--
 
-    SetLength(CharsetInfos, 71);
+    SetLength(CharsetInfos, 72);
     I := -1;
     Inc(I);
     CharsetInfos[I].MimeCharset   := UTF_8;
@@ -875,8 +877,12 @@ begin
     CharsetInfos[I].MimeName      := CsuString('gb_2312-80 iso-ir-58 chinese csiso58gb231280');
     Inc(I);
     CharsetInfos[I].MimeCharset   := GB_2312;
+    CharsetInfos[I].CodePage      := 52936; // was 51936, removed alias euc-cn
+    CharsetInfos[I].MimeName      := CsuString('gb2312 csgb2312');
+    Inc(I);
+    CharsetInfos[I].MimeCharset   := EUC_CN; // Microsoft, not listed at iana.
     CharsetInfos[I].CodePage      := 51936;
-    CharsetInfos[I].MimeName      := CsuString('gb2312 csgb2312 euc-cn');
+    CharsetInfos[I].MimeName      := CsuString('euc-cn');
     Inc(I);
     CharsetInfos[I].MimeCharset   := KOI8_R;
     CharsetInfos[I].CodePage      := 20866;
