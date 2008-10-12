@@ -43,7 +43,7 @@ May 04, 2002  V1.03 Adapted InLineDecodeLine event to new Len argument.
               Added file store for UUEncoded files.
 Nov 01, 2002  V1.04 Changed PChar arguments to Pointer to work around Delphi 7
               bug with PAnsiChar<->PChar (change has be done in component).
-Oct 11, 2008  V7.00 Angus added MIME header encoding and decoding
+Oct 12, 2008  V7.00 Angus added MIME header encoding and decoding
               Added TMimeDecodeEx test button (uses no events)
               Fixed MimeDecode1InlineDecode events for D2009 (still Ansi)
 
@@ -57,7 +57,8 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, IniFiles,
-  OverbyteIcsMimeUtils, OverbyteIcsMimeDec, OverbyteIcsUtils;
+  OverbyteIcsMimeUtils, OverbyteIcsMimeDec,
+  OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
   MimeDemoVersion    = 700;
@@ -400,9 +401,9 @@ end;
 windows-1252 is a superset of 8859-1, see OverbyteIcsCharsetUtils for a full list  )  }
 
 const
-    TotHeaders = 23 ;
+    TotHeaders = 24 ;
 var
-    TestHeaders: array [1..TotHeaders] of string = (
+    TestHeaders: array [1..TotHeaders] of AnsiString = (
         '=?US-ASCII?Q?Keith_Moore?= <moore@cs.utk.edu>',
         '=?ISO-8859-1?Q?Andr=E9?= Pirard <PIRARD@vm1.ulg.ac.be>',
         '=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=',
@@ -422,6 +423,7 @@ var
         '=?koi8-r?B?NSDUy8EuIMTM0SDP0sfBzsnawdTP0s/XICDQ0sHaxM7Jy8/XIMkgzQ==?=',
         '=?windows-1252?Q?Don=92t_be_Blue!_Heat_up_October_with_these_Scorching_Deals_Only_at_Screwfix_?=',
         '=?iso-8859-1?Q?Integral_512MB_Pen_Drives_For_Just_=A31.29?=',
+        '=?windows-1256?Q?=CF=E6=D1=C8=ED=E4_=E3=CF=C7=D1=C8=D3=CA=E5_=E6_=D3=C7=E4=CA=D1=C7=E1?=',
         '=?utf-8?B?QW5ndXMgZmFpdCBsYSBmw6p0ZSDDoCBGcmFuw6dvaXMgcXVhbmQgbCfDqXTDqSBhcnJpdmU=?=',
         '=?utf-8?Q?Angus_fait_la_f=C3=AAte_=C3=A0_Fran=C3=A7ois_quand_l''=C3=A9t=C3=A9_arrive?=',  // note escaped '' added
         '=?iso-8859-1?B?QW5ndXMgZmFpdCBsYSBm6nRlIOAgRnJhbudvaXMgcXVhbmQgbCfpdOkgYXJyaXZl?=',
@@ -435,9 +437,11 @@ begin
     Display('Auto decoding test MIME Encoded Header Lines');
     for I := 1 to TotHeaders do begin
         DecStr := MimeDecodeEx1.DecodeHeaderLine (TestHeaders[I], CharSet);
-        Display('Raw Header: ' + TestHeaders[I]);
-        Display('8-bit Header: ' + DecStr + ' [CharSet=' + CharSet + ']');
-        Display('Unicode Header: ' + MimeDecodeEx1.DecodeHeaderLineWide (TestHeaders[I]));
+        Display('Raw Header: ' + String(TestHeaders[I]));
+        Display('8-bit Header: ' + String(DecStr) + ' [CharSet=' +
+                                                     String(CharSet) + ']');
+        Display('Unicode Header: ' +
+                        MimeDecodeEx1.DecodeHeaderLineWide (TestHeaders[I]));
         Display('');
     end;
 end;
@@ -449,27 +453,30 @@ var
 begin
     DecStr := MimeDecodeEx1.DecodeHeaderLine (TextEdit.Text, CharSet);
     Display('Raw Header: ' + TextEdit.Text);
-    Display('8-bit Header: ' + DecStr + ' [CharSet=' + CharSet + ']');
-    Display('Unicode Header: ' + MimeDecodeEx1.DecodeHeaderLineWide (TextEdit.Text));
+    Display('8-bit Header: ' + String(DecStr) + ' [CharSet=' +
+                                                    String(CharSet) + ']');
+    Display('Unicode Header: ' +
+                        MimeDecodeEx1.DecodeHeaderLineWide (TextEdit.Text));
     Display('');
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.EncodeOneHdrButtonClick(Sender: TObject);
-var
-    U8String: RawByteString;
 begin
     Display('Raw Text: ' + TextEdit.Text);
-    U8String := StringToUtf8 (TextEdit.Text);
-    Display('UTF-8 Text: ' + U8String);
-    Display('UTF-8 Binary: ' + HdrEncodeInLine(U8String,
-                                    SpecialsRFC822, 'B', 'utf-8', 72, false));
-    Display('UTF-8 Quoted: ' + HdrEncodeInLine(U8String,
-                                    SpecialsRFC822, 'Q', 'utf-8', 72, false));
-    Display('ISO-8859-1 Binary: ' + HdrEncodeInLine(TextEdit.Text,
-                                SpecialsRFC822, 'B', 'iso-8859-1', 72, false));
-    Display('ISO-8859-1 Quoted: ' + HdrEncodeInLine(TextEdit.Text,
-                                SpecialsRFC822, 'Q', 'iso-8859-1', 72, false));
+    Display('UTF-8 Text: ' + String(StringToUtf8 (TextEdit.Text)));
+    Display('UTF-8 Binary: ' + String(HdrEncodeInLineEx(TextEdit.Text,
+                                   SpecialsRFC822, 'B', CP_UTF8 , 72, false)));
+    Display('UTF-8 Quoted: ' + String(HdrEncodeInLineEx(TextEdit.Text,
+                                   SpecialsRFC822, 'Q', CP_UTF8 , 72, false)));
+    Display('ISO-8859-1 Binary: ' + String(HdrEncodeInLineEx(TextEdit.Text,
+                                      SpecialsRFC822, 'B', 28591, 72, false)));
+    Display('ISO-8859-1 Quoted: ' + String(HdrEncodeInLineEx(TextEdit.Text,
+                                      SpecialsRFC822, 'Q', 28591, 72, false)));
+    Display('Current Binary: ' + String(HdrEncodeInLineEx(TextEdit.Text,
+                                     SpecialsRFC822, 'B', CP_ACP, 72, false)));
+    Display('Current Quoted: ' + String(HdrEncodeInLineEx(TextEdit.Text,
+                                     SpecialsRFC822, 'Q', CP_ACP, 72, false)));
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

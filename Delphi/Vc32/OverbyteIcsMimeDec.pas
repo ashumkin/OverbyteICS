@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.11
+Version:      7.12
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -258,6 +258,10 @@ Oct 11, 2008  V7.11 Angus added TMimeDecodeEx component which extends TMimeDecod
               DecodeHeaderLine returns 8-bit raw text and MimeCharSet
               DecodeHeaderLineWide returns Unicode text
               See OverbyteIcsMimeDemo1 for TMimeDecodeEx and DecodeHeaderLine examples
+Oct 12, 2008  V7.12 Angus fixed DecodeHeaderLine for Q starting with = word
+
+
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -291,11 +295,16 @@ uses
 {$ELSE}
     WinTypes, WinProcs,
 {$ENDIF}
-    SysUtils, Classes, OverByteIcsLibrary, OverbyteIcsUtils, OverbyteIcsCharsetUtils;
+    SysUtils,
+    Classes,
+    StrUtils,  { for PosEx }
+    OverByteIcsLibrary,
+    OverbyteIcsUtils,
+    OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 711;
-    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.11';
+    MimeDecodeVersion  = 712;
+    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.12';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -484,6 +493,7 @@ type
         PFileName: AnsiString ;
         PartStream: TMemoryStream ;
         PSize: integer ;
+        PCodePage: integer ;
     end ;
 
 { V7.11 Decode file or stream into MIME Part Information records, also MIME Header decoding }
@@ -1966,6 +1976,10 @@ begin
             PDisposition := FMimeDecode.PartDisposition ;
             PFileName := FMimeDecode.PartFileName ;
         end ;
+        if PCharSet = '' then
+            PCodePage := CP_ACP
+        else
+            PCodePage := MimeCharsetToCodePage (PCharSet) ;
     end ;
 end;
 
@@ -2048,13 +2062,13 @@ begin
         if enstart > 1 then
             result := result + Trim (Copy (S, 1, enstart - 1));  // text before encoded word, keep it, but not spaces
         S := Copy (S, enstart + 2, 999) ;                        // remove up to and including =?
-        enend := Pos ('?=', S) ;                                 // end of encoded word, again
         typestart := Pos ('?', S) ;                              // look for ? after character set
         if (typestart >= enend) then                             // no more legal encoded text, give up
         begin
             result := result + S ;
             exit ;
         end ;
+        enend := PosEx ('?=', S, typestart + 3) ;    //  end of encoded word, again, skipping ?b?=DD
         if typestart > 4 then CharSet := LowerCase (Copy (S, 1, typestart - 1)) ;  // character set
         entype := LowerCase (Copy (S, typestart, 3)) ;                             // encoding type
         entext := Copy (S, typestart + 3, enend - typestart - 3) ;                 // encoded text only

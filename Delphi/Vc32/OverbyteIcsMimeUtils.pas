@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.12
+Version:      7.13
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -77,6 +77,9 @@ Oct 03, 2008 V6.11  A. Garrels moved IsCharInSysCharSet to OverbyteIcsUtils.pas,
                     simplified Set-stuff for.NET.
 Oct 11, 2008 V7.12  A. Garrels added an AnsiString overload to FoldString().
                     Bumped version number to v7.
+Oct 12, 2008 V7.13  Angus added HdrEncodeInLineEx which encodes UTF-16 to raw header
+                    HdrEncodeInLine now RawByteString so D2009 does not mess with it
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -120,11 +123,11 @@ uses
     SysUtils, // For the LeadChar and Exception
     Classes,
     OverbyteIcsUtils,
-    OverbyteIcsLibrary;
-
+    OverbyteIcsLibrary,
+    OverbyteIcsCharsetUtils;
 const
-    TMimeUtilsVersion = 712;
-    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V7.12 ';
+    TMimeUtilsVersion = 713;
+    CopyRight : String = ' MimeUtils (c) 1997-2008 F. Piette V7.13 ';
 
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
@@ -229,12 +232,12 @@ function NeedsEncoding(const S : UnicodeString) : Boolean; overload;        {AG}
 function NeedsEncodingPChar(S : PChar) : Boolean;                           {FP}
 {$ENDIF}
 { MIME In-Line-Encoding plus Folding, see comments in function source     } {AG}
-function HdrEncodeInLine(const Input   : AnsiString;
+function HdrEncodeInLine(const Input   : RawByteString;         { V7.13 was Ansi }
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
                          EncType       : AnsiChar;    { Either 'Q' or 'B' }
-                         const CharSet : AnsiString;  { e.g. 'iso-8859-1' }
+                         const CharSet : AnsiString;  { e.g. 'iso-8859-1' existing Input charset }
                          MaxCol        : Integer;
-                         DoFold        : Boolean): String; {$IFDEF COMPILER12_UP} overload;
+                         DoFold        : Boolean): RawByteString; {$IFDEF COMPILER12_UP} overload;
 
 function HdrEncodeInLine(const Input   : UnicodeString;
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
@@ -243,6 +246,12 @@ function HdrEncodeInLine(const Input   : UnicodeString;
                          MaxCol        : Integer;
                          DoFold        : Boolean): UnicodeString; overload;
 {$ENDIF}
+function HdrEncodeInLineEx(const Input : UnicodeString;    { V7.13 }
+                         Specials      : TSysCharSet; { Try const SpecialsRFC822 }
+                         EncType       : WideChar;    { Either 'Q' or 'B'        }
+                         CodePage      : Integer;     { Input will be encoded into this CharSet }
+                         MaxCol        : Integer;
+                         DoFold        : Boolean): RawByteString;
 { Alternate of functions:                                                      }
 { EncodeQuotedPrintable + SplitQuotedPrintableString + DotEscape               }
 function StrEncodeQP(const Input : AnsiString;                         {HLX, AG}
@@ -1398,12 +1407,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function HdrEncodeInLine(const Input    : AnsiString;
+function HdrEncodeInLine(const Input    : RawByteString;     { V7.13 was Ansi }
                          Specials       : TSysCharSet;
                          EncType        : AnsiChar;    { Either 'Q' or 'B' }
-                         const CharSet  : AnsiString;  { e.g. 'iso-8859-1' }
+                         const CharSet  : AnsiString;  { e.g. 'iso-8859-1' input is already in this }
                          MaxCol         : Integer;
-                         DoFold         : Boolean): String;
+                         DoFold         : Boolean): RawByteString;
 const
     Suffix    = '?=';
     LineBreak = #13#10#09;
@@ -1413,7 +1422,7 @@ var
     lPos,
     LenRes      : Integer;
     Prefix,
-    Res         : String;
+    Res         : AnsiString;
 begin
     Result := '';
     if DoFold and (MaxCol < 25) then
@@ -1473,22 +1482,22 @@ begin
                 Res := Res + Suffix + LineBreak {#13#10#09} + Prefix;
                 LenRes := Length(Prefix) + 2;
             end;
-            Res := Res + Base64Out[(Byte(Input[lPos]) and $FC) shr 2];
+            Res := Res + Base64OutA[(Byte(Input[lPos]) and $FC) shr 2];
             if (lPos + 1) <= Len  then begin
-                Res := Res + Base64Out[((Byte(Input[lPos]) and $03) shl 4) +
+                Res := Res + Base64OutA[((Byte(Input[lPos]) and $03) shl 4) +
                                        ((Byte(Input[lPos + 1]) and $F0) shr 4)];
                 if (lPos + 2) <= Len then begin
-                    Res := Res + Base64Out[((Byte(Input[lPos + 1]) and $0F) shl 2) +
+                    Res := Res + Base64OutA[((Byte(Input[lPos + 1]) and $0F) shl 2) +
                                            ((Byte(Input[lPos + 2]) and $C0) shr 6)];
-                    Res := Res + Base64Out[(Byte(Input[lPos + 2]) and $3F)];
+                    Res := Res + Base64OutA[(Byte(Input[lPos + 2]) and $3F)];
                 end
                 else begin
-                    Res := Res + Base64Out[(Byte(Input[lPos + 1]) and $0F) shl 2];
+                    Res := Res + Base64OutA[(Byte(Input[lPos + 1]) and $0F) shl 2];
                     Res := Res + Pad;
                 end
             end
             else begin
-                 Res := Res + Base64Out[(Byte(Input[lPos]) and $03) shl 4];
+                 Res := Res + Base64OutA[(Byte(Input[lPos]) and $03) shl 4];
                  Res := Res + Pad + Pad;
             end;
             Inc(LenRes, 4);
@@ -1513,6 +1522,21 @@ begin
 end;
 {$ENDIF}
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ V7.13 Angus enoded UTF-16 into desired characters set, then enode into MIME Header }
+function HdrEncodeInLineEx(const Input : UnicodeString;
+                         Specials      : TSysCharSet; { Try const SpecialsRFC822 }
+                         EncType       : WideChar;    { Either 'Q' or 'B'        }
+                         CodePage      : Integer;     { Input will be encoded into this CharSet }
+                         MaxCol        : Integer;
+                         DoFold        : Boolean): RawByteString;
+var
+    CharSet: AnsiString;
+begin
+    CharSet := AnsiString(CodePageToMimeCharsetString(CodePage));
+    Result := HdrEncodeInLine(UnicodeToAnsi(Input,CodePage), Specials,
+                                AnsiChar(EncType), CharSet, MaxCol, DoFold);
+end;
 
 { * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Piotr Hellrayzer Dalek <enigmatical@interia.pl>, AG                                                                    }
