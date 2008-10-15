@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.21
+Version:      7.22
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -340,6 +340,8 @@ Oct 03, 2008 V6.20  A. Garrels moved IsCharInSysCharSet, IsDigit, IsSpace, IsSpa
                     and stpblk to OverbyteIcsUtils.pas.
 Oct 04, 2008 V7.21  A. Garrels fixed conversion of Unicode file names to Ansi
                     in TSmtpCli. Bumped version number to v7.
+Oct 15, 2008 v7.22  A. Garrels adjusted TSmtpCli and THtmlCli.SetCharset to
+                    the current changes in OverbyteIcsCharsetUtils.pas
 
 ToDo:
 The THtmlSmtpCli still sends file names in headers converted with default
@@ -399,8 +401,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 721;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V7.21 ';
+  SmtpCliVersion     = 722;
+  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V7.22 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -2640,8 +2642,6 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SetCharset(const Value: String);
-var
-    PInfo : PCharSetInfo;
 begin
     FCharSet := _LowerCase(Value);
     { If empty set the default system codepage }
@@ -2650,18 +2650,13 @@ begin
         FCharSet  := CodePageToMimeCharsetString(FCodePage);
     end
     else begin
-        PInfo := GetMimeInfo(FCharSet);
-        { We may have got the default value if FCharSet was not found!   }
-        { Check whether it's a supported/installed, valid Ansi codepage. }
-        if (Pos(FCharSet, PInfo^.MimeName) <= 0) or
-           (not IsValidAnsiCodePage(PInfo^.CodePage)) then begin
+        if not MimeCharsetToCodePage(FCharSet, FCodePage) then
+        begin
             { Set default system codepage and charset }
             FCodePage := IcsSystemCodePage;
             FCharSet  := CodePageToMimeCharsetString(FCodePage);
-            raise SmtpException.Create('Charset "' + String(Value) + '" is not supported');
-        end
-        else
-            FCodePage := PInfo^.CodePage;
+            raise SmtpException.Create('Charset "' + Value + '" is not supported');
+        end;
     end;
 end;
 
@@ -3974,8 +3969,6 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
-var
-    PInfo : PCharSetInfo;
 begin
     FHtmlCharSet := _LowerCase(Value);
     { If empty set the default system codepage }
@@ -3984,18 +3977,13 @@ begin
         FHtmlCharSet  := CodePageToMimeCharsetString(FHtmlCodePage);
     end
     else begin
-        PInfo := GetMimeInfo(FHtmlCharset);
-        { We may have got the default value if FHtmlCharSet was not found!   }
-        { Check whether it's a supported/installed, valid Ansi codepage. }
-        if (Pos(FHtmlCharset, PInfo^.MimeName) <= 0) or
-           (not IsValidAnsiCodePage(PInfo^.CodePage)) then begin
+        if not MimeCharsetToCodePage(FHtmlCharset, FHtmlCodePage) then
+        begin
             { Set default system codepage and charset }
             FHtmlCodePage := IcsSystemCodePage;
             FHtmlCharset  := CodePageToMimeCharsetString(FHtmlCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
-        end
-        else
-            FHtmlCodePage := PInfo^.CodePage;
+        end;
     end;
 end;
 
