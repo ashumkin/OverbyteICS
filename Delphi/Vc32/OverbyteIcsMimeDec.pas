@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.12
+Version:      7.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -261,7 +261,11 @@ Oct 11, 2008  V7.11 Angus added TMimeDecodeEx component which extends TMimeDecod
 Oct 12, 2008  V7.12 Angus fixed DecodeHeaderLine for Q starting with = word
 Oct 15, 2008  V7.13 Arno added TMimeDecodeW and replaced GetHeaderValue()
               which was buggy by UnfoldHdrValue. (See comments below).
-              Also changed Angus' TMimeDecodeEx.
+              Also changed Angus' TMimeDecodeEx. Removed many implicit
+              string casts.
+Oct 16, 2008  V7.14 Arno - Formated my previous changes in ICS style. Minor
+              change and correction of the comment in DecodeMimeValue().
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -308,8 +312,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 713;
-    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.13';
+    MimeDecodeVersion  = 714;
+    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.14';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -2262,10 +2266,8 @@ begin
     J      := 0;
     L      := Length(S);
     SetLength(Result, L);
-    while I <= L do
-    begin
-        while (I <= L) and (S[I] <> '=') do
-        begin
+    while I <= L do begin
+        while (I <= L) and (S[I] <> '=') do begin
             Inc(J);
             if S[I] = '_' then
                 Result[J] := ' '
@@ -2286,7 +2288,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Parameter "Value" MUST NOT contain a folded header line. Pass the result  }
-{ of GetHeaderValue() if the string still contains CRLF+[TAB or Space] or   }
+{ of UnfoldHdrValue() if the string still contains CRLF+[TAB or Space] or   }
 { dummy control characters (#1).                                            }
 function DecodeMimeInlineValue(const Value : AnsiString): UnicodeString;
 var
@@ -2305,26 +2307,22 @@ begin
     CharSet   := '';
     CP        := IcsSystemCodePage;
 
-    while I <= L do
-    begin
-        if (BeginEnc = 0) then
-        begin
-            if (Value[I] = '=') and (I + 1 <= L) and (Value[I + 1] = '?') then
-            begin
+    while I <= L do begin
+        if (BeginEnc = 0) then begin
+            if (Value[I] = '=') and (I + 1 <= L) and
+               (Value[I + 1] = '?') then begin
                 BeginEnc := I;
-                if I > J then
-                begin
+                if I > J then begin
                     S := Copy(Value, J, I - J);
-                    Result := Result + AnsiToUnicode(S, IcsSystemCodePage);
+                    Result := Result + AnsiToUnicode(S, CP);
                     J := I + 1;
                 end;
                 Inc(I);
             end;
         end
-        else if BeginType = 0 then
-        begin
-            if (Value[I] = '?') and (I + 2 <= L) and (Value[I + 2] = '?') then
-            begin
+        else if BeginType = 0 then begin
+            if (Value[I] = '?') and (I + 2 <= L) and
+               (Value[I + 2] = '?') then begin
                 BeginType := I;
                 CharSet := Copy(Value, BeginEnc + 2, BeginType - (BeginEnc + 2));
                 CP := MimeCharsetToCodePageDef(CsuString(CharSet));
@@ -2334,8 +2332,8 @@ begin
             end;
         end
         else begin
-            if (Value[I] = '?') and (I + 1 <= L) and (Value[I + 1] = '=') then
-            begin
+            if (Value[I] = '?') and (I + 1 <= L) and
+               (Value[I + 1] = '=') then begin
                 case EncType of
                 'q' :
                     begin
@@ -2354,14 +2352,14 @@ begin
                 EncType   := #0;
                 BeginEnc  := 0;
                 BeginType := 0;
+                CP        := IcsSystemCodePage;
                 Inc(I);
                 J := I + 1;
             end;
         end;
-        if (I = L) and (I > J) then
-        begin
+        if (I = L) and (I > J) then begin
             S := Copy(Value, J, MaxInt);
-            Result := Result + AnsiToUnicode(S, IcsSystemCodePage);
+            Result := Result + AnsiToUnicode(S, CP);
         end;
         Inc(I);
     end;
