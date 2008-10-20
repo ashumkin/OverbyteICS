@@ -3,7 +3,7 @@ object MimeDecodeForm: TMimeDecodeForm
   Top = 44
   Caption = 'MimeDecodeForm'
   ClientHeight = 455
-  ClientWidth = 689
+  ClientWidth = 719
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,10 +19,11 @@ object MimeDecodeForm: TMimeDecodeForm
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 689
+    Width = 719
     Height = 65
     Align = alTop
     TabOrder = 0
+    ExplicitWidth = 689
     object Label1: TLabel
       Left = 8
       Top = 12
@@ -126,11 +127,19 @@ object MimeDecodeForm: TMimeDecodeForm
       TabOrder = 9
       OnClick = DecodeFileExButtonClick
     end
+    object IgnoreBlankParts: TCheckBox
+      Left = 602
+      Top = 10
+      Width = 109
+      Height = 17
+      Caption = 'Ignore Blank Parts'
+      TabOrder = 10
+    end
   end
   object Memo1: TMemo
     Left = 0
     Top = 65
-    Width = 689
+    Width = 719
     Height = 390
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -144,6 +153,7 @@ object MimeDecodeForm: TMimeDecodeForm
     ScrollBars = ssBoth
     TabOrder = 1
     WordWrap = False
+    ExplicitWidth = 689
   end
   object MimeDecode1: TMimeDecode
     OnHeaderBegin = MimeDecode1HeaderBegin

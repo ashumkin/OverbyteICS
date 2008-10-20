@@ -43,7 +43,7 @@ May 04, 2002  V1.03 Adapted InLineDecodeLine event to new Len argument.
               Added file store for UUEncoded files.
 Nov 01, 2002  V1.04 Changed PChar arguments to Pointer to work around Delphi 7
               bug with PAnsiChar<->PChar (change has be done in component).
-Oct 12, 2008  V7.00 Angus added MIME header encoding and decoding
+Oct 18, 2008  V7.15 Angus added MIME header encoding and decoding
               Added TMimeDecodeEx test button (uses no events)
               Fixed MimeDecode1InlineDecode events for D2009 (still Ansi)
 
@@ -61,8 +61,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-  MimeDemoVersion    = 700;
-  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.00 ';
+  MimeDemoVersion    = 715;
+  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.15 ';
 
 type
   TMimeDecodeForm = class(TForm)
@@ -82,6 +82,7 @@ type
     EncodeOneHdrButton: TButton;
     DecodeFileExButton: TButton;
     MimeDecodeEx1: TMimeDecodeEx;
+    IgnoreBlankParts: TCheckBox;
     procedure DecodeButtonClick(Sender: TObject);
     procedure MimeDecode1PartBegin(Sender: TObject);
     procedure MimeDecode1PartEnd(Sender: TObject);
@@ -401,7 +402,7 @@ end;
 windows-1252 is a superset of 8859-1, see OverbyteIcsCharsetUtils for a full list  )  }
 
 const
-    TotHeaders = 24 ;
+    TotHeaders = 26 ;
 var
     TestHeaders: array [1..TotHeaders] of AnsiString = (
         '=?US-ASCII?Q?Keith_Moore?= <moore@cs.utk.edu>',
@@ -427,21 +428,25 @@ var
         '=?utf-8?B?QW5ndXMgZmFpdCBsYSBmw6p0ZSDDoCBGcmFuw6dvaXMgcXVhbmQgbCfDqXTDqSBhcnJpdmU=?=',
         '=?utf-8?Q?Angus_fait_la_f=C3=AAte_=C3=A0_Fran=C3=A7ois_quand_l''=C3=A9t=C3=A9_arrive?=',  // note escaped '' added
         '=?iso-8859-1?B?QW5ndXMgZmFpdCBsYSBm6nRlIOAgRnJhbudvaXMgcXVhbmQgbCfpdOkgYXJyaXZl?=',
-        '=?iso-8859-1?Q?Angus_fait_la_f=EAte_=E0_Fran=E7ois_quand_l''=E9t=E9_arrive?=' );          // note escaped '' added
+        '=?iso-8859-1?Q?Angus_fait_la_f=EAte_=E0_Fran=E7ois_quand_l''=E9t=E9_arrive?=',            // note escaped '' added
+        '=?utf-8?Q?Unicode_testing_-_Angus_fait_la_?==?utf-8?Q?f=C3=AAte_=C3=A0_Fran=C3=A7ois_q'+
+           'uand_l''=C3=A9t=C3=A9_arri?==?utf-8?Q?ve_=28Greek:_=C5=B4=C6=9F=C6=B1=CE=A3=CE=A8=CE=A9=29?=',
+        '=?utf-8?Q?Unicode_testing_-_Angus_fait_la_?='#13#10#9+                                
+           '=?utf-8?Q?f=C3=AAte_=C3=A0_Fran=C3=A7ois_quand_l''=C3=A9t=C3=A9_arri?='#13#10#9+    // note escaped '' added
+	       '=?utf-8?Q?ve_=28Greek:_=C5=B4=C6=9F=C6=B1=CE=A3=CE=A8=CE=A9=29?=' );
 
 procedure TMimeDecodeForm.DecAutoHeaderButtonClick(Sender: TObject);
 var
     I: integer;
-    DecStr, CharSet: AnsiString;
+    CharSet: AnsiString;
+    UniStr: UnicodeString ;
 begin
     Display('Auto decoding test MIME Encoded Header Lines');
     for I := 1 to TotHeaders do begin
-        DecStr := MimeDecodeEx1.DecodeHeaderLine (TestHeaders[I], CharSet);
+        UniStr := DecodeMimeInlineValueEx (UnfoldHdrValue (TestHeaders[I]), CharSet);
         Display('Raw Header: ' + String(TestHeaders[I]));
-        Display('8-bit Header: ' + String(DecStr) + ' [CharSet=' +
-                                                     String(CharSet) + ']');
-        Display('Unicode Header: ' +
-                        MimeDecodeEx1.DecodeHeaderLineWide (TestHeaders[I]));
+        Display('Unicode Header: ' + UniStr + ' [CharSet=' +
+                                            Lowercase (String(CharSet)) + ']');
         Display('');
     end;
 end;
@@ -449,14 +454,13 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.DecOneHeaderButtonClick(Sender: TObject);
 var
-    DecStr, CharSet: AnsiString;
+    CharSet: AnsiString;
+    UniStr: UnicodeString ;
 begin
-    DecStr := MimeDecodeEx1.DecodeHeaderLine (TextEdit.Text, CharSet);
     Display('Raw Header: ' + TextEdit.Text);
-    Display('8-bit Header: ' + String(DecStr) + ' [CharSet=' +
-                                                    String(CharSet) + ']');
-    Display('Unicode Header: ' +
-                        MimeDecodeEx1.DecodeHeaderLineWide (TextEdit.Text));
+    UniStr := DecodeMimeInlineValueEx (TextEdit.Text, CharSet);
+    Display('Unicode Header: ' + UniStr + ' [CharSet=' +
+                                            String(CharSet) + ']');
     Display('');
 end;
 
@@ -485,18 +489,27 @@ var
     I: integer;
 begin
     Display('MIME Decoding ' + FileEdit.Text);
+    MimeDecodeEx1.MaxParts := 999 ;  // we want lots of parts
+    MimeDecodeEx1.SkipBlankParts := IgnoreBlankParts.Checked ; // but not empty ones
     MimeDecodeEx1.DecodeFileEx(FileEdit.Text);   // decodes without using events, into arrays, see below
-    Display('Total header lines found: ' + IntToStr (MimeDecodeEx1.HeaderLines.Count) +
-                             ', Length ' + IntToStr (MimeDecodeEx1.MimeDecode.LengthHeader));
+    Display('Total header lines found: ' + IntToStr (MimeDecodeEx1.TotHeaders) +
+                             ', Length ' + IntToStr (MimeDecodeEx1.DecodeW.LengthHeader));
+    Display('Wide Subject: ' + MimeDecodeEx1.DecodeW.SubjectW);
+    if MimeDecodeEx1.TotHeaders = 0 then exit ;
+    for I := 0 to Pred (MimeDecodeEx1.TotHeaders) do begin
+   //       Display(MimeDecodeEx1.HeaderLines [I]);
+   //       Display(DecodeMimeInlineValue (UnfoldHdrValue (MimeDecodeEx1.HeaderLines [I])));
+         Display(MimeDecodeEx1.WideHeaders [I]);
+    end;
     if MimeDecodeEx1.DecParts = 0 then
         Display('No parts found to decode')
     else begin
         for I := 0 to Pred (MimeDecodeEx1.DecParts) do begin
             with MimeDecodeEx1.PartInfos [I] do begin
                 Display('Part ' + IntToStr (I) +  ', Content: ' + PContentType +
-                    ', Size: ' + IntToStr (PartStream.Size) +
-                    ', Name: ' + PName + ', FileName: ' + PFileName +
-                    ', Encoding: ' + PEncoding + ', Charset: ' + PCharset);
+                    ', Size: ' + IntToStr (PSize) + ', Name: ' + String (PName) +
+                    ', FileName: ' + String (PFileName) + ', Encoding: ' + PEncoding +
+                    ', Charset: ' + PCharset + ', ApplType: ' + PApplType);
                  // the content of each part is in PartStream
                  // but we don't attempt to display it here, only the size
             end;

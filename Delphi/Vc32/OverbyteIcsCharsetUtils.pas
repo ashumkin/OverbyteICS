@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      7.07
+Version:      7.08
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -76,7 +76,8 @@ Oct 15, 2008 V7.07 A. Garrels - Some functions reworked in order to get errors b
                    instead of silently hardcoded charset windows-1252 and code
                    page 1252. The default charset and code page are now variable.
                    Use new function MimeCharsetToCodePageDef() in order to get always
-                   a valid code page. See new documentation below.  
+                   a valid code page. See new documentation below.
+Oct 17, 2008 V7.08 Angus, fixed US_ASCII and added CP950
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try
@@ -997,7 +998,7 @@ begin
     Inc(I);
     CharsetInfos[I].MimeCharset   := BIG_5;
     CharsetInfos[I].CodePage      := 950;
-    CharsetInfos[I].MimeName      := CsuString('big5 csbig5 big-5');
+    CharsetInfos[I].MimeName      := CsuString('big5 csbig5 big-5 cp950');
     Inc(I);
     CharsetInfos[I].MimeCharset   := ks_c_5601_1987;
     CharsetInfos[I].CodePage      := 949;
@@ -1125,7 +1126,7 @@ begin
     Inc(I);
     CharsetInfos[I].MimeCharset   := US_ASCII;
     CharsetInfos[I].CodePage      := 20127;
-    CharsetInfos[I].MimeName      := CsuString('us-ascii  ascii us ansi_x3.4-1968 iso-ir-6 ansi_x3.4-1986 iso_646.irv:1991 iso646-us ibm367 cp367 csascii');
+    CharsetInfos[I].MimeName      := CsuString('us-ascii ascii us ansi_x3.4-1968 iso-ir-6 ansi_x3.4-1986 iso_646.irv:1991 iso646-us ibm367 cp367 csascii');
     Inc(I);
     CharsetInfos[I].MimeCharset   := T_61; //7-bit or 8-bit?
     CharsetInfos[I].CodePage      := 20261;
