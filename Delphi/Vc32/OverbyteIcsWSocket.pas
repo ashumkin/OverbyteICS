@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      6.20
+Version:      7.21
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -623,7 +623,9 @@ Aug 11, 2008 V6.18 A. Garrels - Type AnsiString rolled back to String.
              Two bugs fixed in SSL code introduced with Unicode change.
              Socks was not fully prepared for Unicode.
 Sep 19, 2008 V6.19 A. Garrels changed some AnsiString types to RawByteString. 
-Sep 21, 2008 V6.20 A. Garrels removed BoolToStr(), available since D7  
+Sep 21, 2008 V6.20 A. Garrels removed BoolToStr(), available since D7
+Oct 22, 2008 V7.21 A. Garrels removed the const modifier from parameter Data
+             in function SendTo to fix a bug in C++ Builder.
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -727,8 +729,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 620;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V6.20 ';
+  WSocketVersion            = 721;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.21 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1027,7 +1029,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function    Send(DataByte : Byte) : Integer; overload; virtual;
     function    SendTo(Dest       : TSockAddr;
                        DestLen    : Integer;
-                       const Data : TWSocketData;
+                       {$IFDEF CLR} const {$ENDIF} Data : TWSocketData;
                        Len        : Integer) : Integer; virtual;
     function    SendStr(const Str : RawByteString) : Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF} virtual;
 {$IFDEF COMPILER12_UP}
@@ -5495,7 +5497,7 @@ end;
 function TCustomWSocket.SendTo(
     Dest       : TSockAddr;
     DestLen    : Integer;
-    const Data : TWSocketData;
+    {$IFDEF CLR} const {$ENDIF} Data : TWSocketData;
     Len        : Integer) : Integer;
 begin
     Result := WSocket_Synchronized_SendTo(FHSocket, Data, Len, FSendFlags,
