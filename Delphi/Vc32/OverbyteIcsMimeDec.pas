@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.15
+Version:      7.16
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -267,6 +267,13 @@ Oct 16, 2008  V7.14 Arno - Formated my previous changes in ICS style. Minor
               change and correction of the comment in DecodeMimeValue().
 Oct 18, 2008  V7.15 Angus added DecodeMimeInlineValueEx, removed DecodeHeaderLine/Ex
               internal changes and fixes to TMimeDecodeEx
+Oct 23, 2008  V7.16 Arno - PrepareNextPart did not clear FPartCharset.
+              Property ApplicationType was not implemented.
+              Fixed a bug in DecodeMimeInlineValue and DecodeMimeInlineValueEx,
+              Improved UnfoldHdrValue. In InternalDecodeStream replace both Tab
+              and Space after CRLF by #1 . Made two implicit string cast
+              explicit casts. Added properties PartCodePage and IsTextpart
+              to TMimeDecode.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -314,8 +321,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 715;
-    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.15';
+    MimeDecodeVersion  = 716;
+    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.16';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -344,6 +351,7 @@ type
         FFormat                   : AnsiString;
         FHeaderLines              : TStrings;
         FIsMultipart              : Boolean;
+        FIsTextpart               : Boolean;
         FEndOfMime                : Boolean;
         FPartContentType          : AnsiString;
         FPartEncoding             : AnsiString;
@@ -355,6 +363,7 @@ type
         FPartFileName             : AnsiString;
         FPartFormat               : AnsiString;
         FPartCharset              : AnsiString;
+        FPartCodePage             : Cardinal;
         FApplicationType          : AnsiString;
         FPartOpened               : Boolean;
         FHeaderFlag               : Boolean;
@@ -442,6 +451,7 @@ type
         property Format           : AnsiString       read  FFormat;
         property HeaderLines      : TStrings         read  FHeaderLines;
         property IsMultipart      : Boolean          read  FIsMultipart;
+        property IsTextpart       : Boolean          read  FIsTextpart;
         property EndOfMime        : Boolean          read  FEndOfMime;
         property PartContentType  : AnsiString       read  FPartContentType;
         property PartEncoding     : AnsiString       read  FPartEncoding;
@@ -451,6 +461,7 @@ type
         property PartFileName     : AnsiString       read  FPartFileName;
         property PartFormat       : AnsiString       read  FPartFormat;
         property PartCharset      : AnsiString       read  FPartCharset;
+        property PartCodePage     : Cardinal         read  FPartCodePage;
         property ApplicationType  : AnsiString       read  FApplicationType;
         property PartNumber       : Integer          read  FPartNumber;
         property CurrentData      : PAnsiChar        read  FCurrentData
@@ -575,7 +586,8 @@ function GetToken(Src : PAnsiChar; var Dst : AnsiString; var Delim : AnsiChar) :
 { spaces. Since its name was also missleading it's been replaced by function  }
 { UnfoldHdrValue().                                                       AG  }
 // function GetHeaderValue(X : PAnsiChar) : AnsiString;
-function UnfoldHdrValue(const Value: AnsiString) : AnsiString;
+function UnfoldHdrValue(const Value: PAnsiChar) : AnsiString; overload;
+function UnfoldHdrValue(const Value: AnsiString) : AnsiString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
 function DecodeMimeInlineValue(const Value: AnsiString): UnicodeString;
 function DecodeMimeInlineValueEx(const Value : AnsiString; var CharSet: AnsiString): UnicodeString;
 function IsCrLf1Char(Ch : AnsiChar) : Boolean;
@@ -980,94 +992,169 @@ end;
 { AG:                                                                         }
 { InternalDecodeStream has replaced CR, LF and TAB by #1 dummy character.     }
 { If CRLF+[Space or Tab] or #1#1#1 is found, preserve a space only if we are  }
-{ not inside a MIME inline block and the continuation line does not follow    }
-{ immediately after a MIME inline encoded block. This is how Thunderbird      }
-{ handles MIME inline decoding, OE behaves a little bit different, but IMO a  }
-{ little bit buggy.                                                           }
+{ not inside a MIME inline block and the continuation line does not begin     }
+{ with a MIME inline encoded block or another continuation line. This is how  }
+{ Thunderbird handles MIME inline decoding, OE behaves a little bit           }
+{ different but IMO a little bit buggy.                                       }
 {                                                                             }
 { Examples:                                                                   }
-{   =?ISO-8859-1?Q?a?='#1#1#1'=?ISO-8859-1?Q?b?=                              }
+{   '=?ISO-8859-1?Q?a?='#1#1#1'=?ISO-8859-1?Q?b?='                            }
 {   Result: =?ISO-8859-1?Q?a?==?ISO-8859-1?Q?b?=                              }
 {                                                                             }
-{   =?ISO-8859-1?Q?a?='#1#1#1' =?ISO-8859-1?Q?b?=                             }
-{   Result: =?ISO-8859-1?Q?a?= =?ISO-8859-1?Q?b?=                             }
+{   '=?ISO-8859-1?Q?a?='#13#10#9' =?ISO-8859-1?Q?b?='                         }
+{   Result: =?ISO-8859-1?Q?a?=  =?ISO-8859-1?Q?b?=                            }
 {                                                                             }
-{   =?ISO-8859-1?Q?a?= c'#1#1#1'=?ISO-8859-1?Q?b?=                            }
+{   '=?ISO-8859-1?Q?a?='#1#1#1'<foo@bar.com>'                                 }
+{   Result: =?ISO-8859-1?Q?a?= <foo@bar.com>                                  }
+{                                                                             }
+{   #10#10'=?ISO-8859-1?Q?a?= c'#1#1#1'=?ISO-8859-1?Q?b?='                    }
 {   Result: =?ISO-8859-1?Q?a?= c =?ISO-8859-1?Q?b?=                           }
 {                                                                             }
-{   a'#1#1#1'b                                                                }
+{   'a'#1#1#1'b'                                                                }
 {   Result: a b                                                               }
 {                                                                             }
 {  ToDo: Skip continuation lines inside address blocks <>.                    }
 
-function UnfoldHdrValue(const Value: AnsiString) : AnsiString;
+function UnfoldHdrValue(const Value: PAnsiChar) : AnsiString;
 var
-    InlineBegin, TypeBegin : Boolean;
-    L, I, J: Integer;
+    NextInlineEndOffset, PrevInlineEndOffset : Integer;
+    L, I, J, R: Integer;
+    ShouldPreserveSpace : Boolean;
+
+    { Checks roughly whether a valid MIME inline block begins at current }
+    { offset. If true returns offset of the last "=", otherwise zero.    }
+    function GetNextInlineEnd : Integer;
+    var
+        X, Part : Integer;
+    begin
+        Result := 0;
+        if (I + 9 > L) or (not ((Value[I] = '=') and (Value[I + 1] = '?'))) then
+            Exit;
+        X := I + 2;
+        Part := 1;
+        while X <= L do
+        begin
+            if (Part = 1) and (Value[X] = '?') and (X + 2 <= L) and
+                (Value[X + 2] = '?') then
+            begin
+                Inc(Part);
+                Inc(X, 2);
+            end
+            else if (Value[X] = '?') and (X + 1 <= L) and
+                   (Value[X + 1] = '=') then
+            begin
+                Result := X + 1;
+                Exit;
+            end;
+            Inc(X);
+        end;
+    end;
+
 begin
-    L := Length(Value);
-    TypeBegin := FALSE;
-    InlineBegin := FALSE;
-    I := 1;
+    L := StrLen(Value) - 1;
+    SetLength(Result, L + 1);
+    I := 0;
     J := I;
-    Result := '';
+    R := 0;
+    NextInlineEndOffset := 0;
+    PrevInlineEndOffset := 0;
+    ShouldPreserveSpace := FALSE;
     while I <= L do
     begin
-        { CRLF+[Space or Tab] or #1#1#1, preserve a space only if we are }
-        { not inside a MIME inline block.                                }
-        if (Value[I] in [#13, #1]) and (I + 2 <= L) and
-           (Value[I + 1] in [#10, #1]) and
-           (Value[I + 2] in [#9, #1, ' ']) then
+        if NextInlineEndOffset = 0 then
         begin
-            if I > J then
-                Result := Result + Copy(Value, J, I - J );
-            if not InlineBegin then
-                Result := Result + ' ';
-            Inc(I, 3);
-            J := I;
-            Continue;
-        end
-        else if (Value[I] in [#1, #10, #13]) then // probably not reqiured ?
-        begin
-            if I > J then
-                Result := Result + Copy(Value, J, I - J );
-            Inc(I);
-            Inc(J);
-            Continue;
-        end;
-        if (not InlineBegin) and (Value[I] = '=') and (I + 1 <= L) and
-           (Value[I + 1] = '?') then begin
-            InlineBegin := TRUE;
-            Inc(I);
-        end
-        else if (not TypeBegin) and (Value[I] = '?') and (I + 2 <= L) and
-                (Value[I + 2] = '?') then begin
-            TypeBegin := TRUE;
-            Inc(I, 2);
-        end
-        else begin
-            if (Value[I] = '?') and (I + 1 <= L) and
-               (Value[I + 1] = '=') then begin
-                Result := Result + Copy(Value, J, (I - J) + 2);
-                InlineBegin := FALSE;
-                TypeBegin   := FALSE;
-                Inc(I);
-                J := I + 1;
-                { If CRLF+[Space or Tab] or #1#1#1 follows, do NOT preserve a space! }
-                while (J + 2 <= L) and
-                   (Value[J] in [#13, #1]) and (Value[J + 1] in [#10, #1]) and
-                   (Value[J + 2] in [#9, #1, ' ']) do
+            { if continuation line follows }
+            if (Value[I] in [#13, #1]) and (I + 2 <= L) and
+               (Value[I + 1] in [#10, #1]) and
+               (Value[I + 2] in [#9, #1, ' ']) then
+            begin
+                if I > J then
                 begin
-                    { Just skip !}
-                    Inc(I, 3);
-                    J := I + 1;
+                    Move(Value[J], Result[R + 1], I - J);
+                    Inc(R, I - J);
+                end;
+                Inc(I, 3);
+                J := I;
+                if PrevInlineEndOffset > 0 then
+                    Inc(PrevInlineEndOffset, 3);
+                if not ShouldPreserveSpace then
+                    ShouldPreserveSpace := TRUE;
+                NextInlineEndOffset := GetNextInlineEnd;
+            end
+            else if (Value[I] in [#1, #10, #13]) then
+            begin
+                if I > J then
+                begin
+                    Move(Value[J], Result[R + 1], I - J);
+                    Inc(R, I - J);
+                end;
+                Inc(I);
+                J := I;
+                if PrevInlineEndOffset > 0 then
+                    Inc(PrevInlineEndOffset);
+                NextInlineEndOffset := GetNextInlineEnd;
+            end
+            else begin
+                if ShouldPreserveSpace then
+                begin
+                    ShouldPreserveSpace := FALSE;
+                    Inc(R);
+                    Result[R] := ' ';
+                end;
+                NextInlineEndOffset := GetNextInlineEnd;
+                Inc(I);
+            end;
+        end
+        else begin  // NextInlineEndOffset > 0
+            if ShouldPreserveSpace then
+            begin
+                ShouldPreserveSpace := FALSE;
+                { Skip if this block follows a previous block immediately }
+                if PrevInlineEndOffset <> I - 1 then
+                begin
+                    Inc(R);
+                    Result[R] := ' ';
                 end;
             end;
+            while I <= NextInlineEndOffset do
+            begin
+                if (Value[I] in [#1, #10, #13]) then
+                begin
+                    if I > J then
+                    begin
+                        Move(Value[J], Result[R + 1], I - J);
+                        Inc(R, I - J);
+                    end;
+                    Inc(I);
+                    J := I;
+                end
+                else
+                    Inc(I);
+            end;
+            if I > J then
+            begin
+                Move(Value[J], Result[R + 1], I - J);
+                Inc(R, I - J);
+            end;
+            J := I;
+            PrevInlineEndOffset := NextInlineEndOffset;
+            NextInlineEndOffset := GetNextInlineEnd;
         end;
-        if (I = L) and (I > J) then
-            Result := Result + Copy(Value, J, MaxInt);
-        Inc(I);
     end;
+    if L >= J then
+    begin
+        Move(Value[J], Result[R + 1], L - J + 1);
+        Inc(R, L - J + 1);
+    end;
+    if R <> L + 1 then
+        SetLength(Result, R);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function UnfoldHdrValue(const Value: AnsiString) : AnsiString;
+begin
+    Result := UnfoldHdrValue(PAnsiChar(Value));
 end;
 
 
@@ -1533,6 +1620,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecode.PrepareNextPart;
 begin
+    FApplicationType         := '';
+    FIsTextpart              := FALSE;
+    FPartCharset             := '';
+    FPartCodePage            := CP_ACP;
     FPartEncoding            := '';
     FPartContentType         := '';
     FPartDisposition         := '';
@@ -1656,14 +1747,22 @@ begin
     p := GetToken(FCurrentData, KeyWord, Delim);
     if KeyWord = 'content-type' then begin
         p := GetTokenEx(p, FPartContentType, Delim);
+        if Pos(AnsiString('application/'), FPartContentType) = 1 then
+            FApplicationType := Copy(FPartContentType, 13, MaxInt)
+        else
+            FIsTextpart := Pos(AnsiString('text/'), FPartContentType) = 1;
         while Delim = ';' do begin
             p := GetToken(p, Token, Delim);
             if Delim = '=' then begin
                 p := GetValue(p, Value, Delim);
                 if Token = 'name' then
                     FPartName := UnfoldHdrValue(Value)
-                else if Token = 'charset' then
-                    FPartCharset := Value
+                else if Token = 'charset' then begin
+                    FPartCharset := Value;
+                    if not MimeCharsetToCodePage(CsuString(FPartCharset),
+                                                 FPartCodePage) then
+                        FPartCodePage := CP_ACP;
+                end
                 else if Token = 'format' then
                     FPartFormat := Value
                 else if Token = 'boundary' then begin
@@ -1971,14 +2070,15 @@ begin
                 if I < nLast then begin
                     if (not IsCrLf(FBuffer[nStart])) and  { 27/08/98 }
                        IsSpace(FBuffer[I + 1]) then begin
-                        { We have a continuation line, replace CR, LF, TAB }
-                        { by #1 which will be handled in GetHeaderValue    }
+                        { We have a continuation line, replace CRLF +  }
+                        { [TAB or Space] by #1 which will be handled   }
+                        { in UnfoldHdrValue. Comment adjusted AG V7.16 }
                         FBuffer[I] := #1;
                         FBuffer[J] := #1;
-                        if FBuffer[I + 1]= #9 then
+                        //if FBuffer[I + 1] = #9 then       { AG V7.16 }
                             FBuffer[I + 1] := #1;
                         nSearch   := I;
-                        { and search new end of line }
+                        { and search new line end }
                         continue;
                     end;
                 end;
@@ -2108,7 +2208,7 @@ begin
         PSize := PartStream.Size ;
         if FDecodeW.PartNumber = 0 then  // main body
         begin
-            if FSkipBlankParts and (Pos ('multipart', _LowerCase (FDecodeW.ContentType)) = 1) then exit ;
+            if FSkipBlankParts and (Pos (AnsiString('multipart'), _LowerCase (FDecodeW.ContentType)) = 1) then exit ;
             PContentType := FDecodeW.ContentType ;
             PCharset := FDecodeW.Charset ;
             PApplType := FDecodeW.ApplicationType ;
@@ -2127,7 +2227,7 @@ begin
             PDisposition := FDecodeW.PartDisposition ;
             PFileName := DecodeMimeInlineValue (FDecodeW.PartFileName) ;
         end ;
-        PCodePage := MimeCharsetToCodePageDef (CsuString(PCharSet)) ;
+        PCodePage := FDecodeW.PartCodePage;
         if FSkipBlankParts then
         begin
             if PContentType = '' then exit ;
@@ -2150,7 +2250,7 @@ begin
     for I := 0 to FTotHeaders - 1 do
     begin
          WideHeaders [I] := DecodeMimeInlineValueEx
-                            (UnfoldHdrValue (FHeaderLines [I]), CharSet) ;
+                            (UnfoldHdrValue (AnsiString(FHeaderLines [I])), CharSet) ;
         if FHeaderCharset = '' then FHeaderCharset := CharSet ;
     end ;
 end ;
@@ -2303,11 +2403,11 @@ begin
                 J := I + 1;
             end;
         end;
-        if (I = L) and (I > J) then begin
-            S := Copy(Value, J, MaxInt);
-            Result := Result + AnsiToUnicode(S, CP);
-        end;
         Inc(I);
+    end;
+    if (L >= J) then begin  { AG 7.16 }
+        S := Copy(Value, J, MaxInt);
+        Result := Result + AnsiToUnicode(S, CP);
     end;
 end;
 
@@ -2383,11 +2483,11 @@ begin
                 J := I + 1;
             end;
         end;
-        if (I = L) and (I > J) then begin
-            S := Copy(Value, J, MaxInt);
-            Result := Result + AnsiToUnicode(S, CP);
-        end;
         Inc(I);
+    end;
+    if (L >= J) then begin  { AG 7.16 }
+        S := Copy(Value, J, MaxInt);
+        Result := Result + AnsiToUnicode(S, CP);
     end;
 end;
 
