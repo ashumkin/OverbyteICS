@@ -23,7 +23,6 @@ object MimeDecodeForm: TMimeDecodeForm
     Height = 65
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 689
     object Label1: TLabel
       Left = 8
       Top = 12
@@ -136,26 +135,7 @@ object MimeDecodeForm: TMimeDecodeForm
       TabOrder = 10
     end
   end
-  object Memo1: TMemo
-    Left = 0
-    Top = 65
-    Width = 719
-    Height = 390
-    Align = alClient
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'Courier New'
-    Font.Style = []
-    Lines.Strings = (
-      'Memo1')
-    ParentFont = False
-    ScrollBars = ssBoth
-    TabOrder = 1
-    WordWrap = False
-    ExplicitWidth = 689
-  end
-  object MimeDecode1: TMimeDecode
+  object MimeDecode1: TMimeDecodeW
     OnHeaderBegin = MimeDecode1HeaderBegin
     OnHeaderLine = MimeDecode1HeaderLine
     OnHeaderEnd = MimeDecode1HeaderEnd
@@ -167,11 +147,12 @@ object MimeDecodeForm: TMimeDecodeForm
     OnPartEnd = MimeDecode1PartEnd
     OnInlineDecodeLine = MimeDecode1InlineDecodeLine
     Left = 56
-    Top = 72
+    Top = 80
   end
   object MimeDecodeEx1: TMimeDecodeEx
     MaxParts = 10
-    Left = 140
-    Top = 75
+    SkipBlankParts = False
+    Left = 132
+    Top = 83
   end
 end
