@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      1.20
+Version:      7.21
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -73,6 +73,10 @@ Sep 28, 2008 V1.19 A. Garrels Moved IsDigit, IsXDigit, XDigit, htoi2 and htoin
              ConvertCodepage().
 Oct 03, 2008 V1.20 A. Garrels moved some double helper functions to this unit.
              Added symbol USE_INLINE that enables inlining.
+Oct 23, 2008 V7.21 A. Garrels added IcsStrNextChar, IcsStrPrevChar and
+             IcsStrCharLength, see description below. Useful when converting
+             a ANSI character stream with known code page to Unicode in
+             chunks. Added a PAnsiChar overload to function AnsiToUnicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -154,6 +158,7 @@ type
     function  UsAsciiToUnicode(const Str: RawByteString): UnicodeString; overload;
     function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
     function  UnicodeToAnsi(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  AnsiToUnicode(const Str: PAnsiChar; ACodePage: Cardinal): UnicodeString; overload;
     function  AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString; overload;
     function  AnsiToUnicode(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
@@ -201,7 +206,18 @@ type
     function  XDigit2(S : PChar) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  stpblk(PValue : PWideChar) : PWideChar; overload;
     function  stpblk(PValue : PAnsiChar) : PAnsiChar; overload;
+    { Retrieves the pointer to the next character in a string. This function }
+    { can handle strings consisting of either single- or multi-byte          }
+    { characters. including UTF-8. The return value is a pointer to the next }
+    { character in the string, or to the terminating null character if at    }
+    { the end of the string.                                                 }
     function  IcsStrNextChar(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+    { Retrieves the pointer to the preceding character in a string. This     }
+    { function can handle strings consisting of either single- or multi-byte }
+    { characters including UTF-8. The return value is a pointer to the       }
+    { preceding character in the string, or to the first character in the    }
+    { string if the Current parameter equals the Start parameter.            }
+    function  IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
     function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer;
 
 { Wide library }
@@ -360,6 +376,27 @@ end;
 function UnicodeToAnsi(const Str: UnicodeString): RawByteString;
 begin
     Result := UnicodeToAnsi(Str, CP_ACP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function AnsiToUnicode(const Str: PAnsiChar; ACodePage: Cardinal): UnicodeString;
+var
+    Len : Integer;
+begin
+    if (Str <> nil) then begin
+        Len := MultiByteToWideChar(ACodePage, 0, Str,
+                                   -1, nil, 0);
+        if Len > 1 then begin // counts the null-terminator
+            SetLength(Result, Len - 1);
+            MultiByteToWideChar(ACodePage, 0, Str, -1,
+                                Pointer(Result), Len);
+        end
+        else
+            Result := '';
+    end
+    else
+        Result := '';
 end;
 
 
@@ -1005,6 +1042,16 @@ begin
         Result := IcsCharNextUtf8(Str)
     else
         Result := CharNextExA(Word(ACodePage), Str, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+begin
+    if ACodePage = CP_UTF8 then
+        Result := IcsCharPrevUtf8(Start, Current)
+    else
+        Result := CharPrevExA(Word(ACodePage), Start, Current, 0);
 end;
 
 
