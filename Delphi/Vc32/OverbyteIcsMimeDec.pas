@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.16
+Version:      7.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -109,7 +109,7 @@ For details about those header fields and others, read RFC-822
 
 For each part, we have the following properties updated (the header is parsed
 on the fly):
-PartNumber     Starting from 0 for the non-significant part
+PartNumber                Starting from 0 for the non-significant part
 PartLine                  Starting 1 for the first line of each part or header
 PartContentType           Such as 'text/plain' or 'application/x-zip-compressed'
 PartCharset               This is a complement for the PartContentType.
@@ -271,10 +271,22 @@ Oct 23, 2008  V7.16 Arno - PrepareNextPart did not clear FPartCharset.
               Property ApplicationType was not implemented.
               Fixed a bug in DecodeMimeInlineValue and DecodeMimeInlineValueEx,
               Improved UnfoldHdrValue. In InternalDecodeStream replace both Tab
-              and Space after CRLF by #1 . Made two implicit string cast
+              and Space after CRLF by #1 . Made two implicit string casts
               explicit casts. Added properties PartCodePage and IsTextpart
               to TMimeDecode.
-
+Oct 24, 2008  V7.17 Arno - TMimeDecode: Added property CodePage.
+              Initialization of FIsTextPart changed to TRUE.
+              Added property DefaultCodePage, its value is assigned to both
+              properties CodePage and PartCodePage whenever no code page can
+              be retrieved from a header or if a valid code page cannot be
+              looked up from a Charset value. I'm pretty sure that
+              DefaultCodePage should be set to CP_US_ASCII (20127), however
+              the component initializes this value with the default system
+              code page.
+              TMimeDecodeW: Initializes part properties of part #0 with values
+              from message header if IsMultipart equals FALSE.
+              TMimeDecodeEX: MimeDecodePartEnd adjusted to use FCodePage and
+              FPartCodePage.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -321,8 +333,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 716;
-    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.16';
+    MimeDecodeVersion  = 717;
+    CopyRight : String = ' TMimeDecode (c) 1998-2008 Francois Piette V7.17';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -343,6 +355,7 @@ type
         FReturnPath               : AnsiString;
         FEncoding                 : AnsiString;
         FCharSet                  : AnsiString;
+        FCodePage                 : Cardinal;
         FContentType              : AnsiString;
         FMimeVersion              : AnsiString;
         FHeaderName               : AnsiString;
@@ -400,6 +413,8 @@ type
         FInlineDecodeLine         : Boolean;
         FLengthHeader             : Integer;
         FPartFirstLine            : Boolean;
+        FDefaultCodePage          : Cardinal;
+        procedure SetDefaultCodePage(const Value: Cardinal); 
         procedure TriggerHeaderBegin; virtual;
         procedure TriggerHeaderLine; virtual;
         procedure TriggerHeaderEnd; virtual;
@@ -444,6 +459,7 @@ type
         property ContentType      : AnsiString       read  FContentType;
         property Encoding         : AnsiString       read  FEncoding;
         property Charset          : AnsiString       read  FCharset;
+        property CodePage         : Cardinal         read  FCodePage;
         property MimeVersion      : AnsiString       read  FMimeVersion;
         property HeaderName       : AnsiString       read  FHeaderName;
         property Disposition      : AnsiString       read  FDisposition;
@@ -472,6 +488,8 @@ type
                                                      write FInlineDecodeLine
                                                      default FALSE;
         property LengthHeader     : Integer          read  FLengthHeader;
+        property DefaultCodePage  : Cardinal         read  FDefaultCodePage
+                                                     write SetDefaultCodePage; 
     published
         property OnHeaderBegin : TNotifyEvent        read  FOnHeaderBegin
                                                      write FOnHeaderBegin;
@@ -513,6 +531,8 @@ type
           function GetPartFileNameW: UnicodeString;
           function GetPartNameW: UnicodeString;
           function GetSubjectW: UnicodeString;
+      protected
+          procedure TriggerPartBegin; override;
       public
           property FromW            : UnicodeString    read  GetFromW;
           property DestW            : UnicodeString    read  GetDestW;
@@ -637,6 +657,7 @@ begin
     FIsMultipart      := FALSE;
     FEndOfMime        := FALSE;
     FInlineDecodeLine := false;
+    FDefaultCodePage  := IcsSystemCodePage;
 end;
 
 
@@ -1597,6 +1618,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecode.SetDefaultCodePage(const Value: Cardinal);
+begin
+    if not IsValidCodePage(Value) then
+        raise Exception.Create('Code page "' + _IntToStr(Value) + '"' +
+            'is not a valid ANSI code page or currently not installed');
+    FDefaultCodePage := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecode.ProcessMessageLine;
 begin
     Inc(FLineNum);
@@ -1621,9 +1652,9 @@ end;
 procedure TMimeDecode.PrepareNextPart;
 begin
     FApplicationType         := '';
-    FIsTextpart              := FALSE;
+    FIsTextpart              := TRUE;
     FPartCharset             := '';
-    FPartCodePage            := CP_ACP;
+    FPartCodePage            := FDefaultCodePage;
     FPartEncoding            := '';
     FPartContentType         := '';
     FPartDisposition         := '';
@@ -1750,7 +1781,7 @@ begin
         if Pos(AnsiString('application/'), FPartContentType) = 1 then
             FApplicationType := Copy(FPartContentType, 13, MaxInt)
         else
-            FIsTextpart := Pos(AnsiString('text/'), FPartContentType) = 1;
+            FIsTextpart := Pos(AnsiString('text'), FPartContentType) = 1;
         while Delim = ';' do begin
             p := GetToken(p, Token, Delim);
             if Delim = '=' then begin
@@ -1761,7 +1792,7 @@ begin
                     FPartCharset := Value;
                     if not MimeCharsetToCodePage(CsuString(FPartCharset),
                                                  FPartCodePage) then
-                        FPartCodePage := CP_ACP;
+                        FPartCodePage := FDefaultCodePage;
                 end
                 else if Token = 'format' then
                     FPartFormat := Value
@@ -1830,8 +1861,8 @@ begin
         if FBoundary = '' then
             FNext := ProcessMessageLine
         else begin
-            TriggerPartBegin;
             FPartFirstLine := TRUE;
+            TriggerPartBegin;
             FNext          := ProcessWaitBoundary;
         end;
         Exit;
@@ -1872,8 +1903,12 @@ begin
                     p := GetValue(p, Value, Delim);
                     if Token = 'name' then
                         FHeaderName := Value
-                    else if Token = 'charset' then
-                        FCharset := Value
+                    else if Token = 'charset' then begin
+                        FCharset := Value;
+                        if not MimeCharsetToCodePage(CsuString(FCharset),
+                                                 FCodePage) then
+                            FCodePage := FDefaultCodePage;
+                    end
                     else if Token = 'format' then
                         FFormat := Value
                     else if Token = 'boundary' then begin
@@ -1916,9 +1951,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecode.MessageBegin;
 begin
+    FIsTextPart              := TRUE; 
     FApplicationType         := '';
     FBoundary                := '';
     FCharset                 := '';
+    FCodePage                := FDefaultCodePage;
     FContentType             := '';
     FCurrentData             := nil;
     FDate                    := '';
@@ -2211,6 +2248,7 @@ begin
             if FSkipBlankParts and (Pos (AnsiString('multipart'), _LowerCase (FDecodeW.ContentType)) = 1) then exit ;
             PContentType := FDecodeW.ContentType ;
             PCharset := FDecodeW.Charset ;
+            PCodePage := FDecodeW.CodePage;
             PApplType := FDecodeW.ApplicationType ;
             PName := DecodeMimeInlineValue (FDecodeW.HeaderName) ;
             PEncoding := FDecodeW.Encoding ;
@@ -2221,13 +2259,13 @@ begin
         begin           // real part
             PContentType := FDecodeW.PartContentType ;
             PCharset := FDecodeW.PartCharset ;
+            PCodePage := FDecodeW.PartCodePage;
             PApplType := FDecodeW.ApplicationType ;
             PName := DecodeMimeInlineValue (FDecodeW.PartName) ;
             PEncoding := FDecodeW.PartEncoding ;
             PDisposition := FDecodeW.PartDisposition ;
             PFileName := DecodeMimeInlineValue (FDecodeW.PartFileName) ;
         end ;
-        PCodePage := FDecodeW.PartCodePage;
         if FSkipBlankParts then
         begin
             if PContentType = '' then exit ;
@@ -2540,6 +2578,29 @@ begin
     Result := DecodeMimeInlineValue(FSubject);
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeW.TriggerPartBegin;
+begin
+    if FPartNumber = 0 then
+    begin
+        if not FIsMultipart then
+        begin
+            { Init part #0 with message header values }
+            FPartCharset     := FCharset;
+            FPartCodePage    := FCodePage;
+            FPartContentType := FContentType;
+            FPartEncoding    := FEncoding;
+            FPartFormat      := FFormat;
+            FPartDisposition := FDisposition;
+            FPartName        := FHeaderName;
+            FPartFileName    := FFileName;
+            FIsTextPart := (Length(FContentType) = 0) or
+                       (Pos(AnsiString('text'), FContentType) = 1);
+        end;
+    end;
+    inherited;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 end.

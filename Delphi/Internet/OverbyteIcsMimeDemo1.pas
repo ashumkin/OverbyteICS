@@ -7,7 +7,7 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.16
+Version:      7.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -52,6 +52,7 @@ Oct 23, 2008  V7.16 Arno added some test headers, demo uses TMimeDecodeW.
               (Freeware: http://mh-nexus.de/en/tntunicodecontrols.php) to be
               able to view Unicode correctly. Define USE_TNT to use the TntMemo
               instead of TMemo.
+Oct 25, 2008  V7.17 Added procedure Display buffer.
               
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -69,8 +70,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-  MimeDemoVersion    = 716;
-  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.16 ';
+  MimeDemoVersion    = 717;
+  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.17 ';
 
 type
 {$IFDEF USE_TNT}
@@ -131,6 +132,7 @@ type
     FFileStream    : TFileStream;
     FFileName      : String;
     procedure Display(Msg: UnicodeString);
+    procedure DisplayBuffer;
   end;
 
 var
@@ -219,6 +221,21 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TMimeDecodeForm.DisplayBuffer;
+begin
+    { If we want to display ANSI text written in a charset that  }
+    { is not the default system charset we need to convert to    }
+    { Unicode with the part code page.                           }
+    if MimeDecode1.IsTextpart and
+          ((MimeDecode1.PartCodePage = MimeDecode1.DefaultCodePage) or
+           (IsValidCodePage(MimeDecode1.PartCodePage))) then
+        Memo1.Lines.Add(AnsiToUnicode(FLineBuf, MimeDecode1.PartCodePage))
+    else
+        Memo1.Lines.Add(StrPas(FLineBuf));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1PartBegin(Sender: TObject);
 begin
     Display('--------- PART ' +
@@ -232,7 +249,8 @@ end;
 procedure TMimeDecodeForm.MimeDecode1PartEnd(Sender: TObject);
 begin
     if FCharCnt > 0 then begin
-        Display(StrPas(FLineBuf));
+        FLineBuf[FCharCnt] := #0;
+        DisplayBuffer;
         FCharCnt := 0;
     end;
 
@@ -264,14 +282,7 @@ begin
             Inc(I)
         else if PAnsiChar(Data)[I] = #10 then begin { LF is end of line }
             FLineBuf[FCharCnt] := #0;
-            if MimeDecode1.IsTextpart and
-                (IsValidCodePage(MimeDecode1.PartCodePage)) then
-                { If we want to display ANSI text written in a charset that  }
-                { is not the default system charset we need to convert to    }
-                { Unicode with the part code page.                           }
-                Display(AnsiToUnicode(FLineBuf, MimeDecode1.PartCodePage))
-            else
-                Display(StrPas(FLineBuf));
+            DisplayBuffer;
             FCharCnt := 0;
             Inc(I);
         end
@@ -283,11 +294,7 @@ begin
         if FCharCnt >= (High(FLineBuf) - 1) then begin
             { Buffer overflow, display data accumulated so far }
             FLineBuf[High(FLineBuf) - 1] := #0;
-            if MimeDecode1.IsTextpart and
-                (IsValidCodePage(MimeDecode1.PartCodePage)) then
-                Display(AnsiToUnicode(FLineBuf, MimeDecode1.PartCodePage))
-            else
-                Display(StrPas(FLineBuf));    
+            DisplayBuffer;
             FCharCnt := 0;
         end;
     end;
