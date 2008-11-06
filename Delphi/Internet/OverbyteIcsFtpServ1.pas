@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.11
+Version:      1.12
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -72,6 +72,25 @@ May 22, 2007  V1.09 A.Garrels added demo-code that logs on a user
                (not quite finished yet)
               set PasvPortRangeStart/End
 Apr 14, 2008 V1.11 A. Garrels, a few Unicode related changes.
+Nov 6, 2008, V1.12 Angus, support server V7.00 which does not use OverbyteIcsFtpSrvC
+             Added ftpaccounts-default.ini file with user accounts setting defaults for each user
+             Home directory, etc, now set from user account instead of common to all users
+             ReadOnly account supported
+             (next release will have a different file for each HOST supported)
+             Note: random account names are no longer allowed for this demo
+
+
+
+Sample entry from ftpaccounts-default.ini
+
+[ics]
+Password=ics
+ForceSsl=false
+HomeDir=c:\temp
+OtpMethod=none
+ForceHomeDir=true
+HidePhysicalPath=true
+ReadOnly=false
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -95,14 +114,14 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   IniFiles, StdCtrls, ExtCtrls, Menus,
-  OverbyteIcsFtpSrvC,    OverbyteIcsFtpSrvT,
+ { OverbyteIcsFtpSrvC, }   OverbyteIcsFtpSrvT,
   OverbyteIcsWSocket,    OverbyteIcsWinsock,
   OverbyteIcsWndControl, OverbyteIcsFtpSrv,
   OverbyteIcsAvlTrees,   OverbyteIcsOneTimePw;
 
 const
-  FtpServVersion      = 111;
-  CopyRight : String  = ' FtpServer (c) 1998-2008 F. Piette V1.11 ';
+  FtpServVersion      = 112;
+  CopyRight : String  = ' FtpServ (c) 1998-2008 F. Piette V1.12 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -127,8 +146,8 @@ type
   { We use our own client class to hold our thread }
   TMyClient  = class(TFtpCtrlSocket)
   private
-      FWorkerThread : TGetProcessingThread;
-      FAccessToken : THandle;
+      FWorkerThread   : TGetProcessingThread;
+      FAccessToken    : THandle;
   public
       constructor Create(AOwner: TComponent);override;
       destructor Destroy; override;
@@ -170,7 +189,6 @@ type
     Authenticateotpsha1: TMenuItem;
     Label1: TLabel;
     RootDirectory: TEdit;
-    Label2: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FtpServer1ClientConnect(Sender: TObject;
       Client: TFtpCtrlSocket; Error: Word);
@@ -250,6 +268,16 @@ type
       Client: TFtpCtrlSocket; var Done: Boolean);
     procedure FtpServer1Timeout(Sender: TObject; Client: TFtpCtrlSocket;
       Duration: Integer; var Abort: Boolean);
+    procedure FtpServer1ValidatePut(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+      var Allowed: Boolean);
+    procedure FtpServer1ValidateRnFr(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+      var Allowed: Boolean);
+    procedure FtpServer1ValidateDele(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+      var Allowed: Boolean);
+    procedure FtpServer1MakeDirectory(Sender: TObject; Client: TFtpCtrlSocket; Directory: TFtpString;
+      var Allowed: Boolean);
+    procedure FtpServer1ValidateMfmt(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+      var Allowed: Boolean);
   private
     FInitialized      : Boolean;
     FIniFileName      : String;
@@ -262,6 +290,7 @@ type
     FOtpMethod        : TOtpMethod;
     FOtpSequence      : integer;
     FOtpSeed          : String;
+    FIniRoot          : String;
     procedure CacheFreeData(Sender: TObject; Data: Pointer; Len: Integer);
     procedure WMAppStartup(var msg: TMessage); message WM_APPSTARTUP;
     procedure LoadConfig;
@@ -299,7 +328,7 @@ end;
 const
     MainTitle         = 'FTP Server - http://www.overbyte.be';
 
-    { Ini file layout }
+    { server Ini file layout }
     SectionData       = 'Data';
     KeyPort           = 'Port';
     KeyRoot           = 'Root';
@@ -314,6 +343,15 @@ const
     STATUS_GREEN      = 0;
     STATUS_YELLOW     = 1;
     STATUS_RED        = 2;
+
+    { account INI file layout }
+    KeyPassword             = 'Password';
+    KeyHomeDir              = 'HomeDir';
+    KeyOtpMethod            = 'OtpMethod';
+    KeyForceHomeDir         = 'ForceHomeDir';
+    KeyHidePhysicalPath     = 'HidePhysicalPath';
+    KeyReadOnly             = 'ReadOnly';
+    KeyForceSsl             = 'ForceSsl';
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -483,6 +521,7 @@ begin
     { Build Ini file name }
     FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
     FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniRoot := LowerCase(ExtractFilePath(Application.ExeName));
     { Create the Log object }
     Log                  := TLogMsg.Create(Self);
     FMD5Cache            := TCacheTree.Create(FALSE);
@@ -598,6 +637,10 @@ begin
     end;
     Client.SessIdInfo := Client.GetPeerAddr + '=(Not Logged On)';
     InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' connected');
+  { get INI file for default accounts, may be changed if HOST command used }
+    Client.AccountIniName := FtpServerForm.FIniRoot + 'ftpaccounts-default.ini';
+    Client.AccountReadOnly := true;
+    Client.AccountPassword := '';
     UpdateClientCount;
 end;
 
@@ -820,10 +863,32 @@ procedure TFtpServerForm.FtpServer1OtpMethodEvent(
     Client: TFtpCtrlSocket;
     UserName: TFtpString;
     var OtpMethod: TOtpMethod);
+var
+    IniFile : TIniFile;
+    S: string;
 begin
-    { One Time Passwords - should look up user account to find method, }
+    { look up user account to find One Time Password method, root directory, etc, blank password means no account}
+    if NOT FileExists (Client.AccountIniName) then begin
+        InfoMemo.Lines.Add('! Could not find Accounts File: ' + Client.AccountIniName);
+        exit;
+    end;
+    InfoMemo.Lines.Add('! Opening Accounts File: ' + Client.AccountIniName);
+    IniFile := TIniFile.Create(Client.AccountIniName);
+    Client.AccountPassword := IniFile.ReadString(UserName, KeyPassword, '');  // keep password to check later
+    S := IniFile.ReadString(UserName, KeyOtpMethod, 'none');
+    Client.AccountReadOnly := (IniFile.ReadString(UserName, KeyReadOnly, 'true') = 'true');
+    Client.HomeDir := IniFile.ReadString(UserName, KeyHomeDir, RootDirectory.Text);
+    Client.Directory := Client.HomeDir;
+    if (IniFile.ReadString(UserName, KeyForceHomeDir, 'true') = 'true') then
+                                   Client.Options := Client.Options + [ftpCdUpHome];
+    if (IniFile.ReadString(UserName, KeyHidePhysicalPath, 'true') = 'true') then
+                           Client.Options := Client.Options + [ftpHidePhysicalPath];
+    if (IniFile.ReadString(UserName,  KeyForceSsl, 'false') = 'true') then
+                                       Client.AccountPassword := '';  // SSL not supported so fail password
+    IniFile.Free;
+
     { sequence and seed }
-    OtpMethod := FOtpMethod;
+    OtpMethod := OtpGetMethod (S);
     Client.OtpSequence := FOtpSequence;
     Client.OtpSeed := FOtpSeed;
 
@@ -838,8 +903,7 @@ procedure TFtpServerForm.FtpServer1OtpGetPasswordEvent(
     UserName: TFtpString;
     var UserPassword: String);
 begin
-    { One Time Passwords - should look up user account to find password }
-    UserPassword := '1234567890';
+    UserPassword := Client.AccountPassword;   // expected password will used to create OTP
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -851,7 +915,7 @@ procedure TFtpServerForm.FtpServer1Authenticate(
 begin
 
   { One Time Passwords - keep sequence and seed for next login attempt }
-    if FOtpMethod > OtpKeyNone then begin
+    if Client.OtpMethod > OtpKeyNone then begin
         if not Authenticated then exit;
         InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
                                     ' is One Time Password authenticated');
@@ -869,16 +933,24 @@ begin
         { you can use Client.UserData to store a pointer to an object or  }
         { a record with the needed info.                                  }
 
-        InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' is authenticated');
+        { 1.12 authentication taken from INI file in OtpMethodEvent }
+        if ((Client.UserName = UserName) and (Password <> '')) and
+             ((Client.AccountPassword = Password) or (Client.AccountPassword = '*')) then { * anonymous logon }
+            InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' is authenticated')
+        else begin
+            InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' failed authentication');
+            Authenticated := FALSE;
+        end;
         if Password = 'bad' then
             Authenticated := FALSE;
     end;
+    if NOT Authenticated then exit;
 
-    { Set the home and current directory }
-    Client.HomeDir   := RootDirectory.Text;
-    Client.Directory := Client.HomeDir;
-    InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
-                                    ' Home Directory: ' + Client.HomeDir);
+
+    { Set the home and current directory - now done in OtpMethodEvent }
+//    Client.HomeDir   := RootDirectory.Text;
+//    Client.Directory := Client.HomeDir;
+    InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' Home Directory: ' + Client.HomeDir);
 
     { Uncomment block below to log on users to Windows }
     (*
@@ -1294,6 +1366,41 @@ begin
     { this event can be used to check if account has sufficient space for }
     { upload and format the correct answers, otherwise the command checks }
     { space on the Client volume  }
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1ValidateDele(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+  var Allowed: Boolean);
+begin
+    Allowed := NOT Client.AccountReadOnly;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1ValidateMfmt(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+  var Allowed: Boolean);
+begin
+    Allowed := NOT Client.AccountReadOnly;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1ValidatePut(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+  var Allowed: Boolean);
+begin
+    Allowed := NOT Client.AccountReadOnly;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1ValidateRnFr(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
+  var Allowed: Boolean);
+begin
+    Allowed := NOT Client.AccountReadOnly;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1MakeDirectory(Sender: TObject; Client: TFtpCtrlSocket; Directory: TFtpString;
+  var Allowed: Boolean);
+begin
+    Allowed := NOT Client.AccountReadOnly;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

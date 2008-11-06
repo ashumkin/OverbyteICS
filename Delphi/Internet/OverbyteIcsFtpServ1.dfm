@@ -1,9 +1,9 @@
 object FtpServerForm: TFtpServerForm
   Left = 205
   Top = 121
-  Width = 384
-  Height = 302
   Caption = 'FtpServerSForm'
+  ClientHeight = 256
+  ClientWidth = 376
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -87,19 +87,6 @@ object FtpServerForm: TFtpServerForm
       Height = 13
       Caption = 'Root Directory'
     end
-    object Label2: TLabel
-      Left = 245
-      Top = 10
-      Width = 111
-      Height = 16
-      Caption = 'No Login Checks!!!'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clRed
-      Font.Height = -13
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-    end
     object StartMinimizedCheckBox: TCheckBox
       Left = 136
       Top = 12
@@ -120,6 +107,7 @@ object FtpServerForm: TFtpServerForm
   object FtpServer1: TFtpServer
     Addr = '0.0.0.0'
     Port = 'ftp'
+    ListenBackLog = 5
     Banner = '220 ICS FTP Server ready'
     UserData = 0
     MaxClients = 0
@@ -146,6 +134,7 @@ object FtpServerForm: TFtpServerForm
     OnClientCommand = FtpServer1ClientCommand
     OnAnswerToClient = FtpServer1AnswerToClient
     OnChangeDirectory = FtpServer1ChangeDirectory
+    OnMakeDirectory = FtpServer1MakeDirectory
     OnBuildDirectory = FtpServer1BuildDirectory
     OnAlterDirectory = FtpServer1AlterDirectory
     OnStorSessionConnected = FtpServer1StorSessionConnected
@@ -153,7 +142,11 @@ object FtpServerForm: TFtpServerForm
     OnStorSessionClosed = FtpServer1StorSessionClosed
     OnRetrSessionClosed = FtpServer1RetrSessionClosed
     OnRetrDataSent = FtpServer1RetrDataSent
+    OnValidatePut = FtpServer1ValidatePut
+    OnValidateDele = FtpServer1ValidateDele
+    OnValidateRnFr = FtpServer1ValidateRnFr
     OnGetProcessing = FtpServer1GetProcessing
+    OnValidateMfmt = FtpServer1ValidateMfmt
     OnCalculateMd5 = FtpServer1CalculateMd5
     OnMd5Calculated = FtpServer1Md5Calculated
     OnCalculateCrc = FtpServer1CalculateCrc
