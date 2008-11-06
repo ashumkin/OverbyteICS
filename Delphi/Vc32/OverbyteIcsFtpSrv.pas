@@ -330,6 +330,7 @@ Nov 6, 2008  V7.00 Angus component now uses TSocketServer to accept connections
              Added more public client variables for account information
              Increased DefaultRcvSize to 16384 from 2048 for performance
              Fixed exception with threaded MD5Sum progress
+             Client.Id is now allocated by TSocketServer
 
 
 
@@ -579,7 +580,7 @@ type
         FUserData          : LongInt;        { Reserved for component user }
         FPeerAddr          : String;
         FPeerSAddr         : TSockAddr;      { AG V1.47 }
-        FID                : LongInt;
+//        FID                : LongInt;      { angus V7.00 now using CliId in SocketServer }
         FOnDisplay         : TDisplayEvent;
         FOnCommand         : TCommandEvent;
         procedure TriggerSessionConnected(Error : Word); override;
@@ -685,8 +686,8 @@ type
                                                  write SetHomeDir;  { AG V1.52}
         property 	AbortingTransfer : Boolean   read  FAbortingTransfer
                                                  write SetAbortingTransfer;
-        property 	ID             : LongInt     read  FID
-                                                 write FID;
+        property 	ID             : LongInt     read  FCliId       { angus V7.00 }
+                                                 write FCliId;
         property 	PeerSAddr      : TSockAddr   read  FPeerSAddr;  { AG V1.47 }
         property 	ReadCount      : Int64       read  FReadCount;
 
@@ -834,7 +835,7 @@ type
 {       FClientList             : TList;		  		gone angus V7.00 }
         FSocketServer           : TWSocketServer ;    { new  angus V7.00 }
         FClientClass            : TFtpCtrlSocketClass;
-        FClientNum              : LongInt;
+{       FClientNum              : LongInt;              gone angus V7.00 }
         FMaxClients             : LongInt;
         FCmdTable               : array of TFtpSrvCommandTableItem;  { AG V1.51 }
         FLastCmd                : Integer;
@@ -2319,11 +2320,7 @@ begin
         raise FtpServerException.Create('Session Available Error - ' +
                                                     GetWinsockErr(Error));
     MyClient := Client as TFtpCtrlSocket;
-    if FClientNum >= $7FFFFF then FClientNum := 0;  { angus V1.54 prevent overflow }
-    Inc(FClientNum);
-    MyClient.Name            := Name + '_ClientWSocket' + IntToStr(FClientNum);
-    MyClient.DataSocket.Name := Name + '_DataWSocket' + IntToStr(FClientNum);
-    MyClient.ID              := FClientNum;
+    MyClient.DataSocket.Name := Name + '_DataWSocket' + IntToStr(MyClient.ID);
     MyClient.OnCommand       := ClientCommand;
     MyClient.OnDataSent      := ClientDataSent;
 {$IFNDEF NO_DEBUG_LOG}

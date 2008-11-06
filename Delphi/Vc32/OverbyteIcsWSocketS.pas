@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      6.04
+Version:      7.00
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -81,6 +81,9 @@ May 01, 2008 V6.02 A. Garrels - Function names adjusted according to changes in
 May 14, 2008 V6.03 A. Garrels - Type change from String to AnsiString in
                    TWSocketClient (FPeerPort and FPeerAddr).
 Aug 11, 2008 V6.04 A. Garrels - Type AnsiString rolled back String.
+Nov 6, 2008  V7.00 Angus added CliId property used to ensure correct client freed
+                    (did not call it ID to avoid conflicts with existing clients)
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWSocketS;
@@ -138,8 +141,8 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWinsock;
 
 const
-    WSocketServerVersion     = 604;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2008 F. Piette V6.04 ';
+    WSocketServerVersion     = 700;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2008 F. Piette V7.00 ';
     DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
 
 type
@@ -151,6 +154,12 @@ type
     TWSocketClientConnectEvent = procedure (Sender : TObject;
                                             Client : TWSocketClient;
                                             Error  : Word) of object;
+
+    TClientIdRec = record    { angus V7.00 }
+        PClient : Pointer;
+        CliId   : LongInt;
+    end;
+    PClientIdRec = ^TClientIdRec;
 
     { TWSocketClient is used to handle all client connections.           }
     { Altough you may use it directly, you'll probably wants to use your }
@@ -166,9 +175,10 @@ type
         FPeerPort          : String;
         FSessionClosedFlag : Boolean;
         {$IFDEF CLR}
-        FHandleGc      : GCHandle;
+        FHandleGc          : GCHandle;
         {$ENDIF}
-        
+        FCliId             : LongInt;          { angus V7.00 }
+
     public
         procedure   StartConnection; virtual;
         procedure   TriggerSessionClosed(ErrCode : Word); override;
@@ -178,11 +188,14 @@ type
         property    Server : TCustomWSocketServer read  FServer
                                                   write FServer;
         {$IFDEF CLR}
-        property  HandleGc : GCHandle read  FHandleGc    write FHandleGc;
+        property    HandleGc : GCHandle           read  FHandleGc
+                                                  write FHandleGc;
         {$ENDIF}
+        property    CliId : LongInt               read  FCliId              { angus V7.00 }
+                                                  write FCliId;
     published
-        property Banner : String           read  FBanner
-                                           write FBanner;
+        property    Banner : String               read  FBanner
+                                                  write FBanner;
     end;
 
     { TWSocketServer is made for listening for tcp client connections.      }
@@ -467,8 +480,10 @@ begin
     if Error <> 0 then
         Exit;
 
+    if FClientNum >= $7FFFFF then FClientNum := 0;      { angus V7.00 }
     Inc(FClientNum);
     Client                 := FClientClass.Create{$IFDEF WIN32}(Self){$ENDIF};
+    Client.FCliId          := FClientNum;               { angus V7.00 }
 {$IFDEF CLR}
     FClientList.Add(Client);
     Client.HandleGc := GcHandle.Alloc(Client);
@@ -559,17 +574,22 @@ end;
 procedure TCustomWSocketServer.WMClientClosed(var msg: TMessage);
 var
     Client : TWSocketClient;
+    PIdRec : PClientIdRec;
 {$IFDEF CLR}
     GCH          : GCHandle;
 {$ENDIF}
 begin
+    PIdRec := PClientIdRec(Msg.LParam);  { angus V7.00 }
+    try
 {$IFDEF CLR}
-    GCH := GCHandle(IntPtr(Msg.LParam));
+    GCH := GCHandle(IntPtr(PIdRec^.PClient);
     Client := TWSocketClient(GCH.Target);
 {$ENDIF}
 {$IFDEF WIN32}
-    Client := TWSocketClient(Msg.LParam);
+    Client := TWSocketClient(PIdRec^.PClient);
 {$ENDIF}
+    { angus V7.00 ensure client not freed already }
+    if IsClient(Client) and (Client.CliId = PIdRec^.CliId) then
     try
         TriggerClientDisconnect(Client, Msg.WParam);
     finally
@@ -580,6 +600,9 @@ begin
         Client.HandleGc.Free;
 {$ENDIF}
         Client.Free;
+    end;
+    finally
+        System.Dispose(PIdRec);
     end;
 end;
 
@@ -599,10 +622,15 @@ end;
 procedure TCustomWSocketServer.Disconnect(Client: TWSocketClient);        { angus V6.01 }
 var
     Msg : TMessage;
+    PIdRec : PClientIdRec;
 begin
     FillChar(Msg, SizeOf(Msg), 0);
-    Msg.LParam := Integer(Client);
-    Msg.WParam := 0;  { ErrCode }
+{ angus V7.00 pass CliId to WMClientClosed so correct client is closed  }
+    New(PIdRec);
+    PIdRec^.PClient := Client;
+    PIdRec^.CliId   := Client.CliId;
+    Msg.WParam      := WSAECONNABORTED;
+    Msg.LParam      := Longint(PIdRec);
     WMClientClosed(Msg);
 end;
 
@@ -631,17 +659,25 @@ end;
 { Triggered when socket is closed. Need to inform server socket to update   }
 { client list and trigger client disconnect event.                          }
 procedure TWSocketClient.TriggerSessionClosed(ErrCode : Word);
+var
+    PIdRec : PClientIdRec;
 begin
     if not FSessionClosedFlag then begin
         FSessionClosedFlag := TRUE;
-        if Assigned(FServer) then
-            PostMessage(Server.Handle, Server.FMsg_WM_CLIENT_CLOSED, ErrCode,
+        if Assigned(FServer) then begin
+            New(PIdRec);
+            PIdRec^.PClient := Self;
+            PIdRec^.CliId   := FCliId;
+            if NOT PostMessage(Server.Handle, Server.FMsg_WM_CLIENT_CLOSED, ErrCode,
                         {$IFDEF CLR}
                         Integer(IntPtr(Self.HandleGc)));
                         {$ENDIF}
                         {$IFDEF WIN32}
-                        LongInt(Self));
+                        LongInt(PIdRec))
                         {$ENDIF}
+            then
+                System.Dispose(PIdRec);
+        end;
         inherited TriggerSessionClosed(ErrCode);
     end;
 end;
