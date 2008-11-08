@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.12
+Version:      1.13
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -76,9 +76,11 @@ Nov 6, 2008, V1.12 Angus, support server V7.00 which does not use OverbyteIcsFtp
              Added ftpaccounts-default.ini file with user accounts setting defaults for each user
              Home directory, etc, now set from user account instead of common to all users
              ReadOnly account supported
-             (next release will have a different file for each HOST supported)
              Note: random account names are no longer allowed for this demo
-
+Nov 8, 2008, V1.13 Angus, support HOST and REIN(ialise) commands
+             HOST ftp.ics.org would open account file ftpaccounts-ftp.ics.org.ini
+             Added menu items for Display UTF8 and Display Directories
+             If the account password is 'windows', authenticate against Windows              
 
 
 Sample entry from ftpaccounts-default.ini
@@ -117,11 +119,12 @@ uses
  { OverbyteIcsFtpSrvC, }   OverbyteIcsFtpSrvT,
   OverbyteIcsWSocket,    OverbyteIcsWinsock,
   OverbyteIcsWndControl, OverbyteIcsFtpSrv,
-  OverbyteIcsAvlTrees,   OverbyteIcsOneTimePw;
+  OverbyteIcsAvlTrees,   OverbyteIcsOneTimePw,
+  OverbyteIcsUtils;
 
 const
-  FtpServVersion      = 112;
-  CopyRight : String  = ' FtpServ (c) 1998-2008 F. Piette V1.12 ';
+  FtpServVersion      = 113;
+  CopyRight : String  = ' FtpServ (c) 1998-2008 F. Piette V1.13 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -189,6 +192,8 @@ type
     Authenticateotpsha1: TMenuItem;
     Label1: TLabel;
     RootDirectory: TEdit;
+    DisplayUTF81: TMenuItem;
+    DisplayDirectories1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FtpServer1ClientConnect(Sender: TObject;
       Client: TFtpCtrlSocket; Error: Word);
@@ -278,6 +283,10 @@ type
       var Allowed: Boolean);
     procedure FtpServer1ValidateMfmt(Sender: TObject; Client: TFtpCtrlSocket; var FilePath: TFtpString;
       var Allowed: Boolean);
+    procedure FtpServer1Rein(Sender: TObject; Client: TFtpCtrlSocket; var Allowed: Boolean);
+    procedure FtpServer1Host(Sender: TObject; Client: TFtpCtrlSocket; Host: TFtpString; var Allowed: Boolean);
+    procedure DisplayUTF81Click(Sender: TObject);
+    procedure DisplayDirectories1Click(Sender: TObject);
   private
     FInitialized      : Boolean;
     FIniFileName      : String;
@@ -558,12 +567,12 @@ begin
     InfoMemo.Lines.Add('        Version ' +
             Format('%d.%d', [wsi.wHighVersion shr 8,
                              wsi.wHighVersion and 15]));
-    InfoMemo.Lines.Add('        ' + StrPas(wsi.szDescription));
-    InfoMemo.Lines.Add('        ' + StrPas(wsi.szSystemStatus));
+    InfoMemo.Lines.Add('        ' + String(wsi.szDescription));
+    InfoMemo.Lines.Add('        ' + String(wsi.szSystemStatus));
 {$IFNDEF VER100}
     { A bug in Delphi 3 makes lpVendorInfo invalid }
     if wsi.lpVendorInfo <> nil then
-        InfoMemo.Lines.Add('        ' + StrPas(wsi.lpVendorInfo));
+        InfoMemo.Lines.Add('        ' + String(wsi.lpVendorInfo));
 {$ENDIF}
     { If not running 16 bits, we use our own client class }
     FtpServer1.ClientClass := TMyClient;
@@ -644,6 +653,34 @@ begin
     UpdateClientCount;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1Host(Sender: TObject; Client: TFtpCtrlSocket; Host: TFtpString;
+  var Allowed: Boolean);
+var
+    fname: string ;
+begin
+{ HOST might be ftp.domain.com or [123.123.123.123]   }
+    fname := FtpServerForm.FIniRoot + 'ftpaccounts-' + Lowercase (Host) + '.ini';
+    if NOT FileExists (fname) then begin
+        InfoMemo.Lines.Add('! Could not find Accounts File: ' + fname);
+        Allowed := false;
+        exit;
+    end;
+    Client.AccountIniName := fname;
+    Allowed := true;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.FtpServer1Rein(Sender: TObject; Client: TFtpCtrlSocket; var Allowed: Boolean);
+begin
+    Allowed := true;
+    InfoMemo.Lines.Add('! Reinitialise client accepted');
+    Client.SessIdInfo := Client.GetPeerAddr + '=(Not Logged On)';
+    InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' connected');
+    Client.AccountIniName := FtpServerForm.FIniRoot + 'ftpaccounts-default.ini';
+    Client.AccountReadOnly := true;
+    Client.AccountPassword := '';
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServerForm.FtpServer1ClientDisconnect(Sender: TObject;
@@ -740,7 +777,7 @@ begin
         Client.DataStream := TMemoryStream.Create;
         Buf := 'This is a file created on the fly by the FTP server' + #13#10 +
                'It could result of a query to a database or anything else.' + #13#10 +
-               'The request was: ''' + Client.FilePath + '''' + #13#10;
+               'The request was: ''' + AnsiString(Client.FilePath) + '''' + #13#10;
         Client.DataStream.Write(Buf[1], Length(Buf));
         Client.DataStream.Seek(0, 0);
     end;
@@ -815,17 +852,21 @@ procedure TFtpServerForm.FtpServer1AlterDirectory(
 var
     Buf : AnsiString;
 begin
-  { angus - show physical file path we listed, and the result }
-    InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
-                                ' Directory Listing Path: ' + Client.DirListPath) ;
-    if Assigned (Client.DataStream) then begin
-        Client.DataStream.Seek(0, 0);
-        SetLength (Buf, Client.DataStream.Size) ;
-        Client.DataStream.Read (Buf [1], Client.DataStream.Size) ;
-        Client.DataStream.Seek(0, 0);
-        InfoMemo.Lines.Add(Buf);
+  { angus - show physical file path we listed, and the result - the stream is already UTF8 encoded }
+    if DisplayDirectories1.Checked then begin
+        InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
+                                    ' Directory Listing Path: ' + Client.DirListPath) ;
+        if Assigned (Client.DataStream) then begin
+            Client.DataStream.Seek(0, 0);
+            SetLength (Buf, Client.DataStream.Size) ;
+            Client.DataStream.Read (Buf [1], Client.DataStream.Size) ;
+            Client.DataStream.Seek(0, 0);
+            if NOT DisplayUTF81.Checked then
+                InfoMemo.Lines.Add(Utf8ToStringW(Buf))
+            else
+                InfoMemo.Lines.Add(String(Buf));
+        end;
     end;
-
     if UpperCase(Client.Directory) <> 'C:\' then
         Exit;
     { Add our 'virtual' directory to the list }
@@ -842,8 +883,12 @@ end;
 procedure TFtpServerForm.FtpServer1ClientCommand(Sender: TObject;
   Client: TFtpCtrlSocket; var Keyword, Params, Answer: TFtpString);
 begin
-    InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' +
-                       Keyword + ' ' + Params);
+    if NOT DisplayUTF81.Checked then
+        InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' +
+                       Keyword + ' ' + Params)            // Unicode version
+    else
+        InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' +
+                    Keyword + ' ' + String(Client.RawParams));  // UTF8 version
 end;
 
 
@@ -853,8 +898,12 @@ procedure TFtpServerForm.FtpServer1AnswerToClient(
     Client     : TFtpCtrlSocket;
     var Answer : TFtpString);
 begin
-    InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
-                            IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + Answer);
+    if NOT DisplayUTF81.Checked then
+        InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
+          IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + Answer)  // Unicode version
+    else
+        InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
+       IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + String(Client.RawAnswer));  // UTF8 version
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -912,7 +961,10 @@ procedure TFtpServerForm.FtpServer1Authenticate(
     Client             : TFtpCtrlSocket;
     UserName, Password : TFtpString;
     var Authenticated  : Boolean);
+var
+    MyClient : TMyClient;
 begin
+    MyClient := Client as TMyClient;
 
   { One Time Passwords - keep sequence and seed for next login attempt }
     if Client.OtpMethod > OtpKeyNone then begin
@@ -922,7 +974,7 @@ begin
         FOtpSequence := Client.OtpSequence;
         FOtpSeed := Client.OtpSeed;
     end
-    else begin
+    else if (Client.AccountPassword <> 'windows') then begin
 
         { You should place here the code needed to authenticate the user. }
         { For example a text file with all permitted username/password.   }
@@ -943,43 +995,42 @@ begin
         end;
         if Password = 'bad' then
             Authenticated := FALSE;
+    end
+    else begin
+
+        { If the client is already logged in log her off }
+        if MyClient.FAccessToken <> 0 then begin
+            CloseHandle(MyClient.FAccessToken); //logoff
+            MyClient.FAccessToken := 0;
+        end;
+
+        { We call LogonUser API (see the PSDK) to get an access token }
+        { that we can use to impersonate the user, see event handlers }
+        { OnEnterSecurityContext and OnLeaveSecurityContext.          }
+
+        Authenticated := LogonUser(PChar(UserName),
+                                   nil,
+                                   PChar(Password),
+                                   LOGON32_LOGON_NETWORK,
+                                   LOGON32_PROVIDER_DEFAULT,
+                                   MyClient.FAccessToken);
+
+        if Authenticated then
+            InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
+                               ' User ''' + UserName +
+                               ''' is authenticated and logged on locally to Windows')
+        else
+            InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
+                               ' User ''' + UserName + ''' not authenticated to Windows');
+
     end;
     if NOT Authenticated then exit;
-
 
     { Set the home and current directory - now done in OtpMethodEvent }
 //    Client.HomeDir   := RootDirectory.Text;
 //    Client.Directory := Client.HomeDir;
     InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' Home Directory: ' + Client.HomeDir);
 
-    { Uncomment block below to log on users to Windows }
-    (*
-
-    { If the client is already logged in log her off }
-    if Client.FAccessToken <> 0 then begin
-        CloseHandle(Client.FAccessToken); //logoff
-        Client.FAccessToken := 0;
-    end;
-
-    { We call LogonUser API (see the PSDK) to get an access token }
-    { that we can use to impersonate the user, see event handlers }
-    { OnEnterSecurityContext and OnLeaveSecurityContext.          }
-
-    Authenticated := LogonUser(PChar(UserName),
-                               nil,
-                               PChar(Password),
-                               LOGON32_LOGON_NETWORK,
-                               LOGON32_PROVIDER_DEFAULT,
-                               Client.FAccessToken);
-
-    if Authenticated then
-        InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
-                           ' User ''' + UserName +
-                           ''' is authenticated and logged on locally')
-    else
-        InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
-                           ' User ''' + UserName + ''' not authenticated');
-    *)
 end;
 
 
@@ -1105,6 +1156,17 @@ begin
     FtpServer1.DisconnectAll;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.DisplayDirectories1Click(Sender: TObject);
+begin
+    DisplayDirectories1.Checked := NOT DisplayDirectories1.Checked;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.DisplayUTF81Click(Sender: TObject);
+begin
+    DisplayUTF81.Checked := NOT DisplayUTF81.Checked;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServerForm.FtpServer1GetProcessing(
@@ -1132,6 +1194,7 @@ begin
         DelayedSend := TRUE;
     end;
 end;
+
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

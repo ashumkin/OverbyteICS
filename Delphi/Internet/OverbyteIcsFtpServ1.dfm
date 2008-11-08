@@ -113,7 +113,7 @@ object FtpServerForm: TFtpServerForm
     MaxClients = 0
     PasvPortRangeStart = 21001
     PasvPortRangeSize = 99
-    Options = [ftpsCwdCheck, ftpsCalcMD5OnTheFly, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs]
+    Options = [ftpsCwdCheck, ftpsCalcMD5OnTheFly, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
     MD5UseThreadFileSize = 1000000
     TimeoutSecsLogin = 60
     TimeoutSecsIdle = 300
@@ -124,6 +124,8 @@ object FtpServerForm: TFtpServerForm
     AlloExtraSpace = 1000000
     ZlibMinSpace = 50000000
     ZlibMaxSize = 500000000
+    CodePage = 0
+    Language = 'EN*'
     OnStart = FtpServer1Start
     OnStop = FtpServer1Stop
     OnAuthenticate = FtpServer1Authenticate
@@ -161,6 +163,8 @@ object FtpServerForm: TFtpServerForm
     OnUpCompressFile = FtpServer1UpCompressFile
     OnUpCompressedFile = FtpServer1UpCompressedFile
     OnDisplay = FtpServer1Display
+    OnHost = FtpServer1Host
+    OnRein = FtpServer1Rein
     Left = 43
     Top = 103
   end
@@ -201,6 +205,14 @@ object FtpServerForm: TFtpServerForm
       object Cleardisplay1: TMenuItem
         Caption = '&Clear display'
         OnClick = Cleardisplay1Click
+      end
+      object DisplayUTF81: TMenuItem
+        Caption = 'Display &UTF8'
+        OnClick = DisplayUTF81Click
+      end
+      object DisplayDirectories1: TMenuItem
+        Caption = 'Display &Directories'
+        OnClick = DisplayDirectories1Click
       end
     end
     object About1: TMenuItem

@@ -235,7 +235,7 @@ object SslFtpServerForm: TSslFtpServerForm
     MaxClients = 0
     PasvPortRangeStart = 16384
     PasvPortRangeSize = 5
-    Options = [ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs]
+    Options = [ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
     MD5UseThreadFileSize = 0
     TimeoutSecsLogin = 60
     TimeoutSecsIdle = 300
@@ -246,6 +246,8 @@ object SslFtpServerForm: TSslFtpServerForm
     AlloExtraSpace = 1000000
     ZlibMinSpace = 50000000
     ZlibMaxSize = 500000000
+    CodePage = 0
+    Language = 'EN*'
     OnStart = SslFtpServer1Start
     OnStop = SslFtpServer1Stop
     OnAuthenticate = SslFtpServer1Authenticate
@@ -268,6 +270,8 @@ object SslFtpServerForm: TSslFtpServerForm
     OnValidateDele = SslFtpServer1ValidateDele
     OnValidateRnFr = SslFtpServer1ValidateRnFr
     OnGetProcessing = SslFtpServer1GetProcessing
+    OnHost = SslFtpServer1Host
+    OnRein = SslFtpServer1Rein
     SslContext = SslContext1
     OnSslVerifyPeer = SslFtpServer1SslVerifyPeer
     OnSslHandshakeDone = SslFtpServer1SslHandshakeDone
@@ -346,7 +350,7 @@ object SslFtpServerForm: TSslFtpServerForm
     MaxClients = 0
     PasvPortRangeStart = 16380
     PasvPortRangeSize = 5
-    Options = [ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs]
+    Options = [ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
     MD5UseThreadFileSize = 0
     TimeoutSecsLogin = 60
     TimeoutSecsIdle = 300
@@ -357,6 +361,8 @@ object SslFtpServerForm: TSslFtpServerForm
     AlloExtraSpace = 1000000
     ZlibMinSpace = 50000000
     ZlibMaxSize = 500000000
+    CodePage = 0
+    Language = 'EN*'
     OnStart = SslFtpServer1Start
     OnStop = SslFtpServer1Stop
     OnAuthenticate = SslFtpServer1Authenticate
@@ -379,6 +385,8 @@ object SslFtpServerForm: TSslFtpServerForm
     OnValidateDele = SslFtpServer1ValidateDele
     OnValidateRnFr = SslFtpServer1ValidateRnFr
     OnGetProcessing = SslFtpServer1GetProcessing
+    OnHost = SslFtpServer1Host
+    OnRein = SslFtpServer1Rein
     SslContext = SslContext1
     OnSslVerifyPeer = SslFtpServer1SslVerifyPeer
     OnSslHandshakeDone = SslFtpServer1SslHandshakeDone
