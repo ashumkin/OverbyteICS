@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V6.10
+Version:      V7.00
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -780,6 +780,10 @@ May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
 Aug 11, 2008 V6.07 A. Garrels - Type AnsiString rolled back to String.
 Oct 03, 2008 V6.10 A. Garrels moved IsDigit, IsCRLF, IsSpaceOrCRLF and StpBlk
                    to OverbyteIcsUtils.pas.
+Nov 10, 2008 V7.00 Angus removed old compiler code
+             increased buffer sizes from 1460 and 4096, both to 32768
+             fixed SOCKS settings never implemented properly and lost after one connection
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -862,18 +866,14 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 607;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V6.07 ';
-  FtpClientId : String = 'ICS FTP Client V6.06 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 700;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.00 ';
+  FtpClientId : String = 'ICS FTP Client V7.00 ';   { V2.113 sent with CLNT command  }
 
 const
-  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
-{$IFDEF VER80}
-  { Delphi 1 has a 255 characters string limitation }
-  FTP_RCV_BUF_SIZE = 255;
-{$ELSE}
-  FTP_RCV_BUF_SIZE = 4096;
-{$ENDIF}
+//  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
+  FTP_SND_BUF_SIZE = 32768;  { angus V7.00 increased from 1460 }
+  FTP_RCV_BUF_SIZE = 32768;  { angus V7.00 increased from 4096 }
 
 type
   { sslTypeAuthTls, sslTypeAuthSsl are known as explicit SSL }
@@ -1036,7 +1036,7 @@ type
     FError              : Word;    { To save Error when data connection closed }
     FGetCommand         : String;
     FConnected          : Boolean;
-    FSendBuffer         : array [0..BLOCK_SIZE - 1] of AnsiChar;
+    FSendBuffer         : array [0..FTP_SND_BUF_SIZE - 1] of AnsiChar;  { angus 7.00 }
 {$IFDEF STREAM64}
     FOnProgress64       : TFtpProgress64;
 {$ENDIF}
@@ -1075,6 +1075,11 @@ type
     FPosStart           : TFtpBigInt;    { V2.113 start pos for MD5/CRC }
     FPosEnd             : TFtpBigInt;    { V2.113 end pos for MD5/CRC }
     FDurationMsecs      : Integer;       { V2.113 last transfer duration in milliseconds for FByteCount }
+    FSocksPassword      : String;        { V7.00 }
+    FSocksPort          : String;        { V7.00 }
+    FSocksServer        : String;        { V7.00 }
+    FSocksUserCode      : String;        { V7.00 }
+
 {$IFDEF USE_MODEZ}
     FZStreamState       : TZStreamState; { V2.102 current Zlib stream state }
   { FZStreamRec         : TZStreamRec;    V2.102 Zlib stream control record, used for Immediate }
@@ -1160,7 +1165,7 @@ type
     function    GetShareMode: TFtpShareMode;
     procedure   SetDisplayFileMode(NewValue: TFtpDisplayFileMode);
     function    GetDisplayFileMode: TFtpDisplayFileMode;
-    procedure   SetConnectionType(NewValue: TFtpConnectionType);
+{    procedure   SetConnectionType(NewValue: TFtpConnectionType);  angus V7.00 gone
     function    GetConnectionType: TFtpConnectionType;
     procedure   SetSocksPassword(NewValue: String);
     function    GetSocksPassword: String;
@@ -1169,7 +1174,7 @@ type
     procedure   SetSocksServer(const NewValue: String);
     function    GetSocksServer: String;
     procedure   SetSocksUserCode(NewValue: String);
-    function    GetSocksUserCode: String;
+    function    GetSocksUserCode: String;    }
     procedure   SetPassive(NewValue: Boolean);
     procedure   AllocateMsgHandlers; override;
     procedure   FreeMsgHandlers; override;
@@ -1355,20 +1360,20 @@ type
                                                          write SetShareMode;
     property DisplayFileMode      : TFtpDisplayFileMode  read  GetDisplayFileMode
                                                          write SetDisplayFileMode;
-    property ConnectionType       : TFtpConnectionType   read  GetConnectionType
-                                                         write SetConnectionType;
+    property ConnectionType       : TFtpConnectionType   read  FConnectionType      { V7.00 }
+                                                         write FConnectionType;
     property ProxyServer          : String               read  FProxyServer
                                                          write FProxyServer;
     property ProxyPort            : String               read  FProxyPort
                                                          write FProxyPort;
-    property SocksPassword        : String               read  GetSocksPassword
-                                                         write SetSocksPassword;
-    property SocksPort            : String               read  GetSocksPort
-                                                         write SetSocksPort;
-    property SocksServer          : String               read  GetSocksServer
-                                                         write SetSocksServer;
-    property SocksUserCode        : String               read  GetSocksUserCode
-                                                         write SetSocksUserCode;
+    property SocksPassword        : String               read  FSocksPassword
+                                                         write FSocksPassword;      { V7.00 }
+    property SocksPort            : String               read  FSocksPort
+                                                         write FSocksPort;          { V7.00 }
+    property SocksServer          : String               read  FSocksServer
+                                                         write FSocksServer;        { V7.001 }
+    property SocksUserCode        : String               read  FSocksUserCode
+                                                         write FSocksUserCode;      { V7.001 }
     property Account              : String               read  FAccount
                                                          write FAccount;
     property CloseEndSecs         : DWORD                read  FCloseEndSecs  { V2.100 }
@@ -1559,8 +1564,8 @@ Description:  A component adding SSL support to TFtpCli (RFC-2228).
               warnings.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}
-    Bomb('This unit require a 32 bit compiler !');
+{$IFNDEF DELPHI7_UP}
+    Bomb('This unit requires Delphi 7 or later !');
 {$ENDIF}
 {$B-}                                 { Enable partial boolean evaluation   }
 {$T-}                                 { Untyped pointers                    }
@@ -1685,43 +1690,6 @@ end;
 procedure SetLength(var Str : String; Len : Integer);
 begin
     Str[0] := chr(Len);
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}
-function TrimRight(Str : String) : String;
-var
-    i : Integer;
-begin
-    i := Length(Str);
-    while (i > 0) and (Str[i] in [' ', #9]) do
-        i := i - 1;
-    Result := Copy(Str, 1, i);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TrimLeft(Str : String) : String;
-var
-    i : Integer;
-begin
-    if Str[1] <> ' ' then
-        Result := Str
-    else begin
-        i := 1;
-        while (i <= Length(Str)) and (Str[i] = ' ') do
-            i := i + 1;
-        Result := Copy(Str, i, Length(Str) - i + 1);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Trim(Str : String) : String;
-begin
-    Result := TrimLeft(TrimRight(Str));
 end;
 {$ENDIF}
 
@@ -2494,14 +2462,31 @@ begin
     FReceiveLen          := 0;
     FRequestResult       := 0;
     FDnsResult           := '';
-    FMLSTFacts           := '';   { V2.90 supported extensions }
+    FMLSTFacts           := '';   { V2.90 supported MLST facts }
     FSupportedExtensions := [];   { V2.94 supported extensions }
+
+{ angus V7.00 always set proxy and SOCKS options before opening socket  }
+    FControlSocket.SocksAuthentication := socksNoAuthentication;
+    case FConnectionType of
+        ftpProxy:   FPassive := TRUE;
+        ftpSocks4:  FControlSocket.SocksLevel := '4';
+        ftpSocks4A: FControlSocket.SocksLevel := '4A';
+        ftpSocks5:  FControlSocket.SocksLevel := '5';
+    end;
+    if FConnectionType in [ftpSocks4, ftpSocks4A, ftpSocks5] then begin
+        FPassive := TRUE;
+        FControlSocket.SocksAuthentication  := socksAuthenticateUsercode;
+        FControlSocket.SocksServer          := FSocksServer;
+        FControlSocket.SocksPort            := FSocksPort;
+        FControlSocket.SocksUsercode        := FSocksUsercode;
+        FControlSocket.SocksPassword        := FSocksPassword;
+    end;
     StateChange(ftpDnsLookup);
     case FConnectionType of
-    ftpDirect, ftpSocks4, ftpSocks4A, ftpSocks5:
-          FControlSocket.DnsLookup(FHostName);
-    ftpProxy:
-          FControlSocket.DnsLookup(FProxyServer);
+        ftpDirect, ftpSocks4, ftpSocks4A, ftpSocks5:
+              FControlSocket.DnsLookup(FHostName);
+        ftpProxy:
+              FControlSocket.DnsLookup(FProxyServer);
     end;
 end;
 
@@ -3796,12 +3781,6 @@ begin
             case FDisplayFileMode of
             ftpBinary:
                 begin
-                    {$IFDEF VER80}
-                    { 16 bit has max 255 characters per String }
-                    if Len > 255 then
-                        SetLength(Line, 255)
-                    else
-                    {$ENDIF}
                     SetLength(Line, Len);
                     Move(Buffer[1], Line[1], Length(Line));
                     TriggerDisplayFile(String(Line));
@@ -3815,11 +3794,6 @@ begin
                             i := i + 1;
                             j := j + 1;
                         end;
-                        {$IFDEF VER80}
-                        if (j - 1) > 255 then
-                            SetLength(Line, 255)
-                        else
-                        {$ENDIF}
                         SetLength(Line, j - 1);
                         if Length(Line) > 0 then
                             Move(Buffer[i - j + 1], Line[1], Length(Line));
@@ -4151,10 +4125,10 @@ begin
     try
 {$IFDEF USE_MODEZ}
         if FZStreamState = ftpZStateSaveComp then
-            Count := FModeZStream.Read(FSendBuffer, BLOCK_SIZE)
+            Count := FModeZStream.Read(FSendBuffer, SizeOf(FSendBuffer))  { angus 7.00 simplified }
          else
 {$ENDIF}
-            Count := FLocalStream.Read(FSendBuffer, BLOCK_SIZE);
+            Count := FLocalStream.Read(FSendBuffer, SizeOf(FSendBuffer));
 {$IFNDEF NO_DEBUG_LOG}                                        { 2.104 }
         if CheckLogOptions(loProtSpecInfo) then
             DebugLog(loProtSpecInfo, 'DataSocketPutDataSent ' + IntToStr(Count));
@@ -4358,7 +4332,7 @@ begin
     end;
 end;
 
-
+(*
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetConnectionType(NewValue: TFtpConnectionType);
 begin
@@ -4497,7 +4471,7 @@ function TCustomFtpCli.GetSocksUserCode: String;
 begin
     Result := FControlSocket.SocksUserCode;
 end;
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetPassive(NewValue: Boolean);
@@ -4505,8 +4479,8 @@ begin
     { Passive state must not be changed if Proxy or Socks connection        }
     { type is selected                                                      }
     case FConnectionType of
-    ftpDirect: FPassive := NewValue;
-    ftpProxy, ftpSocks4, ftpSocks4A, ftpSocks5: FPassive := TRUE;
+        ftpDirect: FPassive := NewValue;
+        ftpProxy, ftpSocks4, ftpSocks4A, ftpSocks5: FPassive := TRUE;
     end;
 end;
 
@@ -4521,6 +4495,20 @@ begin
     FDataSocket.LingerOnOff        := wsLingerOff;
     FDataSocket.LingerTimeout      := 0;
     FDataSocket.ComponentOptions   := [wsoNoReceiveLoop];   { 26/10/02 } { 2.109 }
+{ angus V7.00 always set proxy and SOCKS options before opening socket  }
+    FDataSocket.SocksAuthentication := socksNoAuthentication;
+    case FConnectionType of
+        ftpSocks4:  FDataSocket.SocksLevel := '4';
+        ftpSocks4A: FDataSocket.SocksLevel := '4A';
+        ftpSocks5:  FDataSocket.SocksLevel := '5';
+    end;
+    if FConnectionType in [ftpSocks4, ftpSocks4A, ftpSocks5] then begin
+        FDataSocket.SocksAuthentication  := socksAuthenticateUsercode;
+        FDataSocket.SocksServer          := FSocksServer;
+        FDataSocket.SocksPort            := FSocksPort;
+        FDataSocket.SocksUsercode        := FSocksUsercode;
+        FDataSocket.SocksPassword        := FSocksPassword;
+    end;
 end;
 
 
@@ -4546,10 +4534,6 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Receive a file or a directory list of a file list                         }
 procedure TCustomFtpCli.DoGetAsync(RqType : TFtpRequest);
-{$IFDEF VER80}
-const
-    FILE_END = 2;
-{$ENDIF}
 var
     Temp       : String;
     I {, MaxWbits} : Integer;
@@ -4593,11 +4577,6 @@ begin
     FError             := 0;
 
     FDataSocket.OnSessionAvailable := DataSocketGetSessionAvailable;
-
-{$IFDEF VER80}
-    { With Delphi 1 you need to nul terminate each string }
-    FLocalFileName[Length(FLocalFileName) + 1] := chr(0);
-{$ENDIF}
 
     { open the destination file }
     { Don't open a file if we're on FDisplayFileFlag }
@@ -4819,10 +4798,6 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.DoPutAppendAsync;
-{$IFDEF VER80}
-const
-    FILE_END = 2;
-{$ENDIF}
 var
     Temp        : String;
     I           : Integer;
@@ -4864,11 +4839,7 @@ begin
     end;
 
     FDataSocket.OnSessionAvailable := DataSocketPutSessionAvailable;
-{$IFDEF VER80}
-    { With Delphi 1 you need to nul terminate each string }
-    FLocalFileName[Length(FLocalFileName) + 1] := chr(0);
-{$ENDIF}
-
+    
     { open the local source file }
     try
         { Be sure to have previous instance closed }
@@ -5317,10 +5288,6 @@ begin
 {$IFNDEF NO_DEBUG_LOG}                                             { 2.105 }
     if CheckLogOptions(loProtSpecDump) then
         DebugLog(loProtSpecDump, '>|' + FLastResponse + '|' + #13#10);
-{$ENDIF}
-{$IFDEF VER80}
-        { Add a nul byte at the end of string for Delphi 1 }
-        FLastResponse[Length(FLastResponse) + 1] := #0;
 {$ENDIF}
         FReceiveLen := FReceiveLen - J;
         if FReceiveLen > 0 then
