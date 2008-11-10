@@ -79,7 +79,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls, OverbyteIcsHttpProt, OverbyteIcsWSocket,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsHttpProt, OverbyteIcsWSocket,
   OverbyteIcsLIBEAY, OverbyteIcsSsLeay, OverbyteIcsSslSessionCache,
   OverbyteIcsLogger,
 {$IFDEF USE_MODEZ}              { V2.102 }
@@ -275,8 +275,7 @@ begin
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
 {$ENDIF}
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     FTrustedList := TStringList.Create;
     FClientCerts := nil;
     SslHttpCli1.CtrlSocket.OnBgException := BackgroundException;
@@ -295,12 +294,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpsTstForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         try
             Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
             Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
@@ -368,9 +367,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpsTstForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);

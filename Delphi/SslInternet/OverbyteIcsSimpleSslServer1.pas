@@ -67,7 +67,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls, OverbyteIcsWSocket, OverbyteIcsWSocketS,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsWSocket, OverbyteIcsWSocketS,
   OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsWndControl;
 
 const
@@ -193,7 +193,7 @@ end;
 procedure TSimpleSslServerForm.FormCreate(Sender: TObject);
 begin
     BigConsole(80, 100);
-    FIniFileName := LowerCase(ChangeFileExt(Application.ExeName, '.ini'));
+    FIniFileName := GetIcsIniFileName;
     FTrustedList := TStringList.Create;
 end;
 
@@ -209,12 +209,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSimpleSslServerForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -249,9 +249,9 @@ procedure TSimpleSslServerForm.FormClose(
     Sender     : TObject;
     var Action : TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);

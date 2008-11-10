@@ -92,7 +92,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, IniFiles, OverbyteIcsFtpSrv, {OverbyteIcsFtpSrvC,} OverbyteIcsWSocket,
+  Dialogs, OverbyteIcsIniFiles, OverbyteIcsFtpSrv, {OverbyteIcsFtpSrvC,} OverbyteIcsWSocket,
   StdCtrls, ExtCtrls, Menus,
   OverbyteIcsWinsock, OverbyteIcsLibeay, OverbyteIcsLogger,
   OverbyteIcsWndControl, OverbyteIcsLibrary, OverbyteIcsOneTimePw;
@@ -346,7 +346,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslFtpServerForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Minim   : Integer;
 begin
     if not FInitialized then begin
@@ -358,7 +358,7 @@ begin
         // BDS2006 has built-in memory leak detection and display
         ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
 {$ENDIF}
-        IniFile  := TIniFile.Create(FIniFileName);
+        IniFile  := TIcsIniFile.Create(FIniFileName);
         FXTop    := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
         FXLeft   := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
         FXWidth  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
@@ -397,13 +397,13 @@ end;
 procedure TSslFtpServerForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Minim   : Integer;
 begin
     try
         StopServer;
         Minim   := ord(StartMinimizedCheckBox.Checked);
-        IniFile := TIniFile.Create(FIniFileName);
+        IniFile := TIcsIniFile.Create(FIniFileName);
         IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
         IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
         IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
@@ -430,9 +430,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslFtpServerForm.LoadConfig;
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     FPort   := AnsiString(IniFile.ReadString(SectionData,    KeyPort,   'ftp'));
     CertFileEdit.Text    := IniFile.ReadString(SectionData, KeyCertFile,
                                                '01cert.pem');
@@ -462,9 +462,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslFtpServerForm.SaveConfig;
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyPort, FPort);
     IniFile.WriteString(SectionData,    KeyCertFile,    CertFileEdit.Text);
     IniFile.WriteString(SectionData,    KeyPrivKeyFile, PrivKeyFileEdit.Text);
@@ -540,8 +540,7 @@ end;
 procedure TSslFtpServerForm.FormCreate(Sender: TObject);
 begin
     { Build Ini file name }
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     FIniRoot := LowerCase(ExtractFilePath(Application.ExeName));
     { Create the Log object }
     Log := TLogMsg.Create(Self);
@@ -1108,7 +1107,7 @@ end;
 procedure TSslFtpServerForm.SslFtpServer1OtpMethod(Sender: TObject; Client: TFtpCtrlSocket; UserName: TFtpString;
   var OtpMethod: TOtpMethod);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     S: string;
 begin
     { look up user account to find One Time Password method, root directory, etc, blank password means no account}
@@ -1117,7 +1116,7 @@ begin
         exit;
     end;
     InfoMemo.Lines.Add('! Opening Accounts File: ' + Client.AccountIniName);
-    IniFile := TIniFile.Create(Client.AccountIniName);
+    IniFile := TIcsIniFile.Create(Client.AccountIniName);
     Client.AccountPassword := IniFile.ReadString(UserName, KeyPassword, '');  // keep password to check later
     S := IniFile.ReadString(UserName, KeyOtpMethod, 'none');
     Client.AccountReadOnly := (IniFile.ReadString(UserName, KeyReadOnly, 'true') = 'true');

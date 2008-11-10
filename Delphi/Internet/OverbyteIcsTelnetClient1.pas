@@ -55,7 +55,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Controls, Forms,
-  StdCtrls, IniFiles,
+  StdCtrls, OverbyteIcsIniFiles,
   OverbyteIcsWSocket, OverbyteIcsWinsock,
   OverbyteIcsEmulVT,  OverbyteIcsTnEmulVT;
 
@@ -112,8 +112,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTelnetForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     StatusLabel.Caption := 'Not connected';
     TnEmulVT1.RestoreOptions;
 end;
@@ -123,11 +122,11 @@ end;
 procedure TTelnetForm.FormShow(Sender: TObject);
 var
     WinsockData : TWSADATA;
-    IniFile     : TIniFile;
+    IniFile     : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
+        IniFile := TIcsIniFile.Create(FIniFileName);
         HostNameEdit.Text  := IniFile.ReadString(SectionData, KeyHostName,
                                                  'localhost');
         PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,
@@ -151,9 +150,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTelnetForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyHostName,  HostNameEdit.Text);
     IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
     IniFile.WriteInteger(SectionWindow, KeyTop,    Top);

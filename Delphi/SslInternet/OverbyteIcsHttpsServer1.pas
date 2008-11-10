@@ -68,7 +68,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  StdCtrls, ExtCtrls, IniFiles, OverbyteIcsWinsock, OverbyteIcsWSocket,
+  StdCtrls, ExtCtrls, OverbyteIcsIniFiles, OverbyteIcsWinsock, OverbyteIcsWSocket,
   OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsWndControl;
 
 const
@@ -327,8 +327,8 @@ end;
 procedure THttpsSrvForm.FormCreate(Sender: TObject);
 begin
     BigConsole(80, 100);
-    FIniFileName := LowerCase(ChangeFileExt(Application.ExeName, '.ini'));
-    LogFileName  := LowerCase(ChangeFileExt(Application.ExeName, '.log'));
+    FIniFileName := GetIcsIniFileName;
+    LogFileName  := ChangeFileExt(FIniFileName, '.log');
     LogText('!', 'Start ' + ProgName +
             ' V' + ProgVersion + ' ' + ProgDate + ', ' + ProgCopyright);
     LogClose;
@@ -375,12 +375,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpsSrvForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -419,9 +419,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpsSrvForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);

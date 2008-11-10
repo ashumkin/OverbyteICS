@@ -52,7 +52,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  IniFiles, StdCtrls, ExtCtrls,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls,
   OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl;
 
 const
@@ -122,8 +122,7 @@ procedure TTcpSrvForm.FormCreate(Sender: TObject);
 begin
     { Compute INI file name based on exe file name. Remove path to make it  }
     { go to windows directory.                                              }
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
 {$IFDEF DELPHI10}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
@@ -134,13 +133,13 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTcpSrvForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
         { Fetch persistent parameters from INI file }
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -158,10 +157,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTcpSrvForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     { Save persistent data to INI file }
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);

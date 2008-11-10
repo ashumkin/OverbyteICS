@@ -115,7 +115,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  IniFiles, StdCtrls, ExtCtrls, Menus,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, Menus,
  { OverbyteIcsFtpSrvC, }   OverbyteIcsFtpSrvT,
   OverbyteIcsWSocket,    OverbyteIcsWinsock,
   OverbyteIcsWndControl, OverbyteIcsFtpSrv,
@@ -372,7 +372,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServerForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Minim   : Integer;
 begin
     if not FInitialized then begin
@@ -380,7 +380,7 @@ begin
         Caption             := 'Starting ' + MainTitle;
         Left := -Width;
 
-        IniFile  := TIniFile.Create(FIniFileName);
+        IniFile  := TIcsIniFile.Create(FIniFileName);
         FXTop    := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
         FXLeft   := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
         FXWidth  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
@@ -422,13 +422,13 @@ end;
 procedure TFtpServerForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Minim   : Integer;
 begin
     try
         StopServer;
         Minim   := ord(StartMinimizedCheckBox.Checked);
-        IniFile := TIniFile.Create(FIniFileName);
+        IniFile := TIcsIniFile.Create(FIniFileName);
         IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
         IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
         IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
@@ -447,9 +447,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServerForm.LoadConfig;
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     FPort   := IniFile.ReadString(SectionData,    KeyPort,   'ftp');
     IniFile.Free;
 end;
@@ -458,9 +458,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServerForm.SaveConfig;
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyPort, FPort);
     IniFile.Free;
 end;
@@ -528,8 +528,7 @@ end;
 procedure TFtpServerForm.FormCreate(Sender: TObject);
 begin
     { Build Ini file name }
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     FIniRoot := LowerCase(ExtractFilePath(Application.ExeName));
     { Create the Log object }
     Log                  := TLogMsg.Create(Self);
@@ -913,7 +912,7 @@ procedure TFtpServerForm.FtpServer1OtpMethodEvent(
     UserName: TFtpString;
     var OtpMethod: TOtpMethod);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     S: string;
 begin
     { look up user account to find One Time Password method, root directory, etc, blank password means no account}
@@ -922,7 +921,7 @@ begin
         exit;
     end;
     InfoMemo.Lines.Add('! Opening Accounts File: ' + Client.AccountIniName);
-    IniFile := TIniFile.Create(Client.AccountIniName);
+    IniFile := TIcsIniFile.Create(Client.AccountIniName);
     Client.AccountPassword := IniFile.ReadString(UserName, KeyPassword, '');  // keep password to check later
     S := IniFile.ReadString(UserName, KeyOtpMethod, 'none');
     Client.AccountReadOnly := (IniFile.ReadString(UserName, KeyReadOnly, 'true') = 'true');

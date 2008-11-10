@@ -91,7 +91,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Controls, StdCtrls, ExtCtrls, Forms,
-  Dialogs, IniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
+  Dialogs, OverbyteIcsIniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
 
 const
     SmtpTestVersion    = 6.05;
@@ -217,18 +217,15 @@ const
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure SaveStringsToIniFile(
-    const IniFileName : String;
+    IniFile           : TIcsIniFile;
     const IniSection  : String;
     const IniKey      : String;
     Strings           : TStrings);
-var
-    IniFile : TIniFile;
+var 
     nItem   : Integer;
 begin
-    if (IniFileName = '') or (IniSection = '') or (IniKey = '') or
-       (not Assigned(Strings)) then
+    if (IniSection = '') or (IniKey = '') or (not Assigned(Strings)) then
         Exit;
-    IniFile := TIniFile.Create(IniFileName);
     IniFile.EraseSection(IniSection);
     if Strings.Count <= 0 then
         IniFile.WriteString(IniSection, IniKey + 'EmptyFlag', 'Empty')
@@ -237,36 +234,28 @@ begin
             IniFile.WriteString(IniSection,
                                 IniKey + IntToStr(nItem),
                                 Strings.Strings[nItem]);
-    IniFile.Free;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Return FALSE if non existant in IniFile                                   }
 function LoadStringsFromIniFile(
-    const IniFileName : String;
+    IniFile           : TIcsIniFile;
     const IniSection  : String;
     const IniKey      : String;
     Strings           : TStrings) : Boolean;
 var
-    IniFile : TIniFile;
     nItem   : Integer;
     I       : Integer;
     Buf     : String;
 begin
     Result := TRUE;
-    if (IniFileName = '') or (IniSection = '') or (IniKey = '') or
-       (not Assigned(Strings)) then
+    if (IniSection = '') or (IniKey = '') or (not Assigned(Strings)) then
         Exit;
     Strings.Clear;
-    IniFile := TIniFile.Create(IniFileName);
-    try
-        if IniFile.ReadString(IniSection, IniKey + 'EmptyFlag', '') <> '' then
-             Exit;
-        IniFile.ReadSectionValues(IniSection, Strings);
-    finally
-        IniFile.Free;
-    end;
+    if IniFile.ReadString(IniSection, IniKey + 'EmptyFlag', '') <> '' then
+        Exit;
+    IniFile.ReadSectionValues(IniSection, Strings);
     nItem := Strings.Count - 1;
     while nItem >= 0 do begin
         Buf := Strings.Strings[nItem];
@@ -315,8 +304,7 @@ procedure TSmtpTestForm.FormCreate(Sender: TObject);
 begin
     Application.OnException := ExceptionHandler;
     DisplayMemo.Clear;
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
 {$IFDEF DELPHI10_UP}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
@@ -327,11 +315,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
+        IniFile := TIcsIniFile.Create(FIniFileName);
         HostEdit.Text    := IniFile.ReadString(SectionData, KeyHost,
                                                'localhost');
         PortEdit.Text    := IniFile.ReadString(SectionData, KeyPort,
@@ -356,10 +344,10 @@ begin
         PriorityComboBox.ItemIndex := IniFile.ReadInteger(SectionData, KeyPriority, 2);
         ConfirmCheckBox.Checked    := Boolean(IniFile.ReadInteger(SectionData, KeyConfirm, 0));
 
-        if not LoadStringsFromIniFile(FIniFileName, SectionFileAttach,
+        if not LoadStringsFromIniFile(IniFile, SectionFileAttach,
                                       KeyFileAttach, FileAttachMemo.Lines) then
         FileAttachMemo.Text := 'ics_logo.gif' + #13#10 + 'fp_small.gif';
-        if not LoadStringsFromIniFile(FIniFileName, SectionMsgMemo,
+        if not LoadStringsFromIniFile(IniFile, SectionMsgMemo,
                                       KeyMsgMemo, MsgMemo.Lines) then
             MsgMemo.Text :=
             'This is the first line' + #13#10 +
@@ -383,9 +371,9 @@ end;
 procedure TSmtpTestForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyHost,      HostEdit.Text);
     IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
     IniFile.WriteString(SectionData, KeyFrom,      FromEdit.Text);
@@ -399,9 +387,9 @@ begin
     IniFile.WriteInteger(SectionData, KeyAuth,     AuthComboBox.ItemIndex);
     IniFile.WriteInteger(SectionData, KeyPriority, PriorityComboBox.ItemIndex);
     IniFile.WriteInteger(SectionData, KeyConfirm,  Ord(ConfirmCheckBox.Checked));
-    SaveStringsToIniFile(FIniFileName, SectionFileAttach,
+    SaveStringsToIniFile(IniFile, SectionFileAttach,
                          KeyFileAttach, FileAttachMemo.Lines);
-    SaveStringsToIniFile(FIniFileName, SectionMsgMemo,
+    SaveStringsToIniFile(IniFile, SectionMsgMemo,
                          KeyMsgMemo, MsgMemo.Lines);
     IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);

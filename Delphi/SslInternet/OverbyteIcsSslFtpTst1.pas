@@ -79,7 +79,7 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, IniFiles, ExtCtrls, WinSock,
+  Forms, Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls, WinSock,
   OverbyteIcsWSocket, OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsLogger,
   OverbyteIcsWndControl, OverbyteIcsFtpCli;
 
@@ -425,8 +425,7 @@ begin
     DisplayMemo.Clear;
     InfoLabel.Caption  := '';
     StateLabel.Caption := '';
-    FIniFileName    := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName    := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName    := GetIcsIniFileName;
     FTrustedList    := TStringList.Create;
     FClientCerts    := nil;
     FCachedSession  := nil;
@@ -444,12 +443,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpReceiveForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Data    : TWSAData;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
+        IniFile := TIcsIniFile.Create(FIniFileName);
         HostNameEdit.Text  := IniFile.ReadString(SectionData, KeyHostName,
                                                  'ftp.simtel.net');
         PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,
@@ -526,9 +525,9 @@ end;
 procedure TFtpReceiveForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyHostName,  HostNameEdit.Text);
     IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
     IniFile.WriteString(SectionData, KeyUserName,  UserNameEdit.Text);

@@ -53,7 +53,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls, OverbyteIcsSmtpProt, OverbyteIcsMimeUtils,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsSmtpProt, OverbyteIcsMimeUtils,
   OverbyteIcsWndControl;
 
 type
@@ -140,18 +140,15 @@ const
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure SaveStringsToIniFile(
-    const IniFileName : String;
+    IniFile           : TIcsIniFile;
     const IniSection  : String;
     const IniKey      : String;
     Strings           : TStrings);
 var
-    IniFile : TIniFile;
     nItem   : Integer;
 begin
-    if (IniFileName = '') or (IniSection = '') or (IniKey = '') or
-       (not Assigned(Strings)) then
+    if (IniSection = '') or (IniKey = '') or  (not Assigned(Strings)) then
         Exit;
-    IniFile := TIniFile.Create(IniFileName);
     IniFile.EraseSection(IniSection);
     if Strings.Count <= 0 then
         IniFile.WriteString(IniSection, IniKey + 'EmptyFlag', 'Empty')
@@ -160,36 +157,28 @@ begin
             IniFile.WriteString(IniSection,
                                 IniKey + IntToStr(nItem),
                                 Strings.Strings[nItem]);
-    IniFile.Free;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Return FALSE if non existant in IniFile                                   }
 function LoadStringsFromIniFile(
-    const IniFileName : String;
+    IniFile           : TIcsIniFile;
     const IniSection  : String;
     const IniKey      : String;
     Strings           : TStrings) : Boolean;
 var
-    IniFile : TIniFile;
     nItem   : Integer;
     I       : Integer;
     Buf     : String;
 begin
     Result := TRUE;
-    if (IniFileName = '') or (IniSection = '') or (IniKey = '') or
-       (not Assigned(Strings)) then
+    if (IniSection = '') or (IniKey = '') or (not Assigned(Strings)) then
         Exit;
     Strings.Clear;
-    IniFile := TIniFile.Create(IniFileName);
-    try
-        if IniFile.ReadString(IniSection, IniKey + 'EmptyFlag', '') <> '' then
-             Exit;
-        IniFile.ReadSectionValues(IniSection, Strings);
-    finally
-        IniFile.Free;
-    end;
+    if IniFile.ReadString(IniSection, IniKey + 'EmptyFlag', '') <> '' then
+         Exit;
+    IniFile.ReadSectionValues(IniSection, Strings);
     nItem := Strings.Count - 1;
     while nItem >= 0 do begin
         Buf := Strings.Strings[nItem];
@@ -223,21 +212,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlMailForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlMailForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
         DisplayMemo.Clear;
 
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -264,15 +252,15 @@ begin
                                                'your_name');
         ConfirmCheckBox.Checked  := Boolean(IniFile.ReadInteger(SectionData,
                                             KeyConfirm, 0));
-        if not LoadStringsFromIniFile(IniFileName, SectionImageFiles,
+        if not LoadStringsFromIniFile(IniFile, SectionImageFiles,
                                       KeyImageFiles, ImageFilesMemo.Lines) then
             ImageFilesMemo.Text := 'ics_logo.gif' + #13#10 + 'fp_small.gif';
 
-        if not LoadStringsFromIniFile(IniFileName, SectionAttachedFiles,
+        if not LoadStringsFromIniFile(IniFile, SectionAttachedFiles,
                                       KeyAttachedFiles, AttachedFilesMemo.Lines) then
             AttachedFilesMemo.Text := 'OverbyteIcsMailHtml.dpr';
 
-        if not LoadStringsFromIniFile(IniFileName, SectionPlainText,
+        if not LoadStringsFromIniFile(IniFile, SectionPlainText,
                                       KeyPlainText, PlainTextMemo.Lines) then
             PlainTextMemo.Text :=
             'This is a HTML mail message sent using ICS.' + #13#10 +
@@ -300,7 +288,7 @@ begin
             '<<IMAGE2>>' + #13#10 +
             '--' + #13#10 +
             'mailto:francois.piette@overbyte.be' + #13#10;
-        if not LoadStringsFromIniFile(IniFileName, SectionHtmlText,
+        if not LoadStringsFromIniFile(IniFile, SectionHtmlText,
                                       KeyHtmlText, HtmlTextMemo.Lines) then
             HtmlTextMemo.Text := '<HTML><BODY>' + #13#10 +
             'This is a HTML mail message sent using <B>ICS</B>.<BR>' + #13#10 +
@@ -347,9 +335,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlMailForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
@@ -363,13 +351,13 @@ begin
     IniFile.WriteString(SectionData,    KeySubject,   SubjectEdit.Text);
     IniFile.WriteString(SectionData,    KeySignOn,    SignOnEdit.Text);
     IniFile.WriteInteger(SectionData,   KeyConfirm,  Ord(ConfirmCheckBox.Checked));
-    SaveStringsToIniFile(IniFileName, SectionImageFiles,
+    SaveStringsToIniFile(IniFile, SectionImageFiles,
                          KeyImageFiles, ImageFilesMemo.Lines);
-    SaveStringsToIniFile(IniFileName, SectionAttachedFiles,
+    SaveStringsToIniFile(IniFile, SectionAttachedFiles,
                          KeyAttachedFiles, AttachedFilesMemo.Lines);
-    SaveStringsToIniFile(IniFileName, SectionPlainText,
+    SaveStringsToIniFile(IniFile, SectionPlainText,
                          KeyPlainText, PlainTextMemo.Lines);
-    SaveStringsToIniFile(IniFileName, SectionHtmlText,
+    SaveStringsToIniFile(IniFile, SectionHtmlText,
                          KeyHtmlText, HtmlTextMemo.Lines);
     IniFile.Destroy;
 end;

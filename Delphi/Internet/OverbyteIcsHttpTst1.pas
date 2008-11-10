@@ -78,7 +78,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  StdCtrls, ExtCtrls, IniFiles, OverbyteIcsUrl,
+  StdCtrls, ExtCtrls, OverbyteIcsIniFiles, OverbyteIcsUrl,
  {$IFDEF CLR}
   System.ComponentModel,
  {$ENDIF}
@@ -184,7 +184,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpTestForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     wsi     : TWSADATA;
 begin
     if not Initialized then begin
@@ -195,7 +195,7 @@ begin
         ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
         {$ENDIF}
         {$ENDIF}
-        IniFile      := TIniFile.Create(IniFileName);
+        IniFile      := TIcsIniFile.Create(IniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -251,9 +251,9 @@ end;
 procedure THttpTestForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(IniFileName);
+    IniFile := TIcsIniFile.Create(IniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,       Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,      Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,     Width);

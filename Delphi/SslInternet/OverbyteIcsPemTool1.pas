@@ -76,7 +76,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Controls, Forms, Dialogs,
-  StdCtrls, IniFiles, ComCtrls, Menus, ImgList, ExtCtrls, CommCtrl,
+  StdCtrls, OverbyteIcsIniFiles, ComCtrls, Menus, ImgList, ExtCtrls, CommCtrl,
   { Uses Jedi CryptoAPI2, see 'Description' above }
   Wcrypt2,
   { Uses ICS SSL code, see 'Description' above }
@@ -325,9 +325,7 @@ procedure TfrmPemTool1.FormCreate(Sender: TObject);
 begin
     Application.OnException := AppOnException;
     FProgDir     := ExtractFilePath(ParamStr(0));
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
-    FIniFileName := PathAddBackSlash(FProgDir) + FIniFileName;
+    FIniFileName := GetIcsIniFileName;
     ComboBoxStoreType.ItemIndex := 0;
     //Avoid dynamical loading and unloading the SSL DLLs plenty of times
     OverbyteIcsWSocket.LoadSsl;
@@ -344,11 +342,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TfrmPemTool1.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionMainWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionMainWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionMainWindow, KeyTop,
@@ -389,9 +387,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TfrmPemTool1.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionMainWindow, KeyTop,               Top);
     IniFile.WriteInteger(SectionMainWindow, KeyLeft,              Left);
     IniFile.WriteInteger(SectionMainWindow, KeyWidth,             Width);

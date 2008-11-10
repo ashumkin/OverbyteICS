@@ -89,7 +89,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Controls, Forms,
-  IniFiles, StdCtrls, ExtCtrls, WinSock, OverbyteIcsWSocket,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, WinSock, OverbyteIcsWSocket,
   OverbyteIcsWSocketS, OverbyteIcsHttpSrv, OverbyteIcsLIBEAY,
   OverbyteIcsSslSessionCache, OverbyteIcsLogger;
 
@@ -277,10 +277,8 @@ begin
 {$ENDIF}
     //IsConsole := AllocConsole;
     { Create IniFileName based on EXE file name; }
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
-    FLogFileName := Application.ExeName;
-    FLogFileName := Copy(FLogFileName, 1, Length(FLogFileName) - 3) + '.log';
+    FIniFileName := GetIcsIniFileName;
+    FLogFileName := ChangeFileExt(FIniFileName, '.log');
 end;
 
 
@@ -294,14 +292,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslWebServForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     wsi     : TWSADATA;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
         { Restore persistent data from INI file }
-        IniFile      := TIniFile.Create(FIniFileName);
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -380,10 +378,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslWebServForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     { Save persistent data to INI file }
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);

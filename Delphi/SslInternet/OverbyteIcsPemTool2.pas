@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, IniFiles;
+  StdCtrls, OverbyteIcsIniFiles;
 
 type
   TfrmPemTool2 = class(TForm)
@@ -36,11 +36,11 @@ const
 
 procedure TfrmPemTool2.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(frmPemTool1.FIniFileName);
+        IniFile := TIcsIniFile.Create(frmPemTool1.FIniFileName);
         Width   := IniFile.ReadInteger(SectionDisplayWindow, KeyWidth,  Width);
         Height  := IniFile.ReadInteger(SectionDisplayWindow, KeyHeight, Height);
         Top     := IniFile.ReadInteger(SectionDisplayWindow, KeyTop,
@@ -50,9 +50,9 @@ end;
 
 procedure TfrmPemTool2.FormClose(Sender: TObject; var Action: TCloseAction);
     var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(frmPemTool1.FIniFileName);
+    IniFile := TIcsIniFile.Create(frmPemTool1.FIniFileName);
     IniFile.WriteInteger(SectionDisplayWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionDisplayWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionDisplayWindow, KeyWidth,       Width);

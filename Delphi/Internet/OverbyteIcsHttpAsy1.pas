@@ -57,7 +57,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsHttpProt, IniFiles,
+  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsHttpProt, OverbyteIcsIniFiles,
   OverbyteIcsWndControl;
 
 const
@@ -141,8 +141,7 @@ procedure THttpAsyForm.FormCreate(Sender: TObject);
 begin
     DisplayMemo.Clear;
     FCurrentItem := -1;
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     FHttpCliList := TList.Create;
 end;
 
@@ -150,14 +149,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpAsyForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Count   : Integer;
     I       : Integer;
     URL     : String;
 begin
     if not FInitialized then begin
         FInitialized           := TRUE;
-        IniFile                := TIniFile.Create(FIniFileName);
+        IniFile                := TIcsIniFile.Create(FIniFileName);
         URLEdit.Text           := IniFile.ReadString(SectionData, KeyURL, '');
         HeaderCheckBox.Checked := (IniFile.ReadInteger(SectionData, KeyHeader, 0) <> 0);
         DataCheckBox.Checked   := (IniFile.ReadInteger(SectionData, KeyData,   0) <> 0);
@@ -182,11 +181,11 @@ end;
 procedure THttpAsyForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     I       : Integer;
     Count   : Integer;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyURL,  URLEdit.Text);
     IniFile.WriteInteger(SectionData, KeyHeader, Ord(HeaderCheckBox.Checked));
     IniFile.WriteInteger(SectionData, KeyData,   Ord(DataCheckBox.Checked));

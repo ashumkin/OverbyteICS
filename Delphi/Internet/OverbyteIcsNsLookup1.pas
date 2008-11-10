@@ -48,7 +48,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, IniFiles, StdCtrls, ExtCtrls, Buttons,
+  Dialogs, OverbyteIcsIniFiles, StdCtrls, ExtCtrls, Buttons,
   OverbyteIcsWinSock, OverbyteIcsWSocket, OverbyteIcsDnsQuery;
 
 const
@@ -107,20 +107,19 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNsLookupForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNsLookupForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile       := TIniFile.Create(FIniFileName);
+        IniFile       := TIcsIniFile.Create(FIniFileName);
         Width         := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height        := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top           := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -139,9 +138,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNsLookupForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);

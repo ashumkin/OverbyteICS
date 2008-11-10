@@ -62,7 +62,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, IniFiles,
+  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsIniFiles,
 {$IFDEF USE_TNT}
   TntStdCtrls,
 {$ENDIF}
@@ -162,9 +162,7 @@ begin
     Memo1.Align       := alClient;
     Memo1.ScrollBars  := ssBoth;
     Memo1.WordWrap    := FALSE;
-
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     Memo1.Clear;
 end;
 
@@ -172,11 +170,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized        := TRUE;
-        IniFile   := TIniFile.Create(FIniFileName);
+        IniFile   := TIcsIniFile.Create(FIniFileName);
         Top       := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
         Left      := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
         Width     := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
@@ -191,9 +189,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
