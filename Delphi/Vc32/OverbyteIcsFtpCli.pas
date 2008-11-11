@@ -4793,6 +4793,20 @@ begin
     FDataSocket.LingerOnOff        := wsLingerOff;
     FDataSocket.LingerTimeout      := 0;
     FDataSocket.ComponentOptions   := [wsoNoReceiveLoop];   { 26/10/02 }
+{ angus V7.00 always set proxy and SOCKS options before opening socket  }
+    FDataSocket.SocksAuthentication := socksNoAuthentication;
+    case FConnectionType of
+        ftpSocks4:  FDataSocket.SocksLevel := '4';
+        ftpSocks4A: FDataSocket.SocksLevel := '4A';
+        ftpSocks5:  FDataSocket.SocksLevel := '5';
+    end;
+    if FConnectionType in [ftpSocks4, ftpSocks4A, ftpSocks5] then begin
+        FDataSocket.SocksAuthentication  := socksAuthenticateUsercode;
+        FDataSocket.SocksServer          := FSocksServer;
+        FDataSocket.SocksPort            := FSocksPort;
+        FDataSocket.SocksUsercode        := FSocksUsercode;
+        FDataSocket.SocksPassword        := FSocksPassword;
+    end;
 end;
 
 
