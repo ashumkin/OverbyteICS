@@ -318,7 +318,7 @@ begin
                 Boolean(IniFile.ReadInteger(SectionData, KeyDisplayHeader, 0));
         WriteLogFileCheckBox.Checked :=
                 Boolean(IniFile.ReadInteger(SectionData, KeyLogToFile, 0));
-       DisplaySslInfoCheckBox.Checked :=
+        DisplaySslInfoCheckBox.Checked :=
                 Boolean(IniFile.ReadInteger(SectionData, KeyDisplaySslInfo, 0));
         CertFileEdit.Text    := IniFile.ReadString(SectionData, KeyCertFile,
                                                    '01cert.pem');
@@ -337,7 +337,7 @@ begin
                                                                   0));
         FRenegotiationInterval := IniFile.ReadInteger(SectionData,
                                                       KeyRenegInterval, 0);
-        IniFile.Destroy;
+        IniFile.Free;
 
         RenegotiationIntervalEdit.Text := IntToStr(FRenegotiationInterval);
         
@@ -404,7 +404,8 @@ begin
     IniFile.WriteString(SectionData,    KeyAcceptableHosts, AcceptableHostsEdit.Text);
     IniFile.WriteInteger(SectionData,   KeyVerifyPeer,  Ord(VerifyPeerCheckBox.Checked));
     IniFile.WriteInteger(SectionData,   KeyRenegInterval, FRenegotiationInterval);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
     CloseLogFile;
 end;
 

@@ -368,7 +368,7 @@ begin
         CheckBoxEmptyDestDir.Checked      := IniFile.ReadBool(SectionData,
                                                               KeyEmptyDestDir,
                                                               FALSE);
-        IniFile.Destroy;
+        IniFile.Free;
         PostMessage(Handle, WM_APPSTARTUP, 0, 0);
     end;
 end;
@@ -399,6 +399,8 @@ begin
     IniFile.WriteBool(SectionData,          KeyWarnDestNotEmpty,  CheckBoxWarnDestNotEmpty.Checked);
     IniFile.WriteBool(SectionData,          KeyOverwriteExisting, CheckBoxOverwriteExisting.Checked);
     IniFile.WriteBool(SectionData,          KeyEmptyDestDir,      CheckBoxEmptyDestDir.Checked);
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

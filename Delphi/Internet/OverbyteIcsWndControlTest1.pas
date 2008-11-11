@@ -151,7 +151,7 @@ begin
                                             (Screen.Height - Height) div 2);
         Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
                                             (Screen.Width  - Width)  div 2);
-        IniFile.Destroy;
+        IniFile.Free;
         DisplayMemo.Clear;
     end;
 end;
@@ -167,7 +167,8 @@ begin
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
     IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

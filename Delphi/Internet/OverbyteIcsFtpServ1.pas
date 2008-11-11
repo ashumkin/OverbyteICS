@@ -436,6 +436,7 @@ begin
         IniFile.WriteInteger(SectionWindow, KeyMinim,  Minim);
         IniFile.WriteString(SectionData,    KeyPort,   FPort);
         IniFile.WriteString(SectionData,    KeyRoot,   RootDirectory.Text);
+        IniFile.UpdateFile;
         IniFile.Free;
     except
         { Ignore any exception when we are closing }
@@ -462,6 +463,7 @@ var
 begin
     IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteString(SectionData, KeyPort, FPort);
+    IniFile.UpdateFile;
     IniFile.Free;
 end;
 

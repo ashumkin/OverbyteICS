@@ -327,7 +327,7 @@ begin
             '</BODY>' + #13#10 +
             '</HTML>' + #13#10;
 
-        IniFile.Destroy;
+        IniFile.Free;
     end;
 end;
 
@@ -359,7 +359,8 @@ begin
                          KeyPlainText, PlainTextMemo.Lines);
     SaveStringsToIniFile(IniFile, SectionHtmlText,
                          KeyHtmlText, HtmlTextMemo.Lines);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

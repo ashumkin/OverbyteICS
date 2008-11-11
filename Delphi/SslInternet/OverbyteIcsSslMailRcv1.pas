@@ -293,6 +293,7 @@ begin
         IniFile.WriteBool(SectionSSL,     KeyVerify,   VerifyCheckbox.Checked);
         IniFile.WriteString(SectionSSL,   KeyCAFile,   CAFileEdit.Text);
         IniFile.WriteString(SectionSSL,   KeyCAPath,   CAPathEdit.Text);
+        IniFile.UpdateFile;
     finally
         IniFile.Free;
     end;

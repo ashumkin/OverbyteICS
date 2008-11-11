@@ -357,7 +357,7 @@ begin
                                                               KeyDebugFile,
                                                               False);
         finally                                                      
-            IniFile.Destroy;
+            IniFile.Free;
         end;
         DisplayMemo.Clear;
     end;
@@ -394,7 +394,8 @@ begin
     IniFile.WriteBool(SectionData,      KeyDebugEvent,  DebugEventCheckBox.Checked);
     IniFile.WriteBool(SectionData,      KeyDebugOutput, DebugOutputCheckBox.Checked);
     IniFile.WriteBool(SectionData,      KeyDebugFile,   DebugFileCheckBox.Checked);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

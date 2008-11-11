@@ -272,6 +272,7 @@ begin
     IniFile.WriteString(SectionData, KeyNTLMUsercode, HttpCli1.NTLMUsercode);
     IniFile.WriteString(SectionData, KeyNTLMPassword, HttpCli1.NTLMPassword);
 {$ENDIF}
+    IniFile.UpdateFile;
     IniFile.Free;
 end;
 

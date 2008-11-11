@@ -406,7 +406,7 @@ begin
         VerifyPeerCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData,
                                                                   KeyVerifyPeer,
                                                                   0));
-        IniFile.Destroy;
+        IniFile.Free;
         DisplayMemo.Clear;
         Display(Trim(CopyRight));
         Display('Using ' + Trim(OverbyteIcsWSocket.CopyRight));
@@ -435,7 +435,8 @@ begin
     IniFile.WriteString(SectionData,    KeyCAPath,      CAPathEdit.Text);
     IniFile.WriteString(SectionData,    KeyAcceptableHosts, AcceptableHostsEdit.Text);
     IniFile.WriteInteger(SectionData,   KeyVerifyPeer,  Ord(VerifyPeerCheckBox.Checked));
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

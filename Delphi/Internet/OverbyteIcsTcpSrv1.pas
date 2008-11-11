@@ -146,7 +146,7 @@ begin
                                             (Screen.Height - Height) div 2);
         Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
                                             (Screen.Width  - Width)  div 2);
-        IniFile.Destroy;
+        IniFile.Free;
         DisplayMemo.Clear;
         { Delay startup code until our UI is ready and visible }
         PostMessage(Handle, WM_APPSTARTUP, 0, 0);
@@ -165,7 +165,8 @@ begin
     IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
     IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

@@ -38,7 +38,7 @@ Legal issues: Copyright (C) 2008 by François PIETTE
 
         Contains TIcsUtf8IniFile a variant of TMemIniFile that is capable to
         handle UTF-8 encoded INI files. By default it attempts to preserve ANSI
-        format and writes changes to disk in the destructor, if any.
+        format.
 
 History:
 
@@ -78,7 +78,6 @@ type
     FFileName: String;
     FSections: TStringList;
     FPreserveAnsi: Boolean;
-    FDirty: Boolean;
     function  AddSection(const Section: String): TStrings;
     function  GetCaseSensitive: Boolean;
     procedure SetCaseSensitive(Value: Boolean);
@@ -125,8 +124,6 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TIcsUtf8IniFile.Destroy;
 begin
-    if FDirty then
-        UpdateFile;
     if FSections <> nil then
         Clear;
     FSections.Free;
@@ -464,7 +461,6 @@ begin
                         TxtStream.WriteLn(StringToUtf8(List[I]))
                     else
                         TxtStream.WriteLn(AnsiString(List[I]));
-                FDirty := FALSE;        
             finally
                 TxtStream.Free;
             end;
@@ -495,8 +491,6 @@ begin
         Strings[I] := S
     else
         Strings.Add(S);
-    if not FDirty then
-        FDirty := TRUE;
 end;
 
 

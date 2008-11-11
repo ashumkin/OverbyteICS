@@ -130,7 +130,7 @@ begin
         DnsEdit.Text  := IniFile.ReadString(SectionData, KeyDns,  '193.121.171.135');
         DisplayMemo.Clear;
         Display(Trim(CopyRight));
-        IniFile.Destroy;
+        IniFile.Free;
     end;
 end;
 
@@ -147,7 +147,8 @@ begin
     IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
     IniFile.WriteString(SectionData, KeyName, NameEdit.Text);
     IniFile.WriteString(SectionData, KeyDns,  DnsEdit.Text);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

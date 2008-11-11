@@ -364,7 +364,7 @@ begin
                 Boolean(IniFile.ReadInteger(SectionData, KeyDisplayHeader, 0));
         WriteLogFileCheckBox.Checked :=
                 Boolean(IniFile.ReadInteger(SectionData, KeyLogToFile, 0));
-        IniFile.Destroy;
+        IniFile.Free;
         { Start log file }
         if WriteLogFileCheckBox.Checked then begin
             OpenLogFile;
@@ -429,7 +429,8 @@ begin
                                         Ord(DisplayHeaderCheckBox.Checked));
     IniFile.WriteInteger(SectionData,   KeyLogToFile,
                                         Ord(WriteLogFileCheckBox.Checked));
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
     CloseLogFile;
 end;
 

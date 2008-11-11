@@ -413,6 +413,7 @@ begin
     IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
     IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+    IniFile.UpdateFile;
     IniFile.Free;
 end;
 

@@ -420,6 +420,7 @@ begin
         IniFile.WriteInteger(SectionData,   KeyDisplaySslInfo,
                                             Ord(DisplaySslInfoCheckBox.Checked));
         IniFile.WriteInteger(SectionData,   KeyRenegInterval, FSslRenegotiationInterval);
+        IniFile.UpdateFile;
         IniFile.Free;
     except
         { Ignore any exception when we are closing }
@@ -474,6 +475,7 @@ begin
     IniFile.WriteInteger(SectionData,   KeyVerifyPeer,  Ord(VerifyPeerCheckBox.Checked));
     IniFile.WriteString(SectionData,    KeySslConnPort, SslTypeConnPortEdit.Text);
     IniFile.WriteInteger(SectionData,   KeyRenegInterval, FSslRenegotiationInterval);
+    IniFile.UpdateFile;
     IniFile.Free;
 end;
 

@@ -198,6 +198,7 @@ begin
     IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
     IniFile.WriteString(SectionData,    KeyFile,   FileEdit.Text);
     IniFile.WriteString(SectionData,    KeyText,   TextEdit.Text);
+    IniFile.UpdateFile;
     IniFile.Free;
 end;
 

@@ -41,10 +41,14 @@ begin
     if not FInitialized then begin
         FInitialized := TRUE;
         IniFile := TIcsIniFile.Create(frmPemTool1.FIniFileName);
-        Width   := IniFile.ReadInteger(SectionDisplayWindow, KeyWidth,  Width);
-        Height  := IniFile.ReadInteger(SectionDisplayWindow, KeyHeight, Height);
-        Top     := IniFile.ReadInteger(SectionDisplayWindow, KeyTop,
-                                      (Screen.Height - Height) div 2); 
+        try
+            Width   := IniFile.ReadInteger(SectionDisplayWindow, KeyWidth,  Width);
+            Height  := IniFile.ReadInteger(SectionDisplayWindow, KeyHeight, Height);
+            Top     := IniFile.ReadInteger(SectionDisplayWindow, KeyTop,
+                                      (Screen.Height - Height) div 2);
+        finally
+            IniFile.Free;
+        end;
     end;
 end;
 
@@ -57,6 +61,8 @@ begin
     IniFile.WriteInteger(SectionDisplayWindow, KeyLeft,        Left);
     IniFile.WriteInteger(SectionDisplayWindow, KeyWidth,       Width);
     IniFile.WriteInteger(SectionDisplayWindow, KeyHeight,      Height);
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 end.

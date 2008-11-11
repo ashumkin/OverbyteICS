@@ -250,6 +250,7 @@ begin
     IniFile.WriteString(SectionData,  KeyUserName, UserNameEdit.Text);
     IniFile.WriteString(SectionData,  KeyPassword, PassWordEdit.Text);
     IniFile.WriteInteger(SectionData, KeyAuth,     AuthComboBox.ItemIndex);
+    IniFile.UpdateFile;
     IniFile.Free;
 end;
 

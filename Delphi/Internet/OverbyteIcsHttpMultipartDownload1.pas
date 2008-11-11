@@ -186,7 +186,7 @@ begin
                                                  KeyUseProxy, Ord(httpProxyNone)));
         PartCountEdit.Text := IniFile.ReadString(SectionData,
                                                  KeyPartCount, '10');
-        IniFile.Destroy;
+        IniFile.Free;
         DisplayMemo.Clear;
         CountLabel.Caption    := '';
         AuthNoneRadioButton.Checked   := FServerAuth =  httpAuthNone;
@@ -229,7 +229,8 @@ begin
     IniFile.WriteInteger(SectionData, KeyDoAuth,    Ord(FServerAuth));
     IniFile.WriteInteger(SectionData, KeyUseProxy,  Ord(FProxyMode));
     IniFile.WriteString(SectionData,  KeyPartCount, Trim(PartCountEdit.Text));
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

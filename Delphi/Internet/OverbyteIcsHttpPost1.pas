@@ -122,7 +122,7 @@ begin
                                                  'Doe');
         ActionURLEdit.Text := IniFile.ReadString(SectionData, KeyActionURL,
                                   'http://localhost/cgi-bin/FormHandler');
-        IniFile.Destroy;
+        IniFile.Free;
         DisplayMemo.Clear;
     end;
 end;
@@ -141,7 +141,8 @@ begin
     IniFile.WriteString(SectionData, KeyFirstName, FirstNameEdit.Text);
     IniFile.WriteString(SectionData, KeyLastName,  LastNameEdit.Text);
     IniFile.WriteString(SectionData, KeyActionURL, ActionURLEdit.Text);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 

@@ -191,7 +191,7 @@ begin
                                                     KeyPassive, TRUE);
         BinaryCheckBox.Checked  := IniFile.ReadBool(SectionData,
                                                     KeyBinary, TRUE);
-        IniFile.Destroy;
+        IniFile.Free;
         DisplayMemo.Clear;
     end;
 end;
@@ -218,7 +218,8 @@ begin
     IniFile.WriteString(SectionData, KeyAssumedSize, AssumedSizeEdit.Text);
     IniFile.WriteBool(SectionData, KeyPassive, PassiveCheckBox.Checked);
     IniFile.WriteBool(SectionData, KeyBinary,  BinaryCheckBox.Checked);
-    IniFile.Destroy;
+    IniFile.UpdateFile;
+    IniFile.Free;
 end;
 
 
