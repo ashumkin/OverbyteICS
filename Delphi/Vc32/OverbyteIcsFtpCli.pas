@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.00
+Version:      V7.01
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -62,7 +62,7 @@ Methods:
   Abort      - Disconnect (close connection) immediately
   AbortXfer  - Abort file transfer without disconnecting.
                Warning: LocalFilename property is lost after this command.
-  Pwd        - Get current working directory into 
+  Pwd        - Get current working directory into DirResult
   Cwd        - Change Working Directory to HostDirName
   CDup       - Change to parent directory
   TypeSet    - Set type for file transfert (see Binary property)
@@ -105,7 +105,7 @@ Methods:
   Syst       - Get system information from the server
   System     - Connect, Cwd, Get system information from the server & Quit
 
-  Size       - Get file size of HostFileName to SizeResult 
+  Size       - Get file size of HostFileName to SizeResult
   FileSize   - Connect, Cwd, get file size & Quit
 
   Quote      - Send literal command (use LocalFileName as command to send)
@@ -147,6 +147,10 @@ Methods:
   Xcrc       - Get CRC32 hash sum of HostFileName from PosStart to PosEnd to CRCResult,
                only supported if ftpFeatXCrc in SupportedExtensions - V2.107
 
+  ModeZ      - Sets Z compression or no compression, for TransferMode as
+               ftpTransModeStream or ftpTransModeZDeflate
+               only supported if ftpFeatModeZ in SupportedExtensions - V2.103
+
   Clnt       - Set Client Id string to ClientId,
                only supported if ftpFeatClnt in SupportedExtensions - V2.213
 
@@ -173,18 +177,32 @@ Methods:
   SiteMsg    - Send a message to the server from HostFileName,
                only supported if ftpFeatSiteMsg in SupportedExtensions - V2.213
 
-  SiteCmlsd  - Download a directory listing of HostFileName to LocalFileName or LocalStream
+  SiteCmlsd and XCmlsd - Download a directory listing of HostFileName to LocalFileName or LocalStream
                The path argument may be followed by optional argument -R or -subdirs
                for recursive directories, the path may be quoted if it includes spaces
                Same arguments as SiteDmlsd but returns listing on control channel,
-               only supported if ftpFeatSiteDmlsd in SupportedExtensions - V2.213
+               SiteCmlsd only supported if ftpFeatSiteDmlsd in SupportedExtensions - V2.213
+               XCmlsd only supported if ftpFeatSiteDmlsd in SupportedExtensions - V7.01
 
-  SiteDmlsd  - Download a directory listing of HostFileName to LocalFileName or LocalStream
+  SiteDmlsd and XDmlsd - Download a directory listing of HostFileName to LocalFileName or LocalStream
                The path argument may be followed by optional argument -R or -subdirs
                for recursive directories, the path may be quoted if it includes spaces
                Same arguments as SiteCmlsd but returns listing on data channel
-               only supported if ftpFeatSiteDmlsd in SupportedExtensions - V2.213
+               SiteDmlsd only supported if ftpFeatSiteDmlsd in SupportedExtensions - V2.213
+               XDmlsd only supported if ftpFeatSiteDmlsd in SupportedExtensions - V7.01
 
+  Host       - Connect to domain (or IP address) specified in HostName (send before logon)
+               Only supported if ftpFeatHost in SupportedExtensions, but can not be
+                 sent once FEAT has been returned unless Rein sent first  - V7.01
+
+  ConnectHost - Open the connection, send host, username, password and account
+
+  Rein       - Re-initialise connection so logon process restarted and Host or User can
+                 be sent again (in the original FTP RFC so should be supported by all servers)
+
+  Lang       - Request server returns messages in language specified in Language (default EN)
+               Only supported if ftpFeatLang in SupportedExtensions, with list of
+                 allowed languages returned in FLangSupport, ie EN, ES, FR, GE with * the current language
 
 
 
@@ -238,6 +256,19 @@ Microsoft IIS/6 in Windows 2003
     MDTM
 211 END
 
+Microsoft FTP Service IIS/7 in Windows 2008
+211-Extended features supported:
+ LANG EN*
+ UTF8
+ AUTH TLS;TLS-C;SSL;TLS-P;
+ PBSZ
+ PROT C;P;
+ CCC
+ HOST
+ SIZE
+ MDTM
+211 END
+
 RhinoSoft Serv-U FTP 4.1
 211-Extension supported
  MDTM
@@ -265,6 +296,35 @@ RhinoSoft Serv-U FTP Server v6.1
  MLST Type*;Size*;Create;Modify*;Win32.ea*;
 211 End
 
+RhinoSoft Serv-U FTP Server v7.3
+211-Extensions supported
+    UTF8
+    OPTS MODE;MLST;UTF8
+    CLNT
+    CSID Name; Version;
+    HOST domain
+    SITE PSWD;SET;INDEX;ZONE;CHMOD;MSG;EXEC;HELP
+    AUTH TLS;SSL;TLS-C;TLS-P;
+    PBSZ
+    PROT
+    CCC
+    SSCN
+    RMDA directoryname
+    DSIZ
+    AVBL
+    MODE Z
+    THMB BMP|JPEG|GIF|TIFF|PNG max_width max_height pathname
+    REST STREAM
+    SIZE
+    MDTM
+    MDTM YYYYMMDDHHMMSS[+-TZ];filename
+    MFMT
+    MFCT
+    MFF Create;Modify;
+    XCRC filename;start;end
+    MLST Type*;Size*;Create;Modify*;Perm;Win32.ea;Win32.dt;Win32.dl
+211 End (for details use "HELP commmand" where command is the command of interest)
+
 Ipswich WS_FTP Server 3.14
 211-Extensions supported
  SIZE
@@ -277,6 +337,25 @@ Ipswich WS_FTP Server 3.14
  AUTH SSL;TLS-P;
  PBSZ
  PROT C;P;
+211 end
+
+WS_FTP Server 6.1.1
+211-Extensions supported
+    SIZE
+    XMD5
+    XSHA1
+    XSHA256
+    XSHA512
+    XQUOTA
+    LANG EN, ES, FR, GE
+    MDTM
+    MLST size*;type*;perm*;create*;modify*;
+    REST STREAM
+    TVFS
+    UTF8
+    AUTH SSL;TLS-P;
+    PBSZ
+    PROT C;P;
 211 end
 
 Gene6 FTP Server v3.6.0
@@ -299,6 +378,31 @@ Gene6 FTP Server v3.6.0
  UTF8
  XCRC "filename" SP EP
  XMD5 "filename" SP EP
+211 End.
+
+Gene6 FTP Server v3.10.0
+211-Extensions supported:
+ AUTH TLS
+ CCC
+ CLNT
+ CPSV
+ EPRT
+ EPSV
+ MDTM
+ MFCT
+ MFMT
+ MLST type*;size*;create;modify*;
+ PASV
+ PBSZ
+ PROT
+ REST STREAM
+ SIZE
+ SSCN
+ TVFS
+ UTF8
+ XCRC "filename" SP EP
+ XMD5 "filename" SP EP
+ XSHA1 "filename" SP EP
 211 End.
 
 Unknown Unix Daemon
@@ -375,6 +479,34 @@ Internet Component Suite TFtpServer V1.54 and later (with SSL)
   PBSZ
 211 END
 
+Internet Component Suite TFtpServer V7.00 and later (with SSL)
+211-Extensions supported:
+  HOST
+  SIZE
+  REST STREAM
+  MDTM
+  MDTM YYYYMMDDHHMMSS[+-TZ] filename
+  MLST size*;type*;perm*;create*;modify*;
+  MFMT
+  MD5
+  XCRC "filename" start end
+  XMD5 "filename" start end
+  CLNT
+  SITE INDEX;ZONE;MSG;EXEC;PSWD;CMLSD;DMLSD
+  COMB
+  MODE Z
+  XCMLSD
+  XDMLSD
+  UTF8
+  LANG EN*
+  OPTS MODE;UTF8;
+  AUTH TLS;SSL;TLS-P;TLS-C
+  CCC
+  PROT C;P;
+  PBSZ
+211 END
+
+
 The extensions supported by V2.94 of this component are:
 
 MLST - Machine Listing, two listing commands:
@@ -393,6 +525,26 @@ MDTM YYYYMMDDHHMMSS[+-TZ] filename - Set File Modification Time after
                                      upload (+0 is UTC)
 MFMT - Modify File Modification Time after upload (UTC)
 MD5  - Check MD5 hash sum for specified file, used to check for corruption
+
+and by V7.01 and later:
+
+XCRC - Check CRC32B hash sum for specified file, or part file
+XMD5 - Check MD5 hash sum for specified file, or part file
+CLNT - Send client information to server
+SITE INDEX - simple listing of file names
+SITE ZONE - set time zone
+SITE MSG - send message to server
+SITE EXEC - run program on server
+SITE PSWD - change user's password
+SITE CMLSD - extended directory listing with sub-directories, on control channel
+SITE DMLSD - extended directory listing with sub-directories
+COMB - combine two or more files together
+MODE - set Z compression or no compression
+XCMLSD - extended directory listing with sub-directories, on control channel
+XDMLSD - extended directory listing with sub-directories
+UTF8 - server support UTF8 encoding, use OPTS UTF8 ON/OFF to enable or disable,
+       beware some servers ignore ON/OFF and always turn UTF8 on
+LANG - set server language for messages
 
 
 History:
@@ -706,7 +858,7 @@ Sept 4, 2005 V2.100 fixed a long term problem with the data connection being
              improved TransfertStats, allow wrap at 49 days, don't show 0 secs or silly bps
 Sept 6, 2005 V2.101 64-bit support for Delphi 6 and later, for transfers larger
              than 2 gigs.  Note only LocalFileName mode supports resume over 2 gigs,
-             due to limitation in TStream.  Check if seek fails and report error. 
+             due to limitation in TStream.  Check if seek fails and report error.
              Report real error opening local file (might be seek range error, not IO)
              by Angus Robertson, angus@magsys.co.uk
 Dec 15, 2005 V2.102 A. Garrels,  missing SSL-properties added to
@@ -772,7 +924,7 @@ Jun 25, 2008 V6.02 A. Garrels, ZlibOnProgress needs to be compiled conditionally
 Jun 28, 2008 v6.03 **Breaking Change** enum item "sslTypeImplizit" renamed to
              "sslTypeImplicit".
 May 01, 2008 V6.04 A.Garrels added function LocalStreamWriteString to prepare
-             code for Unicode changed some types from char to AnsiChar.             
+             code for Unicode changed some types from char to AnsiChar.
 May 02, 2008 V6.05 A.Garrels changed code to get the temporary directory for
              ZLIB in TCustomFtpCli.Create.
 May 15, 2008 V6.06 A.Garrels added OverbyteIcsLibrary.pas to uses clause.
@@ -783,6 +935,16 @@ Oct 03, 2008 V6.10 A. Garrels moved IsDigit, IsCRLF, IsSpaceOrCRLF and StpBlk
 Nov 10, 2008 V7.00 Angus removed old compiler code
              increased buffer sizes from 1460 and 4096, both to 32768
              fixed SOCKS settings never implemented properly and lost after one connection
+Nov 14, 2008 V7.01 Angus added UTF-8 and code page support, full Unicode is only availble
+               if built with Delphi 2009 or later.  To support UTF-8, first send
+               the FEAT command and check ftpFeatUtf8 in SupportedExtensions, then send
+               OPTS command with NewOpts 'UTF8 ON' and set CodePage to CP_UTF8.  The
+               directory stream will be UTF-8 and needs translation in the application.
+             updated more FEAT comments for various FTP servers and more command usage
+             changed MdtmyyAsync so it no longer adds +0 since newer Serv-U then fails
+             added FTP commands HOST hostname (before logon) and REIN (re-initialise connection)
+             added ConnectHost that does Open/Host/User/Pass
+             added XCMLSD, XDMLSD and LANG commands and check matching FEAT options
 
 
 
@@ -866,9 +1028,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 700;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.00 ';
-  FtpClientId : String = 'ICS FTP Client V7.00 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 701;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.01 ';
+  FtpClientId : String = 'ICS FTP Client V7.01 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -888,7 +1050,8 @@ type
                      ftpFeatXCrc,  ftpFeatXMD5,  ftpFeatSitePaswd,          { V2.113 }
                      ftpFeatSiteExec, ftpFeatSiteIndex, ftpFeatSiteZone,    { V2.113 }
                      ftpFeatSiteMsg, ftpFeatSiteCmlsd, ftpFeatSiteDmlsd,    { V2.113 }
-                     ftpFeatClnt, ftpFeatComb);                             { V2.113 }
+                     ftpFeatClnt, ftpFeatComb, ftpFeatUtf8, ftpFeatLang,    { V2.113 }
+                     ftpFeatHost, ftpFeatXCmlsd, ftpFeatXDmlsd);            { V7.01 }
   TFtpExtensions  = set of TFtpExtension; { V2.94 which features server supports }
   TFtpTransMode   = (ftpTransModeStream, ftpTransModeZDeflate) ;  { V2.102 }
   TZStreamState   = (ftpZStateNone, ftpZStateSaveDecom, ftpZStateSaveComp{,
@@ -920,7 +1083,9 @@ type
                      ftpClntAsync,     ftpSitePaswdAsync, ftpSiteExecAsync,    { V2.113 }
                      ftpSiteIndexAsync, ftpSiteZoneAsync, ftpSiteMsgAsync,     { V2.113 }
                      ftpSiteCmlsdAsync, ftpSiteDmlsdAsync, ftpAlloAsync,       { V2.113 }
-                     ftpCombAsync,     ftpXMd5Async );                         { V2.113 }
+                     ftpCombAsync,     ftpXMd5Async,      ftpConnectHostAsync, { V2.113 }
+                     ftpReinAsync,     ftpHostAsync,      ftpLangAsync,        { V6.09 }
+                     ftpXCmlsdAsync,   ftpXDmlsdAsync);                        { V7.01 }
   TFtpFct         = (ftpFctNone,       ftpFctOpen,       ftpFctUser,
                      ftpFctPass,       ftpFctCwd,        ftpFctSize,
                      ftpFctMkd,        ftpFctRmd,        ftpFctRenFrom,
@@ -937,7 +1102,9 @@ type
                      ftpFctXCrc,       ftpFctClnt,       ftpFctSitePaswd,     { V2.113 }
                      ftpFctSiteExec,   ftpFctSiteIndex,  ftpFctSiteZone,      { V2.113 }
                      ftpFctSiteMsg,    ftpFctSiteCmlsd,  ftpFctSiteDmlsd,     { V2.113 }
-                     ftpFctAllo,       ftpFctComb,       ftpFctXMd5 );        { V2.113 }
+                     ftpFctAllo,       ftpFctComb,       ftpFctXMd5,          { V2.113 }
+                     ftpFctRein,       ftpFctHost,       ftpFctLang,          { V6.09 }
+                     ftpFctXCmlsd,     ftpFctXDmlsd);                         { V7.01 }
   TFtpFctSet      = set of TFtpFct;
   TFtpShareMode   = (ftpShareCompat,    ftpShareExclusive,
                      ftpShareDenyWrite, ftpShareDenyRead,
@@ -974,6 +1141,7 @@ type
   protected
     FHostName           : String;
     FPort               : String;
+    FCodePage           : Cardinal;
     FDataPortRangeStart : DWORD;  {JT}
     FDataPortRangeEnd   : DWORD;  {JT}
     FLastDataPort       : DWORD;  {JT}
@@ -1079,7 +1247,8 @@ type
     FSocksPort          : String;        { V7.00 }
     FSocksServer        : String;        { V7.00 }
     FSocksUserCode      : String;        { V7.00 }
-
+    FLanguage           : String;        { V7.01 language argment for LANG command }
+    FLangSupport        : String;        { V7.01 list of languages server supports }
 {$IFDEF USE_MODEZ}
     FZStreamState       : TZStreamState; { V2.102 current Zlib stream state }
   { FZStreamRec         : TZStreamRec;    V2.102 Zlib stream control record, used for Immediate }
@@ -1174,7 +1343,7 @@ type
     procedure   SetSocksServer(const NewValue: String);
     function    GetSocksServer: String;
     procedure   SetSocksUserCode(NewValue: String);
-    function    GetSocksUserCode: String;    }
+    function    GetSocksUserCode: String;     }
     procedure   SetPassive(NewValue: Boolean);
     procedure   AllocateMsgHandlers; override;
     procedure   FreeMsgHandlers; override;
@@ -1274,7 +1443,16 @@ type
     procedure   SiteCmlsdAsync;  virtual;    { V2.113  extended MLSD using control channel }
     procedure   SiteDmlsdAsync;  virtual;    { V2.113  extended MLSD using data channel }
     procedure   ExecSiteDmlsdAsync; virtual; { V2.113  internal use }
+    procedure   ExecXDmlsdAsync; virtual;    { V7.01   internal use }
+    procedure   ConnectHostAsync; virtual;   { V6.09   same as Connect but also sends Host  }
+    procedure   ReinAsync;       virtual;    { V6.09   re-initialize control connection  }
+    procedure   HostAsync;       virtual;    { V6.09   domain/hostname, usually sent before logon  }
+    procedure   LangAsync;       virtual;    { V7.01   set language for messages }
+    procedure   XCmlsdAsync;     virtual;    { V7.01   extended MLSD using control channel }
+    procedure   XDmlsdAsync;     virtual;    { V7.01   extended MLSD using data channel }
 
+    property    CodePage          : Cardinal             read  FCodePage
+                                                         write FCodePage;
     property    LastResponse      : String               read  FLastResponse;
     property    LastMultiResponse : String               read  FLastMultiResponse;  { V2.90  multiple lines }
     property    ErrorMessage      : String               read  FErrorMessage;
@@ -1376,8 +1554,11 @@ type
                                                          write FSocksUserCode;      { V7.001 }
     property Account              : String               read  FAccount
                                                          write FAccount;
-    property CloseEndSecs         : DWORD                read  FCloseEndSecs  { V2.100 }
+    property CloseEndSecs         : DWORD                read  FCloseEndSecs        { V2.100 }
                                                          write FCloseEndSecs;
+    property Language             : String               read  FLanguage
+                                                         write FLanguage;           { V7.01 }
+    property LangSupport          : String               read  FLangSupport;        { V7.01 }
     property OnDisplay            : TFtpDisplay          read  FOnDisplay
                                                          write FOnDisplay;
     property OnDisplayFile        : TFtpDisplay          read  FOnDisplayFile
@@ -1492,6 +1673,12 @@ type
     function    SiteMsg    : Boolean;    { V2.113  send message }
     function    SiteCmlsd  : Boolean;    { V2.113  extended MLSD using control channel }
     function    SiteDmlsd  : Boolean;    { V2.113  extended MLSD using data channel }
+    function    ConnectHost : Boolean;   { V6.09   same as connect but sends Host  }
+    function    Rein       : Boolean;    { V6.09   re-initialize control connection  }
+    function    Host       : Boolean;    { V6.09   domain/hostname, usually sent before logon  }
+    function    Lang       : Boolean;    { V7.01   set language for messages }
+    function    XCmlsd     : Boolean;    { V7.01   extended MLSD using control channel }
+    function    XDmlsd     : Boolean;    { V7.01   extended MLSD using data channel }
 {$IFDEF NOFORMS}
     property    Terminated         : Boolean        read  FTerminated
                                                     write FTerminated;
@@ -1503,9 +1690,10 @@ type
     property MultiThreaded : Boolean read FMultiThreaded write FMultiThreaded;
     property HostName;
     property Port;
+    property CodePage;
     property DataPortRangeStart; {JT}
     property DataPortRangeEnd; {JT}
-    property LocalAddr; {bb}    
+    property LocalAddr; {bb}
     property UserName;
     property PassWord;
     property HostDirName;
@@ -1523,6 +1711,7 @@ type
     property SocksServer;
     property SocksUserCode;
     property Account;
+    property Language;
     property OnDisplay;
     property OnDisplayFile;
     property OnCommand;
@@ -1761,6 +1950,11 @@ begin
       ftpAlloAsync: result:='AlloAsync';
       ftpCombAsync: result:='CombAsync';
       ftpXMd5Async: result:='XMd5Async';
+      ftpReinAsync: result:='ReinAsync';
+      ftpHostAsync: result:='HostAsync';
+      ftpLangAsync: result:='LangAsync';
+      ftpXCmlsdAsync: result:='XCmlsdAsync';
+      ftpXDmlsdAsync: result:='XDmlsdAsync';
 {$IFDEF USE_SSL}
       ftpCccAsync: result:='CCCAsync';
       ftpAuthAsync: result:='AuthAsync';
@@ -1962,12 +2156,13 @@ begin
     FCloseEndSecs       := 5;       { V2.100 }
     FTransferMode       := FtpTransModeZDeflate ; { V2.102 new tranfer mode }
     FCurrTransMode      := FtpTransModeStream ;   { V2.102 current transfer mode }
-    FNewOpts            := 'MODE Z LEVEL 8';       { V2.102 argument for OPTS command }
+    FNewOpts            := 'MODE Z LEVEL 8';       { V2.102 default argument for OPTS command }
     FProxyPort          := 'ftp';
     FState              := ftpReady;
     FShareMode          := fmShareExclusive;
     FConnectionType     := ftpDirect;
     FProxyServer        := '';    { Should Socks properties be set to '' as well? }
+    FSocksServer        := '';
     FOptions            := [ftpAcceptLF];
     FLocalAddr          := '0.0.0.0'; {bb}
     FKeepAliveSecs      := 0; {V2.107 for control socket only }
@@ -1995,6 +2190,8 @@ begin
 {$IFDEF USE_SSL}
     FControlSocket.SslEnable          := FALSE;
 {$ENDIF}
+    FCodePage := CP_ACP;
+    FLanguage := 'EN';    { V7.01 or EN-uk, FR, etc, only for messages }
 end;
 
 
@@ -2268,7 +2465,7 @@ end;
 procedure TCustomFtpCli.SetLocalFileName(FileName: String);
 begin
     FLocalFileName := FileName;
-    if FileName <> '' then
+    if Length(FileName) > 0 then
         FStreamFlag := FALSE;
 end;
 
@@ -2279,7 +2476,7 @@ begin
     FLocalStream := Stream;
     FStreamFlag  := (Stream <> nil);
     if FStreamFlag then
-        FLocalFileName := '';
+        SetLength(FLocalFileName, 0);
 end;
 
 
@@ -2390,12 +2587,19 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SendCommand(Cmd : String);
+var
+    CmdUtf8: RawByteString;
 begin
     if Assigned(FOnCommand) then
         FOnCommand(Self, Cmd);
     TriggerDisplay('> ' + Cmd);
+    {$IFDEF COMPILER12_UP}
+    CmdUtf8 := UnicodeToAnsi(Cmd, FCodePage);             { V7.01 }
+    {$ELSE}
+    CmdUtf8 := ConvertCodepage(Cmd, CP_ACP, FCodePage);   { V7.01 }
+    {$ENDIF}
     if FControlSocket.State = wsConnected then
-        FControlSocket.SendStr(Cmd + #13 + #10)
+        FControlSocket.SendStr(CmdUtf8 + #13#10)  { V7.01 }
     { Quit when not connected never returned. }                { 01/14/06 AG}
     else begin
         if cmd = 'QUIT' then
@@ -2464,6 +2668,7 @@ begin
     FDnsResult           := '';
     FMLSTFacts           := '';   { V2.90 supported MLST facts }
     FSupportedExtensions := [];   { V2.94 supported extensions }
+    FLangSupport         := '';   { V7.01 supported languages }
 
 { angus V7.00 always set proxy and SOCKS options before opening socket  }
     FControlSocket.SocksAuthentication := socksNoAuthentication;
@@ -2721,7 +2926,6 @@ begin
         HandleError('HostDirName empty');
         Exit;
     end;
-
     FFctPrv := ftpFctCwd;
     ExecAsync(ftpCwdAsync, 'CWD '+ FHostDirName, [200, 250, 257], nil);
 end;
@@ -2753,7 +2957,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.PassAsync;
 var
-    NewPass: string;
+    NewPass: String;
 begin
     if Length(FPassword) <= 0 then begin
         HandleError('Password empty');
@@ -2982,7 +3186,7 @@ begin
         Exit;
     end;
     FFctPrv := ftpFctMdtmyy;
-    S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT) + '+0';  { no time offset=UTC }
+    S       := FormatDateTime('yyyymmddhhnnss', FRemFileDT) {+ '+0' }; // V7.01 latest Serv-U objects to +   { no time offset=UTC }
     ExecAsync(ftpMdtmyyAsync, 'MDTM ' + S + ' ' + FHostFileName, [213, 253], nil);  { V2.100 }
 end;
 
@@ -3119,6 +3323,44 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ReinAsync;     { V7.01   re-initialize control connection  }
+begin
+    FFctPrv := ftpFctRein;
+    ExecAsync(ftpReinAsync, 'REIN', [220], nil);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.HostAsync;     { V7.01   domain/hostname, usually sent before logon  }
+var
+    S: String;
+begin
+    FFctPrv := ftpFctHost;
+    if FDnsResult = FHostName then  { if host name was IP address, delimit it }
+        S := '[' + FHostName + ']'
+    else
+        S := FHostName;
+ { note: responses 504 and 530 are really domain not found but don't stop login }
+    ExecAsync(ftpHostAsync, 'HOST ' + S, [220,421,500,502,504,530,550], nil);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.LangAsync;     { V7.01   language for messages }
+begin
+    FFctPrv := ftpFctLang;
+    ExecAsync(ftpLangAsync, 'LANG ' + FLanguage, [200], nil);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.XCmlsdAsync;      { V7.01  extended MLSD using control channel }
+begin
+
+{ data will be returned on control channel so we need stream to write it }
+    FFctPrv := ftpFctXCmlsd;
+    CreateLocalFileStream;
+    ExecAsync(ftpXCmlsdAsync, 'XCMLSD ' + FHostFileName, [200,250], nil);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.AbortAsync;
 {var
     bFlag : Boolean; }                                             { 2.106 }
@@ -3185,6 +3427,13 @@ begin
         FFctPrv := ftpFctOpen;
         FFctSet := FFctSet - [FFctPrv];
         OpenAsync;
+        Exit;
+    end;
+
+    if ftpFctHost in FFctSet then begin             { V7.01 }
+        FFctPrv := ftpFctHost;
+        FFctSet := FFctSet - [ftpFctHost];
+        HostAsync;
         Exit;
     end;
 
@@ -3428,6 +3677,13 @@ begin
         Exit;
     end;
 
+    if ftpFctXDmlsd in FFctSet then begin      { V7.01 }
+        FFctPrv := ftpFctXDmlsd;
+        FFctSet := FFctSet - [FFctPrv];
+        ExecXDmlsdAsync;
+        Exit;
+    end;
+
     if ftpFctClnt in FFctSet then begin         { V2.113 }
         FFctPrv := ftpFctClnt;
         FFctSet := FFctSet - [FFctPrv];
@@ -3479,6 +3735,13 @@ begin
                     ftpFctAcct]);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ConnectHostAsync;       { V7.01 } 
+begin
+    HighLevelAsync(ftpConnectHostAsync,
+                   [ftpFctOpen, ftpFctHost, ftpFctAuth, ftpFctUser,
+                    ftpFctPass, ftpFctAcct]);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ReceiveAsync;
@@ -3705,19 +3968,23 @@ begin
                    [ftpFctPort, ftpFctSiteDmlsd]);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.XDmlsdAsync;  { V7.01  extended MLSD using data channel }
+begin
+    HighLevelAsync(ftpXDmlsdAsync, [ftpFctPort, ftpFctXDmlsd]);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.DataSocketGetDataAvailable(
     Sender  : TObject;
     ErrCode : word);
-const
-    OutBufSize = 32768 ;
 var
     Len     : Integer;
-    Buffer  : array [1..4096] of AnsiChar;  { Should use a dynamic buffer instead... }
+    Buffer  : array [1..FTP_RCV_BUF_SIZE] of AnsiChar;  { V7.01 Should use a dynamic buffer instead... }
     aSocket : TWSocket;
     I, J    : Integer;
-    Line    : AnsiString;
+    Line    : RawByteString;
+    ACodePage : Cardinal;
 begin
     if not Progress then
         Exit;
@@ -3777,13 +4044,22 @@ begin
         FByteCount := FByteCount + Len;
 
         { If requested to display the received data, do it line by line }
+        { V7.01 assume this function is only being used to view directory listings, which may be UTF-8 }
         if FDisplayFileFlag then begin
+            if (FCodePage = CP_UTF8) and (not IsUtf8Valid(Line)) then
+                ACodePage := CP_ACP
+            else
+                ACodePage := FCodePage;
             case FDisplayFileMode of
             ftpBinary:
                 begin
                     SetLength(Line, Len);
                     Move(Buffer[1], Line[1], Length(Line));
-                    TriggerDisplayFile(String(Line));
+                {$IFDEF COMPILER12_UP}
+                    TriggerDisplayFile(AnsiToUnicode(Line, ACodePage));
+                {$ELSE}
+                    TriggerDisplayFile(ConvertCodepage (Line, ACodePage, CP_ACP));
+                {$ENDIF}
                 end;
             ftpLineByLine:
                 if Len > 0 then begin
@@ -3797,7 +4073,11 @@ begin
                         SetLength(Line, j - 1);
                         if Length(Line) > 0 then
                             Move(Buffer[i - j + 1], Line[1], Length(Line));
-                        TriggerDisplayFile(String(Line));
+                    {$IFDEF COMPILER12_UP}
+                        TriggerDisplayFile(AnsiToUnicode(Line, ACodePage));
+                    {$ELSE}
+                        TriggerDisplayFile(ConvertCodepage (Line, ACodePage, CP_ACP));
+                    {$ENDIF}
                         while (i <= Len) and ((Buffer[i] = #10) or (Buffer[i] = #13)) do
                             i := i + 1;
                     end;
@@ -4277,6 +4557,12 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ExecXDmlsdAsync;       { V7.01 }
+begin
+    DoGetAsync(ftpXDmlsdAsync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetShareMode(newValue : TFtpShareMode);
 begin
 {$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
@@ -4518,7 +4804,7 @@ var
     I : Integer;
     Ticks: String;
 begin
-    Result := Lowercase (S);
+    Result := AnsiLowercase (S);
     if Length(Result) = 0 then Result := 'temp'; { might be saving to stream only }
     for I := 1 to Length(Result) do begin
         if (Result [I] = '\') or (Result [I] = '.') or
@@ -4561,8 +4847,9 @@ begin
     ftpGetAsync:       FGetCommand := 'RETR';
     ftpDirAsync:       FGetCommand := 'LIST';
     ftpLsAsync:        FGetCommand := 'NLST';
-    ftpMlsdAsync:      FGetCommand := 'MLSD';    { V2.90 }
-    ftpSiteDmlsdAsync: FGetCommand := 'SITE DMLSD';    { V2.113 }
+    ftpMlsdAsync:      FGetCommand := 'MLSD';         { V2.90 }
+    ftpSiteDmlsdAsync: FGetCommand := 'SITE DMLSD';   { V2.113 }
+    ftpXDmlsdAsync:    FGetCommand := 'XDMLSD';       { V7.01 }
     end;
 
   { V2.111 never resume directory listings }
@@ -5249,6 +5536,8 @@ var
     I, J : Integer;
     p    : PChar;
     Feat : String;
+    ACodePage : Cardinal;
+    Utf8Response: RawByteString;  { V7.01 }
 const
     NewLine =  #13#10 ;
 begin
@@ -5282,13 +5571,29 @@ begin
             break;
         if I > FReceiveLen then
             break;
-        FLastResponse := Copy(FReceiveBuffer, 1, I - 1);
-        { Remove trailing control chars }
-        while (Length(FLastResponse) > 0) and
-              IsCRLF(FLastResponse[Length(FLastResponse)]) do
-             SetLength(FLastResponse, Length(FLastResponse) - 1);
+        Utf8Response := Copy(FReceiveBuffer, 1, I);   { V7.01 keep it write to stream  }
+        { Remove trailing control chars, V7.01 before translating UTF8 to Unicode or ANSI  }
+        while (Length(Utf8Response) > 0) and
+              IsCRLF(Utf8Response[Length(Utf8Response)]) do
+             SetLength(Utf8Response, Length(Utf8Response) - 1);
+        { translate UTF-8 or ANSI to local codepage }
+        if (FCodePage = CP_UTF8) and (not IsUtf8Valid(@Utf8Response[1], Length(Utf8Response))) then
+            ACodePage := CP_ACP
+        else
+            ACodePage := FCodePage;
+    {$IFDEF COMPILER12_UP}
+        { Calling MultiByteToWideChar rather than AnsiToUnicode saves one string copy }
+        Len := MultiByteToWideChar(ACodePage, 0, @Utf8Response[1], Length(Utf8Response), nil, 0);
+        SetLength(FLastResponse, Len);
+        if Len > 0 then
+            MultiByteToWideChar(ACodePage, 0, @Utf8Response[1], Length(Utf8Response),
+                                                                    Pointer(FLastResponse), Len);
+    {$ELSE}
+        FLastResponse := ConvertCodepage (Utf8Response, ACodePage, CP_ACP);
+    {$ENDIF}
 
-        if not (FFctPrv in [ftpFctSiteCmlsd, ftpFctSiteIndex]) then begin  { V2.113 don't save SITE list commands, too long }
+        { V2.113 don't save SITE list commands, too long }
+        if not (FFctPrv in [ftpFctSiteCmlsd, ftpFctXCmlsd, ftpFctSiteIndex]) then begin
 
             { V2.90 some FTP responses are multiline, welcome banner, FEAT  }
             { command, keep them all but do not exceed 64KB to avoid DOS    }
@@ -5337,7 +5642,7 @@ begin
         else if FState = ftpWaitingResponse then begin
             if FFctPrv in [ftpFctFeat] then begin       { V2.90 supported extensions }
                 Feat := Trim (FLastResponse);
-                if (Pos ('MDTM YYYYMMDDHHMMSS[+-TZ]', Feat) = 1) then
+                if (Pos ('MDTM YYYYMMDDHHMMSS' {[+-TZ]'}, Feat) = 1) then  { V7.01 skip TZ part in case it disappears }
                         FSupportedExtensions := FSupportedExtensions + [ftpFeatMDTMYY];
                 if Feat = 'MDTM' then
                         FSupportedExtensions := FSupportedExtensions + [ftpFeatMDTM];
@@ -5398,10 +5703,20 @@ begin
                     if (Pos('DMLSD;', Feat) > 4) then
                         FSupportedExtensions := FSupportedExtensions + [ftpFeatSiteDmlsd];
                 end;
+                if Feat = 'UTF8' then
+                    FSupportedExtensions := FSupportedExtensions + [ftpFeatUtf8];   { 7.01 }
+                if Feat = 'HOST' then
+                    FSupportedExtensions := FSupportedExtensions + [ftpFeatHost];   { 7.01 }
+                if Feat = 'LANG' then begin
+                    FSupportedExtensions := FSupportedExtensions + [ftpFeatLang];   { 7.01 }
+                    if Length (Feat) > 6 then FLangSupport := Trim (Copy (Feat, 6, 99));
+                end;
+                if Feat = 'XCMLSD' then
+                    FSupportedExtensions := FSupportedExtensions + [ftpFeatXCmlsd]; { 7.01 }
+                if Feat = 'XDMLSD' then
+                    FSupportedExtensions := FSupportedExtensions + [ftpFeatXDmlsd]; { 7.01 }
            { Other extensions which are currently being ignored
-             LANG EN*
-             TVFS
-             UTF8 }
+             TVFS }
             end;
             if FFctPrv in [ftpFctMlst] then begin       { V2.90 response to MLST command }
                 if (Length (FLastResponse) > 4) and (FStatusCode = 250) then begin
@@ -5409,19 +5724,16 @@ begin
                         FRemFacts := Trim (FLastResponse);
                 end;
             end;
-        { V2.113 save response to SITE CMLST and SITE INDEX commands to stream }
-            if (FFctPrv in [ftpFctSiteCmlsd, ftpFctSiteIndex]) then begin
+        { V2.113 save response to SITE CMLSD, XCMLSD and SITE INDEX commands to stream }
+            if (FFctPrv in [ftpFctSiteCmlsd, ftpFctXCmlsd, ftpFctSiteIndex]) then begin
                 p := GetInteger(@FLastResponse[1], FStatusCode);
                 if (FStatusCode in [200, 250]) and (p^ = '-') then begin
                     if FLocalStream <> nil then begin
                         try
-                            inc (p);
-                            LocalStreamWriteString(p, Length(FLastResponse) - 4);
-                            LocalStreamWriteString(PChar(NewLine), 2);
-                            {
-                            LocalStreamWrite(p^, Length(FLastResponse) - 4);
+                            { V7.01 write raw UTF8 or ANSI response to stream, less 200-  }
+                            if Length(Utf8Response) > 4 then
+                                LocalStreamWrite(Utf8Response[5], Length(Utf8Response) - 4);
                             LocalStreamWrite(NewLine, 2);
-                            }
                         except
                             TriggerDisplay('! Error writing local file');
                             Exit;
@@ -6065,6 +6377,42 @@ end;
 function  TFtpClient.SiteDmlsd  : Boolean;    { V2.113  extended MLSD using data channel }
 begin
     Result := Synchronize(SiteDmlsdASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.ConnectHost  : Boolean;     { V7.01   same as connect, but sends HOST  }
+begin
+    Result := Synchronize(ConnectHostASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.Rein  : Boolean;     { V7.01   re-initialize control connection  }
+begin
+    Result := Synchronize(ReinASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.Host  : Boolean;     { V7.01   domain/hostname, usually sent before logon  }
+begin
+    Result := Synchronize(HostASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.Lang    : Boolean;    { V7.01  language for messages }
+begin
+    Result := Synchronize(LangASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.XCmlsd  : Boolean;    { V7.01  extended MLSD using control channel }
+begin
+    Result := Synchronize(XCmlsdASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.XDmlsd  : Boolean;    { V7.01  extended MLSD using data channel }
+begin
+    Result := Synchronize(XDmlsdASync);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

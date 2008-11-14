@@ -235,7 +235,7 @@ object SslFtpServerForm: TSslFtpServerForm
     MaxClients = 0
     PasvPortRangeStart = 16384
     PasvPortRangeSize = 5
-    Options = [ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
+    Options = [ftpsCwdCheck, ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
     MD5UseThreadFileSize = 0
     TimeoutSecsLogin = 60
     TimeoutSecsIdle = 300
@@ -350,7 +350,7 @@ object SslFtpServerForm: TSslFtpServerForm
     MaxClients = 0
     PasvPortRangeStart = 16380
     PasvPortRangeSize = 5
-    Options = [ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
+    Options = [ftpsCwdCheck, ftpsHidePhysicalPath, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
     MD5UseThreadFileSize = 0
     TimeoutSecsLogin = 60
     TimeoutSecsIdle = 300
@@ -391,8 +391,8 @@ object SslFtpServerForm: TSslFtpServerForm
     OnSslVerifyPeer = SslFtpServer1SslVerifyPeer
     OnSslHandshakeDone = SslFtpServer1SslHandshakeDone
     FtpSslTypes = []
-    Left = 30
-    Top = 210
+    Left = 35
+    Top = 205
   end
   object IcsLogger1: TIcsLogger
     LogFileOption = lfoOverwrite

@@ -44,9 +44,8 @@
     <DCC_SYMBOL_LIBRARY>False</DCC_SYMBOL_LIBRARY>
     <DCC_SYMBOL_PLATFORM>False</DCC_SYMBOL_PLATFORM>
     <DCC_UNIT_PLATFORM>False</DCC_UNIT_PLATFORM>
-    <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
-    <DCC_DebugVN>True</DCC_DebugVN>
     <DCC_RemoteDebug>True</DCC_RemoteDebug>
+    <DCC_MapFile>3</DCC_MapFile>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>

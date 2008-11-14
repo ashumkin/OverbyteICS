@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.13
+Version:      1.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -67,6 +67,7 @@ Nov 6, 2008   V1.12 Angus, support server V7.00 which does not use OverbyteIcsFt
                    (next release will have a different file for each HOST supported)
                     Note: random account names are no longer allowed for this demo
 Nov 8, 2008, V1.13 Angus, support HOST and REIN(ialise) commands
+Nov 13, 2008, V1.14 Angus, ensure servers have ftpsCwdCheck set
 
 
 
@@ -98,8 +99,8 @@ uses
   OverbyteIcsWndControl, OverbyteIcsLibrary, OverbyteIcsOneTimePw;
 
 const
-  FtpServVersion      = 113;
-  CopyRight : String  = ' SslFtpServ (c) 1998-2008 F. Piette V1.13 ';
+  FtpServVersion      = 114;
+  CopyRight : String  = ' SslFtpServ (c) 1998-2008 F. Piette V1.14 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type

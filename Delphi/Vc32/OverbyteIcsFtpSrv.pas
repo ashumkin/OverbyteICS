@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.01
+Version:      7.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -341,6 +341,8 @@ Nov 8, 2008  V7.01 Angus added new commands HOST, REIN, LANG and OPTS UTF8 ON/OF
                 is expected to be using UTF8 (FileZilla Server default to on!)
              Note UTF8 only supports full Unicode with D2009, otherwise an ANSI CodePage
              Added new commands XCMLSD and XDMLSD same as SITE CMLSD and DMLSD
+Nov 13, 2008 V7.02 Angus ensure BuildDirectory adds errors to directory stream in UTF-8
+             default options for ftpsCwdCheck and ftpsCdupHome
 
 
 
@@ -435,8 +437,8 @@ uses
 
 
 const
-    FtpServerVersion         = 701;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.01 ';
+    FtpServerVersion         = 702;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.02 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -2077,7 +2079,7 @@ begin
     FAddr               := '0.0.0.0';
     FBanner             := msgDftBanner;
     FListenBackLog      := 5;
-    FOptions            := [ftpsThreadRecurDirs, ftpsSiteXmlsd] ;   { angus V1.54 }
+    FOptions            := [ftpsThreadRecurDirs, ftpsSiteXmlsd, ftpsCwdCheck, ftpsCdupHome] ;   { angus V7.02 }
     FMd5UseThreadFileSize   := 0;  { AG V1.50 }
     FTimeoutSecsLogin   := 60;      { angus V1.54 }
     FTimeoutSecsIdle    := 300;     { angus V1.54 }
@@ -4629,8 +4631,24 @@ procedure TFtpServer.BuildDirectory(
     Client     : TFtpCtrlSocket;
     var Path   : TFtpString);    { angus 1.54 now Client.Stream and Client.DirListType }
 var
-    Buf        : String;
     Allowed    : Boolean;
+
+    procedure WriteError (Error: string);        { V7.02 }
+    var
+        ACodePage  : Cardinal;
+    begin
+        ACodePage := Client.CodePage;
+        if ftpUtf8On in Client.Options then ACodePage := CP_UTF8;
+        {$IFDEF COMPILER12_UP}
+        Client.DataStreamWriteString(Error, ACodePage);
+        {$ELSE}
+        if ACodePage = CP_UTF8 then
+            Client.DataStreamWriteString(StringToUtf8(Error))
+        else
+            Client.DataStreamWriteString(Error);
+       {$ENDIF}
+    end;
+
 begin
 
  {  angus 1.54 hidden argument now parsed in CommandDirectory2,
@@ -4659,10 +4677,8 @@ begin
     Allowed := IsPathAllowed(Client, Client.DirListPath);                 { AG V1.52 }
     if not Allowed then { AG V1.52 }
     begin
-        Buf := FormatResponsePath(Client, Client.DirListPath) +
-                                                 ' Permission denied' + #13#10;
-        if Length (Path) >= 1 then
-                 Client.DataStreamWriteString(Path);   { angus 1.54 }{ AG V6.03 }
+        WriteError (FormatResponsePath(Client, Client.DirListPath) +
+                                                 ' Permission denied' + #13#10);      { V7.02 }
         Exit; //***
     end;
 
@@ -4693,8 +4709,7 @@ begin
     end;
 
     if Client.DataStream.Size = 0 then begin
-        Buf := FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10; { AG V1.52 }
-        Client.DataStreamWriteString(Buf);               { AG V6.03 }
+        WriteError (FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10);   { V7.02 }
     end;
 end;
 
