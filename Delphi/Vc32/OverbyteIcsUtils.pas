@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.21
+Version:      7.22
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -77,6 +77,7 @@ Oct 23, 2008 V7.21 A. Garrels added IcsStrNextChar, IcsStrPrevChar and
              IcsStrCharLength, see description below. Useful when converting
              a ANSI character stream with known code page to Unicode in
              chunks. Added a PAnsiChar overload to function AnsiToUnicode.
+Nov 13, 2008 v7.22 Arno add CharsetDetect, IsUtf8Valid use CharsetDetect.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -120,6 +121,7 @@ type
     UnicodeString = WideString;
     RawByteString = AnsiString;
 {$ENDIF}
+    TCharsetDetectResult = (cdrAscii, cdrUtf8, cdrUnknown);
 
     TIcsSearchRecW = record
         Time        : Integer;
@@ -181,7 +183,9 @@ type
     function  Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
     function  IsUtf8Valid(const Str: RawByteString): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload;
+    function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  CharsetDetect(const Buf: Pointer; Len: Integer): TCharsetDetectResult; overload;
+    function  CharsetDetect(const Str: RawByteString): TCharsetDetectResult; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar;
     function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar;
     function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
@@ -889,14 +893,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsUtf8Valid(const Str: RawByteString): Boolean;
-begin
-    Result := IsUtf8Valid(Pointer(Str), Length(Str));
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean;
+function CharsetDetect(const Buf: Pointer; Len: Integer): TCharsetDetectResult;
 var
     PEndBuf   : PByte;
     PBuf      : PByte;
@@ -905,6 +902,109 @@ var
     Trailing  : Integer; // trailing (continuation) bytes to follow
 begin
     PBuf        := Buf;
+    PEndBuf     := Pointer(Integer(Buf) + Len);
+    Byte2Mask   := $00;
+    Trailing    := 0;
+    Result      := cdrAscii;
+    while (PBuf <> PEndBuf) do
+    begin
+        Ch := PBuf^;
+        Inc(Integer(PBuf));
+        if Trailing <> 0 then
+        begin
+            if Ch and $C0 = $80 then // Does trailing byte follow UTF-8 format?
+            begin
+                if (Byte2Mask <> 0) then // Need to check 2nd byte for proper range?
+                    if Ch and Byte2Mask <> 0 then // Are appropriate bits set?
+                        Byte2Mask := 0
+                    else begin
+                        Result := cdrUnknown;
+                        Exit;
+                    end;
+                Dec(Trailing);
+                Result := cdrUtf8;
+            end
+            else begin
+                Result := cdrUnknown;
+                Exit;
+            end;
+        end
+        else begin
+            if Ch and $80 = 0 then
+                Continue                      // valid 1 byte UTF-8
+            else if Ch and $E0 = $C0 then     // valid 2 byte UTF-8
+            begin
+                if Ch and $1E <> 0 then       // Is UTF-8 byte in proper range?
+                    Trailing := 1
+                else begin
+                    Result := cdrUnknown;
+                    Exit;
+                end;
+            end
+            else if Ch and $F0 = $E0 then     // valid 3 byte UTF-8
+            begin
+                if Ch and $0F = 0 then        // Is UTF-8 byte in proper range?
+                    Byte2Mask := $20;         // If not set mask to check next byte
+                Trailing := 2;
+            end
+            else if Ch and $F8 = $F0 then     // valid 4 byte UTF-8
+            begin
+                if Ch and $07 = 0 then        // Is UTF-8 byte in proper range?
+                    Byte2Mask := $30;         // If not set mask to check next byte
+                Trailing := 3;
+            end
+          { 4 byte is the maximum today, see ISO 10646, so let's break here }
+          { else if Ch and $FC = $F8 then     // valid 5 byte UTF-8
+            begin
+                if Ch and $03 = 0 then        // Is UTF-8 byte in  proper range?
+                    Byte2Mask := $38;         // If not set mask to check next byte
+                Trailing := 4;
+            end
+            else if Ch and $FE = $FC then     // valid 6 byte UTF-8
+            begin
+                if ch and $01 = 0 then        // Is UTF-8 byte in proper range?
+                    Byte2Mask := $3C;         // If not set mask to check next byte
+                Trailing := 5;
+            end}
+            else begin
+                Result := cdrUnknown;
+                Exit;
+            end;
+        end;
+    end;// while
+
+    case Result of
+      cdrUtf8, cdrAscii : if Trailing <> 0 then Result := cdrUnknown;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function CharsetDetect(const Str: RawByteString): TCharsetDetectResult;
+begin
+    Result := CharsetDetect(Pointer(Str), Length(Str));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsUtf8Valid(const Str: RawByteString): Boolean;
+begin
+    //Result := IsUtf8Valid(Pointer(Str), Length(Str));
+    Result := CharSetDetect(Pointer(Str), Length(Str)) <> cdrUnknown;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean;
+{var
+    PEndBuf   : PByte;
+    PBuf      : PByte;
+    Byte2Mask : Byte;
+    Ch        : Byte;
+    Trailing  : Integer; // trailing (continuation) bytes to follow }
+begin
+    Result := CharSetDetect(Buf, Len) <> cdrUnknown;
+   (* PBuf        := Buf;
     PEndBuf     := Pointer(Integer(Buf) + Len);
     Byte2Mask   := $00;
     Trailing    := 0;
@@ -973,7 +1073,7 @@ begin
             end;
         end;
     end;// while
-    Result := Trailing = 0;
+    Result := Trailing = 0; *)
 end;
 
 

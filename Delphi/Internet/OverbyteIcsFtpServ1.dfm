@@ -113,7 +113,7 @@ object FtpServerForm: TFtpServerForm
     MaxClients = 0
     PasvPortRangeStart = 21001
     PasvPortRangeSize = 99
-    Options = [ftpsCwdCheck, ftpsCalcMD5OnTheFly, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8]
+    Options = [ftpsCwdCheck, ftpsCalcMD5OnTheFly, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8, ftpsAutoDetectCodePage]
     MD5UseThreadFileSize = 1000000
     TimeoutSecsLogin = 60
     TimeoutSecsIdle = 300
@@ -206,9 +206,9 @@ object FtpServerForm: TFtpServerForm
         Caption = '&Clear display'
         OnClick = Cleardisplay1Click
       end
-      object DisplayUTF81: TMenuItem
-        Caption = 'Display &UTF8'
-        OnClick = DisplayUTF81Click
+      object DisplayRaw: TMenuItem
+        Caption = 'Display &Raw (not really)'
+        OnClick = DisplayRawClick
       end
       object DisplayDirectories1: TMenuItem
         Caption = 'Display &Directories'

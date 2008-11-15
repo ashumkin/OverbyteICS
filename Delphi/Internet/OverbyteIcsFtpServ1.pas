@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.13
+Version:      1.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -81,7 +81,7 @@ Nov 8, 2008, V1.13 Angus, support HOST and REIN(ialise) commands
              HOST ftp.ics.org would open account file ftpaccounts-ftp.ics.org.ini
              Added menu items for Display UTF8 and Display Directories
              If the account password is 'windows', authenticate against Windows              
-
+Nov 13, 2008 V1.14 Arno adjusted UTF-8/code page support.
 
 Sample entry from ftpaccounts-default.ini
 
@@ -192,7 +192,7 @@ type
     Authenticateotpsha1: TMenuItem;
     Label1: TLabel;
     RootDirectory: TEdit;
-    DisplayUTF81: TMenuItem;
+    DisplayRaw: TMenuItem;
     DisplayDirectories1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FtpServer1ClientConnect(Sender: TObject;
@@ -285,7 +285,7 @@ type
       var Allowed: Boolean);
     procedure FtpServer1Rein(Sender: TObject; Client: TFtpCtrlSocket; var Allowed: Boolean);
     procedure FtpServer1Host(Sender: TObject; Client: TFtpCtrlSocket; Host: TFtpString; var Allowed: Boolean);
-    procedure DisplayUTF81Click(Sender: TObject);
+    procedure DisplayRawClick(Sender: TObject);
     procedure DisplayDirectories1Click(Sender: TObject);
   private
     FInitialized      : Boolean;
@@ -851,21 +851,24 @@ procedure TFtpServerForm.FtpServer1AlterDirectory(
     var Directory : TFtpString;
     Detailed      : Boolean);
 var
-    Buf : AnsiString;
+    Buf : String;
 begin
-  { angus - show physical file path we listed, and the result - the stream is already UTF8 encoded }
+  { Arno - show physical file path we listed, and the result - the stream   }
+  { might be already encoded with a different ANSI code page inluding UTF-8.}
+  { Pass property Client.CurrentCodePage or the system code page to         }
+  { function Client.DataStreamReadString() to display a decoded string.     }
     if DisplayDirectories1.Checked then begin
         InfoMemo.Lines.Add('! ' + Client.SessIdInfo +
-                                    ' Directory Listing Path: ' + Client.DirListPath) ;
+                           ' Directory Listing Path: ' + Client.DirListPath) ;
         if Assigned (Client.DataStream) then begin
             Client.DataStream.Seek(0, 0);
-            SetLength (Buf, Client.DataStream.Size) ;
-            Client.DataStream.Read (Buf [1], Client.DataStream.Size) ;
-            Client.DataStream.Seek(0, 0);
-            if NOT DisplayUTF81.Checked then
-                InfoMemo.Lines.Add(Utf8ToStringW(Buf))
+            if not DisplayRaw.Checked then
+                Client.DataStreamReadString(Buf, Client.DataStream.Size,
+                                            Client.CurrentCodePage)
             else
-                InfoMemo.Lines.Add(String(Buf));
+                Client.DataStreamReadString(Buf, Client.DataStream.Size, CP_ACP);
+            Client.DataStream.Seek(0, 0);
+            InfoMemo.Lines.Add(Buf);
         end;
     end;
     if UpperCase(Client.Directory) <> 'C:\' then
@@ -875,7 +878,7 @@ begin
         { We need to format directory lines according to the Unix standard }
         Buf :=
         'drwxrwxrwx   1 ftp      ftp            0 Apr 30 19:00 VIRTUAL' + #13#10;
-        Client.DataStream.Write(Buf[1], Length(Buf));
+        Client.DataStreamWriteString(Buf, Client.CurrentCodePage);
     end;
 end;
 
@@ -884,7 +887,7 @@ end;
 procedure TFtpServerForm.FtpServer1ClientCommand(Sender: TObject;
   Client: TFtpCtrlSocket; var Keyword, Params, Answer: TFtpString);
 begin
-    if NOT DisplayUTF81.Checked then
+    if not DisplayRaw.Checked then
         InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' +
                        Keyword + ' ' + Params)            // Unicode version
     else
@@ -899,7 +902,7 @@ procedure TFtpServerForm.FtpServer1AnswerToClient(
     Client     : TFtpCtrlSocket;
     var Answer : TFtpString);
 begin
-    if NOT DisplayUTF81.Checked then
+    if not DisplayRaw.Checked then
         InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
           IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + Answer)  // Unicode version
     else
@@ -1164,9 +1167,9 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpServerForm.DisplayUTF81Click(Sender: TObject);
+procedure TFtpServerForm.DisplayRawClick(Sender: TObject);
 begin
-    DisplayUTF81.Checked := NOT DisplayUTF81.Checked;
+    DisplayRaw.Checked := NOT DisplayRaw.Checked;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

@@ -77,6 +77,9 @@ Delphi\Internet\OverbyteIcsFtpTst1.dfm
 Delphi\Internet\OverbyteIcsFtpTst1.pas
 Delphi\Internet\OverbyteIcsFtpTst2.dfm
 Delphi\Internet\OverbyteIcsFtpTst2.pas
+Delphi\Internet\ftpaccounts-default.ini
+Delphi\Internet\ftpaccounts-[127.0.0.1].ini
+
 Delphi\Internet\OverbyteIcsHttpPost.bdsproj
 Delphi\Internet\OverbyteIcsHttpPost.dpr
 Delphi\Internet\OverbyteIcsHttpPost.dproj
@@ -123,6 +126,10 @@ Delphi\Internet\OverbyteIcsMimeDemo.dproj
 Delphi\Internet\OverbyteIcsMimeDemo.res
 Delphi\Internet\OverbyteIcsMimeDemo1.dfm
 Delphi\Internet\OverbyteIcsMimeDemo1.pas
+Delphi\Internet\mime-demo1.txt
+Delphi\Internet\mime-demo4.txt
+Delphi\Internet\mime-demo5.txt
+
 Delphi\Internet\OverbyteIcsNewsReader.bdsproj
 Delphi\Internet\OverbyteIcsNewsReader.dpr
 Delphi\Internet\OverbyteIcsNewsReader.dproj
@@ -246,7 +253,6 @@ Delphi\Vc32\OverbyteIcsFtpCli.dcr
 Delphi\Vc32\OverbyteIcsFtpCli.pas
 Delphi\Vc32\OverbyteIcsFtpSrv.dcr
 Delphi\Vc32\OverbyteIcsFtpSrv.pas
-Delphi\Vc32\OverbyteIcsFtpSrvC.pas
 Delphi\Vc32\OverbyteIcsFtpSrvT.pas
 Delphi\Vc32\OverbyteIcsHttpCCodZLib.pas
 Delphi\Vc32\OverbyteIcsHttpContCod.pas
@@ -407,6 +413,8 @@ Delphi\SslInternet\OverbyteIcsSslFtpServ.dpr
 Delphi\SslInternet\OverbyteIcsSslFtpServ.dof
 Delphi\SslInternet\OverbyteIcsSslFtpServ1.dfm
 Delphi\SslInternet\OverbyteIcsSslFtpServ1.pas
+Delphi\SslInternet\ftpaccounts-default.ini
+Delphi\SslInternet\ftpaccounts-[127.0.0.1].ini
 
 Delphi\SslInternet\OverbyteIcsSslMailSnd.bdsproj
 Delphi\SslInternet\OverbyteIcsSslMailSnd.dproj
