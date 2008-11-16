@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{b60516f5-dc5a-4ed5-b08b-19e2e749e86c}</ProjectGuid>
     <MainSource>OverbyteIcsDel110Package.dpk</MainSource>
@@ -81,7 +81,6 @@
     <DCCReference Include="OverbyteIcsFtpSrv.dcr" />
     <DCCReference Include="OverbyteIcsFtpSrv.dcr" />
     <DCCReference Include="OverbyteIcsFtpSrv.pas" />
-    <DCCReference Include="OverbyteIcsFtpSrvC.pas" />
     <DCCReference Include="OverByteIcsFtpSrvT.pas" />
     <DCCReference Include="OverbyteIcsHttpContCod.pas" />
     <DCCReference Include="OverbyteIcsHttpProt.dcr" />

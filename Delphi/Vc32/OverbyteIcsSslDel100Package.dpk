@@ -62,7 +62,6 @@ contains
   OverbyteIcsWSockBuf in 'OverbyteIcsWSockBuf.pas',
   OverByteIcsWSocketE in 'OverByteIcsWSocketE.pas',
   OverByteIcsFtpSrvT in 'OverByteIcsFtpSrvT.pas',
-  OverbyteIcsFtpSrvC in 'OverbyteIcsFtpSrvC.pas',
   OverbyteIcsWSocket in 'OverbyteIcsWSocket.pas',
   OverbyteIcsFtpCli in 'OverbyteIcsFtpCli.pas',
   OverbyteIcsFtpSrv in 'OverbyteIcsFtpSrv.pas',

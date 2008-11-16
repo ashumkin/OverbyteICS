@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<PersonalityInfo>
 		<Option>
@@ -190,7 +190,6 @@
         <FILE FILENAME="OverbyteIcsFtpCli.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsFtpCli" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsFtpCli.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverByteIcsFtpSrvT.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverByteIcsFtpSrvT" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="OverbyteIcsFtpSrvC.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsFtpSrvC" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsFtpSrv.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsFtpSrv" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsFtpSrv.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsMD5.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsMD5" FORMNAME="" DESIGNCLASS=""/>
