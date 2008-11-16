@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.01
+Version:      V7.02
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -945,7 +945,9 @@ Nov 14, 2008 V7.01 Angus added UTF-8 and code page support, full Unicode is only
              added FTP commands HOST hostname (before logon) and REIN (re-initialise connection)
              added ConnectHost that does Open/Host/User/Pass
              added XCMLSD, XDMLSD and LANG commands and check matching FEAT options
-
+Nov 16, 2008 V7.02 Arno simplified some code page related code, added option
+             ftpAutoDetectCodePage which actually detects UTF-8 only, exchanged
+             RawByteString by AnsiString in several routines.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1028,9 +1030,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 701;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.01 ';
-  FtpClientId : String = 'ICS FTP Client V7.01 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 702;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.02 ';
+  FtpClientId : String = 'ICS FTP Client V7.02 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1041,7 +1043,8 @@ type
   { sslTypeAuthTls, sslTypeAuthSsl are known as explicit SSL }
   TFtpCliSslType  = (sslTypeNone, sslTypeAuthTls, sslTypeAuthSsl,        { V2.106 }
                      sslTypeImplicit);
-  TFtpOption      = (ftpAcceptLF, ftpNoAutoResumeAt, ftpWaitUsingSleep, ftpBandwidthControl); { V2.106 }
+  TFtpOption      = (ftpAcceptLF, ftpNoAutoResumeAt, ftpWaitUsingSleep,
+                     ftpBandwidthControl, ftpAutoDetectCodePage); { V2.106 }{ AG V7.02 }
   TFtpOptions     = set of TFtpOption;
   TFtpExtension   = (ftpFeatNone, ftpFeatSize, ftpFeatRest, ftpFeatMDTMYY,
                      ftpFeatMDTM, ftpFeatMLST, ftpFeatMFMT, ftpFeatMD5,
@@ -1142,6 +1145,7 @@ type
     FHostName           : String;
     FPort               : String;
     FCodePage           : Cardinal;
+    FSystemCodepage     : Cardinal; { AG 7.02 }
     FDataPortRangeStart : DWORD;  {JT}
     FDataPortRangeEnd   : DWORD;  {JT}
     FLastDataPort       : DWORD;  {JT}
@@ -1268,6 +1272,7 @@ type
 {$ENDIF}
     procedure SetSslType(const Value: TFtpCliSslType); virtual; { V2.106 }
     procedure SetKeepAliveSecs (secs: integer);
+    procedure SetCodePage(const Value: Cardinal); { AG 7.02 }
 {$IFNDEF NO_DEBUG_LOG}
     function  GetIcsLogger: TIcsLogger;   { 2.104 }
     procedure SetIcsLogger(const Value: TIcsLogger);
@@ -1452,7 +1457,7 @@ type
     procedure   XDmlsdAsync;     virtual;    { V7.01   extended MLSD using data channel }
 
     property    CodePage          : Cardinal             read  FCodePage
-                                                         write FCodePage;
+                                                         write SetCodePage;
     property    LastResponse      : String               read  FLastResponse;
     property    LastMultiResponse : String               read  FLastMultiResponse;  { V2.90  multiple lines }
     property    ErrorMessage      : String               read  FErrorMessage;
@@ -2190,6 +2195,7 @@ begin
 {$IFDEF USE_SSL}
     FControlSocket.SslEnable          := FALSE;
 {$ENDIF}
+    FSystemCodePage := GetACP; { AG V7.02 }
     FCodePage := CP_ACP;
     FLanguage := 'EN';    { V7.01 or EN-uk, FR, etc, only for messages }
 end;
@@ -2443,6 +2449,7 @@ begin
     FLocalStream.WriteBuffer(Buffer, Count);
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetKeepAliveSecs (secs: integer);
 begin
@@ -2460,6 +2467,24 @@ begin
     end;
     FKeepAliveSecs := secs;
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.SetCodePage(const Value: Cardinal); { AG 7.02 }
+begin
+    if Value = FSystemCodePage then
+        FCodePage := CP_ACP
+    else
+    {$IFDEF COMPILER12_UP}
+        FCodePage := Value;
+    {$ELSE}
+        if Value = CP_UTF8 then
+            FCodePage := Value
+        else
+            FCodePage := CP_ACP;
+    {$ENDIF}
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetLocalFileName(FileName: String);
@@ -2588,18 +2613,18 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SendCommand(Cmd : String);
 var
-    CmdUtf8: RawByteString;
+    RawCmd: AnsiString; { AG V7.02 We do not need RawByteString here }
 begin
     if Assigned(FOnCommand) then
         FOnCommand(Self, Cmd);
     TriggerDisplay('> ' + Cmd);
-    {$IFDEF COMPILER12_UP}
-    CmdUtf8 := UnicodeToAnsi(Cmd, FCodePage);             { V7.01 }
-    {$ELSE}
-    CmdUtf8 := ConvertCodepage(Cmd, CP_ACP, FCodePage);   { V7.01 }
-    {$ENDIF}
+{$IFDEF COMPILER12_UP}
+    RawCmd := UnicodeToAnsi(Cmd, FCodePage);             { V7.01 }
+{$ELSE}
+    RawCmd := ConvertCodepage(Cmd, CP_ACP, FCodePage);   { V7.01 }
+{$ENDIF}
     if FControlSocket.State = wsConnected then
-        FControlSocket.SendStr(CmdUtf8 + #13#10)  { V7.01 }
+        FControlSocket.SendStr(RawCmd + #13#10)  { V7.01 }
     { Quit when not connected never returned. }                { 01/14/06 AG}
     else begin
         if cmd = 'QUIT' then
@@ -3983,7 +4008,7 @@ var
     Buffer  : array [1..FTP_RCV_BUF_SIZE] of AnsiChar;  { V7.01 Should use a dynamic buffer instead... }
     aSocket : TWSocket;
     I, J    : Integer;
-    Line    : RawByteString;
+    Line    : AnsiString; { AG V7.02 RawByteString is not required }
     ACodePage : Cardinal;
 begin
     if not Progress then
@@ -4046,10 +4071,13 @@ begin
         { If requested to display the received data, do it line by line }
         { V7.01 assume this function is only being used to view directory listings, which may be UTF-8 }
         if FDisplayFileFlag then begin
-            if (FCodePage = CP_UTF8) and (not IsUtf8Valid(Line)) then
-                ACodePage := CP_ACP
+            { Auto-detect UTF-8 if Option is set }
+            if (FCodePage <> CP_UTF8) and (ftpAutoDetectCodePage in FOptions) and
+               (CharsetDetect(@Buffer, Len) = cdrUtf8) then          { AG V7.02 }
+                ACodePage := CP_UTF8
             else
                 ACodePage := FCodePage;
+
             case FDisplayFileMode of
             ftpBinary:
                 begin
@@ -5537,7 +5565,7 @@ var
     p    : PChar;
     Feat : String;
     ACodePage : Cardinal;
-    Utf8Response: RawByteString;  { V7.01 }
+    RawResponse: AnsiString;  { V7.01 }{ AG V7.02 we no not need RawByteString here }
 const
     NewLine =  #13#10 ;
 begin
@@ -5571,27 +5599,23 @@ begin
             break;
         if I > FReceiveLen then
             break;
-        Utf8Response := Copy(FReceiveBuffer, 1, I);   { V7.01 keep it write to stream  }
+        RawResponse := Copy(FReceiveBuffer, 1, I);   { V7.01 keep it write to stream  }
         { Remove trailing control chars, V7.01 before translating UTF8 to Unicode or ANSI  }
-        while (Length(Utf8Response) > 0) and
-              IsCRLF(Utf8Response[Length(Utf8Response)]) do
-             SetLength(Utf8Response, Length(Utf8Response) - 1);
-        { translate UTF-8 or ANSI to local codepage }
-        if (FCodePage = CP_UTF8) and (not IsUtf8Valid(@Utf8Response[1], Length(Utf8Response))) then
-            ACodePage := CP_ACP
+        while (Length(RawResponse) > 0) and
+              IsCRLF(RawResponse[Length(RawResponse)]) do
+             SetLength(RawResponse, Length(RawResponse) - 1);
+        { Auto-detect UTF-8 if Option is set }
+        if (FCodePage <> CP_UTF8) and (ftpAutoDetectCodePage in FOptions) and
+           (CharsetDetect(RawResponse) = cdrUtf8) then          { AG V7.02 }
+            ACodePage := CP_UTF8
         else
             ACodePage := FCodePage;
+        { translate UTF-8 or ANSI to local codepage }
     {$IFDEF COMPILER12_UP}
-        { Calling MultiByteToWideChar rather than AnsiToUnicode saves one string copy }
-        Len := MultiByteToWideChar(ACodePage, 0, @Utf8Response[1], Length(Utf8Response), nil, 0);
-        SetLength(FLastResponse, Len);
-        if Len > 0 then
-            MultiByteToWideChar(ACodePage, 0, @Utf8Response[1], Length(Utf8Response),
-                                                                    Pointer(FLastResponse), Len);
+        FLastResponse := AnsiToUnicode(RawResponse, ACodePage); { AG V7.02 }
     {$ELSE}
-        FLastResponse := ConvertCodepage (Utf8Response, ACodePage, CP_ACP);
+        FLastResponse := ConvertCodepage(RawResponse, ACodePage, CP_ACP);
     {$ENDIF}
-
         { V2.113 don't save SITE list commands, too long }
         if not (FFctPrv in [ftpFctSiteCmlsd, ftpFctXCmlsd, ftpFctSiteIndex]) then begin
 
@@ -5731,8 +5755,8 @@ begin
                     if FLocalStream <> nil then begin
                         try
                             { V7.01 write raw UTF8 or ANSI response to stream, less 200-  }
-                            if Length(Utf8Response) > 4 then
-                                LocalStreamWrite(Utf8Response[5], Length(Utf8Response) - 4);
+                            if Length(RawResponse) > 4 then
+                                LocalStreamWrite(RawResponse[5], Length(RawResponse) - 4);
                             LocalStreamWrite(NewLine, 2);
                         except
                             TriggerDisplay('! Error writing local file');

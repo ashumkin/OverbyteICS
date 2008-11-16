@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      7.01
+Version:      7.02
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
               Compatible with Delphi 1, 2, 3, 4 and 5
@@ -79,6 +79,10 @@ Nov 13, 2008  V7.01 Angus added UTF-8 and code page support.
               Added ConnectHost, Host and Rein (re-initialise connection)
               Added LANG button and edit, OPTS edit with drop down with UTF8 opts
               SiteCmlsd now uses XCmlsd, SiteDmlsd uses XDmlsd
+Nov 16, 2008  V7.02 Arno added option ftpAutoDetectCodePage which actually
+              detects UTF-8 only (it's not reliable). Modified code page related
+              code, and the demo now sets property CodePage to CP_UTF8 after
+              command Opts "UTF8 ON" succeeded. 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -103,8 +107,8 @@ uses
   OverByteIcsWSocket, OverbyteIcsWndControl;
 
 const
-  FTPTstVersion      = 701;
-  CopyRight : String = ' FtpTst (c) 1997-2008 F. Piette V7.01 ';
+  FTPTstVersion      = 702;
+  CopyRight : String = ' FtpTst (c) 1997-2008 F. Piette V7.02 ';
 
 type
   TSyncCmd   = function : Boolean  of object;
@@ -367,7 +371,6 @@ const
     KeyPosStart   = 'PosStart';
     KeyPosEnd     = 'PosEnd';
     KeyMaxKB      = 'MaxKB';
-    KeyCP         = 'CodePage';  
 
 function GetFileSize(const FileName: string): TFtpBigInt; forward;
 
@@ -441,7 +444,7 @@ begin
                                                  '0');
         PosEndEdit.Text    := IniFile.ReadString(SectionData, KeyPosEnd,
                                                  '0');
-        CodePageEdit.Text  := IniFile.ReadString(SectionData, KeyCP, '0');
+        CodePageEdit.Text  := '0';
         DataPortRangeStartEdit.Text :=
                               IniFile.ReadString(SectionData, KeyPortStart,
                                                  '0');
@@ -467,8 +470,8 @@ begin
         Display('Winsock version ' +
                 IntToStr(LOBYTE(Data.wHighVersion)) + '.' +
                 IntToStr(HIBYTE(Data.wHighVersion)));
-        Display(StrPas(Data.szDescription));
-        Display(StrPas(Data.szSystemStatus));
+        Display(String(StrPas(Data.szDescription)));
+        Display(String(StrPas(Data.szSystemStatus)));
     end;
 end;
 
@@ -500,7 +503,6 @@ begin
     IniFile.WriteInteger(SectionData, KeyNoResume, Ord(NoAutoResumeAtCheckBox.Checked));
     IniFile.WriteInteger(SectionData, KeyBinary,   Ord(BinaryCheckBox.Checked));
     IniFile.WriteString(SectionData,  KeyMaxKB,    MaxKB.Text);
-    IniFile.WriteString(SectionData,  KeyCP, CodePageEdit.Text);
     IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
@@ -514,9 +516,6 @@ end;
 procedure TFtpReceiveForm.Display(const Msg : String);
 var
     I : Integer;
-{$IFNDEF UNICODE}
-    ACodePage: Cardinal;
-{$ENDIF}    
 begin
     DisplayMemo.Lines.BeginUpdate;
     try
@@ -527,11 +526,10 @@ begin
     {$IFDEF UNICODE}
         DisplayMemo.Lines.Add(Msg);
     {$ELSE}
-        if (FtpClient1.Codepage = CP_UTF8) and (not IsUtf8Valid(Msg)) then
-            ACodePage := CP_ACP
+        if FtpClient1.CodePage = CP_UTF8 then
+            DisplayMemo.Lines.Add(Utf8ToStringA(Msg))
         else
-            ACodePage := FtpClient1.Codepage;
-        DisplayMemo.Lines.Add(ConvertCodepage(Msg, ACodePage, CP_ACP));
+            DisplayMemo.Lines.Add(Msg);
     {$ENDIF}
     finally
         DisplayMemo.Lines.EndUpdate;
@@ -603,10 +601,13 @@ begin
         try
             SetLength(S, Strm.Size);
             Strm.Read(S[1], Length(S));
-            if (FtpClient1.Codepage = CP_UTF8) and (not IsUtf8Valid(S)) then
-                ACodePage := CP_ACP
+            { Auto-detect UTF-8 if Option is set }
+            if (FtpClient1.CodePage <> CP_UTF8) and
+               (ftpAutoDetectCodePage in FtpClient1.Options) and
+               (CharsetDetect(S) = cdrUtf8) then
+                ACodePage := CP_UTF8
             else
-                ACodePage := FtpClient1.Codepage;
+                ACodePage := FtpClient1.CodePage;
             {$IFDEF UNICODE}
                 DirectoryForm.DirListBox.Items.Text := AnsiToUnicode(S, ACodePage);
             {$ELSE}
@@ -642,8 +643,14 @@ begin
 
     if ErrCode = 0 then begin
         case RqType of
-        ftpFeatAsync : if ftpFeatUtf8 in FtpClient1.SupportedExtensions then
-                            CodePageEdit.Text := IntToStr(CP_UTF8);
+        ftpOptsAsync : if (FtpClient1.NewOpts = 'UTF8 ON') and
+                          (FtpClient1.StatusCode = 200) then
+                          CodePageEdit.Text := IntToStr(CP_UTF8)
+                       else if (FtpClient1.NewOpts = 'UTF8 OFF') and
+                          (FtpClient1.StatusCode = 200) then
+                          CodePageEdit.Text := IntToStr(CP_ACP);
+        { ftpFeatAsync : if ftpFeatUtf8 in FtpClient1.SupportedExtensions then
+                            CodePageEdit.Text := IntToStr(CP_UTF8); }
         ftpDirAsync, ftpDirectoryAsync,
         ftpLsAsync,  ftpListAsync,
         ftpMlsdAsync, ftpSiteCmlsdAsync,

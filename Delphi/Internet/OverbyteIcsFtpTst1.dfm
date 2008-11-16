@@ -1,9 +1,9 @@
 object FtpReceiveForm: TFtpReceiveForm
   Left = 436
   Top = 103
+  Width = 629
+  Height = 580
   Caption = 'FTP - http://www.overbyte.be'
-  ClientHeight = 546
-  ClientWidth = 621
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -1476,8 +1476,8 @@ object FtpReceiveForm: TFtpReceiveForm
       Text = 'PassWordEdit'
     end
     object DisplayCheckBox: TCheckBox
-      Left = 480
-      Top = 12
+      Left = 491
+      Top = 4
       Width = 117
       Height = 17
       Hint = 'Enable data display during file transfert'
@@ -1560,8 +1560,8 @@ object FtpReceiveForm: TFtpReceiveForm
       Text = 'PortEdit'
     end
     object SyncCheckBox: TCheckBox
-      Left = 480
-      Top = 40
+      Left = 491
+      Top = 34
       Width = 117
       Height = 17
       Caption = 'Synchronous'
@@ -1574,8 +1574,8 @@ object FtpReceiveForm: TFtpReceiveForm
       TabOrder = 11
     end
     object PassiveCheckBox: TCheckBox
-      Left = 480
-      Top = 26
+      Left = 491
+      Top = 19
       Width = 117
       Height = 17
       Caption = 'Passive Mode'
@@ -1588,8 +1588,8 @@ object FtpReceiveForm: TFtpReceiveForm
       TabOrder = 12
     end
     object NoAutoResumeAtCheckBox: TCheckBox
-      Left = 480
-      Top = 56
+      Left = 491
+      Top = 49
       Width = 117
       Height = 17
       Caption = 'NoAutoResumeAt'
@@ -1654,8 +1654,8 @@ object FtpReceiveForm: TFtpReceiveForm
     end
     object OptsEdit: TComboBox
       Left = 491
-      Top = 74
-      Width = 124
+      Top = 73
+      Width = 126
       Height = 21
       ItemHeight = 13
       TabOrder = 16
