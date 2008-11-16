@@ -82,8 +82,7 @@ Nov 13, 2008  V7.01 Angus added UTF-8 and code page support.
 Nov 16, 2008  V7.02 Arno added option ftpAutoDetectCodePage which actually
               detects UTF-8 only (it's not reliable). Modified code page related
               code, and the demo now sets property CodePage to CP_UTF8 after
-              command Opts "UTF8 ON" succeeded. 
-
+              command Opts "UTF8 ON" succeeded.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpTst1;
@@ -523,14 +522,7 @@ begin
             for I := 1 to 200 do
                 DisplayMemo.Lines.Delete(0);
         end;
-    {$IFDEF UNICODE}
         DisplayMemo.Lines.Add(Msg);
-    {$ELSE}
-        if FtpClient1.CodePage = CP_UTF8 then
-            DisplayMemo.Lines.Add(Utf8ToStringA(Msg))
-        else
-            DisplayMemo.Lines.Add(Msg);
-    {$ENDIF}
     finally
         DisplayMemo.Lines.EndUpdate;
         SendMessage(DisplayMemo.Handle, EM_SCROLLCARET, 0, 0);
