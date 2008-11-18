@@ -78,10 +78,10 @@ unit OverbyteIcsSslFtpTst1;
 interface
 
 uses
-  SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
+  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls, WinSock,
   OverbyteIcsWSocket, OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsLogger,
-  OverbyteIcsWndControl, OverbyteIcsFtpCli;
+  OverbyteIcsWndControl, OverbyteIcsFtpCli, OverByteIcsUtils;
 
 const
   FTPTstVersion      = 230;
@@ -191,7 +191,6 @@ type
     Label18: TLabel;
     PbszSizeEdit: TEdit;
     ProtLevelEdit: TEdit;
-    ClearTraceButton: TButton;
     SslContext1: TSslContext;
     FeatButton: TButton;
     SessCacheCheckBox: TCheckBox;
@@ -203,6 +202,10 @@ type
     IcsLogger1: TIcsLogger;
     SslRenegotiateButton: TButton;
     CccButton: TButton;
+    OptsEdit: TComboBox;
+    ClearTraceButton: TButton;
+    Label23: TLabel;
+    OptsAsyncButton: TButton;
     procedure ExitButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DisplayHandler(Sender: TObject; var Msg : String);
@@ -277,6 +280,7 @@ type
     procedure AuthButtonClick(Sender: TObject);
     procedure SslRenegotiateButtonClick(Sender: TObject);
     procedure CccButtonClick(Sender: TObject);
+    procedure OptsAsyncButtonClick(Sender: TObject);
   private
     FIniFileName   : String;
     FInitialized   : Boolean;
@@ -515,8 +519,8 @@ begin
         Display('Winsock version ' +
                 IntToStr(LOBYTE(Data.wHighVersion)) + '.' +
                 IntToStr(HIBYTE(Data.wHighVersion)));
-        Display(StrPas(Data.szDescription));
-        Display(StrPas(Data.szSystemStatus));
+        Display(String(StrPas(Data.szDescription)));
+        Display(String(StrPas(Data.szSystemStatus)));
     end;
 end;
 
@@ -636,12 +640,34 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpReceiveForm.DisplayFile(FileName : String);
+var
+    Strm : TFileStream;
+    S : AnsiString;
+    ACodePage: Cardinal;
 begin
     { When display on the fly, no file is generated }
     if DisplayCheckBox.Checked then
         Exit;
     try
-        DirectoryForm.DirListBox.Items.LoadFromFile(FileName);
+        Strm := TFileStream.Create(FileName, fmOpenRead);
+        try
+            SetLength(S, Strm.Size);
+            Strm.Read(S[1], Length(S));
+            { Auto-detect UTF-8 if Option is set }
+            if (FtpClient1.CodePage <> CP_UTF8) and
+               (ftpAutoDetectCodePage in FtpClient1.Options) and
+               (CharsetDetect(S) = cdrUtf8) then
+                ACodePage := CP_UTF8
+            else
+                ACodePage := FtpClient1.CodePage;
+            {$IFDEF UNICODE}
+                DirectoryForm.DirListBox.Items.Text := AnsiToUnicode(S, ACodePage);
+            {$ELSE}
+                DirectoryForm.DirListBox.Items.Text := ConvertCodepage(S, ACodePage, CP_ACP)
+            {$ENDIF}
+        finally
+            Strm.Free;
+        end;
     except
         DirectoryForm.DirListBox.Clear;
     end;
@@ -667,6 +693,12 @@ begin
 
     if Error = 0 then begin
         case RqType of
+        ftpOptsAsync : if (FtpClient1.NewOpts = 'UTF8 ON') and
+                          (FtpClient1.StatusCode = 200) then
+                          FtpClient1.CodePage := CP_UTF8
+                       else if (FtpClient1.NewOpts = 'UTF8 OFF') and
+                          (FtpClient1.StatusCode = 200) then
+                          FtpClient1.CodePage := CP_ACP;
         ftpDirAsync, ftpDirectoryAsync,
         ftpLsAsync,  ftpListAsync       : DisplayFile(TEMP_FILE_NAME);
         ftpSizeAsync                    : Display(
@@ -1443,6 +1475,14 @@ begin
     if ClientCertDlg.ShowModal = mrOK then
         Cert := FClientCerts[ClientCertDlg.CertListBox.ItemIndex];
 
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpReceiveForm.OptsAsyncButtonClick(Sender: TObject);
+begin
+    FtpClient1.NewOpts    := OptsEdit.Text;
+    ExecuteCmd(FtpClient1.Opts, FtpClient1.OptsAsync);
 end;
 
 

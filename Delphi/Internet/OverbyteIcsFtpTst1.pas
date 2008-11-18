@@ -581,7 +581,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpReceiveForm.DisplayFile(FileName : String);
 var
-    Strm : TIcsFileStreamW;
+    Strm : TFileStream;
     S : AnsiString;
     ACodePage: Cardinal;
 begin
@@ -589,7 +589,7 @@ begin
     if DisplayCheckBox.Checked then
         exit;
     try
-        Strm := TIcsFileStreamW.Create(FileName, fmOpenRead);
+        Strm := TFileStream.Create(FileName, fmOpenRead);
         try
             SetLength(S, Strm.Size);
             Strm.Read(S[1], Length(S));
