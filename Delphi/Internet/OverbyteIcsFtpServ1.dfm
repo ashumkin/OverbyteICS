@@ -169,8 +169,8 @@ object FtpServerForm: TFtpServerForm
     Top = 103
   end
   object MainMenu1: TMainMenu
-    Left = 81
-    Top = 102
+    Left = 116
+    Top = 107
     object File1: TMenuItem
       Caption = '&File'
       object MnuStartServer: TMenuItem
@@ -205,10 +205,6 @@ object FtpServerForm: TFtpServerForm
       object Cleardisplay1: TMenuItem
         Caption = '&Clear display'
         OnClick = Cleardisplay1Click
-      end
-      object DisplayRaw: TMenuItem
-        Caption = 'Display &Raw (not really)'
-        OnClick = DisplayRawClick
       end
       object DisplayDirectories1: TMenuItem
         Caption = 'Display &Directories'

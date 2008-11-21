@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.02
+Version:      7.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -344,7 +344,8 @@ Nov 8, 2008  V7.01 Angus added new commands HOST, REIN, LANG and OPTS UTF8 ON/OF
 Nov 14, 2008 V7.02 Arno fixed a few thread issues. And reworked UTF-8 support.
              Angus ensure BuildDirectory adds errors to directory stream in UTF-8
              default options for ftpsCwdCheck and ftpsCdupHome
-
+Nov 21, 2008 V7.03 Angus fixed TriggerSendAnswer/AnswerToClient did not allow answer
+                to be changed, raw protocol no longer available as public
 
 
 
@@ -438,8 +439,8 @@ uses
 
 
 const
-    FtpServerVersion         = 702;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.02 ';
+    FtpServerVersion         = 703;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.03 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -690,8 +691,8 @@ type
         AccountPassword   : String;      { angus V7.00 client account expected password }
         AccountReadOnly   : Boolean;     { angus V7.00 client account read only file access, no uploads  }
         //CodePage          : Cardinal;    { angus V7.01 for UTF8 support }
-        RawParams         : RawByteString;  { angus V7.01 raw UTF8 parameter before conversion to Unicode }
-        RawAnswer         : RawByteString;  { angus V7.01 raw UTF8 answer after conversion from Unicode }
+//        RawParams         : RawByteString;  { angus V7.01 raw UTF8 parameter before conversion to Unicode }
+//        RawAnswer         : RawByteString;  { angus V7.01 raw UTF8 answer after conversion from Unicode }
 {$IFDEF USE_SSL}
         ProtP             : Boolean;
         AuthFlag          : Boolean;
@@ -2509,21 +2510,23 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServer.SendAnswer(Client : TFtpCtrlSocket; Answer : TFtpString);
+var
+    RawAnswer: RawByteString;
 begin
     try
+        { Angus 7.03 fixed trigger needed before UTF8 conversion }
+         Client.ReqDurMilliSecs := IcsElapsedMsecs (Client.ReqStartTick);
+         TriggerSendAnswer(Client, Answer);
     { AG 7.02 }
     {$IFDEF COMPILER12_UP}
-        Client.RawAnswer := UnicodeToAnsi(Answer, Client.CurrentCodePage);
+        RawAnswer := UnicodeToAnsi(Answer, Client.CurrentCodePage);
     {$ELSE}
         if Client.CurrentCodePage = CP_UTF8 then
-            Client.RawAnswer := StringToUtf8(Answer)
+            RawAnswer := StringToUtf8(Answer)
         else
-            Client.RawAnswer := Answer;
+            RawAnswer := Answer;
     {$ENDIF}
-        Client.ReqDurMilliSecs := IcsElapsedMsecs (Client.ReqStartTick);
-        { In D2009 event has Unicode answer, but ANSI or UTF-8 in RawAnswer }
-        TriggerSendAnswer(Client, Answer);
-        Client.SendAnswer(Client.RawAnswer);
+        Client.SendAnswer(RawAnswer);
     except
         { Just ignore any exception here }
     end;
@@ -2545,6 +2548,7 @@ var
     Params  : TFtpString;
     KeyWord : TFtpString;
     I       : Integer;
+    RawParams: RawByteString;
 begin
     Client := Sender as TFtpCtrlSocket;
     Answer := '';
@@ -2553,17 +2557,17 @@ begin
     try
         Client.ReqStartTick := IcsGetTickCountX;    { angus V1.54 tick when request started }
         Client.ReqDurMilliSecs := 0;                { angus V1.54 how long last request took, in ticks }
-        Client.RawParams := '';
+        RawParams := '';
         I      := 0;
         while I < CmdLen do begin
             if CmdBuf[I] <> TELNET_IAC then begin
-                Client.RawParams := Client.RawParams + CmdBuf[I];
+                RawParams := RawParams + CmdBuf[I];
                 Inc(I);
             end
             else begin
                 Inc(I);
                 if CmdBuf[I] = TELNET_IAC then
-                    Client.RawParams := Client.RawParams + CmdBuf[I];
+                    RawParams := RawParams + CmdBuf[I];
                 Inc(I);
             end;
         end;
@@ -2571,7 +2575,7 @@ begin
         { in turn sets CurrentCodePage to CP_UTF8 if UTF-8 is detected.  }
         if (Client.CurrentCodePage <> CP_UTF8) and
            (ftpAutoDetectCodepage in Client.Options) and
-           (CharsetDetect(Client.RawParams) = cdrUtf8) then
+           (CharsetDetect(RawParams) = cdrUtf8) then
             Client.Options := Client.Options + [ftpUtf8ON];  { AG V7.02  }
       {$IFDEF COMPILER12_UP}
         { Convert buffer data to UnicodeString AG V7.02 }
@@ -2579,9 +2583,9 @@ begin
       {$ELSE}
         { Convert buffer data to AnsiString ( potential data loss! ) AG V7.02 }
         if (Client.CurrentCodePage = CP_UTF8) then
-            Params := Utf8ToStringA(Client.RawParams)
+            Params := Utf8ToStringA(RawParams)
         else
-            Params := Client.RawParams;
+            Params := RawParams;
       {$ENDIF}
 
         { Extract keyword, ignoring leading spaces and tabs }
@@ -2594,7 +2598,7 @@ begin
 
         { Extract parameters, ignoring leading spaces and tabs }
         Params := Copy(Params, I, Length(Params));
-        Client.RawParams := Copy(Client.RawParams, I, Length(Client.RawParams));   { angus 7.01 }
+//        RawParams := Copy(RawParams, I, Length(RawParams));   { angus 7.01 }
 
         { Pass the command to the component user to let him a chance to }
         { handle it. If it does, he must return the answer.             }

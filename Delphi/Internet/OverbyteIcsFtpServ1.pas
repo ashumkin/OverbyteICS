@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.14
+Version:      1.15
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -80,8 +80,10 @@ Nov 6, 2008, V1.12 Angus, support server V7.00 which does not use OverbyteIcsFtp
 Nov 8, 2008, V1.13 Angus, support HOST and REIN(ialise) commands
              HOST ftp.ics.org would open account file ftpaccounts-ftp.ics.org.ini
              Added menu items for Display UTF8 and Display Directories
-             If the account password is 'windows', authenticate against Windows              
+             If the account password is 'windows', authenticate against Windows
 Nov 13, 2008 V1.14 Arno adjusted UTF-8/code page support.
+Nov 21, 2008 V1.15 Angus removed raw display
+
 
 Sample entry from ftpaccounts-default.ini
 
@@ -123,8 +125,8 @@ uses
   OverbyteIcsUtils;
 
 const
-  FtpServVersion      = 113;
-  CopyRight : String  = ' FtpServ (c) 1998-2008 F. Piette V1.13 ';
+  FtpServVersion      = 115;
+  CopyRight : String  = ' FtpServ (c) 1998-2008 F. Piette V1.15 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -192,7 +194,6 @@ type
     Authenticateotpsha1: TMenuItem;
     Label1: TLabel;
     RootDirectory: TEdit;
-    DisplayRaw: TMenuItem;
     DisplayDirectories1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FtpServer1ClientConnect(Sender: TObject;
@@ -285,7 +286,6 @@ type
       var Allowed: Boolean);
     procedure FtpServer1Rein(Sender: TObject; Client: TFtpCtrlSocket; var Allowed: Boolean);
     procedure FtpServer1Host(Sender: TObject; Client: TFtpCtrlSocket; Host: TFtpString; var Allowed: Boolean);
-    procedure DisplayRawClick(Sender: TObject);
     procedure DisplayDirectories1Click(Sender: TObject);
   private
     FInitialized      : Boolean;
@@ -862,11 +862,8 @@ begin
                            ' Directory Listing Path: ' + Client.DirListPath) ;
         if Assigned (Client.DataStream) then begin
             Client.DataStream.Seek(0, 0);
-            if not DisplayRaw.Checked then
-                Client.DataStreamReadString(Buf, Client.DataStream.Size,
-                                            Client.CurrentCodePage)
-            else
-                Client.DataStreamReadString(Buf, Client.DataStream.Size, CP_ACP);
+            Client.DataStreamReadString(Buf, Client.DataStream.Size,
+                                                    Client.CurrentCodePage);
             Client.DataStream.Seek(0, 0);
             InfoMemo.Lines.Add(Buf);
         end;
@@ -887,12 +884,7 @@ end;
 procedure TFtpServerForm.FtpServer1ClientCommand(Sender: TObject;
   Client: TFtpCtrlSocket; var Keyword, Params, Answer: TFtpString);
 begin
-    if not DisplayRaw.Checked then
-        InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' +
-                       Keyword + ' ' + Params)            // Unicode version
-    else
-        InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' +
-                    Keyword + ' ' + String(Client.RawParams));  // UTF8 version
+    InfoMemo.Lines.Add('< ' + Client.SessIdInfo + ' ' + Keyword + ' ' + Params);
 end;
 
 
@@ -902,12 +894,8 @@ procedure TFtpServerForm.FtpServer1AnswerToClient(
     Client     : TFtpCtrlSocket;
     var Answer : TFtpString);
 begin
-    if not DisplayRaw.Checked then
-        InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
-          IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + Answer)  // Unicode version
-    else
-        InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
-       IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + String(Client.RawAnswer));  // UTF8 version
+    InfoMemo.Lines.Add('> ' + Client.SessIdInfo + ' [' +
+                  IntToStr (Client.ReqDurMilliSecs) + 'ms] ' + Answer);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1164,12 +1152,6 @@ end;
 procedure TFtpServerForm.DisplayDirectories1Click(Sender: TObject);
 begin
     DisplayDirectories1.Checked := NOT DisplayDirectories1.Checked;
-end;
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpServerForm.DisplayRawClick(Sender: TObject);
-begin
-    DisplayRaw.Checked := NOT DisplayRaw.Checked;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
