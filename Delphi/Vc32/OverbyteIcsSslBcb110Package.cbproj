@@ -126,10 +126,7 @@
     </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsFtpSrv.pas">
       <BuildOrder>16</BuildOrder>
-    </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsFtpSrvC.pas">
-      <BuildOrder>17</BuildOrder>
-    </DelphiCompile>
+    </DelphiCompile>    
     <DelphiCompile Include="OverByteIcsFtpSrvT.pas">
       <BuildOrder>18</BuildOrder>
     </DelphiCompile>

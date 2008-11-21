@@ -197,10 +197,7 @@
 			</DelphiCompile>
 			<ResFiles Include="OverbyteIcsFingCli.dcr">
 				<BuildOrder>13</BuildOrder>
-			</ResFiles>
-			<DelphiCompile Include="OverbyteIcsFtpSrvC.pas">
-				<BuildOrder>20</BuildOrder>
-			</DelphiCompile>
+			</ResFiles>			
 			<DelphiCompile Include="OverByteIcsFtpSrvT.pas">
 				<BuildOrder>21</BuildOrder>
 			</DelphiCompile>
