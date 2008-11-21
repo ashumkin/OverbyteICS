@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.03
+Version:      V7.04
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -950,6 +950,7 @@ Nov 16, 2008 V7.02 Arno simplified some code page related code, added option
              RawByteString by AnsiString in several routines.
 Nov 18, 2008 V7.03 Arno - Protection level on the data channel was not set
              properly. Set it only in case of PROT command succeeded.
+Nov 21, 2008 V7.04 Arno - Allow C++ Builder
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpCli;
@@ -1031,9 +1032,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 703;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.03 ';
-  FtpClientId : String = 'ICS FTP Client V7.03 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 704;
+  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.04 ';
+  FtpClientId : String = 'ICS FTP Client V7.04 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1759,7 +1760,7 @@ Description:  A component adding SSL support to TFtpCli (RFC-2228).
               warnings.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF DELPHI7_UP}
+{$IFNDEF COMPILER7_UP}
     Bomb('This unit requires Delphi 7 or later !');
 {$ENDIF}
 {$B-}                                 { Enable partial boolean evaluation   }

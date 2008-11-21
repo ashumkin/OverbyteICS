@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.03
+Version:      7.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -346,7 +346,8 @@ Nov 14, 2008 V7.02 Arno fixed a few thread issues. And reworked UTF-8 support.
              default options for ftpsCwdCheck and ftpsCdupHome
 Nov 21, 2008 V7.03 Angus fixed TriggerSendAnswer/AnswerToClient did not allow answer
                 to be changed, raw protocol no longer available as public
-
+Nov 22, 2008 V7.04 Arno completed V7.03, it did not compile in D2009,
+             allow C++ Builder.
 
 
 Angus pending -
@@ -378,7 +379,8 @@ unit OverbyteIcsFtpSrv;
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
-{$ELSE}
+{$ENDIF}
+{$IFNDEF COMPILER7_UP}
     Bomb('This component requires Delphi 7 or later');
 {$ENDIF}
 {$IFDEF BCB3_UP}
@@ -439,8 +441,8 @@ uses
 
 
 const
-    FtpServerVersion         = 703;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.03 ';
+    FtpServerVersion         = 704;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.04 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -2579,7 +2581,7 @@ begin
             Client.Options := Client.Options + [ftpUtf8ON];  { AG V7.02  }
       {$IFDEF COMPILER12_UP}
         { Convert buffer data to UnicodeString AG V7.02 }
-        Params := AnsiToUnicode(Client.RawParams, Client.CurrentCodePage);
+        Params := AnsiToUnicode(RawParams, Client.CurrentCodePage);
       {$ELSE}
         { Convert buffer data to AnsiString ( potential data loss! ) AG V7.02 }
         if (Client.CurrentCodePage = CP_UTF8) then
