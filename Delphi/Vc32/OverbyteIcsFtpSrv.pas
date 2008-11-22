@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.04
+Version:      7.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -346,8 +346,12 @@ Nov 14, 2008 V7.02 Arno fixed a few thread issues. And reworked UTF-8 support.
              default options for ftpsCwdCheck and ftpsCdupHome
 Nov 21, 2008 V7.03 Angus fixed TriggerSendAnswer/AnswerToClient did not allow answer
                 to be changed, raw protocol no longer available as public
-Nov 22, 2008 V7.04 Arno completed V7.03, it did not compile in D2009,
+Nov 21, 2008 V7.04 Arno completed V7.03, it did not compile in D2009,
              allow C++ Builder.
+Nov 22, 2008 V7.05 Arno fixed the FEAT response, rfc2389 says that each feature
+             line in the feature-listing begins with a single space. But in the
+             ICS FTP server a feature line in the listing began with two spaces
+             which prevented some clients from seeing the features.
 
 
 Angus pending -
@@ -441,8 +445,8 @@ uses
 
 
 const
-    FtpServerVersion         = 704;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.04 ';
+    FtpServerVersion         = 705;
+    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.05 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -5680,18 +5684,18 @@ begin
     try
         Client.CurCmdType := ftpcFEAT;
         Answer := msgFeatFollows + #13#10 +
-                  '  HOST'+ #13#10 +             { angus V7.01 }
-                  '  SIZE'+ #13#10 +
-                  '  REST STREAM'+ #13#10 +      { angus V1.39 (been supported for years) }
-                  '  MDTM'+ #13#10 +
-                  '  MDTM YYYYMMDDHHMMSS[+-TZ] filename'+ #13#10 +       { angus V1.38 }
-                  '  MLST size*;type*;perm*;create*;modify*;'+ #13#10 +  { angus V1.38 }
-                  '  MFMT'+ #13#10 +                                     { angus V1.39 }
-                  '  MD5'+ #13#10 +                                      { angus V1.39 }
-                  '  XCRC "filename" start end'+ #13#10 +                { angus V1.54 }
-                  '  XMD5 "filename" start end'+ #13#10 +                { angus V1.54 }
-                  '  CLNT'+ #13#10 +                                     { angus V1.54 }
-                  '  SITE INDEX;ZONE';                                   { angus V1.54 }
+                  ' HOST'+ #13#10 +             { angus V7.01 }
+                  ' SIZE'+ #13#10 +
+                  ' REST STREAM'+ #13#10 +      { angus V1.39 (been supported for years) }
+                  ' MDTM'+ #13#10 +
+                  ' MDTM YYYYMMDDHHMMSS[+-TZ] filename'+ #13#10 +       { angus V1.38 }
+                  ' MLST size*;type*;perm*;create*;modify*;'+ #13#10 +  { angus V1.38 }
+                  ' MFMT'+ #13#10 +                                     { angus V1.39 }
+                  ' MD5'+ #13#10 +                                      { angus V1.39 }
+                  ' XCRC "filename" start end'+ #13#10 +                { angus V1.54 }
+                  ' XMD5 "filename" start end'+ #13#10 +                { angus V1.54 }
+                  ' CLNT'+ #13#10 +                                     { angus V1.54 }
+                  ' SITE INDEX;ZONE';                                   { angus V1.54 }
         if Assigned (FOnSiteMsg) then Answer := Answer + ';MSG';         { angus V1.54 }
         if Assigned (FOnSiteExec) then Answer := Answer + ';EXEC';       { angus V1.54 }
         if Assigned (FOnSitePaswd) then Answer := Answer + ';PSWD';      { angus V1.54 }
@@ -5699,23 +5703,23 @@ begin
                         Answer := Answer + ';CMLSD;DMLSD'; { angus V1.54 }
         Answer := Answer + #13#10;
         if Assigned (FOnCombine) then
-               Answer := Answer + '  COMB'+ #13#10; { angus V1.54 }
+               Answer := Answer + ' COMB'+ #13#10; { angus V1.54 }
     {$IFDEF USE_MODEZ}              { angus V1.54 }
         if ftpModeZCompress in Client.Options then
-               Answer := Answer + '  MODE Z'+ #13#10;
+               Answer := Answer + ' MODE Z'+ #13#10;
     {$ENDIF}
         if ftpsSiteXmlsd in FOptions then
-               Answer := Answer + '  XCMLSD' + #13#10 +
-                                  '  XDMLSD' + #13#10;        { angus V7.01 }
+               Answer := Answer + ' XCMLSD' + #13#10 +
+                                  ' XDMLSD' + #13#10;        { angus V7.01 }
         if ftpsEnableUtf8 in FOptions then
-               Answer := Answer + '  UTF8' + #13#10 +
-                                  '  LANG ' + FLanguage + #13#10 +
-                                  '  OPTS MODE;UTF8;' + #13#10; { angus V7.01 }
+               Answer := Answer + ' UTF8' + #13#10 +
+                                  ' LANG ' + FLanguage + #13#10 +
+                                  ' OPTS MODE;UTF8;' + #13#10; { angus V7.01 }
     {$IFDEF USE_SSL}
         if Self is TSslFtpServer then begin     {  V1.48 }
         if TSslFtpserver(Self).FFtpSslTypes <> [] then begin             { V1.47 }
                 if not (ftpImplicitSsl in TSslFtpserver(Self).FFtpSslTypes) then begin
-                Answer := Answer + '  AUTH ';
+                Answer := Answer + ' AUTH ';
                 if ftpAuthTls in TSslFtpserver(Self).FFtpSslTypes then
                     Answer := Answer + 'TLS;';
                 if ftpAuthSsl in TSslFtpserver(Self).FFtpSslTypes then
@@ -5729,8 +5733,8 @@ begin
             {if TSslFtpserver(Self).FFtpSslType = sslTypeAuthSsl then
                 Answer := Answer + '  AUTH TLS;SSL;' + #13#10;}
             end;
-            Answer := Answer + '  PROT C;P;' + #13#10 +
-                               '  PBSZ'      + #13#10;
+            Answer := Answer + ' PROT C;P;' + #13#10 +
+                               ' PBSZ'      + #13#10;
             end;
         end;
     {$ENDIF}
