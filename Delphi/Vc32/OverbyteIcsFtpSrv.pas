@@ -5729,7 +5729,7 @@ begin
                 if ftpAuthTlsC in TSslFtpserver(Self).FFtpSslTypes then
                     Answer := Answer + 'TLS-C;';
                 Answer := Answer +  #13#10 +
-                          '  CCC'+ #13#10;
+                          ' CCC'+ #13#10;
             {if TSslFtpserver(Self).FFtpSslType = sslTypeAuthSsl then
                 Answer := Answer + '  AUTH TLS;SSL;' + #13#10;}
             end;
