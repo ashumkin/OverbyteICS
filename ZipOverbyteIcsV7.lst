@@ -9,9 +9,25 @@ Default.dof
 
 Delphi\Internet\fp_small.gif
 Delphi\Internet\ics_logo.gif
+
+Delphi\Internet\OverbyteIcsCliDemo.bdsproj
+Delphi\Internet\OverbyteIcsCliDemo.dproj
+Delphi\Internet\OverbyteIcsCliDemo.dpr
+Delphi\Internet\OverbyteIcsCliDemo.res
+Delphi\Internet\OverbyteIcsCliDemo1.pas
+Delphi\Internet\OverbyteIcsCliDemo1.dfm
+
+Delphi\Internet\OverbyteIcsBinCliDemo.bdsproj
+Delphi\Internet\OverbyteIcsBinCliDemo.dproj
+Delphi\Internet\OverbyteIcsBinCliDemo.dpr
+Delphi\Internet\OverbyteIcsBinCliDemo.res
+Delphi\Internet\OverbyteIcsBinCliDemo1.pas
+Delphi\Internet\OverbyteIcsBinCliDemo1.dfm
+
 Delphi\Internet\OverbyteIcsConFtp.bdsproj
 Delphi\Internet\OverbyteIcsConFtp.dpr
 Delphi\Internet\OverbyteIcsConFtp.dproj
+
 Delphi\Internet\OverbyteIcsDel100Sam.bdsgroup
 Delphi\Internet\OverByteIcsDel110Sam.groupproj
 Delphi\Internet\OverByteIcsDel120Sam.groupproj

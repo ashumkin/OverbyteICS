@@ -1,38 +1,22 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{e5830305-6176-45f4-81bc-320265b0a7e0}</ProjectGuid>
-    <MainSource>OverbyteIcsConFtp.dpr</MainSource>
+    <ProjectGuid>{d86f53ad-9ab0-4b53-89b5-5981bb504770}</ProjectGuid>
+    <MainSource>OverbyteIcsBinCliDemo.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-    <DCC_DependencyCheckOutputName>OverbyteIcsConFtp.exe</DCC_DependencyCheckOutputName>
+    <DCC_DependencyCheckOutputName>OverbyteIcsBinCliDemo.exe</DCC_DependencyCheckOutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Version>7.0</Version>
     <DCC_DebugInformation>False</DCC_DebugInformation>
     <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
     <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-    <DCC_UnitSearchPath>..\vc32</DCC_UnitSearchPath>
-    <DCC_ResourcePath>..\vc32</DCC_ResourcePath>
-    <DCC_ObjPath>..\vc32</DCC_ObjPath>
-    <DCC_IncludePath>..\vc32</DCC_IncludePath>
-    <DCC_Define>NOFORMS;RELEASE</DCC_Define>
-    <DCC_SYMBOL_DEPRECATED>False</DCC_SYMBOL_DEPRECATED>
-    <DCC_SYMBOL_LIBRARY>False</DCC_SYMBOL_LIBRARY>
-    <DCC_SYMBOL_PLATFORM>False</DCC_SYMBOL_PLATFORM>
-    <DCC_UNIT_PLATFORM>False</DCC_UNIT_PLATFORM>
+    <DCC_Define>RELEASE</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
-    <DCC_UnitSearchPath>..\vc32</DCC_UnitSearchPath>
-    <DCC_ResourcePath>..\vc32</DCC_ResourcePath>
-    <DCC_ObjPath>..\vc32</DCC_ObjPath>
-    <DCC_IncludePath>..\vc32</DCC_IncludePath>
-    <DCC_Define>NOFORMS;DEBUG</DCC_Define>
-    <DCC_SYMBOL_DEPRECATED>False</DCC_SYMBOL_DEPRECATED>
-    <DCC_SYMBOL_LIBRARY>False</DCC_SYMBOL_LIBRARY>
-    <DCC_SYMBOL_PLATFORM>False</DCC_SYMBOL_PLATFORM>
-    <DCC_UNIT_PLATFORM>False</DCC_UNIT_PLATFORM>
+    <DCC_Define>DEBUG</DCC_Define>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>
@@ -43,9 +27,6 @@
       <Parameters Name="LoadAllSymbols">True</Parameters>
       <Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
     </Parameters>
-    <Language>
-      <Language Name="ProjectLang">$0000080C</Language>
-    </Language>
     <VersionInfo>
       <VersionInfo Name="IncludeVerInfo">False</VersionInfo>
       <VersionInfo Name="AutoIncBuild">False</VersionInfo>
@@ -58,7 +39,7 @@
       <VersionInfo Name="Special">False</VersionInfo>
       <VersionInfo Name="Private">False</VersionInfo>
       <VersionInfo Name="DLL">False</VersionInfo>
-      <VersionInfo Name="Locale">2060</VersionInfo>
+      <VersionInfo Name="Locale">1031</VersionInfo>
       <VersionInfo Name="CodePage">1252</VersionInfo>
     </VersionInfo>
     <VersionInfoKeys>
@@ -73,16 +54,84 @@
       <VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
       <VersionInfoKeys Name="Comments"></VersionInfoKeys>
     </VersionInfoKeys>
+    <Excluded_Packages>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <Excluded_Packages Name="$(BDS)\bin\dcltee7100.bpl">TeeChart Components</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\dclIntraweb_90_100.bpl">VCL for the Web 9.0 Design Package for CodeGear RAD Studio</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\dclwebsnap100.bpl">CodeGear WebSnap Components</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\bcboffice2k100.bpl">CodeGear C++Builder Office 2000 Servers Package</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\bcbofficexp100.bpl">CodeGear C++Builder Office XP Servers Package</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\dcloffice2k100.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\dclofficexp100.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+    </Excluded_Packages>
     <Source>
-      <Source Name="MainSource">OverbyteIcsConFtp.dpr</Source>
+      <Source Name="MainSource">OverbyteIcsBinCliDemo.dpr</Source>
     </Source>
   </Delphi.Personality> </BorlandProject></BorlandProject>
   </ProjectExtensions>
   <ItemGroup />
   <ItemGroup>
-    <DelphiCompile Include="OverbyteIcsConFtp.dpr">
+    <DelphiCompile Include="OverbyteIcsBinCliDemo.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <DCCReference Include="OverbyteIcsBinCliDemo1.pas">
+      <Form>BinClientForm</Form>
+    </DCCReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
 </Project>

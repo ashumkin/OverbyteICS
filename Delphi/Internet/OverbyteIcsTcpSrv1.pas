@@ -2,13 +2,14 @@
 
 Author:       François Piette
 Creation:     Aug 29, 1999
-Version:      1.04
+Version:      7.01
 Description:  Basic TCP server showing how to use TWSocketServer and
-              TWSocketClient components.
+              TWSocketClient components and how to send binary data
+              which requires OverbyteIcsBinCliDemo as client application.
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2007 by François PIETTE
+Legal issues: Copyright (C) 1999-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -43,7 +44,7 @@ Oct 15, 2000 V1.02 Display remote and local socket binding when a client
 Nov 11, 2000 V1.03 Implemented OnLineLimitExceeded event
 Dec 15, 2001 V1.03 In command help changed #10#13 to the correct value #13#10.
 Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
-
+Nov 28, 2008 V7.01 A.Garrels added command binary, reqiures OverbyteIcsBinCliDemo.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTcpSrv1;
@@ -56,8 +57,8 @@ uses
   OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl;
 
 const
-  TcpSrvVersion = 104;
-  CopyRight     = ' TcpSrv (c) 1999-2007 by François PIETTE. V1.04';
+  TcpSrvVersion = 701;
+  CopyRight     = ' TcpSrv (c) 1999-2008 by François PIETTE. V7.01';
   WM_APPSTARTUP = WM_USER + 1;
 
 type
@@ -70,6 +71,22 @@ type
   public
     RcvdLine    : String;
     ConnectTime : TDateTime;
+  end;
+
+  { This record is prepended to binary data }
+  PHdrRec = ^THdrRec;
+  THdrRec = record
+    case Integer of
+      0: (
+        ID1     : Byte;
+        ID2     : Byte;
+        ID3     : Byte;
+        ID4     : Byte;
+        SizeLo  : Word;
+        SizeHi  : Word);
+      1: (
+        ID    : Longint;
+        Size  : Longint);
   end;
 
   TTcpSrvForm = class(TForm)
@@ -123,7 +140,7 @@ begin
     { Compute INI file name based on exe file name. Remove path to make it  }
     { go to windows directory.                                              }
     FIniFileName := GetIcsIniFileName;
-{$IFDEF DELPHI10}
+{$IFDEF DELPHI10_UP}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
 {$ENDIF}
@@ -291,6 +308,7 @@ end;
 procedure TTcpSrvForm.ProcessData(Client : TTcpSrvClient);
 var
     I       : Integer;
+    P       : Pointer; 
     AClient : TTcpSrvClient;
 begin
     { We could replace all those CompareText with a table lookup }
@@ -299,7 +317,36 @@ begin
                        '  exit' + #13#10 +
                        '  who' + #13#10 +
                        '  time' + #13#10 +
-                       '  exception' + #13#10)
+                       //'  exception' + #13#10 +
+                       '  binary [size]' + #13#10)
+    else if CompareText(Copy(Client.RcvdLine, 1, 6), 'binary') = 0 then
+    begin
+        I := StrToIntDef(Copy(Client.RcvdLine, 7, MaxInt), 0);
+        if I <= 0 then
+            Client.SendStr('500 Error binary size not spezified'#13#10)
+        else begin
+            if I > MaxWord then
+            begin
+                Client.SendStr('500 Error binary size limited to ' +
+                               IntToStr(MaxWord) + ' bytes'#13#10);
+                Exit;
+            end
+            else
+                Client.SendStr('200 OK Binary ' + IntToStr(I) +
+                           ' bytes requested'#13#10);
+            Inc(I, SizeOf(THdrRec));
+            GetMem(P, I);
+            try
+                FillChar(P^, I, '1');
+                PHdrRec(P)^.ID      := 0; // any value < 32 marks = valid binary data.
+                PHdrRec(P)^.Size    := I - SizeOf(THdrRec);
+                PAnsiChar(P)[I - 1] := 'E';
+                Client.Send(P, I);
+            finally
+                FreeMem(P);
+            end;    
+        end;
+    end                   
     else if CompareText(Client.RcvdLine, 'exit') = 0 then
         { We can't call Client.Close here because we will immediately }
         { reenter DataAvailable event handler with same line because  }
