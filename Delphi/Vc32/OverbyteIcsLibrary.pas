@@ -319,6 +319,7 @@ function IcsIntToHexA(N : Integer; Digits: Byte) : AnsiString;
 function  _IntToHex(Value: Integer; Digits: Integer): String;
 {#$EXTERNALSYM StrToInt}
 function  _StrToInt(const S: String): Integer;
+function  _StrToInt64(const S: String): Int64;
 
 function  _StrPas(const P : PAnsiChar) : AnsiString; {$IFDEF COMPILER12_UP} overload;
 function  _StrPas(const P : PWideChar) : UnicodeString; overload;
@@ -913,6 +914,11 @@ end;
 function _StrToInt(const S: String): Integer;
 begin
     Result := SysUtils.StrToInt(S);
+end;
+
+function _StrToInt64(const S: String): Int64;
+begin
+    Result := SysUtils.StrToInt64(S);
 end;
 
 function _StrPas(const P : PAnsiChar) : AnsiString; // Unicode change
