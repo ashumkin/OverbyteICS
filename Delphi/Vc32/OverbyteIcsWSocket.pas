@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.21
+Version:      7.22
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -626,6 +626,10 @@ Sep 19, 2008 V6.19 A. Garrels changed some AnsiString types to RawByteString.
 Sep 21, 2008 V6.20 A. Garrels removed BoolToStr(), available since D7
 Oct 22, 2008 V7.21 A. Garrels removed the const modifier from parameter Data
              in function SendTo to fix a bug in C++ Builder.
+Nov 03, 2008 V7.22 Added property Counter, a class reference to TWSocketCounter
+             which provides some useful automatic counters. By default property
+             Counter is unassigned and has to be enabled by a call to
+             CreateCounter.
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -729,8 +733,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 721;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.21 ';
+  WSocketVersion            = 722;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.22 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -808,6 +812,23 @@ type
 
 type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 
+  TWSocketCounter = class(TObject)
+  private
+    FConnectDT    : TDateTime;
+    FConnectTick  : Cardinal;
+    FLastRecvTick : Cardinal;
+    FLastSendTick : Cardinal;
+    function  GetLastAliveTick : Cardinal;
+  public
+    procedure SetConnected; virtual;
+    property  ConnectTick   : Cardinal  read FConnectTick  write FConnectTick;
+    property  ConnectDT     : TDateTime read FConnectDT    write FConnectDT;
+    property  LastAliveTick : Cardinal  read GetLastAliveTick;
+    property  LastRecvTick  : Cardinal  read FLastRecvTick write FLastRecvTick;
+    property  LastSendTick  : Cardinal  read FLastSendTick write FLastSendTick;
+  end;
+  TWSocketCounterClass = class of TWSocketCounter;
+
   TCustomWSocket = class(TIcsWndControl)
   private
     FDnsResult          : String;
@@ -832,6 +853,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   {$IFDEF VER80}
     FTrumpetCompability : Boolean;
   {$ENDIF}
+    FCounter            : TWSocketCounter;
+    FCounterClass       : TWsocketCounterClass;
   protected
     FHSocket            : TSocket;
     FASocket            : TSocket;               { Accepted socket }
@@ -943,6 +966,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetSendFlags(newValue : TSocketSendFlags);
     function    GetSendFlags : TSocketSendFlags;
     procedure   SetAddr(InAddr : String);
+    procedure   SetCounterClass(const Value: TWSocketCounterClass);
     procedure   SetRemotePort(sPort : String); virtual;
     function    GetRemotePort : String;
     procedure   SetLocalAddr(sLocalAddr : String);
@@ -1066,13 +1090,15 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   ThreadAttach; override;
     procedure   ThreadDetach; override;
 {$ENDIF}
+    procedure   CreateCounter; virtual;
+    procedure   DestroyCounter;
 {$IFDEF NOFORMS}
     property    Terminated         : Boolean        read  FTerminated
                                                     write FTerminated;
     property    OnMessagePump      : TNotifyEvent   read  FOnMessagePump
                                                     write FOnMessagePump;
 {$ENDIF}
-    property BufferedByteCount: LongInt             read FBufferedByteCount;  { V5.20 }
+    property    BufferedByteCount  : LongInt        read FBufferedByteCount;  { V5.20 }
   protected
   {$IFDEF CLR}
     property Name : String                          read  FName
@@ -1175,6 +1201,9 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 {$ENDIF}
     property OnDebugDisplay : TDebugDisplay         read  FOnDebugDisplay
                                                     write FOnDebugDisplay;
+    property Counter      : TWSocketCounter         read  FCounter;
+    property CounterClass : TWsocketCounterClass    read  FCounterClass
+                                                    write SetCounterClass;
   end;
 
   TSocksState          = (socksData, socksNegociateMethods, socksAuthenticate, socksConnect);
@@ -2144,6 +2173,7 @@ type
     property SocketRcvBufSize;     {AG 03/10/07}
     property SocketSndBufSize;     {AG 03/10/07}
     property OnDebugDisplay;
+    property Counter;
   published
     property Addr;
     property Port;
@@ -4903,6 +4933,50 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketCounter.GetLastAliveTick : Cardinal;
+(*
+begin
+    if FLastRecvTick > FLastSendTick then
+        if FLastRecvTick > FConnectTick then
+            Result := FLastRecvTick
+        else
+            Result := FConnectTick
+    else
+        if FLastSendTick > FConnectTick then
+            Result := FLastSendTick
+        else
+            Result := FConnectTick;
+*)
+asm
+    mov ecx, [eax].FLastRecvTick
+    mov edx, [eax].FLastSendTick
+    mov eax, [eax].FConnectTick
+    cmp eax, edx
+    jb  @below
+    mov edx, ecx
+    jmp @more
+@below:
+    mov eax, ecx
+@more:
+    cmp eax, edx
+    jb  @done
+    ret
+@done:
+    mov eax, edx
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketCounter.SetConnected;
+begin
+    FLastRecvTick := 0;
+    FLastSendTick := 0;
+    FConnectTick  := _GetTickCount;
+    FConnectDT    := _Now;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF WIN32}
 procedure TCustomWSocket.Notification(AComponent: TComponent; operation: TOperation);
 begin
@@ -5101,6 +5175,7 @@ begin
     FMultiCastAddrStr   := '';
     FAddrStr            := '';
     FPortStr            := '';
+    FCounterClass       := TWSocketCounter;
     AssignDefaultValue;
 
 {$IFDEF COMPILER2_UP}
@@ -5152,7 +5227,39 @@ begin
         FDnsResultList := nil;
     end;
 
+    if Assigned(FCounter) then begin
+        FCounter.Free;
+        FCounter := nil;
+    end;
+
     inherited Destroy;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.CreateCounter;
+begin
+    if Assigned(FCounter) then
+        _FreeAndNil(FCounter);
+    FCounter := FCounterClass.Create;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.DestroyCounter;
+begin
+    _FreeAndNil(FCounter);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetCounterClass(const Value: TWSocketCounterClass);
+begin
+    if Assigned(FCounter) then
+        raise ESocketException.Create('Property CounterClass can only be set ' +
+              'when property Counter is not assigned! Call DestroyCounter first.');
+    if Value = nil then
+        raise ESocketException.Create('Property CounterClass may not be nil!');
 end;
 
 
@@ -5273,6 +5380,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.DupConnected;
 begin
+    if Assigned(FCounter) then
+        FCounter.SetConnected;
     ChangeState(wsConnected);
 end;
 
@@ -5341,6 +5450,8 @@ begin
 {   FRcvdFlag := (Result > 0);}
     { If we received the requested size, we may need to receive more }
     FRcvdFlag := (Result >= BufferSize);
+    if Assigned(FCounter) and (Result > 0) then
+        FCounter.FLastRecvTick := _GetTickCount;
 end;
 
 
@@ -5524,8 +5635,11 @@ begin
                                               TSockAddr(sin), SizeOf(sin))
     else
         Result := WSocket_Synchronized_Send(FHSocket, Data, Len, FSendFlags);
-    if Result > 0 then
+    if Result > 0 then begin
+        if Assigned(FCounter) then
+            FCounter.FLastSendTick := _GetTickCount;
         TriggerSendData(Result);
+    end;
 end;
 
 
@@ -5828,7 +5942,7 @@ var
     bMore        : Boolean;
     lCount       : {$IFDEF FPC} LongWord; {$ELSE} u_long; {$ENDIF}
 {$IFDEF WIN32}
-    TrashCanBuf  : array [0..1023] of char;
+    TrashCanBuf  : array [0..1023] of AnsiChar;  { AG 1/12/08 }
 {$ENDIF}
     TrashCan     : TWSocketData;
     TrashCanSize : Integer;
@@ -7831,6 +7945,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.TriggerSessionConnectedSpecial(Error : Word);
 begin
+    if Assigned(FCounter) and (FType = SOCK_STREAM) and (Error = 0) then
+        FCounter.SetConnected;
     TriggerSessionConnected(Error);
 end;
 
