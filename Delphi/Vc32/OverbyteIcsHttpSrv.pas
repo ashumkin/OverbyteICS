@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.11
+Version:      7.12
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -222,6 +222,19 @@ Oct 28, 2008 V7.11 A.Garrels - Replaced symbol UseInt64ForHttpRange by STREAM64.
              Fixed responses and  an infinite loop when a byte-range-set was
              unsatisfiable. Added a fix for content ranges with files > 2GB as
              suggested by Lars Gehre <lars@dvbviewer.com>.
+Nov 03, 2008 V7.12 A.Garrels - Added Keep-Alive timeout and a maximum number
+             of allowed requests during a persistent connection. Set property
+             KeepAliveTimeSec to zero in order disable this feature entirely,
+             otherwise persistent connections are dropped either after an idle
+             time of value KeepAliveTimeSec or if the maximum number of requests
+             (property MaxRequestKeepAlive) is reached. Multiple calls to
+             CloseDelayed replaced by a graceful shutdown procedure to ensure
+             all data is sent before the socket handle is closed. It's achieved
+             by calling procedure PrepareGraceFullShutDown before data is actually
+             sent, when ConnectionDataSent triggers ShutDown(1) is called and
+             in case a client won't close the connection is dropped after 5
+             seconds. New header Keep-Alive is sent if a client explcitely
+             requests Connection: Keep-Alive.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -293,11 +306,11 @@ uses
     OverbyteIcsSspi,
     OverbyteIcsNtlmSsp,
 {$ENDIF}
-    OverbyteIcsWSocket, OverbyteIcsWSocketS;
+    OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 711;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V7.11 ';
+    THttpServerVersion = 712;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V7.12 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -475,6 +488,9 @@ type
         FAuthTypes                 : TAuthenticationTypes;
         FAuthenticated             : Boolean;
         FAuthDigestBody            : String;
+        FKeepAliveTimeSec          : Cardinal;
+        FMaxRequestsKeepAlive      : Integer;
+        FShutDownFlag              : Boolean;
         function  AuthGetMethod: TAuthenticationType;
         procedure AuthCheckAuthenticated; virtual;
         function  AuthDigestCheckPassword(const Password: string): Boolean;
@@ -528,6 +544,7 @@ type
         FOptions               : THttpOptions;
         FOutsideFlag           : Boolean;
         FKeepAlive             : Boolean;        {Bjornar}
+        FKeepAliveRequested    : Boolean;
         FRequestRangeValues    : THttpRangeList; {ANDREAS}
         FDataSent              : THttpRangeInt; {TURCAN}
         FDocSize               : THttpRangeInt; {TURCAN}
@@ -584,6 +601,8 @@ type
         procedure   SendDocument(SendType : THttpSendType); virtual;
         procedure   SendHeader(Header : String); virtual;
         procedure   PostedDataReceived; virtual;
+        procedure   PrepareGraceFullShutDown; virtual;
+        function    GetKeepAliveHdrLines: String;
         { AnswerPage will take a HTML template and replace all tags in this
           template with data provided in the Tags argument.
           The tags in the template must have the form <#TagName>.
@@ -673,7 +692,12 @@ type
         property RequestHostName       : String      read  FRequestHostName;    {DAVID}
         property RequestHostPort       : String      read  FRequestHostPort;    {DAVID}
         property RequestConnection     : String      read  FRequestConnection;
-        property RequestRangeValues    : THttpRangeList  read  FRequestRangeValues; {ANDREAS}
+        property RequestRangeValues    : THttpRangeList
+                                                     read  FRequestRangeValues; {ANDREAS}
+        property KeepAliveTimeSec      : Cardinal    read  FKeepAliveTimeSec
+                                                     write FKeepAliveTimeSec;
+        property MaxRequestsKeepAlive  : Integer     read  FMaxRequestsKeepAlive
+                                                     write FMaxRequestsKeepAlive;                                             
     published
         { Where all documents are stored. Default to c:\wwwroot }
         property DocDir         : String            read  FDocDir
@@ -757,40 +781,43 @@ type
     THttpServer = class(TComponent)
     protected
         { FWSocketServer will handle all client management work }
-        FWSocketServer      : TWSocketServer;
-        FPort               : String;
-        FAddr               : String;
-        FMaxClients         : Integer;              {DAVID}
-        FClientClass        : THttpConnectionClass;
-        FDocDir             : String;
-        FTemplateDir        : String;
-        FDefaultDoc         : String;
-        FLingerOnOff        : TSocketLingerOnOff;
-        FLingerTimeout      : Integer;              { In seconds, 0 = disabled }
-        FOptions            : THttpOptions;
-        FOnServerStarted    : TNotifyEvent;
-        FOnServerStopped    : TNotifyEvent;
-        FOnClientConnect    : THttpConnectEvent;
-        FOnClientDisconnect : THttpConnectEvent;
-        FOnGetDocument      : THttpGetEvent;
-        FOnHeadDocument     : THttpGetEvent;
-        FOnPostDocument     : THttpGetEvent;
-        FOnPostedData       : THttpPostedDataEvent;
-        FOnHttpRequestDone  : THttpRequestDoneEvent;
-        FOnBeforeProcessRequest: THttpBeforeProcessEvent;    {DAVID}
-        FOnFilterDirEntry   : THttpFilterDirEntry;
-        FListenBacklog      : Integer; {Bjørnar}
+        FWSocketServer            : TWSocketServer;
+        FPort                     : String;
+        FAddr                     : String;
+        FMaxClients               : Integer;              {DAVID}
+        FClientClass              : THttpConnectionClass;
+        FDocDir                   : String;
+        FTemplateDir              : String;
+        FDefaultDoc               : String;
+        FLingerOnOff              : TSocketLingerOnOff;
+        FLingerTimeout            : Integer;        { In seconds, 0 = disabled }
+        FOptions                  : THttpOptions;
+        FOnServerStarted          : TNotifyEvent;
+        FOnServerStopped          : TNotifyEvent;
+        FOnClientConnect          : THttpConnectEvent;
+        FOnClientDisconnect       : THttpConnectEvent;
+        FOnGetDocument            : THttpGetEvent;
+        FOnHeadDocument           : THttpGetEvent;
+        FOnPostDocument           : THttpGetEvent;
+        FOnPostedData             : THttpPostedDataEvent;
+        FOnHttpRequestDone        : THttpRequestDoneEvent;
+        FOnBeforeProcessRequest   : THttpBeforeProcessEvent;    {DAVID}
+        FOnFilterDirEntry         : THttpFilterDirEntry;
+        FListenBacklog            : Integer; {Bjørnar}
+        FKeepAliveTimeSec         : Cardinal;
+        FMaxRequestsKeepAlive     : Integer;
+        FHeartBeat                : TIcsTimer;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         //FAuthType                : TAuthenticationType;
-        FAuthTypes               : TAuthenticationTypes;
-        FAuthRealm               : String;
-        FAuthDigestMethod        : TAuthDigestMethod;
-        FOnAuthGetPassword       : TAuthGetPasswordEvent;
-        FOnAuthResult            : TAuthResultEvent;
+        FAuthTypes                : TAuthenticationTypes;
+        FAuthRealm                : String;
+        FAuthDigestMethod         : TAuthDigestMethod;
+        FOnAuthGetPassword        : TAuthGetPasswordEvent;
+        FOnAuthResult             : TAuthResultEvent;
 {$IFDEF USE_NTLM_AUTH}
-        FOnAuthNtlmBeforeValidate: TAuthNtlmBeforeValidate;
+        FOnAuthNtlmBeforeValidate : TAuthNtlmBeforeValidate;
 {$ENDIF}
-        FOnAuthGetType           : TAuthGetTypeEvent;
+        FOnAuthGetType            : TAuthGetTypeEvent;
 {$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
         function  GetIcsLogger: TIcsLogger;                       { V1.38 }
@@ -835,6 +862,8 @@ type
         function  GetClientCount : Integer;
         function  GetClient(nIndex : Integer) : THttpConnection;
         function  GetSrcVersion: String;
+        procedure HeartBeatOnTimer(Sender: TObject); virtual;
+        procedure SetKeepAliveTimeSec(const Value: Cardinal);
     public
         constructor Create(AOwner: TComponent); override;
         destructor  Destroy; override;
@@ -887,8 +916,12 @@ type
         property LingerTimeout : Integer         read  FLingerTimeout
                                                  write FLingerTimeout;
         { Selected HTTP server optional behaviour }
-        property Options        : THttpOptions      read  FOptions
-                                                    write FOptions;
+        property Options        : THttpOptions   read  FOptions
+                                                 write FOptions;
+        property KeepAliveTimeSec : Cardinal     read  FKeepAliveTimeSec
+                                                 write SetKeepAliveTimeSec;
+        property MaxRequestsKeepAlive : Integer  read  FMaxRequestsKeepAlive
+                                                 write FMaxRequestsKeepAlive;
         { OnServerStrated is triggered when server has started listening }
         property OnServerStarted    : TNotifyEvent
                                                  read  FOnServerStarted
@@ -1312,22 +1345,28 @@ begin
     inherited Create(AOwner);
     CreateSocket;
     FWSocketServer.Name := ClassName + '_SrvSocket' + _IntToStr(SafeWSocketGCount);
-    FClientClass   := THttpConnection;
-    FOptions       := [];
-    FAddr          := '0.0.0.0';
-    FPort          := '80';
-    FMaxClients    := 0;                {DAVID}
-    FListenBacklog := 5; {Bjørnar}
-    FDefaultDoc    := 'index.html';
-    FDocDir        := 'c:\wwwroot';
-    FTemplateDir   := 'c:\wwwroot\templates';
-    FLingerOnOff   := wsLingerNoSet;
-    FLingerTimeout := 0;
+    FClientClass    := THttpConnection;
+    FOptions        := [];
+    FAddr           := '0.0.0.0';
+    FPort           := '80';
+    FMaxClients     := 0;                {DAVID}
+    FListenBacklog  := 5; {Bjørnar}
+    FDefaultDoc     := 'index.html';
+    FDocDir         := 'c:\wwwroot';
+    FTemplateDir    := 'c:\wwwroot\templates';
+    FLingerOnOff    := wsLingerNoSet;
+    FLingerTimeout  := 0;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
-    FAuthRealm     := 'ics';
-    //FAuthType      := atNone;
-    FAuthTypes     := []; 
+    FAuthRealm      := 'ics';
+    //FAuthType       := atNone;
+    FAuthTypes      := [];
 {$ENDIF}
+    FKeepAliveTimeSec     := 10;
+    FMaxRequestsKeepAlive := 100;
+    FHeartBeat            := TIcsTimer.Create(FWSocketServer);
+    FHeartBeat.OnTimer    := HeartBeatOnTimer;
+    FHeartBeat.Interval   := 5000; { It's slow, just used for timeout detection }
+    FHeartBeat.Enabled    := TRUE;
 end;
 
 
@@ -1403,20 +1442,12 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpServer.Stop;
-var
-    I : Integer;
 begin
     if not Assigned(FWSocketServer) then
         Exit;
     FWSocketServer.Close;
     { Disconnect all clients }
-    for I := FWSocketServer.ClientCount - 1 downto 0 do begin
-        try
-            FWSocketServer.Client[I].Abort;
-        except
-            { Ignore any exception here }
-        end;
-    end;
+    FWSocketServer.DisconnectAll;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loProtSpecInfo) then
         DebugLog(loProtSpecInfo, Name + ' stopped');                  { V1.38 }
@@ -1524,6 +1555,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.SetKeepAliveTimeSec(const Value: Cardinal);
+begin
+    if Value > High(Cardinal) div 1000 then
+        FKeepAliveTimeSec := High(Cardinal) div 1000
+    else
+        FKeepAliveTimeSec := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This event handler is triggered when state of server socket has changed.  }
 { We use it to trigger our OnServerStarted event.                           }
 procedure THttpServer.WSocketServerChangeState(
@@ -1550,9 +1591,11 @@ procedure THttpServer.WSocketServerClientCreate(
     Sender : TObject;
     Client : TWSocketClient);
 begin
-    Client.LingerOnOff                  := FLingerOnOff;
-    Client.LingerTimeout                := FLingerTimeout;
-    (Client as THttpConnection).Options := FOptions;
+    Client.LingerOnOff                         := FLingerOnOff;
+    Client.LingerTimeout                       := FLingerTimeout;
+    (Client as THttpConnection).Options        := FOptions;
+    THttpConnection(Client).KeepAliveTimeSec   := FKeepAliveTimeSec ;
+    Client.CreateCounter;
     {$IFDEF USE_SSL}
     if not (Client.Owner is TSslWSocketServer) then
         (Client as THttpConnection).SslEnable := FALSE;
@@ -1585,6 +1628,7 @@ begin
     THttpConnection(Client).OnHttpRequestDone := TriggerHttpRequestDone;
     THttpConnection(Client).OnBeforeProcessRequest := TriggerBeforeProcessRequest; {DAVID}
     THttpConnection(Client).OnFilterDirEntry  := TriggerFilterDirEntry;
+    THttpConnection(Client).MaxRequestsKeepAlive := Self.MaxRequestsKeepAlive;
     TriggerClientConnect(Client, Error);
 end;
 
@@ -1705,6 +1749,43 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function CalcTicksAppart(const T1, T2: LongWord): LongWord;
+begin
+    if T2 >= T1 then
+        Result := T2 - T1
+    else
+        Result := High(LongWord) - T1 + T2;
+    // We can also have strange results when the PC time is changed between
+    // InitialTime and CurrentTime, specially if  CurrentTime is less than
+    // InitialTime ! We got this when an AtomicClock is used on a PC with
+    // real time clock is too fast
+    // If this happend, we symply return 0 as TickDiff.
+    // The code below is then not valid for an interval longer than 24 days.
+    if Result > (High(LongWord) div 2) then
+        Result := 0;
+
+end;
+
+
+{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }
+procedure THttpServer.HeartBeatOnTimer(Sender: TObject);
+var
+    CurTicks : Cardinal;
+    I        : Integer;
+    Cli      : THttpConnection;
+begin
+    CurTicks := GetTickCount;
+    for I := ClientCount - 1 downto 0 do
+    begin
+        Cli := Client[I];
+        if (Cli.KeepAliveTimeSec > 0) and
+           (CalcTicksAppart(Cli.Counter.LastAliveTick, CurTicks) > Cli.KeepAliveTimeSec * 1000) then
+            FWSocketServer.Disconnect(Cli);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF NO_DEBUG_LOG}
 function THttpServer.GetIcsLogger : TIcsLogger;                        { V1.38 }
 begin
@@ -1738,15 +1819,15 @@ end;
 constructor THttpConnection.Create(AOwner : TComponent);
 begin
     inherited Create(AOwner);
-    LineMode            := TRUE;
-    LineEdit            := FALSE;
-    LineEnd             := AnsiChar(#10);
-    FRequestHeader      := TStringList.Create;
-    FState              := hcRequest;
-    OnDataAvailable     := ConnectionDataAvailable;
-    FRequestRangeValues := THttpRangeList.Create; {ANDREAS}
-    ComponentOptions    := [wsoNoReceiveLoop];    { FP 15/05/2005 }
-    FSndBlkSize         :=  BufSize; // default value = 1460
+    LineMode              := TRUE;
+    LineEdit              := FALSE;
+    LineEnd               := AnsiChar(#10);
+    FRequestHeader        := TStringList.Create;
+    FState                := hcRequest;
+    OnDataAvailable       := ConnectionDataAvailable;
+    FRequestRangeValues   := THttpRangeList.Create; {ANDREAS}
+    ComponentOptions      := [wsoNoReceiveLoop];    { FP 15/05/2005 }
+    FSndBlkSize           :=  BufSize; // default value = 1460
 end;
 
 
@@ -2255,6 +2336,15 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpConnection.PrepareGraceFullShutDown;
+begin
+    FKeepAliveTimeSec := 5;
+    FShutDownFlag     := TRUE;
+    OnDataSent        := ConnectionDataSent;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.TriggerAuthGetPassword(
     var PasswdBuf : String);
 begin
@@ -2338,7 +2428,10 @@ begin
         FRequestHeader.Clear;
         FKeepAlive             := FALSE;  {Bjornar, default value. This is set to true when header indicates keep-alive.
                                            Use this value to decide when to shut down the socket}
+        FKeepAliveRequested    := FALSE;
         FHttpVerNum            := 11;     { Assume HTTP 1.1 by default }{ V1.6 }
+        if FKeepAliveTimeSec > 0 then
+            Dec(FMaxRequestsKeepAlive);
         { The line we just received is HTTP command, parse it  }
         ParseRequest;
         { Next lines will be header lines }
@@ -2403,23 +2496,16 @@ begin
             end
             else if _StrLIComp(@FRcvdLine[1], 'Connection:', 11) = 0 then begin
                 FRequestConnection := Copy(FRcvdLine, I, Length(FRcvdLine));
-                {Bjornar}
-                if FVersion = 'HTTP/1.0' then begin
-                    FHttpVerNum := 10;                              { V1.6 }
-                    if _CompareText(FRequestConnection, 'keep-alive') <> 0 then
-                        FKeepAlive := FALSE
-                    else
-                        FKeepAlive := TRUE;
-                end
-                else if FVersion = 'HTTP/1.1' then begin
-                    FHttpVerNum := 11;                              { V1.6 }
-                    if _CompareText(FRequestConnection, 'close') = 0 then
-                        FKeepAlive := FALSE
-                    else
-                        FKeepAlive := TRUE;
-                end;
-                {Bjornar}
+                FKeepAliveRequested := _CompareText(FRequestConnection, 'keep-alive') = 0;
+                if FHttpVerNum = 10 then
+                    FKeepAlive := FKeepAliveRequested
+                else if _CompareText(FRequestConnection, 'close') = 0 then
+                    FKeepAlive := FALSE;
             end
+            {else if _StrLIComp(@FRcvdLine[1], 'keep-alive:', 11) = 0 then begin
+            //Keep-Alive: timeout=3, max=100
+
+            end}
             {ANDREAS}
             else if _StrLIComp(@FRcvdLine[1], 'Range:', 6) = 0 then begin
                 { Init the Byte-range object }
@@ -2469,6 +2555,9 @@ begin
     FVersion := _Trim(_UpperCase(Copy(FRcvdLine, J, I - J)));
     if FVersion = '' then
         FVersion := 'HTTP/1.0';
+    if FVersion = 'HTTP/1.0' then
+        FHttpVerNum := 10;
+    FKeepAlive := FHttpVerNum = 11;
 end;
 
 
@@ -2693,6 +2782,7 @@ begin
             SendHeader(FVersion + ' 416 Requested range not satisfiable' + #13#10 +
             'Content-Type: text/html' + #13#10 +
             'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            GetKeepAliveHdrLines + 
             #13#10);
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
@@ -2711,6 +2801,7 @@ begin
             SendHeader(FVersion + ' 404 Not Found' + #13#10 +
             'Content-Type: text/html' + #13#10 +
             'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            GetKeepAliveHdrLines + 
             #13#10);
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
@@ -2718,9 +2809,29 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpConnection.GetKeepAliveHdrLines: String;
+begin
+    if (FHttpVerNum = 11) then
+    begin
+        if not FKeepAlive then
+            Result := 'Connection: Close' + #13#10
+        else if FKeepAliveRequested then
+            Result := 'Connection: Keep-Alive' + #13#10;
+    end
+    else if FKeepAlive then
+        Result := 'Connection: Keep-Alive' + #13#10;
+
+    if FKeepAlive and FKeepAliveRequested and (FKeepAliveTimeSec > 0) then
+        Result := Result +
+        'Keep-Alive: timeout=' + _IntToStr(FKeepAliveTimeSec) + ', max=' +
+         _IntToStr(FMaxRequestsKeepAlive) + #13#10;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.Answer403;
 var
-    Body : String;
+    Body    : String;
 begin
     Body := '<HTML><HEAD><TITLE>403 Forbidden</TITLE></HEAD>' +
             '<BODY><H1>403 Forbidden</H1>The requested URL ' +
@@ -2729,6 +2840,7 @@ begin
             SendHeader(FVersion + ' 403 Forbidden' + #13#10 +
             'Content-Type: text/html' + #13#10 +
             'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            GetKeepAliveHdrLines +
             #13#10);
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
@@ -2806,10 +2918,12 @@ begin
         'Content-Type: text/html' + #13#10 +
         'Content-Length: '        + _IntToStr(Length(Body)) + #13#10;
 
-    if (FHttpVerNum = 11) and (not FKeepAlive) then
+   { if (FHttpVerNum = 11) and (not FKeepAlive) then
         Header := Header +  'Connection: close' + #13#10
     else if (FHttpVerNum = 10) and  FKeepAlive then
-        Header := Header +  'Connection: keep-alive' + #13#10;
+        Header := Header +  'Connection: keep-alive' + #13#10;}
+    Header := Header + GetKeepAliveHdrLines;
+
     (*
     if FAuthInit then begin //the initial 401
         if (FHttpVerNum = 11) and (not FKeepAlive) then
@@ -2847,6 +2961,7 @@ begin
     SendHeader(FVersion + ' 501 Unimplemented' + #13#10 +
                'Content-Type: text/plain' + #13#10 +
                'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+               GetKeepAliveHdrLines + 
                #13#10);
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
@@ -2859,6 +2974,9 @@ procedure THttpConnection.ProcessRequest;
 var
     Status : Integer;
 begin
+    if FKeepAlive and (FKeepAliveTimeSec > 0) then
+        FKeepAlive := FMaxRequestsKeepAlive > 0;
+        
     TriggerBeforeProcessRequest;
 
     if FPath = '/' then
@@ -2897,9 +3015,9 @@ begin
     else if FMethod = 'HEAD' then
         ProcessHead
     else begin
-        Answer501;   { 07/03/2005 was Answer404 }
         if FKeepAlive = FALSE then {Bjornar}
-            CloseDelayed;
+            PrepareGraceFullShutDown;
+        Answer501;   { 07/03/2005 was Answer404 }
     end;
 end;
 
@@ -2963,21 +3081,21 @@ begin
     case Flags of
     hg401:
         begin
-            Answer401;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer401;
         end;
     hg403:
         begin
-            Answer403;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer403;
         end;
     hg404:
         begin
-            Answer404;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer404;
         end;
     hgAcceptData:
         FAcceptPostedData := TRUE;
@@ -3019,30 +3137,30 @@ begin
     case Flags of
     hg401:
         begin
-            Answer401;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer401;
         end;
     hg403:
         begin
-            Answer403;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer403;
         end;
     hg404:
         begin
-            Answer404;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer404;
         end;
     hgSendDoc:
         begin
             if _FileExists(FDocument) then
                 SendDocument(httpSendHead)
             else begin
-                Answer404;
                 if FKeepAlive = FALSE then {Bjornar}
-                    CloseDelayed;
+                    PrepareGraceFullShutDown;
+                Answer404;    
             end;
         end;
     hgSendStream:
@@ -3081,21 +3199,21 @@ begin
     case Flags of
     hg401:
         begin
-            Answer401;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer401;
         end;
     hg403:
         begin
-            Answer403;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer403;
         end;
     hg404:
         begin
-            Answer404;
             if FKeepAlive = FALSE then {Bjornar}
-                CloseDelayed;
+                PrepareGraceFullShutDown;
+            Answer404;
         end;
     hgSendDoc:
         begin
@@ -3103,9 +3221,9 @@ begin
             try
                 if not _FileExists(FDocument) then begin
                     { File not found }
-                    Answer404;
                     if FKeepAlive = FALSE then {Bjornar}
-                        CloseDelayed;
+                        PrepareGraceFullShutDown;
+                    Answer404;
                 end
                 else begin
                     TempStream := TFileStream.Create(FDocument, fmOpenRead + fmShareDenyWrite);
@@ -3113,9 +3231,9 @@ begin
                     OK := TRUE;
                 end;
             except
-                Answer404;
                 if FKeepAlive = FALSE then {Bjornar}
-                    CloseDelayed;
+                    PrepareGraceFullShutDown;
+                Answer404;    
             end;
             if OK then
                 SendDocument(httpSendDoc)
@@ -3305,6 +3423,8 @@ begin
             { Answer 416 Request range not satisfiable                      }
                 FDocStream.Free;
                 FDocStream := nil;
+                if not FKeepAlive then
+                    PrepareGraceFullShutDown;
                 Answer416;
                 Exit;
             end;
@@ -3329,13 +3449,14 @@ begin
                       ' GMT' + #13#10;
 
     {Bjornar}
-    if FKeepAlive then
+    {if FKeepAlive then
         Header := Header + 'Connection: keep-alive' + #13#10
     else
-        Header := Header + 'Connection: close' + #13#10;
+        Header := Header + 'Connection: close' + #13#10;}
     {Bjornar}
 
-    Header := Header + #13#10;
+    //Header := Header + #13#10;
+    Header := Header + GetKeepAliveHdrLines + #13#10;
 
     SendHeader(Header);
     if not ErrorSend then begin
@@ -3616,6 +3737,10 @@ var
     Count  : THttpRangeInt;
     ToSend : THttpRangeInt;
 begin
+    if FShutDownFlag then begin
+        Shutdown(1);
+        Exit;
+    end;
     if not Assigned(FDocStream) then
         Exit; { End of file has been reached }
 
@@ -4541,7 +4666,7 @@ begin
     case V.VType of
     vtInteger:        Result := _IntToStr(V.VInteger);
     vtBoolean:        Result := BooleanToString[V.VBoolean];
-    vtChar:           Result := V.VChar;
+    vtChar:           Result := String(V.VChar);
     vtExtended:       Result := _FloatToStr(V.VExtended^);
     vtString:         Result := String(V.VString^);
     vtPointer:        Result := 'Unsupported TVarRec.VType = vtPointer';
@@ -5299,6 +5424,5 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 
 end.

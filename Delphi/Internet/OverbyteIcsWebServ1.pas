@@ -16,7 +16,7 @@ Description:  WebSrv1 show how to use THttpServer component to implement
               The code below allows to get all files on the computer running
               the demo. Add code in OnGetDocument, OnHeadDocument and
               OnPostDocument to check for authorized access to files.
-Version:      1.15
+Version:      7.16
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -85,7 +85,14 @@ Nov 05, 2006 V1.13 Removed IsDirectory function which wasn't used
 Apr 14, 2008 V1.14 A. Garrels, a few Unicode related changes.
 May 15, 2008 V1.15 A. Garrels, a few more Unicode related changes, removed some
                    ifdefs for older compiler.
-
+Nov 03, 2008 V7.16 A. Garrels Added Keep-Alive timeout and a maximum number
+                   of allowed requests during a persistent connection. Set
+                   property KeepAliveTimeSec to zero in order disable this
+                   feature entirely, otherwise persistent connections are dropped
+                   either after an idle time of value KeepAliveTimeSec or if the
+                   maximum number of requests (property MaxRequestKeepAlive) is
+                   reached.
+                   
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebServ1;
@@ -120,8 +127,8 @@ uses
   OverbyteIcsHttpSrv;
 
 const
-  WebServVersion     = 115;
-  CopyRight : String = 'WebServ (c) 1999-2008 F. Piette V1.15 ';
+  WebServVersion     = 716;
+  CopyRight : String = 'WebServ (c) 1999-2008 F. Piette V7.16 ';
   NO_CACHE           = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
   WM_CLIENT_COUNT    = WM_USER + WH_MAX_MSG + 1;
 
@@ -134,7 +141,7 @@ type
   TMyHttpConnection = class(THttpConnection)
   protected
     FPostedRawData    : PAnsiChar; { Will hold dynamically allocated buffer }
-    FPostedDataBuffer : PChar;     { Contains either Unicode or Ansi data   } 
+    FPostedDataBuffer : PChar;     { Contains either Unicode or Ansi data   }
     FPostedDataSize   : Integer;   { Databuffer size                        }
     FDataLen          : Integer;   { Keep track of received byte count.     }
     FDataFile         : TextFile;  { Used for datafile display              }
@@ -167,6 +174,10 @@ type
     RedirURLEdit: TEdit;
     TemplateDirEdit: TEdit;
     Label6: TLabel;
+    KeepAliveTimeSecEdit: TEdit;
+    Label7: TLabel;
+    Label8: TLabel;
+    MaxRequestsKeepAliveEdit: TEdit;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -283,6 +294,8 @@ const
     KeyDirList         = 'AllowDirList';
     KeyOutsideRoot     = 'AllowOutsideRoot';
     KeyRedirUrl        = 'RedirURL';
+    KeyMaxRequests     = 'MaxRequestsKeepAlive';
+    KeyKeepAliveSec    = 'KeepAliveTimeSec';
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -312,7 +325,7 @@ begin
     { Create IniFileName based on EXE file name; }
     FIniFileName := GetIcsIniFileName;
     FLogFileName := ChangeFileExt(FIniFileName, '.log');
-{$IFDEF DELPHI10}
+{$IFDEF DELPHI10_UP}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
 {$ENDIF}
@@ -356,6 +369,10 @@ begin
                                                   '80');
         RedirUrlEdit.Text   := IniFile.ReadString(SectionData, KeyRedirUrl,
                                      '/time.html');
+        KeepAliveTimeSecEdit.Text := IniFile.ReadString(SectionData,
+                                     KeyKeepAliveSec, '10');
+        MaxRequestsKeepAliveEdit.Text := IniFile.ReadString(SectionData,
+                                         KeyMaxRequests, '100');
         DirListCheckBox.Checked :=
                 Boolean(IniFile.ReadInteger(SectionData, KeyDirList, 1));
         OutsideRootCheckBox.Checked :=
@@ -429,6 +446,11 @@ begin
                                         Ord(DisplayHeaderCheckBox.Checked));
     IniFile.WriteInteger(SectionData,   KeyLogToFile,
                                         Ord(WriteLogFileCheckBox.Checked));
+    IniFile.WriteInteger(SectionData,   KeyKeepAliveSec,
+                                        StrToIntDef(KeepAliveTimeSecEdit.Text, 10));
+    IniFile.WriteInteger(SectionData,   KeyMaxRequests,
+                                        StrToIntDef(MaxRequestsKeepAliveEdit.Text, 100));
+    
     IniFile.UpdateFile;
     IniFile.Free;
     CloseLogFile;
@@ -493,11 +515,13 @@ begin
     else
         HttpServer1.Options := HttpServer1.Options - [hoAllowOutsideRoot];
 
-    HttpServer1.DocDir      := Trim(DocDirEdit.Text);
-    HttpServer1.DefaultDoc  := Trim(DefaultDocEdit.Text);
-    HttpServer1.TemplateDir := Trim(TemplateDirEdit.Text);
-    HttpServer1.Port        := Trim(PortEdit.Text);
-    HttpServer1.ClientClass := TMyHttpConnection;
+    HttpServer1.DocDir               := Trim(DocDirEdit.Text);
+    HttpServer1.DefaultDoc           := Trim(DefaultDocEdit.Text);
+    HttpServer1.TemplateDir          := Trim(TemplateDirEdit.Text);
+    HttpServer1.Port                 := Trim(PortEdit.Text);
+    HttpServer1.KeepAliveTimeSec     := StrToIntDef(KeepAliveTimeSecEdit.Text, 10);
+    HttpServer1.MaxRequestsKeepAlive := StrToIntDef(MaxRequestsKeepAliveEdit.Text, 100);
+    HttpServer1.ClientClass          := TMyHttpConnection;
     try
         HttpServer1.Start;
     except
@@ -541,13 +565,15 @@ procedure TWebServForm.HttpServer1ServerStarted(Sender: TObject);
 var
     DemoUrl : String;
 begin
-    DocDirEdit.Enabled          := FALSE;
-    DefaultDocEdit.Enabled      := FALSE;
-    DirListCheckBox.Enabled     := FALSE;
-    OutsideRootCheckBox.Enabled := FALSE;
-    PortEdit.Enabled            := FALSE;
-    StartButton.Enabled         := FALSE;
-    StopButton.Enabled          := TRUE;
+    DocDirEdit.Enabled                := FALSE;
+    DefaultDocEdit.Enabled            := FALSE;
+    DirListCheckBox.Enabled           := FALSE;
+    OutsideRootCheckBox.Enabled       := FALSE;
+    PortEdit.Enabled                  := FALSE;
+    KeepAliveTimeSecEdit.Enabled      := FALSE;
+    MaxRequestsKeepAliveEdit.Enabled  := FALSE;
+    StartButton.Enabled               := FALSE;
+    StopButton.Enabled                := TRUE;
     Display('Server is waiting for connections on port ' + HttpServer1.Port);
 
     DemoUrl := 'http://' + LowerCase(LocalHostName);
@@ -564,13 +590,15 @@ end;
 { when server socket stop listening.                                        }
 procedure TWebServForm.HttpServer1ServerStopped(Sender: TObject);
 begin
-    DocDirEdit.Enabled          := TRUE;
-    DefaultDocEdit.Enabled      := TRUE;
-    DirListCheckBox.Enabled     := TRUE;
-    OutsideRootCheckBox.Enabled := TRUE;
-    PortEdit.Enabled            := TRUE;
-    StartButton.Enabled         := TRUE;
-    StopButton.Enabled          := FALSE;
+    DocDirEdit.Enabled                := TRUE;
+    DefaultDocEdit.Enabled            := TRUE;
+    DirListCheckBox.Enabled           := TRUE;
+    OutsideRootCheckBox.Enabled       := TRUE;
+    PortEdit.Enabled                  := TRUE;
+    StartButton.Enabled               := TRUE;
+    KeepAliveTimeSecEdit.Enabled      := TRUE;
+    MaxRequestsKeepAliveEdit.Enabled  := TRUE;
+    StopButton.Enabled                := FALSE;
     Display('Server stopped');
 end;
 
