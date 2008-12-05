@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.12
+Version:      7.13
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -222,7 +222,7 @@ Oct 28, 2008 V7.11 A.Garrels - Replaced symbol UseInt64ForHttpRange by STREAM64.
              Fixed responses and  an infinite loop when a byte-range-set was
              unsatisfiable. Added a fix for content ranges with files > 2GB as
              suggested by Lars Gehre <lars@dvbviewer.com>.
-Nov 03, 2008 V7.12 A.Garrels - Added Keep-Alive timeout and a maximum number
+Dec 03, 2008 V7.12 A.Garrels - Added Keep-Alive timeout and a maximum number
              of allowed requests during a persistent connection. Set property
              KeepAliveTimeSec to zero in order disable this feature entirely,
              otherwise persistent connections are dropped either after an idle
@@ -235,6 +235,8 @@ Nov 03, 2008 V7.12 A.Garrels - Added Keep-Alive timeout and a maximum number
              in case a client won't close the connection is dropped after 5
              seconds. New header Keep-Alive is sent if a client explcitely
              requests Connection: Keep-Alive.
+Dec 05, 2008 V7.13 A.Garrels make use of function IcsCalcTickDiff in
+             OverbyteIcsUtils.pas.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -309,8 +311,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 712;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V7.12 ';
+    THttpServerVersion = 713;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V7.13 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -1749,25 +1751,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function CalcTicksAppart(const T1, T2: LongWord): LongWord;
-begin
-    if T2 >= T1 then
-        Result := T2 - T1
-    else
-        Result := High(LongWord) - T1 + T2;
-    // We can also have strange results when the PC time is changed between
-    // InitialTime and CurrentTime, specially if  CurrentTime is less than
-    // InitialTime ! We got this when an AtomicClock is used on a PC with
-    // real time clock is too fast
-    // If this happend, we symply return 0 as TickDiff.
-    // The code below is then not valid for an interval longer than 24 days.
-    if Result > (High(LongWord) div 2) then
-        Result := 0;
-
-end;
-
-
-{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }
 procedure THttpServer.HeartBeatOnTimer(Sender: TObject);
 var
     CurTicks : Cardinal;
@@ -1779,7 +1762,7 @@ begin
     begin
         Cli := Client[I];
         if (Cli.KeepAliveTimeSec > 0) and
-           (CalcTicksAppart(Cli.Counter.LastAliveTick, CurTicks) > Cli.KeepAliveTimeSec * 1000) then
+           (IcsCalcTickDiff(Cli.Counter.LastAliveTick, CurTicks) > Cli.KeepAliveTimeSec * 1000) then
             FWSocketServer.Disconnect(Cli);
     end;
 end;

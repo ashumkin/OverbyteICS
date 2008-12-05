@@ -16,7 +16,7 @@ Description:  WebSrv1 show how to use THttpServer component to implement
               The code below allows to get all files on the computer running
               the demo. Add code in OnGetDocument, OnHeadDocument and
               OnPostDocument to check for authorized access to files.
-Version:      7.16
+Version:      7.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -92,7 +92,7 @@ Nov 03, 2008 V7.16 A. Garrels Added Keep-Alive timeout and a maximum number
                    either after an idle time of value KeepAliveTimeSec or if the
                    maximum number of requests (property MaxRequestKeepAlive) is
                    reached.
-                   
+Nov 05, 2008 V7.17 A. Garrels made the POST demo UTF-8 aware.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebServ1;
@@ -124,11 +124,11 @@ uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Controls, Forms,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls, StrUtils,
   OverbyteIcsWinSock,  OverbyteIcsWSocket, OverbyteIcsWndControl,
-  OverbyteIcsHttpSrv;
+  OverbyteIcsHttpSrv, OverbyteIcsUtils;
 
 const
-  WebServVersion     = 716;
-  CopyRight : String = 'WebServ (c) 1999-2008 F. Piette V7.16 ';
+  WebServVersion     = 717;
+  CopyRight : String = 'WebServ (c) 1999-2008 F. Piette V7.17 ';
   NO_CACHE           = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
   WM_CLIENT_COUNT    = WM_USER + WH_MAX_MSG + 1;
 
@@ -145,6 +145,7 @@ type
     FPostedDataSize   : Integer;   { Databuffer size                        }
     FDataLen          : Integer;   { Keep track of received byte count.     }
     FDataFile         : TextFile;  { Used for datafile display              }
+    FFileIsUtf8       : Boolean;
   public
     destructor  Destroy; override;
   end;
@@ -1019,7 +1020,8 @@ procedure TWebServForm.FormDataGetRow(
     var More        : Boolean;
     UserData        : TObject);
 var
-    Buf       : String;
+    BufA       : AnsiString;
+    Buf        : String;
     ClientCnx : TMyHttpConnection;
 begin
     { Check if the table name. There could be several tables or table       }
@@ -1036,7 +1038,17 @@ begin
         Exit;
 
     { Read a line form data file                                            }
-    ReadLn(ClientCnx.FDataFile, Buf);
+    ReadLn(ClientCnx.FDataFile, BufA);
+
+    { Convert to String }
+    if ClientCnx.FFileIsUtf8 then
+    {$IFDEF UNICODE}
+        Buf := Utf8ToStringW(BufA)
+    {$ELSE}
+        Buf := Utf8ToStringA(BufA)
+    {$ENDIF}
+    else
+        Buf := String(BufA);
 
     { Extract column data from the datafile line                            }
     TagData.Add('DATE', Copy(Buf, 1, 8));
@@ -1058,11 +1070,26 @@ procedure TWebServForm.CreateVirtualDocument_ViewFormData(
     Sender    : TObject;            { HTTP server component                 }
     ClientCnx : TMyHttpConnection;  { Client connection issuing command     }
     var Flags : THttpGetFlag);      { Tells what HTTP server has to do next }
+var
+    Bom : array [0..2] of Byte;
+    I   : Integer;
 begin
     { Open data file                                                        }
     AssignFile(ClientCnx.FDataFile, 'FormHandler.txt');
     Reset(ClientCnx.FDataFile);
     try
+        { Check whether the data file is UTF-8 encoded }
+        I := 0;
+        while not EOF(ClientCnx.FDataFile) and (I < 3) do
+        begin
+            Read(ClientCnx.FDataFile, AnsiChar(BOM[I]));
+            Inc(I);
+        end;
+        ClientCnx.FFileIsUtf8 := (I = 3) and (Bom[0] = $EF) and
+                                 (Bom[1] = $BB) and (Bom[2] = $BF);
+        if not ClientCnx.FFileIsUtf8 then
+            Reset(ClientCnx.FDataFile);
+
         { Set event handler for getting datafile rows                       }
         ClientCnx.OnGetRowData := FormDataGetRow;
         ClientCnx.AnswerPage(
@@ -1220,6 +1247,10 @@ var
     HostName  : String;
     Buf       : String;
     Dummy     : THttpGetFlag;
+    Bom       : array[0..2] of Byte;
+    IsUtf8    : Boolean;
+    Len       : Integer;
+    Utf8Str   : AnsiString;
 begin
     { Extract fields from posted data. }
     ExtractURLEncodedValue(ClientCnx.FPostedDataBuffer, 'FirstName', FirstName);
@@ -1235,12 +1266,28 @@ begin
 
     EnterCriticalSection(LockFileAccess);
     try
-        if FileExists(FileName) then
-            Stream := TFileStream.Create(FileName, fmOpenWrite)
-        else
+        if FileExists(FileName) then begin
+            Stream := TFileStream.Create(FileName, fmOpenReadWrite);
+            { Check whether the data file is UTF-8 encoded }
+            Len := Stream.Read(Bom[0], SizeOf(Bom));
+            IsUtf8 := (Len = 3) and (Bom[0] = $EF) and (Bom[1] = $BB) and
+                      (Bom[2] = $BF);
+            Stream.Seek(0, soFromEnd);
+        end
+        else begin
+            { We use UTF-8 by default for new data files }
             Stream := TFileStream.Create(FileName, fmCreate);
-        Stream.Seek(0, soFromEnd);
-        StreamWriteStrA(Stream, Buf);
+            IsUtf8 := TRUE;
+            Bom[0] := $EF; Bom[1] := $BB; Bom[2] := $BF;
+            Stream.Write(Bom[0], SizeOf(Bom));
+        end;
+        if IsUtf8 then
+        begin
+            Utf8Str := StringToUtf8(Buf);
+            Stream.Write(PAnsiChar(Utf8Str)^, Length(Utf8Str));
+        end
+        else
+            StreamWriteStrA(Stream, Buf);
         Stream.Destroy;
     finally
         LeaveCriticalSection(LockFileAccess);

@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.22
+Version:      7.23
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -77,7 +77,8 @@ Oct 23, 2008 V7.21 A. Garrels added IcsStrNextChar, IcsStrPrevChar and
              IcsStrCharLength, see description below. Useful when converting
              a ANSI character stream with known code page to Unicode in
              chunks. Added a PAnsiChar overload to function AnsiToUnicode.
-Nov 13, 2008 v7.22 Arno add CharsetDetect, IsUtf8Valid use CharsetDetect.
+Nov 13, 2008 v7.22 Arno added CharsetDetect, IsUtf8Valid use CharsetDetect.
+Dec 05, 2008 v/.23 Arno added function IcsCalcTickDiff.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -177,6 +178,7 @@ type
     function  atoi64(const Str: RawByteString): Int64; overload;
     function  atoi64(const Str: UnicodeString): Int64; overload;
 {$ENDIF}
+    function  IcsCalcTickDiff(const StartTick, EndTick: LongWord): LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  StringToUtf8(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  Utf8ToStringW(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -806,6 +808,16 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCalcTickDiff(const StartTick, EndTick : LongWord): LongWord;
+begin
+    if EndTick >= StartTick then
+        Result := EndTick - StartTick
+    else
+        Result := High(LongWord) - StartTick + EndTick;
+end;
+
+
+{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }
 function StringToUtf8(const Str: UnicodeString): RawByteString;
 begin
     Result := UnicodeToAnsi(Str, CP_UTF8, True);
