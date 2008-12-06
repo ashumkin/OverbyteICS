@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.13
+Version:      7.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -237,6 +237,8 @@ Dec 03, 2008 V7.12 A.Garrels - Added Keep-Alive timeout and a maximum number
              requests Connection: Keep-Alive.
 Dec 05, 2008 V7.13 A.Garrels make use of function IcsCalcTickDiff in
              OverbyteIcsUtils.pas.
+Dec 06, 2008 V7.14 A.Garrels - Avoid reentrance in procedure HeartBeatOnTimer.
+             AnswerStream did not send the (optional) Keep-Alive header.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -311,8 +313,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 713;
-    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V7.13 ';
+    THttpServerVersion = 714;
+    CopyRight : String = ' THttpServer (c) 1999-2008 F. Piette V7.14 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     HA_MD5             = 0;
     HA_MD5_SESS        = 1;
@@ -809,6 +811,7 @@ type
         FKeepAliveTimeSec         : Cardinal;
         FMaxRequestsKeepAlive     : Integer;
         FHeartBeat                : TIcsTimer;
+        FHeartBeatBusy            : Boolean;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         //FAuthType                : TAuthenticationType;
         FAuthTypes                : TAuthenticationTypes;
@@ -1757,13 +1760,19 @@ var
     I        : Integer;
     Cli      : THttpConnection;
 begin
-    CurTicks := GetTickCount;
-    for I := ClientCount - 1 downto 0 do
-    begin
-        Cli := Client[I];
-        if (Cli.KeepAliveTimeSec > 0) and
-           (IcsCalcTickDiff(Cli.Counter.LastAliveTick, CurTicks) > Cli.KeepAliveTimeSec * 1000) then
-            FWSocketServer.Disconnect(Cli);
+    if not FHeartBeatBusy then  { Avoid reentrance }
+    try
+        FHeartBeatBusy := TRUE;
+        CurTicks := GetTickCount;
+        for I := ClientCount - 1 downto 0 do begin
+            Cli := Client[I];
+            if (Cli.KeepAliveTimeSec > 0) and
+               (IcsCalcTickDiff(Cli.Counter.LastAliveTick, CurTicks) >
+                                             Cli.KeepAliveTimeSec * 1000) then
+                FWSocketServer.Disconnect(Cli);
+        end;
+    finally
+        FHeartBeatBusy := FALSE;
     end;
 end;
 
@@ -2618,6 +2627,7 @@ begin
         PutStringInSendBuffer('Content-Type: text/html' + #13#10)
     else
         PutStringInSendBuffer('Content-Type: ' + ContType + #13#10);
+    (*
     {FP 22/05/05 begin}
     if FKeepAlive then begin
         if FHttpVerNum = 10 then { HTTP/1.0 only HTTP/1.1 is keep-alive by default } { V1.6 }
@@ -2628,6 +2638,9 @@ begin
             PutStringInSendBuffer('Connection: close' + #13#10);
     end;
     {FP 22/05/05 end}
+    *)
+    PutStringInSendBuffer(GetKeepAliveHdrLines);
+
     if not Assigned(FDocStream) then
         PutStringInSendBuffer('Content-Length: 0' + #13#10)
     else begin
