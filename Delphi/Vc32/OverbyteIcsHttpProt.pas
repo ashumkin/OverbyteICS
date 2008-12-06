@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      6.00.8
+Version:      7.00.9
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -397,7 +397,7 @@ Sep 28, 2008 V6.00.7 Maurizio Lotauro fixed a bug with premature received
              requests. A. Garrels small fix in SendCommand().
 Sep 29, 2008 V6.00.8 A. Garrels added OverbyteIcsUtils to the uses clause
              for all compilers.
-
+Dec 06, 2008 V7.00.9 A. Garrels fixed function EncodeStr and EncodeLine.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpProt;
@@ -465,8 +465,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 600;
-    CopyRight : String   = ' THttpCli (c) 1997-2008 F. Piette V6.00.8 ';
+    HttpCliVersion       = 700;
+    CopyRight : String   = ' THttpCli (c) 1997-2008 F. Piette V7.00.9 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -1062,23 +1062,40 @@ type
 
 procedure Register;
 procedure ReplaceExt(var FName : String; const newExt : String);
+{$IFDEF CLR}
 function EncodeStr(Encoding : THttpEncoding; const Value : String) : String;
+{$ENDIF}
 function RFC1123_Date(aDate : TDateTime) : String;
 function RFC1123_StrToDate(aDate : String) : TDateTime;
 {$IFDEF WIN32}
 function EncodeLine(
     Encoding : THttpEncoding;
-    SrcData  : PChar;
-    Size     : Integer) : String;
+    SrcData  : PAnsiChar;
+    Size     : Integer) : AnsiString;
+function EncodeStr(
+    Encoding    : THttpEncoding;
+    const Value : RawByteString) : RawByteString; overload;
+function EncodeStr(
+    Encoding    : THttpEncoding;
+    const Value : UnicodeString;
+    ACodePage   : Cardinal = CP_ACP ) : UnicodeString; overload;
 {$ENDIF}
 
 implementation
 
 const
+{$IFDEF WIN32}
+    bin2uue  : AnsiString = '`!"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_';
+    bin2b64  : AnsiString = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    uue2bin  : AnsiString = ' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_ ';
+    b642bin  : AnsiString = '~~~~~~~~~~~^~~~_TUVWXYZ[\]~~~|~~~ !"#$%&''()*+,-./0123456789~~~~~~:;<=>?@ABCDEFGHIJKLMNOPQRS';
+{$ENDIF}
+{$IFDEF CLR}
     bin2uue  : String = '`!"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_';
     bin2b64  : String = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     uue2bin  : String = ' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_ ';
     b642bin  : String = '~~~~~~~~~~~^~~~_TUVWXYZ[\]~~~|~~~ !"#$%&''()*+,-./0123456789~~~~~~:;<=>?@ABCDEFGHIJKLMNOPQRS';
+{$ENDIF}
     linesize = 45;
 type
     TCharSet = set of AnsiChar;
@@ -4079,19 +4096,19 @@ end;
 {$IFDEF WIN32}
 function EncodeLine(
     Encoding : THttpEncoding;
-    SrcData  : PChar;
-    Size     : Integer) : String;
+    SrcData  : PAnsiChar;
+    Size     : Integer) : AnsiString;
 var
     Offset : Integer;
     Pos1   : Integer;
     Pos2   : Integer;
     I      : Integer;
 begin
-    SetLength(Result, Size * 4 div 3 + 4);
-    FillChar(Result[1], Size * 4 div 3 + 2, #0);
-
+    //SetLength(Result, Size * 4 div 3 + 4);
+    //FillChar(Result[1], Size * 4 div 3 + 2, #0);
+    Result := StringOfChar(AnsiChar(#0), Size * 4 div 3 + 4);
     if Encoding = encUUEncode then begin
-        Result[1] := Char(((Size - 1) and $3f) + $21);
+        Result[1] := AnsiChar(((Size - 1) and $3f) + $21);
         Size      := ((Size + 2) div 3) * 3;
     end;
     Offset := 2;
@@ -4105,7 +4122,7 @@ begin
 
     while Pos1 < Size do begin
         if Offset > 0 then begin
-            Result[Pos2] := Char(ord(Result[Pos2]) or
+            Result[Pos2] := AnsiChar(ord(Result[Pos2]) or
                                  ((ord(SrcData[Pos1]) and
                                   ($3f shl Offset)) shr Offset));
             Offset := Offset - 6;
@@ -4114,14 +4131,14 @@ begin
         end
         else if Offset < 0 then begin
             Offset := Abs(Offset);
-            Result[Pos2] := Char(ord(Result[Pos2]) or
+            Result[Pos2] := AnsiChar(ord(Result[Pos2]) or
                                  ((ord(SrcData[Pos1]) and
                                   ($3f shr Offset)) shl Offset));
             Offset := 8 - Offset;
             Inc(Pos1);
         end
         else begin
-            Result[Pos2] := Char(ord(Result[Pos2]) or
+            Result[Pos2] := AnsiChar(ord(Result[Pos2]) or
                                  ((ord(SrcData[Pos1]) and $3f)));
             Inc(Pos2);
             Inc(Pos1);
@@ -4155,9 +4172,24 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function EncodeStr(Encoding : THttpEncoding; const Value : String) : String;
+function EncodeStr(
+    Encoding    : THttpEncoding;
+    const Value : RawByteString) : RawByteString;
 begin
-    Result := EncodeLine(Encoding, @Value[1], Length(Value));
+    Result := EncodeLine(Encoding, PAnsiChar(Value), Length(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function EncodeStr(
+    Encoding    : THttpEncoding;
+    const Value : UnicodeString;
+    ACodePage   : Cardinal = CP_ACP ) : UnicodeString;
+var
+    AStr : AnsiString;
+begin
+    AStr := UnicodeToAnsi(Value, ACodePage);
+    Result := String(EncodeLine(Encoding, PAnsiChar(AStr), Length(AStr)));
 end;
 {$ENDIF}
 
@@ -4260,7 +4292,7 @@ var
 begin
     { get local hostname }
     try
-        Hostname := LocalHostName;
+        Hostname := String(LocalHostName);
     except
         Hostname := '';
     end;
