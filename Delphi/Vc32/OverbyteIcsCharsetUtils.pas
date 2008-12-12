@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      7.08
+Version:      7.09
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -78,6 +78,8 @@ Oct 15, 2008 V7.07 A. Garrels - Some functions reworked in order to get errors b
                    Use new function MimeCharsetToCodePageDef() in order to get always
                    a valid code page. See new documentation below.
 Oct 17, 2008 V7.08 Angus, fixed US_ASCII and added CP950
+Dec 12, 2008 V7.09 Arno, C++ Builder fix, spelling of record _cpinfoexA/W corrected to lower case
+
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try
@@ -358,9 +360,10 @@ type
     TCharsetInfos = array of TCharsetInfo;
 
 {$IFNDEF COMPILER12_UP}
-    PCPInfoExA = ^TCPInfoExA;
-    {$EXTERNALSYM _CPINFOEXA}
-    _CPINFOEXA = record
+    {$EXTERNALSYM LPCPINFOEXA}
+    LPCPINFOEXA = ^CPINFOEXA;
+    {$EXTERNALSYM _cpinfoexA}
+    _cpinfoexA = record
         MaxCharSize         : Cardinal;                                 { max length (bytes) of a char }
         DefaultChar         : array[0..MAX_DEFAULTCHAR - 1] of Byte;    { default character }
         LeadByte            : array[0..MAX_LEADBYTES - 1] of Byte;      { lead byte ranges }
@@ -368,13 +371,15 @@ type
         CodePage            : Cardinal;
         CodePageName        : array[0..MAX_PATH] of AnsiChar;
     end;
-    TCPInfoExA = _CPINFOEXA;
     {$EXTERNALSYM CPINFOEXA}
-    CPINFOEXA = _CPINFOEXA;
+    CPINFOEXA = _cpinfoexA;
+    TCpInfoExA = CPINFOEXA;
+    PCpInfoExA = LPCPINFOEXA;
 
-    PCPInfoExW = ^TCPInfoExW;
-    {$EXTERNALSYM _CPINFOEXW}
-    _CPINFOEXW = record
+    {$EXTERNALSYM LPCPINFOEXW}
+    LPCPINFOEXW = ^CPINFOEXW;
+    {$EXTERNALSYM _cpinfoexW}
+    _cpinfoexW = record
         MaxCharSize         : Cardinal;                                 { max length (bytes) of a char }
         DefaultChar         : array[0..MAX_DEFAULTCHAR - 1] of Byte;    { default character }
         LeadByte            : array[0..MAX_LEADBYTES - 1] of Byte;      { lead byte ranges }
@@ -382,20 +387,25 @@ type
         CodePage            : Cardinal;
         CodePageName        : array[0..MAX_PATH] of WideChar;
     end;
-    TCPInfoExW = _CPINFOEXW;
     {$EXTERNALSYM CPINFOEXW}
-    CPINFOEXW = _CPINFOEXW;
+    CPINFOEXW = _cpinfoexW;
+    TCpInfoExW = CPINFOEXW;
+    PCpInfoExW = LPCPINFOEXW;
 
   {$IFDEF UNICODE}
-    PCPInfoEx = PCPInfoExW;
+    PCpInfoEx = PCpInfoExW;
     {$EXTERNALSYM CPINFOEX}
     CPINFOEX  = CPINFOEXW;
-    TCPInfoEx = TCPInfoExW;
+    TCpInfoEx = TCpInfoExW;
+    {$EXTERNALSYM LPCPINFOEX}
+    LPCPINFOEX = LPCPINFOEXW;
   {$ELSE}
-    PCPInfoEx = PCPInfoExA;
+    PCpInfoEx = PCpInfoExA;
     {$EXTERNALSYM CPINFOEX}
     CPINFOEX  = CPINFOEXA;
-    TCPInfoEx = TCPInfoExA;
+    TCpInfoEx = TCpInfoExA;
+    {$EXTERNALSYM LPCPINFOEX}
+    LPCPINFOEX = LPCPINFOEXA;
   {$ENDIF}
 {$ENDIF}
     TCodePageObj = class
@@ -458,11 +468,11 @@ function  GetUserDefaultAnsiCodePage: Cardinal; {$IFDEF USE_INLINE} inline; {$EN
 function  GetUserDefaultOemCodePage: Cardinal;  {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$IFNDEF COMPILER12_UP}
 {$EXTERNALSYM GetCPInfoExA}
-function  GetCPInfoExA(CodePage: UINT; dwFlags : DWORD; var lpCPInfoEx: TCPInfoExA): BOOL; stdcall;
+function  GetCPInfoExA(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEXA): BOOL; stdcall;
 {$EXTERNALSYM GetCPInfoExW}
-function  GetCPInfoExW(CodePage: UINT; dwFlags : DWORD; var lpCPInfoEx: TCPInfoExW): BOOL; stdcall;
+function  GetCPInfoExW(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEXW): BOOL; stdcall;
 {$EXTERNALSYM GetCPInfoEx}
-function  GetCPInfoEx(CodePage: UINT; dwFlags : DWORD; var lpCPInfoEx: TCPInfoEx): BOOL; stdcall;
+function  GetCPInfoEx(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEX): BOOL; stdcall;
 {$ENDIF}
 
 var
