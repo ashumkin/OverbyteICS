@@ -12,6 +12,9 @@
 			<Projects Include="OverbyteIcsHttpTst.cbproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="OverbyteIcsHttpsTst.cbproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -47,14 +50,23 @@
 		<Target Name="OverbyteIcsHttpTst:Make">
 			<MSBuild Targets="Make" Projects="OverbyteIcsHttpTst.cbproj"/>
 		</Target>
+		<Target Name="OverbyteIcsHttpsTst">
+			<MSBuild Projects="OverbyteIcsHttpsTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpsTst:Clean">
+			<MSBuild Targets="Clean" Projects="OverbyteIcsHttpsTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpsTst:Make">
+			<MSBuild Targets="Make" Projects="OverbyteIcsHttpsTst.cbproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="OverbyteIcsCB2009Run;OverbyteIcsCB2009Design;OverbyteIcsHttpTst"/>
+			<CallTarget Targets="OverbyteIcsCB2009Run;OverbyteIcsCB2009Design;OverbyteIcsHttpTst;OverbyteIcsHttpsTst"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="OverbyteIcsCB2009Run:Clean;OverbyteIcsCB2009Design:Clean;OverbyteIcsHttpTst:Clean"/>
+			<CallTarget Targets="OverbyteIcsCB2009Run:Clean;OverbyteIcsCB2009Design:Clean;OverbyteIcsHttpTst:Clean;OverbyteIcsHttpsTst:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="OverbyteIcsCB2009Run:Make;OverbyteIcsCB2009Design:Make;OverbyteIcsHttpTst:Make"/>
+			<CallTarget Targets="OverbyteIcsCB2009Run:Make;OverbyteIcsCB2009Design:Make;OverbyteIcsHttpTst:Make;OverbyteIcsHttpsTst:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>

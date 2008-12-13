@@ -12,7 +12,8 @@
       <Projects Name="OverbyteIcsCB2006Run.bpl">..\..\..\Delphi\Vc32\OverbyteIcsCB2006Run.bdsproj</Projects>
       <Projects Name="OverbyteIcsCB2006Design.bpl">..\..\..\Delphi\Vc32\OverbyteIcsCB2006Design.bdsproj</Projects>
       <Projects Name="OverbyteIcsHttpTst.exe">OverbyteIcsHttpTst.bdsproj</Projects>
-      <Projects Name="Targets">OverbyteIcsCB2006Run.bpl OverbyteIcsCB2006Design.bpl OverbyteIcsHttpTst.exe</Projects>
+      <Projects Name="OverbyteIcsHttpsTst.exe">OverbyteIcsHttpsTst.bdsproj</Projects>
+      <Projects Name="Targets">OverbyteIcsCB2006Run.bpl OverbyteIcsCB2006Design.bpl OverbyteIcsHttpTst.exe OverbyteIcsHttpsTst.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>
