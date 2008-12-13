@@ -1060,7 +1060,6 @@ type
 
 {$ENDIF} // USE_SSL
 
-procedure Register;
 procedure ReplaceExt(var FName : String; const newExt : String);
 {$IFDEF CLR}
 function EncodeStr(Encoding : THttpEncoding; const Value : String) : String;
@@ -1103,17 +1102,6 @@ const
     UriProtocolSchemeAllowedChars : TCharSet = ['a'..'z','0'..'9','+','-','.'];
 
 function GetBaseUrl(const Url : String) : String; forward;
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette',
-                       [THttpCli
-{$IFDEF USE_SSL}
-                        , TSslHttpCli
-{$ENDIF}
-                       ]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

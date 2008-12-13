@@ -619,8 +619,6 @@ Updates:
     end;
 {$ENDIF} // USE_SSL
 
-procedure Register;
-
 implementation
 
 const
@@ -2257,17 +2255,6 @@ end;
 function TSyncPop3Cli.NoopSync : Boolean;
 begin
     Result := Synchronize(Noop);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TPop3Cli,
-                                {$IFDEF USE_SSL}
-                                   TSslPop3Cli,
-                                {$ENDIF}   
-                                   TSyncPop3Cli]);
 end;
 
 

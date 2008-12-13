@@ -1133,7 +1133,6 @@ function SmtpRqTypeToStr(RqType: TSmtpRequest): ShortString;          {AG}
 const
     SmtpEMailSeparators = [';', ','];
 
-procedure Register;
 
 implementation
 
@@ -4376,21 +4375,6 @@ begin
         end;
     end;
     { Nothing to do here }
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette',
-                      [TSmtpCli,
-{$IFDEF USE_SSL}
-                       TSslSmtpCli,
-{$ENDIF}
-                       TSyncSmtpCli,
-                       THtmlSmtpCli
-
-                       ]);
 end;
 
 

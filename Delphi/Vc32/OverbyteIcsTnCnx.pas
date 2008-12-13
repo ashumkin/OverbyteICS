@@ -224,18 +224,10 @@ type
                                                       write FOnLocalEcho;
   end;
 
-procedure Register;
-
 implementation
 
 {-$DEFINE DEBUG_OUTPUT}    { Add or remove minus sign before dollar sign to }
                            { generate code for debug message output         }
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-  RegisterComponents('FPiette', [TTnCnx]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

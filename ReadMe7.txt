@@ -118,22 +118,82 @@ This is the subdirectory layout:
 .\delphi\internet             Delphi.W32 sample applications (all Win32 Delphi versions)
 .\delphi\sslinternet          Delphi.W32 SSL-enabled sample applications (all Win32 Delphi versions)
 .\delphi\internet\WebServData Directory for WebServ demo data files
-.\delphi\dotnet               Delphi.NET components and applications 
 .\cpp\internet                C++Builder sample applications
-.\cpp\internet\bcb6           C++Builder version 6 projects
-.\cpp\internet\bds2006        C++Builder 2006 projects (Also for 2007)
-.\delphi\vc                   Delphi 1.x files (winsock.pas 16 bits and *.dcr)
-.\delphi\vc32                 Delphi (7 and up) and C++Builder (6 and up) components
+.\cpp\internet\cb2006         C++Builder 2006 projects
+.\cpp\internet\cb2007         C++Builder 2007 projects
+.\cpp\internet\cb2009         C++Builder 2009 projects
+.\delphi\vc32                 Delphi (7 and up) and C++Builder (2006 and up) components
+.\Install                     Component packages project groups for all versions
 
-If you are reinstalling, or installing a new version, be sure to delete all dcu,
-and obj files from vc32 and internet directories. This applies to all Win32 versions.
-For Delphi.NET, remove all dcpil files.
+
+UPGRADING and REINSTALLING
+Uninstall an existing ICS package (Menu | Component | Install Packages, select
+the component package and click Remove).  
+Rename the old ICS directory and unzip to a new or empty directory, remove the
+old path from the library path and add the new VC32 directory to the library 
+path under Tools | Options |...
+
+All DELPHI and C++ BUILDER VERSIONS/WIN32
 Always upgrade your compiler with the latest update available from Borland.
-Always updade your system with http://windowsupdate.microsoft.com
+Always update your system with http://windowsupdate.microsoft.com
 
-When the components are "SSL-enabled" by defining USE_SSL symbol, you must have 
-LIBEAY32.DLL and SSLEAY32.DLL available somewhere in your path. 
-See http://www.openssl.org for instructions, licensing and source code.
+SSL or not SSL?
+By default the SSL code is compiled into the run-time package and additional SSL- 
+enabled components are installed. In order to exclude SSL code and components, 
+open file OverbyteIcsDefs.inc in the VC32 directory and outcomment directive USE_SSL. 
+Actual use of SSL in your applications also requires LIBEAY32.DLL and SSLEAY32.DLL
+being available somewhere in the path, more details in IcsSslHowTo.txt. 
+
+INSTALLATION USING THE INSTALL PROJECT GROUPS
+For each Delphi and C++ Builder version one project group is provided in directory
+.\Install:
+
+Delphi 7         :  D7Install.bpg
+Delphi 2006      :  D2006Install.bdsgroup
+Delphi 2007      :  D2007Install.groupproj
+Delphi 2009      :  D2009Install.groupproj
+C++ Builder 2006 :  CB2006Install.bdsgroup
+C++ Builder 2007 :  CB2007Install.groupproj
+C++ Builder 2009 :  CB2009Install.groupproj
+
+1 - Do a File/Open Project, navigate to the Install directory, select the correct
+file and open it. The project manager view should now display two package 
+projects, one run-time and one design-time package. The run-time package name
+contains the "Run" suffix. The design-time package name contains the "Design"
+suffix.
+2 - Select and Build the run-time package (do not install).
+3 - Select and Install the design-time package.
+
+After a few seconds, you should have a dialog box telling you the package has
+been installed with a bunch of new components registered in the Tool Palette
+under "Overbyte ICS" and "Overbyte ICS SSL". Then do a "Save All" and a "Close All". 
+
+ALTERNATE INSTALLATION USING THE PACKAGE PROJECT FILES:
+For each Delphi and C++ Builder version two package project files exist in the
+VC32 directory. One run-time and one design-time package project file. 
+The run-time file name contains the "Run" suffix. The design-time file name
+contains the "Design" suffix.
+
+PACKAGE PROJECT FILE NAMES:
+Delphi 7         :  OverbyteIcsD7Run.dpk, OverbyteIcsD7Design.dpk
+Delphi 2006      :  OverbyteIcsD2006Run.bdsproj, OverbyteIcsD2006Design.bdsproj
+Delphi 2007      :  OverbyteIcsD2007Run.dproj, OverbyteIcsD2007Design.dproj
+Delphi 2009      :  OverbyteIcsD2009Run.dproj, OverbyteIcsD2009Design.dproj
+C++ Builder 2006 :  OverbyteIcsCB2006Run.bdsproj, OverbyteIcsCB2006Design.bdsproj
+C++ Builder 2007 :  OverbyteIcsCB2007Run.cbproj, OverbyteIcsCB2007Design.cbproj 
+C++ Builder 2009 :  OverbyteIcsCB2009Run.cbproj, OverbyteIcsCB2009Design.cbproj
+
+1 - Open and Build the run-time package project (do not install!).
+2 - Open and Install the design-time package project.
+(Do a File/Open Project, browse to the VC32 directory. Select the correct file
+and open it. Then in the project manager view, right-click on the package, 
+then click on either the Build or Install button.)
+
+After a few seconds, you should have a dialog box telling you the package has
+been installed with a bunch of new components registered in the Tool Palette
+under "Overbyte ICS" and "Overbyte ICS SSL". Then do a "Save All" and a "Close All".
+
+[ToDo!! The following description of installation is no longer correct] 
 
 DELPHI 2009/WIN32:
 Directory VC32 contains OverbyteIcsDel120Package.dproj which is a package source for

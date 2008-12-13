@@ -68,12 +68,12 @@ unit OverbyteIcsSslThrdLock;
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
-{$IFNDEF USE_SSL}
-    Bomb('Define USE_SSL in OverbyteIcsDefs.inc');
-{$ENDIF}
+
 {#$DEFINE NO_DYNLOCK}
 
 interface
+
+{$IFDEF USE_SSL}
 
 uses
     Windows,
@@ -106,23 +106,14 @@ type
         procedure SetEnabled(const Value: Boolean); override;
     end;
 {$ENDIF}
-    procedure Register;
+{$ENDIF} // USE_SSL
 
 implementation
 
+{$IFDEF USE_SSL}
+
 var
    MutexBuf : TMutexBuf;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TSslStaticLock
-                                  {$IFNDEF NO_DYNLOCK}
-                                  , TSslDynamicLock
-                                  {$ENDIF}]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -327,7 +318,8 @@ begin
     end;
     FEnabled := Value;
 end;
-
 {$ENDIF}
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF} // USE_SSL
 end.

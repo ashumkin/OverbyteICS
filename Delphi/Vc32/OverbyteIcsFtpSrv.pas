@@ -1755,9 +1755,6 @@ function  IsUNC(S : String) : Boolean;
 procedure PatchIE5(var S : String);
 function FormatFactsDirEntry(F : TSearchRec; const FileName: string) : String;  { angus 1.54  }
 
-
-procedure Register;
-
 implementation
 
 var
@@ -1920,18 +1917,6 @@ function SlashesToBackSlashes(const S : String) : String; forward;
 function BackSlashesToSlashes(const S : String) : String; forward;  }
 { function BuildFilePath(const Directory : String; serge le 5/10/2002
                          FileName        : String) : String; forward; }
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette',
-                      [TFtpServer
-                  {$IFDEF USE_SSL}
-                      , TSslFtpServer
-                  {$ENDIF}
-                      ]);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetFileSize(const FileName : String) : TFtpBigInt;           { V1.49 }

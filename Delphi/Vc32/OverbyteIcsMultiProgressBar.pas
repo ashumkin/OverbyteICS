@@ -99,16 +99,7 @@ type
     property Align;
   end;
 
-procedure Register;
-
 implementation
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TMultiProgressBar]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

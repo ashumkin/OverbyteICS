@@ -48,6 +48,7 @@ Jul 03, 2008 V1.02 A. Garrels made a few changes to prepare code for Unicode.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslSessionCache;
 {$I OverbyteIcsDefs.inc}
+{$IFDEF USE_SSL}
 {$IFNDEF COMPILER5_UP}
     Bomb('This unit require Delphi 5  or C++ Builder 5 or higher!');
 {$ENDIF}
@@ -63,9 +64,10 @@ unit OverbyteIcsSslSessionCache;
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
-
+{$ENDIF}
 interface
 
+{$IFDEF USE_SSL}
 uses
     Windows, Messages, SysUtils, Classes,
 {$IFDEF Compiler6_UP}
@@ -218,24 +220,18 @@ type
         property    OnCacheFull;
     end;
 
-    procedure Register;
-
 const
     SslCacheMagic : TSslCacheMagic = '#ICS_SESSION_CACHE_XYZ';
 
-    
+{$ENDIF} //USE_SSL
+
 implementation
+
+{$IFDEF USE_SSL}
 
 resourcestring
     rsInvalidCacheFile          = 'Invalid Cache File';
     rsInvalidStreamVersion      = 'Invalid Stream Version';
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TSslAvlSessionCache]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -768,5 +764,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF}//USE_SSL
 end.
 

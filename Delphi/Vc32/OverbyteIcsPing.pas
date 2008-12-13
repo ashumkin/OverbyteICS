@@ -191,16 +191,7 @@ type
                                              write FOnDnsLookupDone;
   end;
 
-procedure Register;
-
 implementation
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TPing]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

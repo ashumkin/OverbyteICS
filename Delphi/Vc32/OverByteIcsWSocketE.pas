@@ -106,31 +106,7 @@ type
     end;
 {$ENDIF}
 
-procedure Register;
-
 implementation
-
-uses
-    OverByteIcsWSocket;
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette',
-                       [TWSocket
-{ You must define USE_SSL so that SSL code is included in the component.    }
-{ Either in OverbyteIcsDefs.inc or in the project/package options.          }
-{$IFDEF USE_SSL}
-                        , TSslWSocket
-                        , TSslContext
-{$ENDIF}
-                       ]);
-{$IFDEF WIN32}
-    RegisterPropertyEditor(TypeInfo(string), TWSocket, 'LineEnd',
-                           TWSocketLineEndProperty);
-{$ENDIF}
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {                         LineEnd Property Editor                           }

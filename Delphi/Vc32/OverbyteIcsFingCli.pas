@@ -110,17 +110,7 @@ type
                                                         write FOnQueryDone;
     end;
 
-procedure Register;
-
 implementation
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TFingerCli]);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TFingerCli.Create(AOwner: TComponent);

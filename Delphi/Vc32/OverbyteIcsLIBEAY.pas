@@ -69,7 +69,7 @@ Nov 17, 2008 A.Garrels checked against OpenSSL v0.9.8i and added that version
 {$J+}                                 { Allow typed constant to be modified }
 
 {$WARN SYMBOL_DEPRECATED OFF}
-
+{$I OverbyteIcsDefs.inc}
 {$I OverbyteIcsSslDefs.inc}
 
 {$IFDEF COMPILER12_UP}
@@ -83,6 +83,8 @@ Nov 17, 2008 A.Garrels checked against OpenSSL v0.9.8i and added that version
 unit OverbyteIcsLIBEAY;
 
 interface
+
+{$IFDEF USE_SSL}
 
 uses
     Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils;
@@ -604,8 +606,10 @@ const
     MIN_OSSL_VER   = OSSL_VER_0908E;
     MAX_OSSL_VER   = OSSL_VER_0908I;
 {$ENDIF}
-
+{$ENDIF} // USE_SSL
 implementation
+
+{$IFDEF USE_SSL}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function Load : Boolean;
@@ -1440,4 +1444,5 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF} //USE_SSL
 end.

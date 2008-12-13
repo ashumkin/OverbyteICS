@@ -196,8 +196,6 @@ type
 
     end;
 
-procedure Register;
-
 implementation
 
 {$IFDEF DUMP}
@@ -211,12 +209,6 @@ const
                                           'CAN', 'EM',  'SUB', 'ESC',
                                           'FS',  'GS',  'RS',  'US');
 {$ENDIF}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TTnScript]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

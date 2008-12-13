@@ -188,19 +188,8 @@ procedure OutputDebugString(const Msg : TOutputDebugStringType);
 {$ENDIF}
 
 function IcsLoggerAddTimeStamp: String;
-{$IFDEF VCL}
-procedure Register;
-{$ENDIF}
 
 implementation
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VCL}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TIcsLogger]);
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

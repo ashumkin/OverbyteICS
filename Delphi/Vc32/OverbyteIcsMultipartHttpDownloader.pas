@@ -213,8 +213,6 @@ type
                                                    write FOnShowStats;
     end;
 
-procedure Register;
-
 implementation
 
 const
@@ -222,12 +220,6 @@ const
     KeyPart      = 'Part';
     KeyUrl       = 'Url';
     KeyPartCount = 'PartCount';
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TMultipartHttpDownloader]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

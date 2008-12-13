@@ -467,7 +467,6 @@ procedure ParseListLine(const Line          : String;
                         var LastArticle     : Integer;
                         var FirstArticle    : Integer;
                         var PostingFlag     : Char);
-procedure Register;
 
 implementation
 
@@ -639,17 +638,6 @@ begin
     Data[Length(Data) + 1] := #0;
 {$ENDIF}
     GetInteger(@Data[1], Result);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TNntpCli,
-{$IFDEF USE_SSL}
-                                   TSslNntpCli,
-{$ENDIF}
-                                   THtmlNntpCli]);
 end;
 
 

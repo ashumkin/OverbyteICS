@@ -211,16 +211,7 @@ type
                                                    write FOnShowStats;
     end;
 
-procedure Register;
-
 implementation
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TMultipartFtpDownloader]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

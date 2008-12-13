@@ -2633,22 +2633,6 @@ const
     SIO_INDEX_ADD_MCAST  = IOC_IN or IOC_VENDOR or 10;
     SIO_INDEX_DEL_MCAST  = IOC_IN or IOC_VENDOR or 11;
 
-{$IFDEF DELPHI1}
-{ Delphi 1 doesn't like missing register procedure in a unit }
-procedure Register;
-{$ENDIF}
-{$IFDEF VER90}
-{ Delphi 2 doesn't like missing register procedure in a unit }
-procedure Register;
-{$ENDIF}
-{$IFDEF VER93}
-{ BCB 1 doesn't like missing register procedure in a unit }
-procedure Register;
-{$ENDIF}
-
-{$IFDEF CLR}
-//procedure Register;
-{$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
 var
     __DataSocket : TCustomWSocket;
@@ -2719,37 +2703,6 @@ begin
     S[0] := chr(NewLength);
 end;
 {$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF DELPHI1}
-{ Delphi 1 doesn't like missing register procedure in a unit so we provide  }
-{ an empty procedure                                                        }
-procedure Register;
-begin
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER90}
-{ Delphi 2 doesn't like missing register procedure in a unit so we provide  }
-{ an empty procedure                                                        }
-procedure Register;
-begin
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER93}
-{ BCB 1 doesn't like missing register procedure in a unit so we provide     }
-{ an empty procedure                                                        }
-procedure Register;
-begin
-end;
-{$ENDIF}
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsDigit(Ch : AnsiChar) : Boolean;

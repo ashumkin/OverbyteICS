@@ -63,7 +63,7 @@ Aug 02, 2008 Still one PChar caught in one of the records.
 {$X+}                                 { Enable extended syntax              }
 {$H+}                                 { Use long strings                    }
 {$J+}                                 { Allow typed constant to be modified }
-
+{$I OverbyteIcsDefs.inc}
 {$I OverbyteIcsSslDefs.inc}
 
 unit OverbyteIcsSSLEAY;
@@ -80,6 +80,8 @@ unit OverbyteIcsSSLEAY;
 {$ENDIF}
 
 interface
+
+{$IFDEF USE_SSL}
 
 uses
     Windows, SysUtils;
@@ -759,8 +761,11 @@ const
     GSSLEAY_DLL_FileVersion     : String = '';
     GSSLEAY_DLL_FileDescription : String = '';
 
+{$ENDIF} // USE_SSL
+
 implementation
 
+{$IFDEF USE_SSL}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetFileVerInfo(
@@ -1326,7 +1331,7 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
+{$ENDIF}//USE_SSL
 end.
 
 

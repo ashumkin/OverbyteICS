@@ -343,24 +343,7 @@ type
     end;
 {$ENDIF} // USE_SSL
 
-{$IFDEF WIN32}
-procedure Register;
-{$ENDIF}
-
 implementation
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF WIN32}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TWSocketServer
-{$IFDEF USE_SSL}
-                                , TSslWSocketServer
-{$ENDIF}
-                                ]);
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

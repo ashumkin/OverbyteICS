@@ -821,7 +821,6 @@ const
       #$A0, #$B1, #$20, #$20, #$20, #$20, #$F7, #$20,   { F0 - F7 }
       #$B0, #$B0, #$B0, #$20, #$20, #$B2, #$A0, #$20);  { F8 - FF }
 
-procedure Register;
 procedure FKeysToFile(var FKeys : TFuncKeysTable; FName : String);
 procedure FileToFKeys(var FKeys : TFuncKeysTable; FName : String);
 function  AddFKey(var FKeys : TFuncKeysTable;
@@ -835,13 +834,6 @@ function  AddFKey(var FKeys : TFuncKeysTable;
 implementation
 {-$DEFINE DEBUG_OUTPUT}   { Add or remove minus sign before dollar sign to }
                           { generate code for debug message output         }
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TEmulVT]);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF UNICODE}

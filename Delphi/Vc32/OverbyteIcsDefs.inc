@@ -109,6 +109,14 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
+{ User defines : enable or disable these defines depending on how you want your 
+  ICS Packages to be compiled }
+  
+{$DEFINE USE_SSL}
+{$DEFINE ZLIB_OBJ}
+
+{ Dont not change anything below this line ! }
+
 {$IFDEF FPC}
   {$MODE Delphi}                           { delphi mode            }
   {$H+}                                    { Use long strings       }
@@ -583,8 +591,12 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   {$ENDIF}
 {$ENDIF}
 
-{$IFNDEF FPC}             { Not for FPC ?                           }
-  {$IFDEF VCL}            { Not for .NET                            }
-    //{$DEFINE USE_SSL}     { Uncommend this line to include SSL code }
-  {$ENDIF}
+{ ICS SSL code don't work on FPC }
+{$IFDEF FPC}
+  {$UNDEF USE_SSL}
+{$ENDIF}
+
+{ ICS SSL code don't work on .NET }
+{$IFNDEF VCL}
+  {$UNDEF USE_SSL}  
 {$ENDIF}

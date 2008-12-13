@@ -353,15 +353,12 @@ type
 function ReverseIP(const IP : AnsiString) : AnsiString;
 function LongLatToDMS(longlat : longint; hemis : AnsiString) : AnsiString; { !!KAP!! }
 function Loc2Geo(loc : TLOCInfo) : TLogGeo;                        { !!KAP!! }
-procedure Register;
 
 implementation
 
 type
     PWORD  = ^WORD;
     PDWORD = ^DWORD;
-
-
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -384,14 +381,6 @@ begin
     if Result[1] = '.' then
         Delete(Result, 1, 1);
 end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TDnsQuery]);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TDnsQuery.Create(AOwner : TComponent);

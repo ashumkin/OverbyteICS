@@ -1199,8 +1199,6 @@ function AuthTypesToString(Types : TAuthenticationTypes) : String;
 function StreamWriteStrA(AStrm : TStream; const AStr: String): Integer;
 function StreamWriteLnA(AStrm : TStream; const AStr: String): Integer;
 
-procedure Register;
-
 const
     HttpConnectionStateName : array [THttpConnectionState] of String =
          ('hcRequest', 'hcHeader', 'hcPostedData');
@@ -1215,16 +1213,6 @@ implementation
 
 const
     GTagPrefix : String = '#';
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [THttpServer
-{$IFDEF USE_SSL}
-                                   ,TSslHttpServer
-{$ENDIF}
-                                   ]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

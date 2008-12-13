@@ -215,15 +215,7 @@ type
                                                        write FOnDataAvailable;
   end;
 
-procedure Register;
-
 implementation
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-  RegisterComponents('FPiette', [TTnEmulVT]);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

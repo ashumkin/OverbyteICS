@@ -1857,8 +1857,6 @@ type
 function LookupFTPReq (const RqType: TFtpRequest): String;    { V2.113 angus }
 function LookupFtpState (const FtpState: TFtpState): String;  { V2.113 angus }
 
-procedure Register;
-
 implementation
 
 uses WinSock;
@@ -1869,18 +1867,6 @@ const
 {$ENDIF}
 
 {$B-}  { Do not evaluate boolean expressions more than necessary }
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Register;
-begin
-    RegisterComponents('FPiette', [TFtpClient
-{$IFDEF USE_SSL}
-                       , TSslFtpClient
-{$ENDIF}
-                       ]);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF WIN32}
