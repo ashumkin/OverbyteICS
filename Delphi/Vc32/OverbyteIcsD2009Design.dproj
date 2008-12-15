@@ -20,7 +20,8 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_Description>Overbyte ICS design-time package for Delphi 2009</DCC_Description>
+			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
+			<DCC_Description>Overbyte ICS Design-Time Package Delphi 2009</DCC_Description>
 			<DesignOnlyPackage>true</DesignOnlyPackage>
 			<DCC_DependencyCheckOutputName>C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\6.0\Bpl\OverbyteIcsD2009Design.bpl</DCC_DependencyCheckOutputName>
 			<GenPackage>true</GenPackage>
@@ -36,6 +37,7 @@
 			<DCC_DebugInformation>false</DCC_DebugInformation>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_SymbolReferenceInfo>2</DCC_SymbolReferenceInfo>
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<ItemGroup>
@@ -85,7 +87,7 @@
 						<VersionInfo Name="Special">False</VersionInfo>
 						<VersionInfo Name="Private">False</VersionInfo>
 						<VersionInfo Name="DLL">False</VersionInfo>
-						<VersionInfo Name="Locale">1036</VersionInfo>
+						<VersionInfo Name="Locale">1033</VersionInfo>
 						<VersionInfo Name="CodePage">1252</VersionInfo>
 					</VersionInfo>
 					<VersionInfoKeys>

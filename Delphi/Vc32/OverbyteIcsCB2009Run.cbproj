@@ -20,14 +20,15 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<ILINK_Description>OverByte ICS run-time package for CBuilder 2009</ILINK_Description>
+			<LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
+			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
+			<Defines>USE_SSL;$(Defines)</Defines>
+			<ILINK_Description>Overbyte ICS Run-Time Package C++ Builder 2009</ILINK_Description>
 			<DesignOnlyPackage>false</DesignOnlyPackage>
 			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
 			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
-			<LinkPackageImports>rtl.bpi;vcl.bpi</LinkPackageImports>
 			<DCC_UNIT_PLATFORM>false</DCC_UNIT_PLATFORM>
-			<PackageImports>rtl.bpi;vcl.bpi</PackageImports>
 			<BCC_PCHCache>true</BCC_PCHCache>
 			<DCC_IncludePath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;$(DCC_IncludePath)</DCC_IncludePath>
 			<ILINK_AppType>Windows</ILINK_AppType>

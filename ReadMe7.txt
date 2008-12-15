@@ -139,8 +139,13 @@ Always update your system with http://windowsupdate.microsoft.com
 
 SSL or not SSL?
 By default the SSL code is compiled into the run-time package and additional SSL- 
-enabled components are installed. In order to exclude SSL code and components, 
-open file OverbyteIcsDefs.inc in the VC32 directory and outcomment directive USE_SSL. 
+enabled components are installed. In order to not compile the SSL code into the
+run-time package and to not install the SSL-Enabled components you need to remove
+the conditional define USE_SSL from both the run-time and design-time package.  
+However if you do not build your applications with run-time packages it is 
+recommended to build the packages with default settings. The SSL code will the
+be compiled into your applications depending on whether the conditional define 
+USE_SSL is set in the project options or not.
 Actual use of SSL in your applications also requires LIBEAY32.DLL and SSLEAY32.DLL
 being available somewhere in the path, more details in IcsSslHowTo.txt. 
 

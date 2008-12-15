@@ -34,10 +34,10 @@ package OverbyteIcsD2009Run;
 {$LOCALSYMBOLS ON}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
-{$OPTIMIZATION OFF}
+{$OPTIMIZATION ON}
 {$OVERFLOWCHECKS ON}
 {$RANGECHECKS ON}
-{$REFERENCEINFO ON}
+{$REFERENCEINFO OFF}
 {$SAFEDIVIDE OFF}
 {$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
@@ -45,9 +45,10 @@ package OverbyteIcsD2009Run;
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'Overbyte ICS run-time package for Delphi 2009'}
+{$DESCRIPTION 'Overbyte ICS Run-Time Package Delphi 2009'}
 {$RUNONLY}
 {$IMPLICITBUILD ON}
+{$DEFINE USE_SSL}
 
 requires
   rtl,
@@ -90,7 +91,7 @@ contains
   OverbyteIcsStreams in 'OverbyteIcsStreams.pas',
   OverbyteIcsLIBEAY in 'OverbyteIcsLIBEAY.pas',
   OverbyteIcsSSLEAY in 'OverbyteIcsSSLEAY.pas',
-  OverbyteIcsAvlTrees in 'OverbyteIcsAvlTrees.pas',  
+  OverbyteIcsAvlTrees in 'OverbyteIcsAvlTrees.pas',
   OverbyteIcsSslSessionCache in 'OverbyteIcsSslSessionCache.pas',
   OverbyteIcsSslThrdLock in 'OverbyteIcsSslThrdLock.pas',
   OverbyteIcsLibrary in 'OverbyteIcsLibrary.pas',

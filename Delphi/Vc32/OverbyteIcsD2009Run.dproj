@@ -23,12 +23,12 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
-			<DCC_SymbolReferenceInfo>1</DCC_SymbolReferenceInfo>
-			<DCC_Description>Overbyte ICS run-time package for Delphi 2009</DCC_Description>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_Description>Overbyte ICS Run-Time Package Delphi 2009</DCC_Description>
 			<DCC_DependencyCheckOutputName>C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\6.0\Bpl\OverbyteIcsD2009Run.bpl</DCC_DependencyCheckOutputName>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
-			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
 			<GenDll>true</GenDll>
 			<GenPackage>true</GenPackage>
@@ -39,19 +39,19 @@
 			<Version>7.0</Version>
 			<DCC_DebugInformation>False</DCC_DebugInformation>
 			<DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
-			<DCC_Optimize>False</DCC_Optimize>
+			<DCC_Optimize>true</DCC_Optimize>
 			<DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
 			<DCC_RangeChecking>True</DCC_RangeChecking>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-			<DCC_Define>RELEASE</DCC_Define>
+			<DCC_Define>RELEASE;USE_SSL</DCC_Define>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_Debug)'!=''">
+			<DCC_SymbolReferenceInfo>2</DCC_SymbolReferenceInfo>
 			<Version>7.0</Version>
 			<DCC_Optimize>False</DCC_Optimize>
 			<DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
 			<DCC_RangeChecking>True</DCC_RangeChecking>
-			<DCC_Define>DEBUG</DCC_Define>
-			<DCC_UnitSearchPath>..\Vc32</DCC_UnitSearchPath>
+			<DCC_Define>DEBUG;USE_SSL</DCC_Define>
 			<DCC_ResourcePath>..\Vc32</DCC_ResourcePath>
 			<DCC_ObjPath>..\Vc32</DCC_ObjPath>
 			<DCC_IncludePath>..\Vc32</DCC_IncludePath>
@@ -195,7 +195,7 @@
 						<VersionInfo Name="Special">False</VersionInfo>
 						<VersionInfo Name="Private">False</VersionInfo>
 						<VersionInfo Name="DLL">False</VersionInfo>
-						<VersionInfo Name="Locale">2060</VersionInfo>
+						<VersionInfo Name="Locale">1033</VersionInfo>
 						<VersionInfo Name="CodePage">1252</VersionInfo>
 					</VersionInfo>
 					<VersionInfoKeys>

@@ -68,7 +68,7 @@
 						<Source Name="MainSource">OverbyteIcsHttpTst.cpp</Source>
 					</Source>
 					<VersionInfo>
-						<VersionInfo Name="IncludeVerInfo">False</VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">0</VersionInfo>
@@ -79,7 +79,7 @@
 						<VersionInfo Name="Special">False</VersionInfo>
 						<VersionInfo Name="Private">False</VersionInfo>
 						<VersionInfo Name="DLL">False</VersionInfo>
-						<VersionInfo Name="Locale">1031</VersionInfo>
+						<VersionInfo Name="Locale">1033</VersionInfo>
 						<VersionInfo Name="CodePage">1252</VersionInfo>
 					</VersionInfo>
 					<VersionInfoKeys>
@@ -194,17 +194,17 @@
 			<ProjectFileVersion>12</ProjectFileVersion>
 		</ProjectExtensions>
 		<ItemGroup>
-			<ResFiles Include="OverbyteIcsHttpTst.res">
-				<BuildOrder>0</BuildOrder>
-			</ResFiles>
+			<CppCompile Include="OverbyteIcsHttpTst.cpp">
+				<BuildOrder>1</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="..\OverbyteIcsHttpTst1.cpp">
 				<Form>HttpTestForm</Form>
 				<DependentOn>..\OverbyteIcsHttpTst1.h</DependentOn>
 				<BuildOrder>2</BuildOrder>
 			</CppCompile>
-			<CppCompile Include="OverbyteIcsHttpTst.cpp">
-				<BuildOrder>1</BuildOrder>
-			</CppCompile>
+			<ResFiles Include="OverbyteIcsHttpTst.res">
+				<BuildOrder>0</BuildOrder>
+			</ResFiles>
 			<FormResources Include="..\OverbyteIcsHttpTst1.dfm"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>

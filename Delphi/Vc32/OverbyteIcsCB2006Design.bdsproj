@@ -82,8 +82,9 @@
         <property category="win32.Release_Build.win32b.tasm32" name="option.zn.enabled" value="1"/>
         <optionset name="all_configurations">
           <property category="node" name="displayname" value="All Configurations"/>
+          <property category="win32.*.win32b.bcc32" name="option.D.arg.1" value="USE_SSL"/>
           <property category="win32.*.win32b.bcc32" name="option.D.arg.merge" value="1"/>
-          <property category="win32.*.win32b.bcc32" name="option.D.enabled" value="0"/>
+          <property category="win32.*.win32b.bcc32" name="option.D.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.arg.1" value="$(BDS)\lib\vcl100.csm"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.arg.merge" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.enabled" value="1"/>
@@ -106,8 +107,9 @@
           <property category="win32.*.win32b.dcc32" name="option.$.arg.1" value="Y-"/>
           <property category="win32.*.win32b.dcc32" name="option.$.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.$.enabled" value="1"/>
+          <property category="win32.*.win32b.dcc32" name="option.D.arg.1" value="USE_SSL"/>
           <property category="win32.*.win32b.dcc32" name="option.D.arg.merge" value="1"/>
-          <property category="win32.*.win32b.dcc32" name="option.D.enabled" value="0"/>
+          <property category="win32.*.win32b.dcc32" name="option.D.enabled" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.I.arg.1" value="D:\ICSV6\Delphi\Vc32"/>
           <property category="win32.*.win32b.dcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.I.enabled" value="0"/>
@@ -131,6 +133,9 @@
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.1" value="D:\ICSV6\Delphi\Vc32"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.enabled" value="1"/>
+          <property category="win32.*.win32b.ilink32" name="option.D.arg" value="Overbyte ICS Design-Time Package C++ Builder 2006"/>
+          <property category="win32.*.win32b.ilink32" name="option.D.arg.merge" value="1"/>
+          <property category="win32.*.win32b.ilink32" name="option.D.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Gi.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Gl.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Gpd.enabled" value="1"/>
@@ -164,13 +169,13 @@
       </project>
       <FILELIST>
         <FILE FILENAME="OverbyteIcsCB2006Design.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Design" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="rtl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="rtl" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="vcl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="vcl" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="designide.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="designide" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="C:\Dokumente und Einstellungen\Peter Peterson\rtl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="rtl" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="C:\Dokumente und Einstellungen\Peter Peterson\vcl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="vcl" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="C:\Dokumente und Einstellungen\Peter Peterson\designide.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="designide" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsCB2006Design.res" CONTAINERID="ResTool" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Design.res" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverByteIcsWSocketE.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverByteIcsWSocketE" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsReg.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsReg" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="OverbyteIcsCB2006Run.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Run" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="C:\Dokumente und Einstellungen\Peter Peterson\OverbyteIcsCB2006Run.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Run" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>
@@ -185,7 +190,7 @@
           <VersionInfo Name="Special">False</VersionInfo>
           <VersionInfo Name="Private">False</VersionInfo>
           <VersionInfo Name="DLL">False</VersionInfo>
-          <VersionInfo Name="Locale">1031</VersionInfo>
+          <VersionInfo Name="Locale">1033</VersionInfo>
           <VersionInfo Name="CodePage">1252</VersionInfo>
         </VersionInfo>
         <VersionInfoKeys>
@@ -223,7 +228,7 @@
         <Linker>
           <Linker Name="LibPrefix"></Linker>
           <Linker Name="LibSuffix"></Linker>
-          <Linker Name="LibVersion"></Linker>		  
+          <Linker Name="LibVersion"></Linker>
         </Linker>
       </IDEOPTIONS>
     </BCBPROJECT>

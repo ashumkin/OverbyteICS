@@ -112,7 +112,7 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 { User defines : enable or disable these defines depending on how you want your 
   ICS Packages to be compiled }
   
-{$DEFINE USE_SSL}
+{#$DEFINE USE_SSL}
 {$DEFINE ZLIB_OBJ}
 
 { Dont not change anything below this line ! }

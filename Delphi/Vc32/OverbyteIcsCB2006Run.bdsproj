@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<PersonalityInfo>
 		<Option>
@@ -90,8 +90,9 @@
           <property category="win32.*.win32b.bcc32" name="option.A.enabled" value="0"/>
           <property category="win32.*.win32b.bcc32" name="option.AK.enabled" value="0"/>
           <property category="win32.*.win32b.bcc32" name="option.AU.enabled" value="0"/>
+          <property category="win32.*.win32b.bcc32" name="option.D.arg.1" value="USE_SSL"/>
           <property category="win32.*.win32b.bcc32" name="option.D.arg.merge" value="1"/>
-          <property category="win32.*.win32b.bcc32" name="option.D.enabled" value="0"/>
+          <property category="win32.*.win32b.bcc32" name="option.D.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.arg.1" value="$(BDS)\lib\vcl100.csm"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.arg.merge" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.enabled" value="1"/>
@@ -143,8 +144,9 @@
           <property category="win32.*.win32b.dcc32" name="option.$A4.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.$Z2.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.$Z4.enabled" value="0"/>
+          <property category="win32.*.win32b.dcc32" name="option.D.arg.1" value="USE_SSL"/>
           <property category="win32.*.win32b.dcc32" name="option.D.arg.merge" value="1"/>
-          <property category="win32.*.win32b.dcc32" name="option.D.enabled" value="0"/>
+          <property category="win32.*.win32b.dcc32" name="option.D.enabled" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.GD.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.GP.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.GS.enabled" value="0"/>
@@ -171,6 +173,9 @@
           <property category="win32.*.win32b.idl2cpp" name="option.I.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="container.SelectedWarnings.containerenabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.-w-.enabled" value="0"/>
+          <property category="win32.*.win32b.ilink32" name="option.D.arg" value="Overbyte ICS Run-Time Package C++ Builder 2006"/>
+          <property category="win32.*.win32b.ilink32" name="option.D.arg.merge" value="1"/>
+          <property category="win32.*.win32b.ilink32" name="option.D.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Gi.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Gl.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Gpd.enabled" value="0"/>
@@ -205,8 +210,8 @@
       </project>
       <FILELIST>
         <FILE FILENAME="OverbyteIcsCB2006Run.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Run" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="rtl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="rtl" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="vcl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="vcl" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="C:\Dokumente und Einstellungen\Peter Peterson\rtl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="rtl" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="C:\Dokumente und Einstellungen\Peter Peterson\vcl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="vcl" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsCB2006Run.res" CONTAINERID="ResTool" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Run.res" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsLogger.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsLogger" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsLogger.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>

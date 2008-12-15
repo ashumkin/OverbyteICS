@@ -1,16 +1,14 @@
 package OverbyteIcsD7Design;
 
-{$I OverbyteIcsDefs.inc}
-
 {$R *.res}
 {$ALIGN 8}
-{$ASSERTIONS ON}
+{$ASSERTIONS OFF}
 {$BOOLEVAL OFF}
-{$DEBUGINFO ON}
+{$DEBUGINFO OFF}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA ON}
 {$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
+{$LOCALSYMBOLS OFF}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
 {$OPTIMIZATION ON}
@@ -24,9 +22,10 @@ package OverbyteIcsD7Design;
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'Overbyte ICS design-time package for Delphi 7'}
+{$DESCRIPTION 'Overbyte ICS Design-Time Package Delphi 7'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
+{$DEFINE USE_SSL}
 
 requires
   rtl,

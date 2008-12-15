@@ -20,8 +20,10 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
+			<Defines>USE_SSL;$(Defines)</Defines>
 			<LinkPackageStatics>rtl.lib;vcl.lib;OverbyteIcsCB2009Run.lib</LinkPackageStatics>
-			<ILINK_Description>OverByte ICS design-time package for CBuilder 2009</ILINK_Description>
+			<ILINK_Description>Overbyte ICS Design-Time Package C++ Builder 2009</ILINK_Description>
 			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
 			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
 			<DCC_UNIT_PLATFORM>false</DCC_UNIT_PLATFORM>
@@ -35,7 +37,6 @@
 			<BCC_IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(BCC_IncludePath)</BCC_IncludePath>
 			<BRCC_IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(BRCC_IncludePath)</BRCC_IncludePath>
 			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-			<UsePackages>true</UsePackages>
 			<DCC_IncludePath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;C:\Dokumente und Einstellungen\Peter Peterson\Eigene Dateien\Borland Studio Projects;D:\ICSV6\Delphi\Vc32;$(DCC_IncludePath)</DCC_IncludePath>
 			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 			<DCC_UnitSearchPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;C:\Dokumente und Einstellungen\Peter Peterson\Eigene Dateien\Borland Studio Projects;D:\ICSV6\Delphi\Vc32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
@@ -140,7 +141,7 @@
 						<VersionInfo Name="Special">False</VersionInfo>
 						<VersionInfo Name="Private">False</VersionInfo>
 						<VersionInfo Name="DLL">False</VersionInfo>
-						<VersionInfo Name="Locale">1031</VersionInfo>
+						<VersionInfo Name="Locale">1033</VersionInfo>
 						<VersionInfo Name="CodePage">1252</VersionInfo>
 					</VersionInfo>
 					<VersionInfoKeys>
