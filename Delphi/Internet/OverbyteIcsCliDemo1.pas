@@ -172,7 +172,7 @@ begin
     { First remove EndOfLine marker                                         }
     if (Length(Cmd) >= Length(CliSocket.LineEnd)) and
        (Copy(Cmd, Length(Cmd) - Length(CliSocket.LineEnd) + 1,
-             Length(CliSocket.LineEnd)) = CliSocket.LineEnd) then
+             Length(CliSocket.LineEnd)) = String(CliSocket.LineEnd)) then
         Cmd := Copy(Cmd, 1, Length(Cmd) - Length(CliSocket.LineEnd));
     { Then display in memo                                                  }
     Display(Cmd);
@@ -190,7 +190,7 @@ begin
         Exit;
 
     Buffer[Len]       := #0;              { Nul terminate  }
-    ProcessCommand(StrPas(Buffer));       { Pass as string }
+    ProcessCommand(String(Buffer));       { Pass as string }
 end;
 
 
