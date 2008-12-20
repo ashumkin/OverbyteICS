@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Description:  Demonstration for Client program using TWSocket.
 Creation:     8 december 1997
-Version:      6.06
+Version:      1.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -46,6 +46,8 @@ Jul 30, 2006 V1.06 Added checkboxes to allow adding CRLF or not and to allow
                    embedded binary chars. To enter a binary char in the edit
                    box, simply enter a $ followed by thow digit hex ascii code.
                    To enter a $ sign, enter $24.
+Dec 20, 2008 V1.07 Replace StrPas by a string cast. Removed an implicit
+                   conversion to string by an explicit to avoid a warning.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -60,8 +62,8 @@ uses
   OverbyteIcsWSocket, OverbyteIcsWndControl;
 
 const
-  CliDemoVersion     = 606;
-  CopyRight : String = ' CliDemo (c) 1997-2008 F. Piette V6.06 ';
+  CliDemoVersion     = 107;
+  CopyRight : String = ' CliDemo (c) 1997-2008 F. Piette V1.07 ';
 
 type
   TClientForm = class(TForm)
