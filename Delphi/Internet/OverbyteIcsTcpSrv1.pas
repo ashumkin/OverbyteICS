@@ -44,7 +44,9 @@ Oct 15, 2000 V1.02 Display remote and local socket binding when a client
 Nov 11, 2000 V1.03 Implemented OnLineLimitExceeded event
 Dec 15, 2001 V1.03 In command help changed #10#13 to the correct value #13#10.
 Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
-Nov 28, 2008 V7.01 A.Garrels added command binary, reqiures OverbyteIcsBinCliDemo.
+Nov 28, 2008 V7.01 A.Garrels added command binary, requires OverbyteIcsBinCliDemo.
+Dec 20, 2008 V7.02 F.Piette removed an implicit string conversion warning in
+                   WMAppStartup (Hostname).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTcpSrv1;
@@ -57,8 +59,8 @@ uses
   OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl;
 
 const
-  TcpSrvVersion = 701;
-  CopyRight     = ' TcpSrv (c) 1999-2008 by François PIETTE. V7.01';
+  TcpSrvVersion = 702;
+  CopyRight     = ' TcpSrv (c) 1999-2008 by François PIETTE. V7.02';
   WM_APPSTARTUP = WM_USER + 1;
 
 type
@@ -219,7 +221,7 @@ begin
     Display(OverbyteIcsWSocket.Copyright);
     Display(OverbyteIcsWSocketS.CopyRight);
     WSocket_gethostname(MyHostName);
-    Display(' I am "' + MyHostName + '"');
+    Display(' I am "' + String(MyHostName) + '"');
     Display(' IP: ' + LocalIPList.Text);
     WSocketServer1.Proto       := 'tcp';         { Use TCP protocol  }
     WSocketServer1.Port        := 'telnet';      { Use telnet port   }
