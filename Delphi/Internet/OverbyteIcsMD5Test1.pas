@@ -3,7 +3,7 @@
 Author:       François PIETTE.
 Description:  MD5 self test routine for OverByteIcsMD5 unit.
 Creation:     Aug 01, 2007
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -37,6 +37,9 @@ Legal issues: Copyright (C) 2007 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 Updates:
+Dec 21, 2008 V1.01 F.Piette added a string cast in RunButtonClick to avoid
+             a warning when compiling with Delphi 2009.
+
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMD5Test1;
@@ -174,7 +177,7 @@ begin
         Stream.Write(MD5TestStrings[3][I], 1);
     Stream.Free;
     if not SameText(MD5TestResults[3],
-                    FileMD5(FileName)) then
+                    String(FileMD5(FileName))) then
         Form1.Memo1.Lines.Add('FileMD5 failed')
     else
         Form1.Memo1.Lines.Add('FileMD5 passed');

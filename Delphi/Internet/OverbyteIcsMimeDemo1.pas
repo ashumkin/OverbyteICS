@@ -7,11 +7,11 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.17
+Version:      7.18
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2007 by François PIETTE
+Legal issues: Copyright (C) 1998-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -53,7 +53,10 @@ Oct 23, 2008  V7.16 Arno added some test headers, demo uses TMimeDecodeW.
               able to view Unicode correctly. Define USE_TNT to use the TntMemo
               instead of TMemo.
 Oct 25, 2008  V7.17 Added procedure Display buffer.
-              
+Dec 21, 2008  V7.18 F.Piette replaced StrPas() with String() to avoid a
+              warning with Delphi 2009. Also added a few string cast for
+              same reason.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDemo1;
@@ -70,8 +73,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-  MimeDemoVersion    = 717;
-  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.17 ';
+  MimeDemoVersion    = 718;
+  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.18 ';
 
 type
 {$IFDEF USE_TNT}
@@ -230,7 +233,7 @@ begin
            (IsValidCodePage(MimeDecode1.PartCodePage))) then
         Memo1.Lines.Add(AnsiToUnicode(FLineBuf, MimeDecode1.PartCodePage))
     else
-        Memo1.Lines.Add(StrPas(FLineBuf));
+        Memo1.Lines.Add(String(FLineBuf));
 end;
 
 
@@ -303,7 +306,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1PartHeaderLine(Sender: TObject);
 begin
-    Display('Part header: ' + UnfoldHdrValue(MimeDecode1.CurrentData));
+    Display('Part header: ' + String(UnfoldHdrValue(MimeDecode1.CurrentData)));
 end;
 
 
@@ -311,7 +314,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1HeaderLine(Sender: TObject);
 begin
-    Display('Msg header: ' + UnfoldHdrValue(MimeDecode1.CurrentData));
+    Display('Msg header: ' + String(UnfoldHdrValue(MimeDecode1.CurrentData)));
 end;
 
 
@@ -353,8 +356,8 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1InlineDecodeBegin(
-   Sender   : TObject;
-   FileName : AnsiString);
+    Sender   : TObject;
+    FileName : AnsiString);
 begin
     Display('--------- INLINE begin. Filename is ''' + FileName + '''');
     Display('');
@@ -367,8 +370,8 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1InlineDecodeEnd(
-   Sender   : TObject;
-   Filename : AnsiString);
+    Sender   : TObject;
+    Filename : AnsiString);
 begin
     Display('--------- INLINE end');
     { Close file, if any }
@@ -381,9 +384,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.MimeDecode1InlineDecodeLine(
-  Sender : TObject;
-  Line   : Pointer;
-  Len    : Integer);
+    Sender : TObject;
+    Line   : Pointer;
+    Len    : Integer);
 var
     LastLine : String;
     DataLine : String;
@@ -481,9 +484,9 @@ var
         '=?iso-8859-1?Q?Angus_fait_la_f=EAte_=E0_Fran=E7ois_quand_l''=E9t=E9_arrive?=',            // note escaped '' added
         '=?utf-8?Q?Unicode_testing_-_Angus_fait_la_?==?utf-8?Q?f=C3=AAte_=C3=A0_Fran=C3=A7ois_q'+
            'uand_l''=C3=A9t=C3=A9_arri?==?utf-8?Q?ve_=28Greek:_=C5=B4=C6=9F=C6=B1=CE=A3=CE=A8=CE=A9=29?=',
-        '=?utf-8?Q?Unicode_testing_-_Angus_fait_la_?='#13#10#9+                                
-           '=?utf-8?Q?f=C3=AAte_=C3=A0_Fran=C3=A7ois_quand_l''=C3=A9t=C3=A9_arri?='#13#10#9+    // note escaped '' added
-	       '=?utf-8?Q?ve_=28Greek:_=C5=B4=C6=9F=C6=B1=CE=A3=CE=A8=CE=A9=29?=' );
+        '=?utf-8?Q?Unicode_testing_-_Angus_fait_la_?='#13#10#9+
+        '=?utf-8?Q?f=C3=AAte_=C3=A0_Fran=C3=A7ois_quand_l''=C3=A9t=C3=A9_arri?='#13#10#9+    // note escaped '' added
+        '=?utf-8?Q?ve_=28Greek:_=C5=B4=C6=9F=C6=B1=CE=A3=CE=A8=CE=A9=29?=' );
 
 procedure TMimeDecodeForm.DecAutoHeaderButtonClick(Sender: TObject);
 var
@@ -506,11 +509,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.DecOneHeaderButtonClick(Sender: TObject);
 var
-    CharSet: AnsiString;
-    UniStr: UnicodeString ;
+    CharSet : AnsiString;
+    UniStr  : UnicodeString ;
 begin
     Display('Raw Header: ' + TextEdit.Text);
-    UniStr := DecodeMimeInlineValueEx (TextEdit.Text, CharSet);
+    UniStr := DecodeMimeInlineValueEx(TextEdit.Text, CharSet);
     Display('Unicode Header: ' + UniStr + ' [CharSet=' +
                                             String(CharSet) + ']');
     Display('');
@@ -558,10 +561,14 @@ begin
     else begin
         for I := 0 to Pred (MimeDecodeEx1.DecParts) do begin
             with MimeDecodeEx1.PartInfos [I] do begin
-                Display('Part ' + IntToStr (I) +  ', Content: ' + PContentType +
-                    ', Size: ' + IntToStr (PSize) + ', Name: ' + PName +
-                    ', FileName: ' + PFileName + ', Encoding: ' + PEncoding +
-                    ', Charset: ' + PCharset + ', ApplType: ' + PApplType);
+                Display('Part '      + IntToStr (I) +
+                      ', Content: '  + String(PContentType) +
+                      ', Size: '     + IntToStr(PSize) +
+                      ', Name: '     + PName +
+                      ', FileName: ' + PFileName +
+                      ', Encoding: ' + String(PEncoding) +
+                      ', Charset: '  + String(PCharset) +
+                      ', ApplType: ' + String(PApplType));
                  // the content of each part is in PartStream
                  // but we don't attempt to display it here, only the size
             end;
@@ -570,12 +577,15 @@ begin
     end;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecodeForm.ClearButtonClick(Sender: TObject);
 begin
     Memo1.Clear;
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 end.
 

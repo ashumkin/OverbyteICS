@@ -4,7 +4,7 @@ Author:       François PIETTE
 Object:       TPop3Cli class implements the POP3 protocol
               (RFC-1225, RFC-1939)
 Creation:     03 october 1997
-Version:      6.04
+Version:      6.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -130,8 +130,9 @@ Mar 24, 2008  V6.03 Francois Piette made some changes to prepare code
                     for Unicode.
 Jun 28, 2008  V6.04 **Breaking Change** enum items "pop3TlsImplicite", "pop3TlsExplicite"
               renamed to "pop3TlsImplicit", "pop3TlsExplicit"
+Dec 21, 2008  V6.05 F.Piette added two string cast in WSocketDataAvailable to
+              avoid warning with Delphi 2009.
 
-              
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPop3Prot;
 
@@ -172,8 +173,8 @@ uses
     OverbyteIcsMD5;
 
 const
-    Pop3CliVersion     = 604;
-    CopyRight : String = ' POP3 component (c) 1997-2008 F. Piette V6.04 ';
+    Pop3CliVersion     = 605;
+    CopyRight : String = ' POP3 component (c) 1997-2008 F. Piette V6.05 ';
 {$IFDEF VER80}
     { Delphi 1 has a 255 characters string limitation }
     POP3_RCV_BUF_SIZE = 255;
@@ -971,9 +972,9 @@ begin
 
             { Found a LF. Extract data from buffer, ignoring CR if any }
             if (I > 0) and (FReceiveBuffer[I - 1] = #13) then      {07/03/2004}
-                FLastResponse := Copy(FReceiveBuffer, 1, I - 1)
+                FLastResponse := String(Copy(FReceiveBuffer, 1, I - 1))
             else
-                FLastResponse := Copy(FReceiveBuffer, 1, I);
+                FLastResponse := String(Copy(FReceiveBuffer, 1, I));
 
             TriggerResponse(FLastResponse);
 

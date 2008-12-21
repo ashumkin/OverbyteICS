@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TNntpCli is a client for the NNTP protocol (RFC-977)
 Creation:     December 19, 1997
-Version:      6.01
+Version:      6.02
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -97,7 +97,8 @@ Jun 13, 2005  V1.22 Use SSL
 Mar 24, 2006  V6.00 New version 6 started from V5
 Mar 24, 2008  V6.01 Francois Piette made some changes to prepare code
                     for Unicode.
-
+Dec 21, 2008  V6.02 F.Piette added a string cast in PostBlock to avoid
+              a warning when compiling with D2009.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsNntpCli;
@@ -144,8 +145,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWinSock, OverbyteIcsWSocket;
 
 const
-    NntpCliVersion     = 601;
-    CopyRight : String = ' TNntpCli (c) 1997-2008 F. Piette V6.01 ';
+    NntpCliVersion     = 602;
+    CopyRight : String = ' TNntpCli (c) 1997-2008 F. Piette V6.02 ';
 {$IFDEF VER80}
     { Delphi 1 has a 255 characters string limitation }
     NNTP_SND_BUF_SIZE = 255;
@@ -2028,7 +2029,8 @@ begin
                 end;
             else
                 if Assigned(FStream) then begin
-                    LineBuf := DoFileEncBase64(FStream, More);
+                    // We need a cast for D2009
+                    LineBuf := String(DoFileEncBase64(FStream, More));
                     SendLine(LineBuf);
                     if not More then begin
                         { We hit the end-of-file }
