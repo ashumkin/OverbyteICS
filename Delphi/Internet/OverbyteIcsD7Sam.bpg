@@ -10,16 +10,15 @@ DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
 PROJECTS = OverbyteIcsD7Run.bpl OverbyteIcsD7Design.bpl \
-  OverByteIcsWndControlTest.exe OverbyteIcsConFtp.exe \
-  OverbyteIcsFtpTst.exe OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe \
-  OverbyteIcsWebServ.exe OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe \
-  OverbyteIcsMailRcv.exe OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe \
-  OverbyteIcsTelnetClient.exe OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe \
+  OverByteIcsWndControlTest.exe OverbyteIcsConFtp.exe OverbyteIcsFtpTst.exe \
+  OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe OverbyteIcsWebServ.exe \
+  OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe \
+  OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe OverbyteIcsTelnetClient.exe \
+  OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe \
   OverbyteIcsHttpMultipartDownload.exe OverbyteIcsFtpMultipartDownload.exe \
   OverbyteIcsMailHtml.exe OverbyteIcsDnsLook.exe OverbyteIcsDnsResolver.exe \
   OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe \
-  OverbyteIcsCliDemo.exe OverbyteIcsBinCliDemo.exe
-  
+  OverbyteIcsCliDemo.exe OverbyteIcsBinCliDemo.exe OverbyteIcsMimeDemo.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -100,6 +99,9 @@ OverbyteIcsCliDemo.exe: OverbyteIcsCliDemo.dpr
   $(DCC)
 
 OverbyteIcsBinCliDemo.exe: OverbyteIcsBinCliDemo.dpr
+  $(DCC)
+
+OverbyteIcsMimeDemo.exe: OverbyteIcsMimeDemo.dpr
   $(DCC)
 
 
