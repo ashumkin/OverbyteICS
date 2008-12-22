@@ -7,7 +7,7 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.19
+Version:      7.20
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -58,13 +58,27 @@ Dec 21, 2008  V7.18 F.Piette replaced StrPas() with String() to avoid a
               same reason.
 Dec 21, 2008  V7.19 Arno reassigned MimeDecode1InlineDecodeBegin and
               MimeDecode1InlineDecodeEnd which were unassigned since rev. #198
+Dec 22, 2008  V7.20 Arno - Added workaround for error "incompatible parameter list"
+              in D2009. Added explicit string conversion in
+              MimeDecode1InlineDecodeBegin to remove warning.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDemo1;
 
-interface
+{ Symbols defined in OverbyteIcsDefs.inc currently do not work with the     }
+{ D2009 background parser/compiler! So this is a workaround.                }
+{$IFDEF VER180} // 2006 and 2007
+    {$DEFINE ANSI_COMPILER}
+{$ENDIF}
+{$IFDEF VER170}
+    {$DEFINE ANSI_COMPILER}
+{$ENDIF}
+{$IFDEF VER150}
+    {$DEFINE ANSI_COMPILER}
+{$ENDIF}
 
-{$I OverbyteIcsDefs.inc}
+interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
@@ -76,8 +90,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-  MimeDemoVersion    = 719;
-  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.19 ';
+  MimeDemoVersion    = 720;
+  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.20 ';
 
 type
 {$IFDEF USE_TNT}
@@ -117,16 +131,16 @@ type
     procedure MimeDecode1HeaderEnd(Sender: TObject);
     procedure MimeDecode1PartHeaderBegin(Sender: TObject);
     procedure MimeDecode1PartHeaderEnd(Sender: TObject);
-{$IFDEF COMPILER12_UP}
-    procedure MimeDecode1InlineDecodeBegin(Sender: TObject;
-                                           Filename: AnsiString);
-    procedure MimeDecode1InlineDecodeEnd(Sender: TObject;
-                                         Filename: AnsiString);
-{$ELSE}
+{$IFDEF ANSI_COMPILER}
     procedure MimeDecode1InlineDecodeBegin(Sender: TObject;
                                            Filename: String);
     procedure MimeDecode1InlineDecodeEnd(Sender: TObject;
                                          Filename: String);
+{$ELSE}
+    procedure MimeDecode1InlineDecodeBegin(Sender: TObject;
+                                           Filename: AnsiString);
+    procedure MimeDecode1InlineDecodeEnd(Sender: TObject;
+                                         Filename: AnsiString);
 {$ENDIF}
     procedure MimeDecode1InlineDecodeLine(Sender: TObject;
                                           Line: Pointer; Len : Integer);
@@ -369,9 +383,9 @@ procedure TMimeDecodeForm.MimeDecode1InlineDecodeBegin(
     Sender   : TObject;
     FileName : AnsiString);
 begin
-    Display('--------- INLINE begin. Filename is ''' + FileName + '''');
+    FFileName := String(FileNAme);
+    Display('--------- INLINE begin. Filename is ''' + FFileName + '''');
     Display('');
-    FFileName := FileNAme;
     if Assigned(FFileStream) then
         FFileStream.Destroy;        { Close previous file, if any }
     FFileStream := TFileStream.Create('MimeFile_' + FFileName, fmCreate);
@@ -523,7 +537,7 @@ var
     UniStr  : UnicodeString ;
 begin
     Display('Raw Header: ' + TextEdit.Text);
-    UniStr := DecodeMimeInlineValueEx(TextEdit.Text, CharSet);
+    UniStr := DecodeMimeInlineValueEx(AnsiString(TextEdit.Text), CharSet);
     Display('Unicode Header: ' + UniStr + ' [CharSet=' +
                                             String(CharSet) + ']');
     Display('');
