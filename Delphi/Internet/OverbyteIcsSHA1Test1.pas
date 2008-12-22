@@ -3,11 +3,11 @@
 Author:       François PIETTE.
 Description:  SHA1 self test routine for OverByteIcsSHA1 unit.
 Creation:     Aug 01, 2007
-Version:      1.00
+Version:      6.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2007 by François PIETTE
+Legal issues: Copyright (C) 2007-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -38,7 +38,8 @@ Legal issues: Copyright (C) 2007 by François PIETTE
 
 Updates:
 Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
-
+Dec 22, 2008 V6.01 F.Piette added a string cast in Button1Click to avoid
+                   a warning with Delphi 2009.
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSHA1Test1;
@@ -54,10 +55,6 @@ type
     Button1: TButton;
     ListBox1: TListBox;
     procedure Button1Click(Sender: TObject);
-  private
-    { Déclarations privées }
-  public
-    { Déclarations publiques }
   end;
 
 var
@@ -91,7 +88,9 @@ begin
     for j := 0 to 3 do begin
 //        ListBox1.Items.Add( Format( 'Test %d: %d, "%s"',
 //                            [ j+1, repeatcount[j], testarray[j] ] ) );
-        ListBox1.Items.Add('Test ' + IntToStr(j+1) + ': ' + IntToStr(repeatcount[j]) + ', "' + testarray[j] + '"');
+        ListBox1.Items.Add('Test ' + IntToStr(j+1) + ': ' +
+                           IntToStr(repeatcount[j]) +
+                           ', "' + String(testarray[j]) + '"');
 
         err := SHA1Reset(sha);
         if (err<>0) then begin
