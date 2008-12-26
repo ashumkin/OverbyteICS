@@ -42,6 +42,7 @@
               and PChar to AnsiString and PAnsiChar.
               Added missing function ZLibFlagsString.
               Compiles, however untested so far!
+  24 Dec 2008 Two explicit string casts added.
 
   My own work was to wrap access to dll functions in zlib.dll
   So, no copyright for this code, but don't copyright it !
@@ -572,12 +573,12 @@ begin
                   Z_DLL_NOT_FOUND               : zlibProblemString := 'Dll not found';
                   Z_UNKNOWN_COMPRESSION_VERSION : zlibProblemString := 'Unknwon compression stream version';
                   Z_CHECK_PROBLEM               : zlibProblemString := 'Check problem';
-                                           else   zlibProblemString := 'Error n°' + inttostr(-Code);
+                                           else   zlibProblemString := 'Error n°' + AnsiString(inttostr(-Code));
                end;
           end else
                zlibProblemString := ZLibErrMsg[Code];
 
-          if zlibRaiseError then raise EZLibCheckError.Create(zlibProblemString);
+          if zlibRaiseError then raise EZLibCheckError.Create(string(zlibProblemString));
      end;
 end;
 {==============================================================================}
