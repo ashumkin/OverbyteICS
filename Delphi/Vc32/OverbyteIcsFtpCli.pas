@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.04
+Version:      V7.05
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -951,6 +951,9 @@ Nov 16, 2008 V7.02 Arno simplified some code page related code, added option
 Nov 18, 2008 V7.03 Arno - Protection level on the data channel was not set
              properly. Set it only in case of PROT command succeeded.
 Nov 21, 2008 V7.04 Arno - Allow C++ Builder
+Jan 7, 2009  V7.05 Angus - allow 200 response for HOST (for ws_ftp server)
+
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpCli;
@@ -1032,9 +1035,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 704;
-  CopyRight : String = ' TFtpCli (c) 1996-2008 F. Piette V7.04 ';
-  FtpClientId : String = 'ICS FTP Client V7.04 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 705;
+  CopyRight : String = ' TFtpCli (c) 1996-2009 F. Piette V7.05 ';
+  FtpClientId : String = 'ICS FTP Client V7.05 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -3375,7 +3378,8 @@ begin
     else
         S := FHostName;
  { note: responses 504 and 530 are really domain not found but don't stop login }
-    ExecAsync(ftpHostAsync, 'HOST ' + S, [220,421,500,502,504,530,550], nil);
+ { V7.05 ws_ftp server returns 200 }
+    ExecAsync(ftpHostAsync, 'HOST ' + S, [200,220,421,500,502,504,530,550], nil);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
