@@ -106,6 +106,7 @@ contains
   OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
   OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
   OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas',
-  OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas';
+  OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas',
+  OverbyteIcsDigestAuth in 'OverbyteIcsDigestAuth.pas';
 
 end.

@@ -140,6 +140,7 @@ Delphi\vc32\OverbyteIcsSslSessionCache.dcr
 Delphi\vc32\OverbyteIcsSslThrdLock.pas
 Delphi\vc32\OverbyteIcsSslThrdLock.dcr
 Delphi\vc32\OverbyteIcsSslDefs.inc
+Delphi\vc32\OverbyteIcsDigestAuth.pas
 
 
 Delphi\vc32\ZOBJ123\adler32.obj

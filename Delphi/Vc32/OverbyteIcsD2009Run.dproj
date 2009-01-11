@@ -137,6 +137,7 @@
 			<DCCReference Include="OverbyteIcsUtils.pas"/>
 			<DCCReference Include="OverbyteIcsCharsetUtils.pas"/>
 			<DCCReference Include="OverbyteIcsMultiProgressBar.pas"/>
+			<DCCReference Include="OverbyteIcsDigestAuth.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>

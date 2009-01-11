@@ -289,6 +289,7 @@
         <FILE FILENAME="OverbyteIcsCharsetUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsCharsetUtils" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsMultiProgressBar.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsMultiProgressBar" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsMultiProgressBar.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsDigestAuth.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsDigestAuth" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>

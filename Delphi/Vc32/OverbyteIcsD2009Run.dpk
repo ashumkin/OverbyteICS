@@ -24,6 +24,7 @@ package OverbyteIcsD2009Run;
 {$R 'OverbyteIcsMultiProgressBar.dcr'}
 {$R 'OverbyteIcsSslSessionCache.dcr'}
 {$R 'OverbyteIcsSslThrdLock.dcr'}
+{$R 'OverbyteIcsWSocketTS.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -106,6 +107,7 @@ contains
   OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
   OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
   OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas',
-  OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas';
+  OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas',
+  OverbyteIcsDigestAuth in 'OverbyteIcsDigestAuth.pas';
 
 end.
