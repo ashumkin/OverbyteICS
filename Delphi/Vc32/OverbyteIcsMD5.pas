@@ -5,11 +5,11 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      6.07
+Version:      6.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -57,6 +57,8 @@ July 2007    V6.04 changes for .net compatibility
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 17 Apr, 2008 MD5UpdateBuffer String to AnsiString type-change.
 Aug 05, 2008 V6.07 F. Piette added casts to AnsiString to avoid warnings
+Jan 03, 2009 V6.07 A. Garrels added function MD5SameDigest and an overload
+             to MD5UpdateBuffer() which takes a TMD5Digest.
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -73,8 +75,8 @@ uses
     SysUtils, Classes;
 
 const
-    MD5Version         = 607;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2008 F. Piette V6.07 ';
+    MD5Version         = 608;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V6.08 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}
@@ -102,9 +104,10 @@ procedure MD5Update(var MD5Context: TMD5Context;
 {$IFDEF SAFE}
     const Data : TBytes;
 {$ELSE}
-                    const Data;
+    const Data;
 {$ENDIF}
-                    Len: Integer);
+    Len: Integer);
+
 procedure MD5Transform(var Buf: array of LongInt;
                        const Data: array of LongInt);
 procedure MD5UpdateBuffer(var MD5Context: TMD5Context;
@@ -117,6 +120,9 @@ procedure MD5UpdateBuffer(var MD5Context: TMD5Context;
 procedure MD5UpdateBuffer(
     var MD5Context : TMD5Context;
     const Buffer   : AnsiString); overload;
+procedure MD5UpdateBuffer(
+    var MD5Context: TMD5Context;
+    const Buffer: TMD5Digest); overload;    
 procedure MD5Final(var Digest: TMD5Digest; var MD5Context: TMD5Context);
 
 function  MD5GetBufChar(const MD5Context : TMD5Context; Index : Integer) : Byte;
@@ -155,6 +161,8 @@ function FileMD5(const Filename: String; Obj: TObject; ProgressCallback : TMD5Pr
         StartPos, EndPos: Int64;  Mode: Word = DefaultMode): AnsiString; overload; { V6.05 }
 function FileListMD5(FileList: TStringList; Obj: TObject;
     ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
+
+function MD5SameDigest(D1, D2: TMD5Digest): Boolean;
 
 implementation
 
@@ -509,6 +517,27 @@ begin
     MD5UpdateBuffer(MD5Context, Pointer(Buffer), Length(Buffer));
 end;
 {$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure MD5UpdateBuffer(
+    var MD5Context: TMD5Context;
+    const Buffer: TMD5Digest);
+{$IFDEF SAFE}
+var
+    Buf: TBytes;
+    I : Integer;
+{$ENDIF}
+begin
+{$IFDEF SAFE}
+    SetLength(Buf, 16);
+    for I := 0 to 15 do
+        Buf[I] := Buffer[I];
+    MD5Update(MD5Context, Buf, 16);
+{$ELSE}
+    MD5Update(MD5Context, Buffer[0], 16);
+{$ENDIF}
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -961,7 +990,20 @@ end;
 {$ENDIF}
 
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function MD5SameDigest(D1, D2: TMD5Digest): Boolean;
+var
+    I : Integer;
+begin
+    Result := FALSE;
+    for I := 0 to Length(D1) -1 do
+        if D1[I] <> D2[I] then
+            Exit;
+    Result := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF MD5_SELF_TEST}
 const
     // Strings to test MD5. Expected checksums are below.
