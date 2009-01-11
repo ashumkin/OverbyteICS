@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.15
+Version:      7.16
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -245,7 +245,15 @@ Jan 03, 2009 V7.15 A.Garrels - Fixed a bug with conditional define
              credential was wrong, caused by improper handling of a stale
              nonce. Improved nonce generation and added a new property
              AuthDigestNonceLifeTimeMin.
-
+Jan 11, 2009 V7.16 A.Garrels - Removed some digest authentication code to new
+             unit OverbyteIcsDigestAuth. OnAuthResult is no longer triggered
+             with FALSE when the nonce is just stale. Changed string type of
+             FAuthDigestBody to AnsiString. New directive NO_DIGEST_AUTH
+             can be used to exclude the digest code from being compiled.
+             ** Typo corrected, property AuthDigetUri is now AuthDigestUri **
+             Added THttpConnection.AnswerStringEx() which works as AnswerString()
+             however takes a CodePage argument in D2009 and better.
+             
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -281,6 +289,15 @@ unit OverbyteIcsHttpSrv;
     {$DEFINE USE_NTLM_AUTH}
 {$ELSE}
     {$UNDEF USE_NTLM_AUTH}
+    {$DEFINE NO_DIGEST_AUTH}
+{$ENDIF}
+{$IFNDEF WIN32}
+    {$IFDEF USE_NTLM_AUTH}
+        {$UNDEF USE_NTLM_AUTH}  {SSPI is Windows only}
+    {$ENDIF}
+    {$IFNDEF NO_DIGEST_AUTH}
+        {$DEFINE NO_DIGEST_AUTH}
+    {$ENDIF}
 {$ENDIF}
 
 interface
@@ -307,25 +324,23 @@ uses
     OverbyteIcsMD5, OverbyteIcsMimeUtils,
     OverbyteIcsTypes, OverbyteIcsLibrary,
     OverbyteIcsUtils,
-{$IFNDEF WIN32}
-    {$IFDEF USE_NTLM_AUTH}
-        {$UNDEF USE_NTLM_AUTH}  {SSPI is Windows only}
-    {$ENDIF}
-{$ENDIF}
 {$IFDEF USE_NTLM_AUTH}
     OverbyteIcsSspi,
     OverbyteIcsNtlmSsp,
 {$ENDIF}
+{$IFNDEF NO_DIGEST_AUTH}
+    OverbyteIcsDigestAuth,
+{$ENDIF}
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 715;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.15 ';
+    THttpServerVersion = 716;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.16 ';
     //WM_HTTP_DONE       = WM_USER + 40;
-    HA_MD5             = 0;
-    HA_MD5_SESS        = 1;
-    HASHLEN            = 16;
-    HASHHEXLEN         = 32;
+    //HA_MD5             = 0;
+    //HA_MD5_SESS        = 1;
+    //HASHLEN            = 16;
+    //HASHHEXLEN         = 32;
 
 type
     THttpServer          = class;
@@ -372,11 +387,10 @@ type
     THttpRangeInt        = LongInt;   { Limited to 2GB size }
 {$ENDIF}
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
-    TAuthenticationType     = (atNone, atBasic, atDigest
+    TAuthenticationType     = (atNone, atBasic
+                              {$IFNDEF NO_DIGEST_AUTH}, atDigest {$ENDIF}
                               {$IFDEF USE_NTLM_AUTH}, atNtlm {$ENDIF});
     TAuthenticationTypes    = set of TAuthenticationType;
-    TAuthDigestMethod       = (daAuth, daAuthInt, daBoth);
-    THashHex                = array [0..HASHHEXLEN] of AnsiChar;
     TAuthGetPasswordEvent   = procedure (Sender       : TObject;
                                          Client       : TObject;
                                          var Password : String) of object;
@@ -385,11 +399,11 @@ type
                                          Success   : Boolean) of object;
     TAuthGetTypeEvent       = procedure (Sender    : TObject;
                                          Client    : TObject) of object;
-{$IFDEF USE_NTLM_AUTH}
+  {$IFDEF USE_NTLM_AUTH}
     TAuthNtlmBeforeValidate = procedure (Sender       : TObject;
                                          Client       : TObject;
                                          var Allow    : Boolean) of object;
-{$ENDIF}
+  {$ENDIF}
 {$ENDIF}
 
     {ANDREAS one byte-range}
@@ -465,13 +479,6 @@ type
         property PartStreams[NIndex : Integer] : THttpPartStream
                                                    read  GetPartStreams;
     end;
-{$IFNDEF NO_AUTHENTICATION_SUPPORT}
-    TAuthDigestNonceRec = record
-        DT    : TDateTime;
-        Hash  : TMd5Digest;
-    end;
-    PAuthDigestNonceRec = ^TAuthDigestNonceRec;
-{$ENDIF}
     { THttpConnection is used to handle client connections }
 {$IFDEF USE_SSL}
     TBaseHttpConnection = class(TSslWSocketClient);
@@ -488,6 +495,7 @@ type
         FAuthInit                     : Boolean;                        { V1.6 }
         FAuthUserName                 : String;
         FAuthPassword                 : String;
+    {$IFNDEF NO_DIGEST_AUTH}
         FAuthDigestRealm              : String;   { Received from client }
         FAuthDigestUri                : String;
         FAuthDigestNonce              : String;
@@ -500,20 +508,22 @@ type
         FAuthDigestServerOpaque       : String;
         FAuthDigestAlg                : String;
         FAuthDigestStale              : Boolean;
-        FAuthType                     : TAuthenticationType;
-        FAuthTypes                    : TAuthenticationTypes;
-        FAuthenticated                : Boolean;
-        FAuthDigestBody               : String;
+        FAuthDigestBody               : AnsiString; // Entity-Body as specified in RFC 2617, section 3.2.2.4
         FAuthDigestNonceLifeTimeMin   : Cardinal;
         FAuthDigestNonceTimeStamp     : TDateTime;
         FAuthDigestOneTimeFlag        : Boolean;
+    {$ENDIF}
+        FAuthType                     : TAuthenticationType;
+        FAuthTypes                    : TAuthenticationTypes;
+        FAuthenticated                : Boolean;
         function  AuthGetMethod: TAuthenticationType;
         procedure AuthCheckAuthenticated; virtual;
-        function  AuthDigestCheckPassword(const Password: string): Boolean;
+    {$IFNDEF NO_DIGEST_AUTH}
+        function  AuthDigestCheckPassword(const Password: String): Boolean;
         function  AuthDigestGetParams: Boolean;
-        function  AuthDigestGenNonceHash(RequestTime: TDateTime; Opaque: String): TMD5Digest;
+    {$ENDIF}
         function  AuthBasicGetParams: Boolean;
-        function  AuthBasicCheckPassword(const Password: string): Boolean;
+        function  AuthBasicCheckPassword(const Password: String): Boolean;
 {$IFDEF USE_NTLM_AUTH}
         procedure AuthNtlmSessionBeforeValidate(Sender: TObject; var Allow: Boolean);
 {$ENDIF}
@@ -659,7 +669,7 @@ type
                                const HtmlFile : String;
                                UserData       : TObject;
                                Tags           : array of const); virtual;
-        procedure   AnswerStream(var   Flags      : THttpGetFlag;
+        procedure   AnswerStream(var   Flags    : THttpGetFlag;
                                  const Status   : String;
                                  const ContType : String;
                                  const Header   : String); virtual;
@@ -668,6 +678,14 @@ type
                                  const ContType : String;
                                  const Header   : String;
                                  const Body     : String); virtual;
+{$IFDEF COMPILER12_UP}
+        procedure   AnswerStringEx(var Flags    : THttpGetFlag;
+                                 const Status   : String;
+                                 const ContType : String;
+                                 const Header   : String;
+                                 const Body     : String;
+                                 BodyCodePage   : Integer = CP_ACP); virtual;
+{$ENDIF}
         { Mostly like AnswerPage but the result is given into a string.
           Designed to be used within a call to AnswerPage as one of the
           replacable tag value. This permit to build a page based on several
@@ -785,17 +803,19 @@ type
                                                     write FAuthUserName;
         property AuthPassword      : String         read  FAuthPassword
                                                     write FAuthPassword;
-        property AuthDigetUri      : String         read  FAuthDigestUri
-                                                    write FAuthDigestUri;
         property AuthRealm         : String         read  FAuthRealm
                                                     write FAuthRealm;
+    {$IFNDEF NO_DIGEST_AUTH}
+        property AuthDigestUri     : String         read  FAuthDigestUri
+                                                    write FAuthDigestUri;
         property AuthDigestNonceLifeTimeMin  : Cardinal
                                                     read  FAuthDigestNonceLifeTimeMin
                                                     write FAuthDigestNonceLifeTimeMin;
-{$IFDEF USE_NTLM_AUTH}
+    {$ENDIF}
+    {$IFDEF USE_NTLM_AUTH}
         property AuthNtlmSession   : TNtlmAuthSession
                                                     read  FAuthNtlmSession;
-{$ENDIF}
+    {$ENDIF}
 {$ENDIF}        
     end;
 
@@ -832,13 +852,15 @@ type
         FHeartBeat                : TIcsTimer;
         FHeartBeatBusy            : Boolean;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
-        FAuthTypes                    : TAuthenticationTypes;
-        FAuthRealm                    : String;
+        FAuthTypes                : TAuthenticationTypes;
+        FAuthRealm                : String;
+{$IFNDEF NO_DIGEST_AUTH}
         FAuthDigestServerSecret       : TULargeInteger;
         FAuthDigestNonceLifeTimeMin   : Cardinal;
         FAuthDigestMethod             : TAuthDigestMethod;
-        FOnAuthGetPassword            : TAuthGetPasswordEvent;
-        FOnAuthResult                 : TAuthResultEvent;
+{$ENDIF}
+        FOnAuthGetPassword        : TAuthGetPasswordEvent;
+        FOnAuthResult             : TAuthResultEvent;
 {$IFDEF USE_NTLM_AUTH}
         FOnAuthNtlmBeforeValidate : TAuthNtlmBeforeValidate;
 {$ENDIF}
@@ -1011,23 +1033,25 @@ type
         property OnAuthGetType      : TAuthGetTypeEvent
                                                  read  FOnAuthGetType
                                                  write FOnAuthGetType;
-{$IFDEF USE_NTLM_AUTH}
+    {$IFDEF USE_NTLM_AUTH}
          property OnAuthNtlmBeforeValidate  : TAuthNtlmBeforeValidate
                                                  read  FOnAuthNtlmBeforeValidate
                                                  write FOnAuthNtlmBeforeValidate;
-{$ENDIF}
-        property AuthDigestNonceLifeTimeMin  : Cardinal
-                                                 read  FAuthDigestNonceLifeTimeMin
-                                                 write FAuthDigestNonceLifeTimeMin default 1;
+    {$ENDIF}
         property AuthTypes         : TAuthenticationTypes
                                                  read  FAuthTypes
                                                  write FAuthTypes;
         property AuthRealm         : String      read  FAuthRealm
                                                  write FAuthRealm;
+    {$IFNDEF NO_DIGEST_AUTH}
         property AuthDigestMethod  : TAuthDigestMethod
                                                  read  FAuthDigestMethod
                                                  write FAuthDigestMethod
                                                  default daAuth;
+        property AuthDigestNonceLifeTimeMin  : Cardinal
+                                                 read  FAuthDigestNonceLifeTimeMin
+                                                 write FAuthDigestNonceLifeTimeMin default 1;                                         
+    {$ENDIF}
 {$ENDIF}
     end;
 
@@ -1226,7 +1250,7 @@ const
 
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     HttpAuthTypeNames : array [TAuthenticationType] of String =
-         ('None', 'Basic', 'Digest'
+         ('None', 'Basic' {$IFNDEF NO_DIGEST_AUTH}, 'Digest' {$ENDIF}
           {$IFDEF USE_NTLM_AUTH}, 'NTLM' {$ENDIF});
 {$ENDIF}
 
@@ -1372,10 +1396,11 @@ begin
     FLingerTimeout  := 0;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     FAuthRealm                    := 'ics';
+  {$IFNDEF NO_DIGEST_AUTH}
     FAuthDigestNonceLifeTimeMin   := 1;
+  {$ENDIF}
     FAuthTypes                    := [];
 {$ENDIF}
-    Randomize;
     FKeepAliveTimeSec     := 10;
     FMaxRequestsKeepAlive := 100;
     FHeartBeat            := TIcsTimer.Create(FWSocketServer);
@@ -1456,7 +1481,7 @@ begin
         'Content-type: text/plain' + #13#10 +
         'Content-length: ' + _IntToStr(Length(BusyText)) + #13#10#13#10 +
         BusyText;
-{$IFNDEF NO_AUTHENTICATION_SUPPORT}
+{$IFNDEF NO_DIGEST_AUTH}
     FAuthDigestServerSecret           := CreateServerSecret;
 {$ENDIF}
     FWSocketServer.Listen;
@@ -1930,163 +1955,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
-function PosEx(const SubStr, S: String; Offset: Cardinal): Integer;
-var
-    I, X      : Integer;
-    Len       : Integer;
-    LenSubStr : Integer;
-begin
-  if Offset = 1 then
-    Result := Pos(SubStr, S)
-  else begin
-    I := Offset;
-    LenSubStr := Length(SubStr);
-    Len := Length(S) - LenSubStr + 1;
-    while I <= Len do begin
-      if S[I] = SubStr[1] then begin
-        X := 1;
-        while (X < LenSubStr) and (S[I + X] = SubStr[X + 1]) do
-          Inc(X);
-        if (X = LenSubStr) then begin
-          Result := I;
-          exit;
-        end;
-      end;
-      Inc(I);
-    end;
-    Result := 0;
-  end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure AuthDigestCvtHex(const _b: TMD5Digest; _h: pAnsichar);
-var
-    I: Word;
-    J: AnsiChar;
-begin
-    for I := 0 to HASHLEN - 1 do begin
-        J :=  AnsiChar((integer(_b[I]) shr 4) and $f);
-        if J <= AnsiChar(9) then
-            _h[I * 2] := AnsiChar(integer(J) + integer('0'))
-        else
-            _h[I * 2] := AnsiChar(integer(J) + integer('a') - 10);
-
-       J := AnsiChar(integer(_b[I]) and $f);
-       if J <= AnsiChar(9) then
-           _h[I * 2 + 1] := AnsiChar(integer(J) + integer('0'))
-       else
-           _h[I * 2 + 1] := AnsiChar(integer(J) + integer('a') - 10);
-    end;
-
-    _h[HASHHEXLEN] := #0;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure AuthDigestCalcResponse(
-    HA1           : THashHex;           { H(A1)                             }
-    pszNonce      : AnsiString;         { nonce from server                 }
-    pszNonceCount : AnsiString;         { 8 hex digits                      }
-    pszCNonce     : AnsiString;         { client nonce                      }
-    pszQop        : AnsiString;         { qop-value: "", "auth", "auth-int" }
-    pszMethod     : AnsiString;         { method from the request           }
-    pszDigestUri  : AnsiString;         { requested URL                     }
-    HEntity       : THashHex;           { H(entity body) if qop="auth-int"  }
-    var Response  : THashHex);          { request-digest or response-digest }
-var
-    Md5Ctx   : TMD5Context;
-    HA2      : TMD5Digest;
-    RespHash : TMD5Digest;
-    HA2Hex   : THashHex;
-    Tmp      : AnsiString;
-begin
-    Tmp := AnsiChar(':');
-
-    { calculate H(A2) }
-    MD5Init(Md5Ctx);
-    MD5Update(Md5Ctx, pszMethod[1], Length(pszMethod));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-    MD5Update(Md5Ctx, pszDigestUri[1], Length(pszDigestUri));
-
-    if _StrIComp(PAnsiChar(pszQop), 'auth-int') = 0 then begin
-        MD5Update(Md5Ctx, Tmp[1], 1);
-        MD5Update(Md5Ctx, HEntity[0], HASHHEXLEN);
-    end;
-    MD5Final(HA2, Md5Ctx);
-    AuthDigestCvtHex(HA2, HA2Hex);
-
-    { calculate response }
-    MD5Init(Md5Ctx);
-    MD5Update(Md5Ctx, HA1[0], HASHHEXLEN);
-    MD5Update(Md5Ctx, Tmp[1], 1);
-    MD5Update(Md5Ctx, pszNonce[1], Length(pszNonce));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-
-    MD5Update(Md5Ctx, pszNonceCount[1], Length(pszNonceCount));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-    MD5Update(Md5Ctx, pszCNonce[1], Length(pszCNonce));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-    MD5Update(Md5Ctx, pszQop[1], Length(pszQop));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-
-    MD5Update(Md5Ctx, HA2Hex[0], HASHHEXLEN);
-    MD5Final(RespHash, Md5Ctx);
-    AuthDigestCvtHex(RespHash, Response);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure AuthDigestCalcHA1(
-    pszAlg        : AnsiString;
-    _username     : AnsiString;
-    _realm        : AnsiString;
-    _password     : AnsiString;
-    _nonce        : AnsiString;
-    _cnonce       : AnsiString;
-    var _sess_key : THashHex);
-var
-    Md5Ctx : TMD5Context;
-    HA1    : TMD5Digest;
-    Tmp    : AnsiString;
-begin
-    Tmp := AnsiChar(':');
-    MD5Init(Md5Ctx);
-    MD5Update(Md5Ctx, Pointer(_username)^, Length(_username));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-    MD5Update(Md5Ctx, Pointer(_realm)^, Length(_realm));
-    MD5Update(Md5Ctx, Tmp[1], 1);
-    MD5Update(Md5Ctx, Pointer(_password)^, Length(_password));
-    MD5Final(HA1, Md5Ctx);
-
-    if _StrComp(_StrLower(PAnsiChar(pszAlg)), 'md5-sess') = 0 then begin
-        MD5Init(Md5Ctx);
-        MD5Update(Md5Ctx, HA1[1], sizeof(HA1));
-        MD5Update(Md5Ctx, Tmp[1], 1);
-        MD5Update(Md5Ctx, _nonce[1], Length(_nonce));
-        MD5Update(Md5Ctx, Tmp[1], 1);
-        MD5Update(Md5Ctx, _cnonce[1], Length(_cnonce));
-        MD5Final(HA1, Md5Ctx);
-    end;
-
-    AuthDigestCvtHex(HA1, _sess_key);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure GetBodyHash(const Body: AnsiString; var BodyHash: THashHex);
-var
-    Md5Ctx : TMD5Context;
-    HA1    : TMD5Digest;
-begin
-    MD5Init(Md5Ctx);
-    MD5Update(Md5Ctx, Pointer(Body)^, Length(Body));
-    MD5Final(HA1, Md5Ctx);
-    AuthDigestCvtHex(HA1, BodyHash);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF NO_DIGEST_AUTH}
 function THttpConnection.AuthDigestCheckPassword(const Password: String): Boolean;
 var
     SessKey      : THashHex;
@@ -2098,19 +1967,18 @@ begin
         Result := FALSE;
         Exit;
     end;
-    AuthDigestCalcHA1(AnsiString(FAuthDigestAlg), AnsiString(FAuthUserName),
+    AuthDigestCalcHA1(FAuthDigestAlg, AnsiString(FAuthUserName),
                       AnsiString(FAuthDigestRealm), AnsiString(Password),
                       AnsiString(FAuthDigestNonce), AnsiString(FAuthDigestCnonce),
                       SessKey);
 
-    GetBodyHash(AnsiString(FAuthDigestBody), HEntity);
+    AuthDigestGetBodyHash(FAuthDigestBody, HEntity);
     AuthDigestCalcResponse(SessKey, AnsiString(FAuthDigestNonce),
                            AnsiString(FAuthDigestNc),
                            AnsiString(FAuthDigestCnonce),
                            AnsiString(FAuthDigestQop), AnsiString(FMethod),
                            AnsiString(FAuthDigestUri), HEntity, MyResponse);
-    Result := _StrComp(PAnsiChar(AnsiString(FAuthDigestResponse)),
-                       PAnsiChar(@MyResponse[0])) = 0;
+    Result := _CompareText(AnsiString(FAuthDigestResponse), MyResponse) = 0;
 
     if Result then begin
         { Check whether we have to force a new nonce in which case we set    }
@@ -2131,12 +1999,12 @@ begin
         end;
      end;
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function THttpConnection.AuthBasicCheckPassword(const Password: String): Boolean;
 begin
-    Result := (FAuthPassword = Password)
+    Result := (FAuthPassword = Password);
 end;
 
 
@@ -2178,9 +2046,10 @@ begin
     else if _LowerCase(Copy(FRequestAuth, 1, 5)) = 'ntlm ' then
         Result := atNtlm
 {$ENDIF}
-
+{$IFNDEF NO_DIGEST_AUTH}
     else if _LowerCase(Copy(FRequestAuth, 1, 7)) = 'digest ' then
         Result := atDigest
+{$ENDIF}
     else if _LowerCase(Copy(FRequestAuth, 1, 6)) = 'basic ' then
         Result := atBasic
     else
@@ -2189,119 +2058,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function THttpConnection.AuthDigestGenNonceHash(RequestTime: TDateTime; Opaque: String): TMD5Digest;
-var
-    NonceCtx : TMD5Context;
-begin
-    MD5Init(NonceCtx);
-    MD5UpdateBuffer(NonceCtx, @FServer.FAuthDigestServerSecret,
-                    SizeOf(FServer.FAuthDigestServerSecret));
-    MD5UpdateBuffer(NonceCtx, AnsiString(FAuthDigestRealm));
-    MD5UpdateBuffer(NonceCtx, @RequestTime, SizeOf(RequestTime));
-    MD5UpdateBuffer(NonceCtx, AnsiString(Opaque));
-    MD5Final(Result, NonceCtx);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF NO_DIGEST_AUTH}
 function THttpConnection.AuthDigestGetParams: Boolean;
-var
-    { alg,UserName, Realm, qop, nonce, nc,uri,method, cnonce, opaque, response: String; }
-    Pos1, Pos2       : Integer;
-    Buf              : AnsiString;
 begin
-    Result           := FALSE;
-
-    Pos1 := PosEx('username="', FRequestAuth, 1);
-    if Pos1 = 0 then
-        Exit;
-
-    Pos1            := Pos1 + Length('username="');
-    Pos2            := PosEx('"', FRequestAuth, Pos1);
-    FAuthUserName   := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1 := PosEx('realm="', FRequestAuth, 1);
-    if Pos1 = 0 then
-        Exit;
-    Pos1             := Pos1  + Length('realm="');
-    Pos2             := PosEx('"', FRequestAuth, Pos1);
-    FAuthDigestRealm := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1 := PosEx('qop="', FRequestAuth, 1);
-    if Pos1 = 0 then begin
-        Pos1 := PosEx('qop=', FRequestAuth, 1);
-        if Pos1 = 0 then
-            Exit;
-        Pos1           := Pos1 + Length('qop=');
-        Pos2           := PosEx(',', FRequestAuth, Pos1);
-        FAuthDigestQop := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-    end
-    else begin
-        Pos1           := Pos1 + Length('qop="');
-        Pos2           := PosEx('"', FRequestAuth, Pos1);
-        FAuthDigestQop := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-    end;
-
-    case FServer.FAuthDigestMethod of
-    daAuth:
-        if FAuthDigestQop <> 'auth' then
-            Exit;
-    daAuthInt:
-        if FAuthDigestQop <> 'auth-int' then
-            Exit;
-    daBoth:
-        { whatever it is }
-    end;
-
-    Pos1 := PosEx('algorithm="', FRequestAuth, 1);
-    if Pos1 = 0 then begin
-        Pos1 := PosEx('algorithm=', FRequestAuth, 1);
-        if Pos1 = 0 then
-            FAuthDigestAlg := 'MD5'
-        else begin
-            Pos1           := Pos1 + Length('algorithm=');
-            Pos2           := PosEx(',', FRequestAuth, Pos1);
-            FAuthDigestAlg := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-        end;
-    end
-    else begin
-        Pos1           := Pos1 + Length('algorithm="');
-        Pos2           := PosEx('"', FRequestAuth, Pos1);
-        FAuthDigestAlg := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-    end;
-
-    Pos1             := PosEx('nonce="', FRequestAuth, 1)  + Length('nonce="');
-    Pos2             := PosEx('"', FRequestAuth, Pos1);
-    FAuthDigestNonce := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1             := PosEx('nc=', FRequestAuth, 1)  + Length('nc=');
-    Pos2             := PosEx(',', FRequestAuth, Pos1);
-    FAuthDigestNc    := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1              := PosEx('uri="', FRequestAuth, 1)  + Length('uri="');
-    Pos2              := PosEx('"', FRequestAuth, Pos1);
-    FAuthDigestUri    := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1              := PosEx('cnonce="', FRequestAuth, 1)  + Length('cnonce="');
-    Pos2              := PosEx('"', FRequestAuth, Pos1);
-    FAuthDigestCnonce := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1              := PosEx('opaque="', FRequestAuth, 1)  + Length('opaque="');
-    Pos2              := PosEx('"', FRequestAuth, Pos1);
-    FAuthDigestOpaque := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Pos1                := PosEx('response="', FRequestAuth, 1)  + Length('response="');
-    Pos2                := PosEx('"', FRequestAuth, Pos1);
-    FAuthDigestResponse := Copy(FRequestAuth, Pos1, Pos2 - Pos1);
-
-    Buf := Base64Decode(AnsiString(FAuthDigestNonce));
-    if Length(Buf) <> SizeOf(TAuthDigestNonceRec) then
-        Exit;
-
-    FAuthDigestNonceTimeStamp := PAuthDigestNonceRec(Pointer(Buf))^.DT;
-
-    Result := TRUE;
+    Result := AuthDigestGetRequest(FRequestAuth, FAuthDigestNonceTimeStamp,
+                   FAuthUserName, FAuthDigestRealm, FAuthDigestQop,
+                   FAuthDigestAlg, FAuthDigestNonce, FAuthDigestNc,
+                   FAuthDigestUri, FAuthDigestCnonce, FAuthDigestOpaque,
+                   FAuthDigestResponse);
 end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2312,8 +2078,9 @@ var
 begin
     FAuthTypes                    := FServer.AuthTypes;
     FAuthRealm                    := FServer.FAuthRealm;
+{$IFNDEF NO_DIGEST_AUTH}
     FAuthDigestNonceLifeTimeMin   := FServer.FAuthDigestNonceLifeTimeMin;
-
+{$ENDIF}
     TriggerAuthGetType;
     if (FAuthTypes = []) or (FAuthTypes = [atNone]) then begin
         FAuthenticated := TRUE;
@@ -2337,6 +2104,7 @@ begin
             TriggerAuthResult(FAuthenticated);
         end;
     end
+{$IFNDEF NO_DIGEST_AUTH}
     else if AuthType = atDigest then begin
         FAuthDigestBody := '';
         FAuthenticated := AuthDigestGetParams;
@@ -2348,10 +2116,13 @@ begin
             { This happens when the nonce is stale and a new nonce is forced. }
             { Note that this is a fix and change, previous versions did not   }
             { enter this IF-Block when the nonce was stale.                   }
-            TriggerAuthResult(FAuthenticated);
+            { Don't trigger AuthResult when the nonce is stale.               }
+            if not FAuthDigestStale then
+                TriggerAuthResult(FAuthenticated);
         end;
         FAuthDigestOneTimeFlag := FALSE;
     end
+{$ENDIF}    
 {$IFDEF USE_NTLM_AUTH}
     else if AuthType = atNtlm then begin
         if not Assigned(FAuthNtlmSession) then begin
@@ -2466,9 +2237,11 @@ begin
         FAuthUserName          := '';
         FAuthTypes             := FServer.FAuthTypes;
         FAuthRealm             := FServer.FAuthRealm;
+    {$IFNDEF NO_DIGEST_AUTH}
         FAuthDigestServerNonce := '';
         FAuthDigestStale       := FALSE;
         FAuthDigestNonceLifeTimeMin  := FServer.FAuthDigestNonceLifeTimeMin;
+    {$ENDIF}
 {$ENDIF}
         FRequestRangeValues.Clear;        {ANDREAS}
         FRequestHeader.Clear;
@@ -2823,6 +2596,23 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+procedure THttpConnection.AnswerStringEx(
+    var   Flags    : THttpGetFlag;
+    const Status   : String;   { if empty, default to '200 OK'              }
+    const ContType : String;   { if empty, default to 'text/html'           }
+    const Header   : String;   { Do not use Content-Length nor Content-Type }
+    const Body     : String;   { Could be empty. No default.                }
+    BodyCodePage   : Integer  = CP_ACP);
+begin
+    DocStream.Free;
+    DocStream := TStringStream.Create(Body, BodyCodePage);
+    AnswerStream(Flags, Status, ContType, Header);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.Answer416;
 var
     Body : String;
@@ -2902,12 +2692,12 @@ procedure THttpConnection.Answer401;
 var
     Body       : String;
     Header     : String;
-{$IFNDEF NO_AUTHENTICATION_SUPPORT}
+(*
+{$IFNDEF NO_DIGEST_AUTH}
     I          : Integer;
     iCh        : Integer;
     AuthString : String;
-    Nonce      : TAuthDigestNonceRec;
-{$ENDIF}
+{$ENDIF} *)
 begin
     Body := '<HTML><HEAD><TITLE>401 Access Denied</TITLE></HEAD>' +
             '<BODY><H1>401 Access Denied</H1>The requested URL ' +
@@ -2916,7 +2706,7 @@ begin
 
     Header := FVersion + ' 401 Access Denied' + #13#10;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
-{$IFDEF USE_NTLM_AUTH}
+  {$IFDEF USE_NTLM_AUTH}
     if (atNtlm in FAuthTypes) then begin
         if Assigned(FAuthNtlmSession) then
             Header := Header +  _Trim('WWW-Authenticate: NTLM ' +
@@ -2925,12 +2715,23 @@ begin
             Header := Header +
                 'WWW-Authenticate: NTLM' + #13#10;
     end;
-{$ENDIF}
+  {$ENDIF}
+  {$IFNDEF NO_DIGEST_AUTH}
     if (atDigest in FAuthTypes) then begin
         FAuthDigestServerNonce  := '';
         FAuthDigestServerOpaque := '';
+        Header := Header + 'WWW-Authenticate: Digest ' +
+                  AuthDigestGenerateChallenge(
+                                    FServer.FAuthDigestMethod,
+                                    FServer.FAuthDigestServerSecret,
+                                    FAuthRealm, '', FAuthDigestStale,
+                                    FAuthDigestServerNonce,
+                                    FAuthDigestServerOpaque) + #13#10;
+        (*
+        FAuthDigestServerNonce  := '';
+        FAuthDigestServerOpaque := '';
         //Randomize; MUST be called only once! Thus moved to the constructor. 
-        //FAuthDigestServerNonce := Base64Encode(_DateTimeToStr(_Now)); IMO weak AG  
+        //FAuthDigestServerNonce := Base64Encode(_DateTimeToStr(_Now)); IMO weak AG
         FAuthDigestOneTimeFlag  := FAuthDigestNonceLifeTimeMin = 0;
         { This is the original implementation by FastStream with slightly     }
         { improved speed and security, RFC2617 however recommends to include  }
@@ -2952,9 +2753,13 @@ begin
             end;
         end;
 
-        Nonce.DT    := _Now;
-        Nonce.Hash  := AuthDigestGenNonceHash(Nonce.DT, FAuthDigestServerOpaque);
-        FAuthDigestServerNonce := String(Base64Encode(PAnsiChar(@Nonce), SizeOf(Nonce)));
+        FAuthDigestServerNonce  := String(
+                                      AuthDigestGenerateIcsNonce(
+                                          _Now,
+                                          FServer.FAuthDigestServerSecret,
+                                          AnsiString(FAuthDigestServerOpaque),
+                                          AnsiString(FAuthRealm))
+                                         );
 
         case FServer.FAuthDigestMethod of
         daAuth:    AuthString := 'auth';
@@ -2971,8 +2776,9 @@ begin
         if FAuthDigestStale then
             Header := Header + ', stale="true"' + #13#10
         else
-            Header := Header + #13#10;
+            Header := Header + #13#10; *)
     end;
+  {$ENDIF}
     if (atBasic in FAuthTypes) then begin
         Header := Header +
                   'WWW-Authenticate: ' +
@@ -5478,8 +5284,10 @@ begin
         Result := Result + 'atNone ';
     if atBasic in Types then
         Result := Result + 'atBasic ';
+{$IFNDEF NO_DIGEST_AUTH}
     if atDigest in Types then
         Result := Result + 'atDigest ';
+{$ENDIF}
 {$IFDEF USE_NTLM_AUTH}
     if atNtlm in Types then
         Result := Result + 'atNtlm ';
