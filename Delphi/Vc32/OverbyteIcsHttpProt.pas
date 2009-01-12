@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.02
+Version:      7.02a
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -408,6 +408,7 @@ Jan 11, 2009 V7.02 A. Garrels - Added Digest Access Authentication.
              authorization by setting argument Allow to FALSE.
              ** Also cleaned up the source code a bit, thus a comparison
              with previous version, unfortunately won't be fun. **
+Jan 12, 2009 V7.02a Arno added two missing lines for digest auth to the SSL code.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -482,7 +483,7 @@ uses
 
 const
     HttpCliVersion       = 702;
-    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.02 ';
+    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.02a ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -3596,10 +3597,14 @@ begin
         begin
             { We have a connection to remote host thru proxy, we can start }
             { SSL handshake                                                }
-    {$IFDEF UseNTLMAuthentication}
+        {$IFDEF UseNTLMAuthentication}
             if not (FProxyAuthNTLMState in [ntlmNone, ntlmDone]) then
                 FProxyAuthNTLMState  := ntlmDone;
-    {$ENDIF}
+        {$ENDIF}
+        {$IFDEF UseDigestAuthentication}
+            if not (FProxyAuthDigestState in [digestNone, digestDone]) then
+                FProxyAuthDigestState := digestDone;
+        {$ENDIF}
             if not (FProxyAuthBasicState in [basicNone, basicDone]) then
                 FProxyAuthBasicState := basicDone;
             // 12/27/05 AG begin, reset some more defaults
