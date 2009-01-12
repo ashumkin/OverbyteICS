@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.16
+Version:      7.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -253,7 +253,9 @@ Jan 11, 2009 V7.16 A.Garrels - Removed some digest authentication code to new
              ** Typo corrected, property AuthDigetUri is now AuthDigestUri **
              Added THttpConnection.AnswerStringEx() which works as AnswerString()
              however takes a CodePage argument in D2009 and better.
-             
+Jan 12, 2009 V7.17 A. Garrels fixed a bug with NTLM authentication in func.
+             Answer401.  
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -334,8 +336,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 716;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.16 ';
+    THttpServerVersion = 717;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.17 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     //HA_MD5             = 0;
     //HA_MD5_SESS        = 1;
@@ -2708,7 +2710,8 @@ begin
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
   {$IFDEF USE_NTLM_AUTH}
     if (atNtlm in FAuthTypes) then begin
-        if Assigned(FAuthNtlmSession) then
+        if Assigned(FAuthNtlmSession) and
+            (FAuthNtlmSession.State = lsInAuth) then
             Header := Header +  _Trim('WWW-Authenticate: NTLM ' +
              FAuthNtlmSession.NtlmMessage) + #13#10
         else
