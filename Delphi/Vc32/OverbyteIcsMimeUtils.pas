@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.14
+Version:      7.15
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -80,7 +80,9 @@ Oct 11, 2008 V7.12  A. Garrels added an AnsiString overload to FoldString().
 Oct 12, 2008 V7.13  Angus added HdrEncodeInLineEx which encodes UTF-16 to raw header
                     HdrEncodeInLine now RawByteString so D2009 does not mess with it
 Jan 03, 2009 V7.14  A. Garrels added a PAnsiChar overload to Base64Encode().
-
+Jan 20, 2009 V7.15  A. Garrels added function CalcBase64AttachmentGrow and
+                    fixed return of var More in DoFileEncBase64() which could
+                    lead to an additional blank line in MIME part.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -126,8 +128,8 @@ uses
     OverbyteIcsLibrary,
     OverbyteIcsCharsetUtils;
 const
-    TMimeUtilsVersion = 714;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.14 ';
+    TMimeUtilsVersion = 715;
+    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.15 ';
 
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
@@ -294,6 +296,9 @@ function FoldString(const Input : UnicodeString;
                     MaxCol      : Integer): UnicodeString; overload;
 {$ENDIF}
 
+{ Calculates Base64 grow including CRLFs }
+function CalcBase64AttachmentGrow(FileSize: Int64): Int64;
+
 implementation
 
 const
@@ -304,6 +309,7 @@ const
   LeadBytes: set of Char = [];
 {$ENDIF}
   CP_ACP = 0; // Windows.pas
+  FILE_BASE64_LINE_LENGTH = 72; // without CRLF
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { See also SplitQuotedPrintableString !                                     }
@@ -744,12 +750,10 @@ end;
 function DoFileEncBase64(
     var Stream     : TStream;
     var More       : Boolean) : AnsiString;
-const
-    MAX_LENGTH = 72;
 var
     Count     : Integer;
     DataIn    : array [0..2]  of Byte;
-    DataOut   : array [0..MAX_LENGTH + 8] of Byte;
+    DataOut   : array [0..FILE_BASE64_LINE_LENGTH + 8] of Byte;
     ByteCount : Integer;
     I         : Integer;
 {$IFDEF CLR}
@@ -757,8 +761,8 @@ var
 {$ENDIF}
 begin
     Count     := 0;
-    ByteCount := 0;
-    while Count < MAX_LENGTH do begin
+    // ByteCount := 0;
+    while Count < FILE_BASE64_LINE_LENGTH do begin
         ByteCount := Stream.Read(DataIn, 3);
         if ByteCount = 0 then                            {<=MHU}
            Break;                                        {<=MHU}
@@ -786,12 +790,29 @@ begin
             DataOut[Count + I] := Byte(Base64Out[DataOut[Count + I]]);
 
         Count := Count + 4;
-        if (Count > MAX_LENGTH) or (ByteCount < 3) then
+        if (Count > FILE_BASE64_LINE_LENGTH) or (ByteCount < 3) then
             break;
     end;
 
     DataOut[Count] := $0;
-    More           := (ByteCount = 3);
+
+    { Next line commented since it led to an additional blank line in      }
+    { the MIME part. Instead use Stream.Size, see below.                   }
+    
+    //More           := (ByteCount = 3);
+
+{$IFDEF USE_BUFFERED_STREAM}
+    { If ShareMode does not allow shared writes we may use the file size   }
+    if TBufferedFileStream(Stream).Mode and $F0 <= fmShareDenyWrite then
+        More := Stream.Position < TBufferedFileStream(Stream).FastSize
+    else
+        { This is slow! But does anybody really allow shared writes?       }
+        More := Stream.Position < Stream.Size;
+{$ELSE}
+    { Slow, TBufferedFileStream should be used anyway, it's much faster.   }
+    More := Stream.Position < Stream.Size;
+{$ENDIF}
+
 {$IFDEF CLR}
     SB := StringBuilder.Create(Count);
     for I := 0 to Count - 1 do
@@ -1797,6 +1818,28 @@ begin
                                                           [], rPos))
 end;
 {$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function CalcBase64AttachmentGrow(FileSize: Int64): Int64;
+var
+    LineCount : Int64;
+begin
+    if FileSize > 0 then
+    begin
+        while FileSize mod 3 > 0 do
+            Inc(FileSize);
+        Result := ((FileSize div 3) * 4);
+        { Add line break byte count. }
+        if Result mod FILE_BASE64_LINE_LENGTH  > 0 then
+            LineCount := (Result div FILE_BASE64_LINE_LENGTH) + 1
+        else
+            LineCount := Result div FILE_BASE64_LINE_LENGTH;
+        Inc(Result, LineCount * 2);
+    end
+    else
+        Result := 0;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
