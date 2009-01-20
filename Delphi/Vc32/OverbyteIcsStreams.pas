@@ -3,8 +3,8 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.09
-Legal issues: Copyright (C) 2005 by Arno Garrels, Berlin, Germany,
+Version:      6.10
+Legal issues: Copyright (C) 2005-2009 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
               This software is provided 'as-is', without any express or
@@ -52,6 +52,8 @@ Mar 24, 2008 V6.07 Francois Piette made some changes to prepare code
 Apr 15, 2008 V6.08 A. Garrels, in FBuf of TBufferedFileStream changed to
                    PAnsiChar
 Aug 27, 2008 V6.09 Arno added a WideString overload to TBufferedFileStream
+Jan 20, 2009 V6.10 Arno added property Mode to TBufferedFileStream.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsStreams;
@@ -107,6 +109,7 @@ type
         FBufCount   : Longint;
         FBufPos     : Longint;
         FDirty      : Boolean;
+        FMode       : Word;
         //FmWriteFlag : Boolean;  { V1.04 }        
     protected
         procedure   SetSize(NewSize: Longint); override;
@@ -135,6 +138,7 @@ type
 {$ENDIF}
         function    Write(const Buffer; Count: Longint): Longint; override;
         property    FastSize : BigInt read FFileSize;
+        property    Mode : Word read FMode;
     end;
 
     EMultiPartFileReaderException = class(Exception);
@@ -266,6 +270,7 @@ begin
         if FHandle < 0 then
             raise EFOpenError.CreateFmt(SFOpenError, [FileName]);
     end;
+    FMode := Mode;
     Init(BufferSize);
 {$ENDIF}
 end;
@@ -300,6 +305,7 @@ begin
                                            [ExpandFileName(FileName),
                                            SysErrorMessage(GetLastError)]);
     end;
+    FMode := Mode;
     Init(BufferSize);
 end;
 {$ENDIF}
@@ -332,6 +338,7 @@ begin
         if FHandle < 0 then
             raise EFOpenError.CreateFmt(SFOpenError, [FileName]);
     end;
+    FMode := Mode;
     Init(BufferSize);
 {$ENDIF}
 end;
@@ -366,6 +373,7 @@ begin
                                            [ExpandFileName(FileName),
                                            SysErrorMessage(GetLastError)]);
     end;
+    FMode := Mode;
     Init(BufferSize);
 end;
 {$ENDIF}
@@ -1088,7 +1096,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TTextStream.Write(const Buffer; Count: Integer): Longint;
 begin
-    SetMode(tsmWrite);;
+    SetMode(tsmWrite);
     Result := FStream.Write(Buffer, Count);
 end;
 
