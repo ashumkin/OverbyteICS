@@ -1,9 +1,9 @@
 object SmtpTestForm: TSmtpTestForm
-  Left = 93
-  Top = 294
+  Left = 193
+  Top = 125
+  Width = 570
+  Height = 510
   Caption = 'SmtpTestForm'
-  ClientHeight = 441
-  ClientWidth = 600
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,8 +18,8 @@ object SmtpTestForm: TSmtpTestForm
   TextHeight = 13
   object MsgMemo: TMemo
     Left = 0
-    Top = 185
-    Width = 600
+    Top = 199
+    Width = 562
     Height = 120
     Hint = 'Enter the message text in this memo'
     Align = alTop
@@ -38,9 +38,9 @@ object SmtpTestForm: TSmtpTestForm
   end
   object DisplayMemo: TMemo
     Left = 0
-    Top = 388
-    Width = 600
-    Height = 53
+    Top = 405
+    Width = 562
+    Height = 71
     Hint = 'This memo shows info messages'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -60,40 +60,43 @@ object SmtpTestForm: TSmtpTestForm
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
-    Width = 600
-    Height = 185
+    Width = 562
+    Height = 199
     Align = alTop
     TabOrder = 2
+    DesignSize = (
+      562
+      199)
     object Label1: TLabel
-      Left = 22
+      Left = 25
       Top = 11
       Width = 51
       Height = 13
       Caption = 'SMTP Host'
     end
     object Label2: TLabel
-      Left = 54
+      Left = 52
       Top = 36
       Width = 24
       Height = 13
       Caption = 'From'
     end
     object Label3: TLabel
-      Left = 222
+      Left = 226
       Top = 36
       Width = 12
       Height = 13
       Caption = 'To'
     end
     object Subject: TLabel
-      Left = 41
+      Left = 40
       Top = 82
       Width = 36
       Height = 13
       Caption = 'Subject'
     end
     object Label4: TLabel
-      Left = 216
+      Left = 218
       Top = 11
       Width = 20
       Height = 13
@@ -101,34 +104,35 @@ object SmtpTestForm: TSmtpTestForm
     end
     object Label5: TLabel
       Left = 12
-      Top = 171
+      Top = 183
       Width = 69
       Height = 13
+      Anchors = [akLeft, akBottom]
       Caption = 'Message text:'
     end
     object Label8: TLabel
-      Left = 214
+      Left = 218
       Top = 84
       Width = 20
       Height = 13
       Caption = 'Sign'
     end
     object Label9: TLabel
-      Left = 29
+      Left = 28
       Top = 108
       Width = 48
       Height = 13
       Caption = 'Username'
     end
     object Label10: TLabel
-      Left = 212
+      Left = 216
       Top = 108
       Width = 22
       Height = 13
       Caption = 'Pass'
     end
     object Label11: TLabel
-      Left = 9
+      Left = 6
       Top = 132
       Width = 70
       Height = 13
@@ -142,7 +146,7 @@ object SmtpTestForm: TSmtpTestForm
       Caption = 'Cc'
     end
     object Label13: TLabel
-      Left = 216
+      Left = 222
       Top = 60
       Width = 16
       Height = 13
@@ -223,7 +227,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object ClearDisplayButton: TButton
       Left = 448
-      Top = 88
+      Top = 86
       Width = 73
       Height = 17
       Hint = 'Clear info message memo'
@@ -247,7 +251,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object HeloButton: TButton
       Left = 368
-      Top = 28
+      Top = 27
       Width = 73
       Height = 17
       Hint = 'Send the signon message'
@@ -259,7 +263,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object MailFromButton: TButton
       Left = 368
-      Top = 88
+      Top = 86
       Width = 73
       Height = 17
       Hint = 'Send the mail originator'
@@ -271,7 +275,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object RcptToButton: TButton
       Left = 368
-      Top = 108
+      Top = 126
       Width = 73
       Height = 17
       Hint = 'Send the mail recipents'
@@ -283,7 +287,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object DataButton: TButton
       Left = 368
-      Top = 128
+      Top = 146
       Width = 73
       Height = 17
       Hint = 'Send mail text and attached files'
@@ -295,7 +299,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object AbortButton: TButton
       Left = 448
-      Top = 68
+      Top = 66
       Width = 73
       Height = 17
       Hint = 'Abort current operation and close'
@@ -307,7 +311,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object QuitButton: TButton
       Left = 448
-      Top = 48
+      Top = 47
       Width = 73
       Height = 17
       Hint = 'Quit mail server'
@@ -319,7 +323,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object MailButton: TButton
       Left = 448
-      Top = 28
+      Top = 27
       Width = 73
       Height = 17
       Hint = 'MailFrom, RcptTo and Data combined'
@@ -376,7 +380,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object EhloButton: TButton
       Left = 368
-      Top = 48
+      Top = 47
       Width = 73
       Height = 17
       Caption = 'Ehlo'
@@ -385,7 +389,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object AuthButton: TButton
       Left = 368
-      Top = 68
+      Top = 66
       Width = 73
       Height = 17
       Caption = 'Auth'
@@ -410,7 +414,7 @@ object SmtpTestForm: TSmtpTestForm
     end
     object AllInOneButton: TButton
       Left = 448
-      Top = 128
+      Top = 126
       Width = 73
       Height = 17
       Hint = 
@@ -439,17 +443,17 @@ object SmtpTestForm: TSmtpTestForm
         'Lowest')
     end
     object ConfirmCheckBox: TCheckBox
-      Left = 38
-      Top = 152
-      Width = 55
+      Left = 0
+      Top = 150
+      Width = 93
       Height = 17
       Alignment = taLeftJustify
-      Caption = 'Confirm'
+      Caption = 'Confirm Receipt'
       TabOrder = 25
     end
     object SendToFileButton: TButton
-      Left = 448
-      Top = 151
+      Left = 368
+      Top = 172
       Width = 73
       Height = 17
       Hint = 'Clear info message memo'
@@ -459,11 +463,32 @@ object SmtpTestForm: TSmtpTestForm
       TabOrder = 26
       OnClick = SendToFileButtonClick
     end
+    object MsgSizeButton: TButton
+      Left = 448
+      Top = 172
+      Width = 73
+      Height = 17
+      Caption = 'CalcMsgSize'
+      TabOrder = 27
+      OnClick = MsgSizeButtonClick
+    end
+    object MailFromSIZEButton: TButton
+      Left = 368
+      Top = 106
+      Width = 73
+      Height = 17
+      Hint = 'Send the mail originator with SIZE extension'
+      Caption = 'MailFromSIZE'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 28
+      OnClick = MailFromSIZEButtonClick
+    end
   end
   object AttachPanel: TPanel
     Left = 0
-    Top = 305
-    Width = 600
+    Top = 319
+    Width = 562
     Height = 17
     Align = alTop
     TabOrder = 3
@@ -477,8 +502,8 @@ object SmtpTestForm: TSmtpTestForm
   end
   object FileAttachMemo: TMemo
     Left = 0
-    Top = 322
-    Width = 600
+    Top = 336
+    Width = 562
     Height = 49
     Hint = 'Enter the attached file path, one per line'
     Align = alTop
@@ -497,17 +522,37 @@ object SmtpTestForm: TSmtpTestForm
   end
   object InfoPanel: TPanel
     Left = 0
-    Top = 371
-    Width = 600
-    Height = 17
+    Top = 385
+    Width = 562
+    Height = 20
     Align = alTop
     TabOrder = 5
+    DesignSize = (
+      562
+      20)
     object Label7: TLabel
       Left = 16
       Top = 2
       Width = 74
       Height = 13
       Caption = 'Info messages:'
+    end
+    object ProgressBar1: TProgressBar
+      Left = 192
+      Top = 3
+      Width = 347
+      Height = 14
+      Anchors = [akLeft, akTop, akRight]
+      TabOrder = 0
+    end
+    object ProgressCheckBox: TCheckBox
+      Left = 120
+      Top = 1
+      Width = 65
+      Height = 17
+      Alignment = taLeftJustify
+      Caption = 'Progress'
+      TabOrder = 1
     end
   end
   object SmtpClient: TSmtpCli
@@ -518,7 +563,7 @@ object SmtpTestForm: TSmtpTestForm
     AuthType = smtpAuthNone
     ConfirmReceipt = False
     HdrPriority = smtpPriorityNone
-    CharSet = 'iso-8859-1'
+    CharSet = 'windows-1252'
     SendMode = smtpToSocket
     DefaultEncoding = smtpEnc7bit
     Allow8bitChars = True
@@ -533,7 +578,7 @@ object SmtpTestForm: TSmtpTestForm
     OnHeaderLine = SmtpClientHeaderLine
     OnRequestDone = SmtpClientRequestDone
     OnAttachContentTypeEh = SmtpClientAttachContentTypeEh
-    Left = 488
-    Top = 196
+    Left = 20
+    Top = 240
   end
 end

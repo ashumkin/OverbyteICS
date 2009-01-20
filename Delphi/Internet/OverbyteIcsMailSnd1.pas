@@ -4,11 +4,11 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.05
+Version:      6.06
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -69,6 +69,8 @@ Jul 23, 2008  V6.04 A. Garrels changed code in OnGetDate event handler to prepar
               code for Unicode.
 Aug 03, 2008  V6.05 A. Garrels changed code in OnGetDate event handler to prepare
               code for Unicode again
+Jan 17, 2009  V6.06 A. Garrels added a progress bar and RFC-1870 SIZE extension.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMailSnd1;
@@ -91,11 +93,12 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Controls, StdCtrls, ExtCtrls, Forms,
-  Dialogs, OverbyteIcsIniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt;
+  Dialogs, OverbyteIcsIniFiles, OverbyteIcsWndControl, OverbyteIcsSmtpProt,
+  ComCtrls;
 
 const
-    SmtpTestVersion    = 6.05;
-    CopyRight : String = ' MailSnd (c) 1997-2008 F. Piette V6.05 ';
+    SmtpTestVersion    = 6.06;
+    CopyRight : String = ' MailSnd (c) 1997-2009 F. Piette V6.06 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -148,6 +151,10 @@ type
     Label7: TLabel;
     SmtpClient: TSmtpCli;
     SendToFileButton: TButton;
+    MsgSizeButton: TButton;
+    ProgressBar1: TProgressBar;
+    ProgressCheckBox: TCheckBox;
+    MailFromSIZEButton: TButton;
     procedure FormCreate(Sender: TObject);
     procedure ClearDisplayButtonClick(Sender: TObject);
     procedure ConnectButtonClick(Sender: TObject);
@@ -175,13 +182,19 @@ type
     procedure SmtpClientAttachContentTypeEh(Sender: TObject;
       FileNumber: Integer; var FileName, ContentType: string;
       var AttEncoding: TSmtpEncoding);
+    procedure MsgSizeButtonClick(Sender: TObject);
+    procedure SmtpClientMessageDataSent(Sender: TObject; Size: Integer);
+    procedure MailFromSIZEButtonClick(Sender: TObject);
   private
     FIniFileName  : String;
     FInitialized  : Boolean;
     FAllInOneFlag : Boolean;
+    FByteCount    : Integer;
+    FCounter      : Integer;
     procedure Display(const Msg : String);
     procedure ExceptionHandler(Sender: TObject; E: Exception);
     procedure SmtpClientBeforeOutStreamFree(Sender: TObject);
+    procedure PrepareProgressBar;
   end;
 
 var
@@ -214,6 +227,7 @@ const
     KeyFileAttach     = 'File';
     SectionMsgMemo    = 'Message';
     KeyMsgMemo        = 'Msg';
+    KeyProgress       = 'Progress';
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure SaveStringsToIniFile(
@@ -300,6 +314,39 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.PrepareProgressBar;
+var
+    OldOnRequestDone : TSmtpRequestDone;
+begin
+    SmtpClient.MessageSize := 0;
+    if ProgressCheckBox.Checked then begin
+        OldOnRequestDone := SmtpClient.OnRequestDone;
+        { Let's turn off OnRequestDone temporarily               }
+        SmtpClient.OnRequestDone := nil;
+        try
+            { Precompute message size, this might take a while,  }
+            { base64 attachment size however is just computed.   }
+            { Message size is written to property MessageSize.   }
+            { CalcMsgSizeSync is a synchronous (blocking) method }
+            { Do not expect 100% exact values returned by this   }
+            { function, though they are pretty exact.            }
+            SmtpClient.CalcMsgSizeSync;
+        finally
+            SmtpClient.OnRequestDone := OldOnRequestDone;
+        end;
+        ProgressBar1.Max := SmtpClient.MessageSize;
+        FByteCount       := 0;
+        FCounter         := 0;
+        ProgressBar1.Min := 0;
+        SmtpClient.OnMessageDataSent := SmtpClientMessageDataSent;
+    end
+    else
+        SmtpClient.OnMessageDataSent := nil;
+    ProgressBar1.Position := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.FormCreate(Sender: TObject);
 begin
     Application.OnException := ExceptionHandler;
@@ -343,10 +390,13 @@ begin
         AuthComboBox.ItemIndex     := IniFile.ReadInteger(SectionData, KeyAuth, 0);
         PriorityComboBox.ItemIndex := IniFile.ReadInteger(SectionData, KeyPriority, 2);
         ConfirmCheckBox.Checked    := Boolean(IniFile.ReadInteger(SectionData, KeyConfirm, 0));
+        ProgressCheckBox.Checked   := IniFile.ReadBool(SectionData, KeyProgress, False);
 
         if not LoadStringsFromIniFile(IniFile, SectionFileAttach,
                                       KeyFileAttach, FileAttachMemo.Lines) then
-        FileAttachMemo.Text := 'ics_logo.gif' + #13#10 + 'fp_small.gif';
+        FileAttachMemo.Text := ExtractFilePath(ParamStr(0)) + 'ics_logo.gif' +
+                               #13#10 +
+                               ExtractFilePath(ParamStr(0)) + 'fp_small.gif';
         if not LoadStringsFromIniFile(IniFile, SectionMsgMemo,
                                       KeyMsgMemo, MsgMemo.Lines) then
             MsgMemo.Text :=
@@ -387,6 +437,7 @@ begin
     IniFile.WriteInteger(SectionData, KeyAuth,     AuthComboBox.ItemIndex);
     IniFile.WriteInteger(SectionData, KeyPriority, PriorityComboBox.ItemIndex);
     IniFile.WriteInteger(SectionData, KeyConfirm,  Ord(ConfirmCheckBox.Checked));
+    IniFile.WriteBool(SectionData,    KeyProgress, ProgressCheckBox.Checked);
     SaveStringsToIniFile(IniFile, SectionFileAttach,
                          KeyFileAttach, FileAttachMemo.Lines);
     SaveStringsToIniFile(IniFile, SectionMsgMemo,
@@ -457,6 +508,18 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.SmtpClientMessageDataSent(
+    Sender  : TObject;
+    Size    : Integer);
+begin
+    Inc(FByteCount, Size);
+    Inc(FCounter);
+    if FCounter mod 200 = 0 then
+        ProgressBar1.Position := FByteCount;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.ClearDisplayButtonClick(Sender: TObject);
 begin
     DisplayMemo.Clear;
@@ -477,7 +540,6 @@ begin
     FAllInOneFlag          := FALSE;
     SmtpClient.Host        := HostEdit.Text;
     SmtpClient.Port        := PortEdit.Text;
-    SmtpClient.HdrPriority := TSmtpPriority(PriorityComboBox.ItemIndex);
     SmtpClient.Connect;
 end;
 
@@ -515,22 +577,28 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.SendToFileButtonClick(Sender: TObject);
 begin
+    { Assign property MailMessage and unassign OnGetData if you need }
+    { automatic encoding and line wrapping                           }
+    //SmtpClient.MailMessage     := MsgMemo.Lines;
+    //SmtpClient.OnGetData       := nil;
     FAllInOneFlag              := FALSE;
     SmtpClient.RcptName.Clear;
-    SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.text);
+    SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.Text);
     SmtpClient.HdrFrom         := FromEdit.Text;
     SmtpClient.HdrTo           := ToEdit.Text;
     SmtpClient.HdrCc           := CcEdit.Text;
     SmtpClient.HdrSubject      := SubjectEdit.Text;
+    SmtpClient.HdrPriority     := TSmtpPriority(PriorityComboBox.ItemIndex);
     SmtpClient.EmailFiles      := FileAttachMemo.Lines;
     SmtpClient.ConfirmReceipt  := ConfirmCheckBox.Checked;
-
+    PrepareProgressBar;
     with TOpenDialog.Create(nil) do
     try
         if Execute and (Filename <> '') then begin
-            SmtpClient.SendMode := smtpToStream;
             SmtpClient.OnBeforeOutStreamFree := SmtpClientBeforeOutStreamFree;
-            SmtpClient.SendToFile(Filename, fmShareDenyWrite);
+            Update;
+            SmtpClient.SendMode := smtpToStream;
+            SmtpClient.SendToFile(Filename); // It's async!
         end;
     finally
         Free;
@@ -551,7 +619,6 @@ begin
     SmtpClient.Username        := UsernameEdit.Text;
     SmtpClient.Password        := PasswordEdit.Text;
     SmtpClient.AuthType        := TSmtpAuthType(AuthComboBox.ItemIndex);
-    SmtpClient.HdrPriority     := TSmtpPriority(PriorityComboBox.ItemIndex);
     SmtpClient.Open;
 end;
 
@@ -565,6 +632,18 @@ begin
     SmtpClient.MailFrom;
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.MailFromSIZEButtonClick(Sender: TObject);
+begin
+    FAllInOneFlag              := FALSE;
+    Assert(SmtpClient.SizeSupported,
+          'Either the server doesn''t support the SIZE extension or ' +
+          'EHLO was not issued first');
+    Assert(SmtpClient.MessageSize > 0, 'Hit button CalcMsgSize first');
+    SmtpClient.FromName        := FromEdit.Text;
+    SmtpClient.MailFromSIZE;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Send recipients }
@@ -581,24 +660,8 @@ end;
 { Send text and attached files to mail server }
 procedure TSmtpTestForm.DataButtonClick(Sender: TObject);
 begin
-    FAllInOneFlag              := FALSE;
-    SmtpClient.RcptName.Clear;
-    SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.text);
-    SmtpClient.HdrFrom         := FromEdit.Text;
-    SmtpClient.HdrTo           := ToEdit.Text;
-    SmtpClient.HdrCc           := CcEdit.Text;
-    SmtpClient.HdrSubject      := SubjectEdit.Text;
-    SmtpClient.EmailFiles      := FileAttachMemo.Lines;
-    SmtpClient.ConfirmReceipt  := ConfirmCheckBox.Checked;
-    SmtpClient.Data;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ MailFrom, RcptTo and Data methods combined }
-procedure TSmtpTestForm.MailButtonClick(Sender: TObject);
-begin
-    { Assign the MailMessage if you need automatic encoding and line wrapping }
+    { Assign property MailMessage and unassign OnGetData if you need }
+    { automatic encoding and line wrapping                           }
     //SmtpClient.MailMessage     := MsgMemo.Lines;
     //SmtpClient.OnGetData       := nil;
     FAllInOneFlag              := FALSE;
@@ -608,11 +671,35 @@ begin
     SmtpClient.HdrTo           := ToEdit.Text;
     SmtpClient.HdrCc           := CcEdit.Text;
     SmtpClient.HdrSubject      := SubjectEdit.Text;
+    SmtpClient.HdrPriority     := TSmtpPriority(PriorityComboBox.ItemIndex);
+    SmtpClient.EmailFiles      := FileAttachMemo.Lines;
+    SmtpClient.ConfirmReceipt  := ConfirmCheckBox.Checked;
+    PrepareProgressBar;
+    SmtpClient.Data;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ MailFrom, RcptTo and Data methods combined }
+procedure TSmtpTestForm.MailButtonClick(Sender: TObject);
+begin
+    { Assign property MailMessage and unassign OnGetData if you need }
+    { automatic encoding and line wrapping                           }
+    //SmtpClient.MailMessage     := MsgMemo.Lines;
+    //SmtpClient.OnGetData       := nil;
+    FAllInOneFlag              := FALSE;
+    SmtpClient.RcptName.Clear;
+    SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.text);
+    SmtpClient.HdrFrom         := FromEdit.Text;
+    SmtpClient.HdrTo           := ToEdit.Text;
+    SmtpClient.HdrCc           := CcEdit.Text;
+    SmtpClient.HdrSubject      := SubjectEdit.Text;
+    SmtpClient.HdrPriority     := TSmtpPriority(PriorityComboBox.ItemIndex);
     SmtpClient.SignOn          := SignOnEdit.Text;
     SmtpClient.FromName        := FromEdit.Text;
     SmtpClient.EmailFiles      := FileAttachMemo.Lines;
-    SmtpClient.Host            := HostEdit.Text;
-    SmtpClient.Port            := PortEdit.Text;
+    SmtpClient.ConfirmReceipt  := ConfirmCheckBox.Checked;
+    PrepareProgressBar;
     SmtpClient.Mail;
 end;
 
@@ -620,7 +707,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.QuitButtonClick(Sender: TObject);
 begin
-    FAllInOneFlag              := FALSE;
+    FAllInOneFlag         := FALSE;
     SmtpClient.Quit;
 end;
 
@@ -646,6 +733,13 @@ begin
     else
         Display('RequestDone Rq=' + IntToStr(Ord(RqType)) +
                             ' Error='+ IntToStr(Error));
+
+    { Just set the progress bar to 100%                 }
+    if ProgressCheckBox.Checked then begin
+        if (RqType in [smtpData, smtpToFile]) and (Error = 0) then
+            ProgressBar1.Position := ProgressBar1.Max;
+    end;
+
     { Check if the user has asked for "All-In-One" demo }
     if not FAllInOneFlag then
         Exit;             { No, nothing more to do here }
@@ -656,6 +750,7 @@ begin
         Display('Error, stoped All-In-One demo');
         Exit;
     end;
+
     case RqType of
     smtpConnect:  begin
                       if SmtpClient.AuthType = smtpAuthNone then
@@ -686,7 +781,11 @@ begin
 
     FAllInOneFlag          := TRUE;
 
-    { Initialize all SMTP component properties from our GUI }
+    { Initialize all SMTP component properties from our GUI          }
+    { Assign property MailMessage and unassign OnGetData if you need }
+    { automatic encoding and line wrapping                           }
+    //SmtpClient.MailMessage     := MsgMemo.Lines;
+    //SmtpClient.OnGetData       := nil;
     SmtpClient.Host           := HostEdit.Text;
     SmtpClient.Port           := PortEdit.Text;
     SmtpClient.SignOn         := SignOnEdit.Text;
@@ -704,6 +803,7 @@ begin
     { Recipient list is computed from To, Cc and Bcc fields }
     SmtpClient.RcptName.Clear;
     SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.text);
+    PrepareProgressBar;
     Display('Connecting to SMTP server...');
     { Start first operation to do to send an email          }
     { Next operations are started from OnRequestDone event  }
@@ -712,5 +812,28 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.MsgSizeButtonClick(Sender: TObject);
+begin
+    { Assign property MailMessage and unassign OnGetData if you need }
+    { automatic encoding and line wrapping                           }
+    //SmtpClient.MailMessage     := MsgMemo.Lines;
+    //SmtpClient.OnGetData       := nil;
+    FAllInOneFlag              := FALSE;
+    SmtpClient.RcptName.Clear;
+    SmtpClient.RcptNameAdd(ToEdit.Text, CcEdit.Text, BccEdit.Text);
+    SmtpClient.HdrFrom         := FromEdit.Text;
+    SmtpClient.HdrTo           := ToEdit.Text;
+    SmtpClient.HdrCc           := CcEdit.Text;
+    SmtpClient.HdrSubject      := SubjectEdit.Text;
+    SmtpClient.HdrPriority     := TSmtpPriority(PriorityComboBox.ItemIndex);
+    SmtpClient.EmailFiles      := FileAttachMemo.Lines;
+    SmtpClient.ConfirmReceipt  := ConfirmCheckBox.Checked;
+    SmtpClient.CalcMsgSize;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+
 
 end.

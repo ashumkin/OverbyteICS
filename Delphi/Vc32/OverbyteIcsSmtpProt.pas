@@ -7,11 +7,11 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.22
+Version:      7.23
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2008 by François PIETTE
+Legal issues: Copyright (C) 1997-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -336,12 +336,30 @@ Aug 03, 2008 V6.17  A.Garrels - Components use Ansi buffers internally.
 Aug 11, 2008 V6.18  A. Garrels - Type AnsiString rolled back to String.
 Oct 01, 2008 V6.19  A. Garrels fixed a ERangeError and took escaped quotation
                     marks into account in RcptNameAdd().
-Oct 03, 2008 V6.20  A. Garrels moved IsCharInSysCharSet, IsDigit, IsSpace, IsSpaceOrCRLF
-                    and stpblk to OverbyteIcsUtils.pas.
+Oct 03, 2008 V6.20  A. Garrels moved IsCharInSysCharSet, IsDigit, IsSpace,
+                    IsSpaceOrCRLF and stpblk to OverbyteIcsUtils.pas.
 Oct 04, 2008 V7.21  A. Garrels fixed conversion of Unicode file names to Ansi
                     in TSmtpCli. Bumped version number to v7.
 Oct 15, 2008 v7.22  A. Garrels adjusted TSmtpCli and THtmlCli.SetCharset to
                     the current changes in OverbyteIcsCharsetUtils.pas
+Jan 17, 2009 v7.23  A. Garrels - New methods CalcMsgSize, CalcMsgSizeSync and
+                    event OnMessageDataSent. CalcMsgSize precomposes the
+                    message including encoding of all text parts to obtain
+                    the correct size,  Base64 attachment size however is just
+                    calculated. The result of the method is written to new
+                    public property MessageSize. Useful if you want to implement
+                    a progress bar or make use of RFC-1870 SIZE extension (see
+                    MailSnd demo). Note that the returned size is not guaranteed
+                    not be 100% correct, it's pretty exact though!
+                    Added new method MailFromSIZE which sends the expected
+                    message size as the second argument with the MailFrom command.
+                    New properties SizeSupported and MaxMessageSize tell you
+                    whether a server supports the SIZE extension and whether a
+                    maximum message size was present in the EHLO response.
+                    SendToFile() no longer takes a ShareMode argument which
+                    was useless, and TBufferedFileStream is now used which is
+                    much faster than TFileStream.
+                    
 
 ToDo:
 The THtmlSmtpCli still sends file names in headers converted with default
@@ -372,6 +390,7 @@ interface
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
+    {$DEFINE USE_BUFFERED_STREAM}
 {$ENDIF}
 {$IFDEF BCB}
     {$ObjExportAll On}
@@ -395,14 +414,17 @@ uses
     OverbyteIcsUtils,
     OverbyteIcsCharsetUtils,
     OverbyteIcsLibrary,
+{$IFDEF USE_BUFFERED_STREAM}
+    OverbyteIcsStreams,
+{$ENDIF}
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY, OverByteIcsLIBEAY,  {AG/SSL}
 {$ENDIF}
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 722;
-  CopyRight : String = ' SMTP component (c) 1997-2008 Francois Piette V7.22 ';
+  SmtpCliVersion     = 723;
+  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.23 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -453,7 +475,8 @@ type
     TSmtpState       = (smtpReady,           smtpDnsLookup,
                         smtpConnecting,      smtpConnected,
                         smtpInternalReady,   smtpWaitingBanner,
-                        smtpWaitingResponse, smtpAbort);
+                        smtpWaitingResponse, smtpAbort,
+                        smtpInternalBusy);
     TSmtpMimeState   = (smtpMimeIntro,       smtpMimePlainText,
                         smtpMimeHtmlText,    smtpMimeImages,    smtpMimeDone);
 {Start AG/SSL}
@@ -464,15 +487,16 @@ type
                      {$IFDEF USE_SSL}
                         smtpStartTls,
                      {$ENDIF}
+                        smtpCalcMsgSize,     smtpMailFromSIZE,  smtpToFile,        
                         smtpCustom);
     TSmtpFct         = (smtpFctNone,         smtpFctHelo,       smtpFctConnect,
                         smtpFctMailFrom,     smtpFctRcptTo,     smtpFctData,
                         smtpFctVrfy,         smtpFctQuit,       smtpFctRset,
                         smtpFctEhlo,         smtpFctAuth
                      {$IFDEF USE_SSL}
-                        , smtpFctStartTls
+                        ,smtpFctStartTls
                      {$ENDIF}
-                        );
+                        ,smtpFctCalcMsgSize ,smtpFctMailFromSIZE);
 {End AG/SSL}
     TSmtpFctSet      = set of TSmtpFct;
     TSmtpContentType = (smtpHtml,            smtpPlainText);
@@ -513,7 +537,8 @@ type
                                          RcptNameIdx : Integer;
                                          var Action  : TSmtpRcptToErrorAction)
                                          of object;
-    
+    TSmtpMessageDataSentEvent  = procedure(Sender    : TObject;
+                                           Size      : Integer) of object;
     {AG end}
 
     TSmtpDisplay               = procedure(Sender  : TObject;
@@ -628,7 +653,14 @@ type
         FSendMode            : TSmtpSendMode;   {AG}
         FOutStream           : TStream;         {AG}
         FOnBeforeOutStreamFree : TNotifyEvent;  {AG}
-        
+        FOnMessageDataSent   : TSmtpMessageDataSentEvent;
+        FMsgSize             : Int64;  { Calculated message size }
+        FMsgSizeFlag         : Boolean;
+        FCurrSize            : Integer;
+        FSizeExt             : Boolean;{ Does the server support the SIZE extension ?}
+        FMaxMsgSize          : Int64;  { Maximum message size accepted by the server }
+        FOldSendMode         : TSmtpSendMode;
+        FOldOnDisplay        : TSmtpDisplay;
         procedure   SetCharset(const Value: String); {AG}
         procedure   EndSendToStream;            {AG}
         procedure   SendLineToStream(Data: Pointer; Len: Integer); {AG}
@@ -646,6 +678,7 @@ type
                                    MaxLen   : Integer;
                                    var More : Boolean); virtual;
         procedure   TriggerHeaderLine(Line : Pointer; Size : Integer); virtual;
+        procedure   TriggerMessageDataSent; virtual;
         procedure   TriggerProcessHeader(HdrLines : TStrings); virtual;
         procedure   TriggerSessionConnected(ErrorCode : Word); virtual;
         procedure   TriggerSessionClosed(ErrorCode : Word); virtual;
@@ -701,7 +734,9 @@ type
         procedure   Abort;    virtual;    { Abort opertaion, close     }
         procedure   Open;     virtual;    { Connect, Helo/Ehlo, Auth   }
         procedure   Mail;     virtual;    { MailFrom, RcptTo, Data     }
-        procedure   SendToFile(FileName: String; ShareMode: Word); {AG}
+        procedure   MailFromSIZE; virtual;{ Send MAILFROM command with SIZE extension RFC-1870 }
+        procedure   SendToFile(const FileName: String); virtual;{AG}
+        procedure   CalcMsgSize; virtual;
 {$IFNDEF VER80}
         procedure   ThreadAttach; override;
         procedure   ThreadDetach; override;
@@ -779,6 +814,8 @@ type
                                                      write SetContentType;
         property ConfirmReceipt : Boolean            read  FConfirmReceipt    {AG}
                                                      write FConfirmReceipt;   {AG}
+        property MessageSize  : Int64                read  FMsgSize
+                                                     write FMsgSize;
         property ErrorMessage : String               read  FErrorMessage;
         property LastResponse : String               read  FLastResponse;
         property RequestType  : TSmtpRequest         read  FRequestType;      {AG}
@@ -813,6 +850,11 @@ type
         property OnSessionClosed : TSessionClosed
                                                      read  FOnSessionClosed
                                                      write FOnSessionClosed;
+        property OnMessageDataSent : TSmtpMessageDataSentEvent
+                                                     read  FOnMessageDataSent
+                                                     write FOnMessageDataSent;
+        property MaxMessageSize    : Int64           read  FMaxMsgSize;
+        property SizeSupported     : Boolean         read  FSizeExt;
     end;
 
     { Descending component adding MIME (file attach) support }
@@ -853,11 +895,14 @@ type
         constructor Create(AOwner : TComponent); override;
         destructor  Destroy;                     override;
         procedure   Data;                        override;
+        procedure   CalcMsgSizeSync;
         property    CodePage;           {AG}
         property    AuthTypesSupported; {AG}
         property    RequestType;        {AG}
         property    OutStream;          {AG}
-        property    OnBeforeOutStreamFree;  {AG}
+        property    OnBeforeOutStreamFree; {AG}
+        property    MaxMessageSize;
+        property    SizeSupported;
     published
         property ShareMode;
         property Host;
@@ -886,6 +931,7 @@ type
         property Allow8bitChars;        {AG}
         property FoldHeaders;           {AG}
         property WrapMessageText;       {AG}
+        property MessageSize;           {AG}
         property ContentType;
         property ErrorMessage;
         property LastResponse;
@@ -901,6 +947,7 @@ type
         property OnRequestDone;
         property OnSessionConnected;
         property OnSessionClosed;
+        property OnMessageDataSent;      {AG}
         property EmailFiles : TStrings               read  FEmailFiles
                                                      write SetEmailFiles;
         property OnAttachContentType : TSmtpAttachmentContentType
@@ -1958,6 +2005,8 @@ var
     I   : Integer;
     Buf : String;
 begin
+    FSizeExt := FALSE;
+    FMaxMsgSize := 0;
     FFctPrv := smtpFctHelo;
     if FSignOn = '' then
         Buf := String(LocalHostName)
@@ -1979,6 +2028,8 @@ var
     Buf : String;
 begin
     FAuthTypesSupported.Clear;
+    FSizeExt := FALSE;
+    FMaxMsgSize := 0;
     FFctPrv := smtpFctEhlo;
     if FSignOn = '' then
         Buf := String(LocalHostName)
@@ -2344,7 +2395,7 @@ begin
     Delete(S, 1, 4);
     if (CompareText(Copy(S, 1, 5), 'AUTH ') = 0) or
        (CompareText(Copy(S, 1, 5), 'AUTH=') = 0) then begin
-        S := Copy(S, 6, Length(S));  
+        S := Copy(S, 6, Length(S));
         for I := 1 to Length(S) do begin
             if S[I] = '=' then
                 S[I] := ' ';
@@ -2387,6 +2438,21 @@ begin
     ExecAsync(smtpMailFrom,
               'MAIL FROM:<' + ParseEmail(FFromName, FriendlyName) + '>',
               [250], nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.MailFromSIZE;
+var
+    FriendlyName : String;
+begin
+    {if not FSizeExt then
+        raise SmtpException.Create('The server does not support the SIZE extension');}
+                                   { Or the EHLO command was not issued }
+    FFctPrv := smtpFctMailFromSIZE;
+    ExecAsync(smtpMailFromSIZE,
+              'MAIL FROM:<' + ParseEmail(FFromName, FriendlyName) + '> SIZE=' +
+              IntToStr(FMsgSize), [250], nil);
 end;
 
 
@@ -2679,6 +2745,8 @@ var
     EncType : Char;                                                      {AG}
 begin
     FLineNum   := 0;
+    if FSendMode <> smtpToStream then
+        FMsgSizeFlag := FALSE;
     FMoreLines := TRUE;
     FItemCount := -1;
     if not Assigned(FHdrLines) then
@@ -2785,6 +2853,7 @@ end;
 procedure TCustomSmtpClient.DataNext;
 var
     MsgLine  : array [0..1023] of AnsiChar;
+    BExit : Boolean;
 begin
     { If we have been disconnected, then do nothing.                      }
     { RequestDone event handler is called from socket SessionClose event. }
@@ -2792,7 +2861,7 @@ begin
         FWSocket.OnDataSent := nil;
         Exit;
     end;
-
+    BExit := (FSendMode = smtpToStream);
     Inc(FItemCount);
     if FItemCount < FHdrLines.Count then begin
         { There are still header lines to send.                           }
@@ -2801,15 +2870,18 @@ begin
                   Length(MsgLine) - 1);
         TriggerHeaderLine(@MsgLine, SizeOf(MsgLine));
         TriggerDisplay('> ' + String(StrPas(PAnsiChar(@MsgLine))));
-        FWSocket.OnDataSent := WSocketDataSent;
 
+        FCurrSize := StrLen(PAnsiChar(@MsgLine));
         if FSendMode <> smtpToSocket then begin
-            SendLineToStream(@MsgLine, StrLen(MsgLine));
-            if FSendMode = smtpToStream then
+            SendLineToStream(@MsgLine, FCurrSize);
+            if BExit then
                 Exit;
         end;
-        FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(PAnsiChar(@MsgLine)));
+
+        FWSocket.OnDataSent := WSocketDataSent;
+        FWSocket.PutDataInSendBuffer(@MsgLine, FCurrSize);
         FWSocket.SendStr(AnsiString(#13#10));
+        Inc(FCurrSize, 2);
     end
     else begin
         { Now we need to send data lines }
@@ -2838,24 +2910,28 @@ begin
             if MsgLine[0] = '.' then
                 Move(MsgLine[0], MsgLine[1], (StrLen(MsgLine) + 1)); { AG }
             TriggerDisplay('> ' + String(StrPas(PAnsiChar(@MsgLine))));
-            FWSocket.OnDataSent := WSocketDataSent;
 
+            FCurrSize := StrLen(PAnsiChar(@MsgLine));
             if FSendMode <> smtpToSocket then begin
-                SendLineToStream(@MsgLine, StrLen(PAnsiChar(@MsgLine))); // len = char count!
-                if FSendMode = smtpToStream then
+                SendLineToStream(@MsgLine, FCurrSize);
+                if BExit then
                     Exit;
             end;
-            FWSocket.PutDataInSendBuffer(@MsgLine, StrLen(PAnsiChar(@MsgLine)));
+
+            FWSocket.OnDataSent := WSocketDataSent;
+            FWSocket.PutDataInSendBuffer(@MsgLine, FCurrSize);
             FWSocket.SendStr(AnsiString(#13#10));
+            Inc(FCurrSize, 2);
         end
         else begin
-            if FSendMode <> smtpToSocket then begin
-                EndSendToStream;
-                if not FConnected then
-                    Exit;
-            end;
             { Send the last message line }
             FWSocket.OnDataSent := nil;
+
+            if FSendMode <> smtpToSocket then begin
+                EndSendToStream;
+                if BExit then
+                    Exit;
+            end;
             ExecAsync(smtpData, '.', [250], nil);
         end;
     end;
@@ -2865,6 +2941,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.WSocketDataSent(Sender : TObject; ErrorCode : Word);
 begin
+    TriggerMessageDataSent;
     FState := smtpInternalReady;
     DataNext;
 end;
@@ -3012,6 +3089,20 @@ begin
             Exit;
         end;
 
+        if smtpFctCalcMsgSize in FFctSet then begin
+            FFctPrv := smtpFctCalcMsgSize;
+            FFctSet := FFctSet - [FFctPrv];
+            CalcMsgSize;
+            Exit;
+        end;
+
+        if smtpFctMailFromSIZE in FFctSet then begin
+            FFctPrv := smtpFctMailFromSIZE;
+            FFctSet := FFctSet - [FFctPrv];
+            MailFromSIZE;
+            Exit;
+        end;
+        
     except
         on E : Exception do begin
           {$IFDEF TRACE}
@@ -3088,6 +3179,15 @@ procedure TCustomSmtpClient.TriggerHeaderLine(Line : Pointer; Size : Integer);
 begin
     if Assigned(FOnHeaderLine) then
         FOnHeaderLine(Self, Line, Size);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.TriggerMessageDataSent;
+begin
+    if Assigned(FOnMessageDataSent) then begin
+        FOnMessageDataSent(Self, FCurrSize);
+    end;
 end;
 
 
@@ -3257,14 +3357,36 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.EndSendToStream;
 begin
-    if Assigned(FOutStream) then
-    try
-        if Assigned(FOnBeforeOutStreamFree) then
-            FOnBeforeOutStreamFree(Self);
-    finally
+    if FMsgSizeFlag then begin
+        FMsgSizeFlag  := FALSE;
+        FSendMode     := FOldSendMode;
+        FOnDisplay    := FOldOnDisplay;
+        FLastResponse := '200 MessageSize=' + IntToStr(FMsgSize);
+        FStatusCode   := 200;
+        TriggerResponse(FLastResponse);
+        TriggerRequestDone(0);
+    end
+    else begin
         if Assigned(FOutStream) then
-            FOutStream.Free;
-        FOutStream := nil;
+        try
+            if Assigned(FOnBeforeOutStreamFree) then
+                FOnBeforeOutStreamFree(Self);
+        finally
+            if Assigned(FOutStream) then begin
+                FOutStream.Free;
+                FOutStream := nil;
+            end;
+        end;
+        if FRequestType = smtpToFile then begin
+            if FRequestResult = 0 then begin
+                FLastResponse := '200 Message sent to file';
+                FStatusCode   := 200;
+            end
+            else
+                SetErrorMessage;
+            TriggerResponse(FLastResponse);
+            TriggerRequestDone(FRequestResult);
+        end;
     end;
 end;
 
@@ -3272,29 +3394,74 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SendLineToStream(Data: Pointer; Len: Integer);
 begin
-    if Assigned(FOutStream) and (Len > 0) then begin
+    if (not FMsgSizeFlag) and Assigned(FOutStream) then
+    try
+        // raise SmtpException.Create('Test SendLineToStream');
         if (Len > 1) and (PAnsiChar(Data)[0] = '.') and
-           (PAnsiChar(Data)[1] = '.') then // remove a doubled dot
+           (PAnsiChar(Data)[1] = '.') then
             FOutStream.Write(PAnsiChar(Data)[1], Len - 1)
         else
             FOutStream.Write(Data^, Len);
+        FOutStream.Write(PAnsiChar(#13#10)^, 2);
+    except
+        on E: Exception do begin
+            FLastResponse   := '500 ' + E.ClassName + ' ' + E.Message;
+            FStatusCode     := 500;
+            FRequestResult  := 500;
+            EndSendToStream;
+            if FSendMode = smtpCopyToStream then begin
+                EndFileEncBase64(FStream);
+                SetErrorMessage;
+                TriggerResponse(FLastResponse);
+                TriggerRequestDone(FRequestResult);
+                FWSocket.Abort;
+            end;
+
+            Exit;
+        end;
     end;
-    FOutStream.Write(PAnsiChar(#13#10)^, 2);
-    if FSendMode = smtpToStream then
+    if FSendMode = smtpToStream then begin
+        Inc(FCurrSize, 2);
+        if FMsgSizeFlag then
+            Inc(FMsgSize, FCurrSize)
+        else
+            TriggerMessageDataSent;
         PostMessage(Handle, FMsg_WM_SMTP_DATA_NEXT, 0 , 0);
+    end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomSmtpClient.SendToFile(FileName: String; ShareMode: Word);
+procedure TCustomSmtpClient.SendToFile(
+    const FileName  : String);
+const
+    Msg = 'SendToFile';
 begin
+    if FState <> smtpReady then
+        raise SmtpException.Create('SMTP component not ready');
     if FSendMode <> smtpToStream then
         raise Exception.Create('SendToFile requires SendMode smtpToStream');
     if Length(FileName) = 0 then
         raise Exception.Create('File name not specified');
-    EndSendToStream;
-    FOutStream := TFileStream.Create(FileName, fmCreate	or ShareMode);
-    { FOutStream.Size := 0;} { FP 05/03/06 fmCreate make it empty }
+    if Assigned(FOutStream) then
+        FOutStream.Free;
+{$IFDEF USE_BUFFERED_STREAM}
+    FOutStream := TBufferedFileStream.Create(FileName, fmCreate, MAX_BUFSIZE);
+{$ELSE}
+    FOutStream := TFileStream.Create(FileName, fmCreate);
+{$ENDIF}
+
+    FRequestType := smtpToFile;
+    FOkResponses[0] := 200;
+    FOkResponses[1] := 0;
+    FRequestDoneFlag := FALSE;
+    FLastResponse  := '';
+    FStatusCode    := 0;
+    FRequestResult := 0;
+    FMsgSizeFlag   := FALSE;
+    StateChange(smtpInternalBusy);
+    TriggerCommand(Msg);
+    TriggerDisplay('> ' + Msg);
     Data;
 end;
 
@@ -3319,8 +3486,14 @@ end;
 procedure TCustomSmtpClient.TriggerResponse(Msg : String);
 begin
     { Catch multi-line Ehlo response, parse it for AuthTypes supported}
-    if FFctPrv = smtpFctEhlo then
+    if FFctPrv = smtpFctEhlo then begin
       AuthGetType;
+      if not FSizeExt then begin
+          FSizeExt := Pos('SIZE', Msg) = 5;
+          if FSizeExt and (Length(Msg) > 9) then
+              FMaxMsgSize := StrToIntDef(Copy(Msg, 9, 1000), 0);
+      end;
+    end;
 
     if Assigned(FOnResponse) then
         FOnResponse(Self, Msg);
@@ -3583,8 +3756,15 @@ begin
         More         := TRUE;
         Exit;
     end;
-    if FAttachmentEncoding = smtpEncodeBase64 then                         {AG}
-        sLine := DoFileEncBase64(FStream, More)
+    if FAttachmentEncoding = smtpEncodeBase64 then begin                   {AG}
+        if not FMsgSizeFlag then                                           {AG}
+            sLine := DoFileEncBase64(FStream, More)
+        else begin { Just calculate the B64 size including CRLFs }         {AG}
+            if FStream.Size > 0 then                                       {AG}
+                Inc(FMsgSize, CalcBase64AttachmentGrow(FStream.Size) -2);  {AG}
+            More := FALSE;                                                 {AG}
+        end;                                                               {AG}
+    end
     else if FAttachmentEncoding = smtpEncodeQP then                        {AG}
         sLine := DoFileEncQuotedPrintable(FStream, More)                   {AG}                                                                   {AG}
     else
@@ -3596,8 +3776,9 @@ begin
         FFileStarted := FALSE;
         Inc(FCurrentFile);
         if (FEmailFiles.Count <= FCurrentFile) then begin
-            if sLine <> '' then    { Avoid two blank lines after attachment AG }
-                FEmailBody.Add('');
+            { Next line outcommented due to recent fix in DoFileEncBase64 }
+            //if sLine <> '' then    { Avoid two blank lines after attachment AG }
+            FEmailBody.Add('');
             FEmailBody.Add('--' + String(FMimeBoundary) + '--');
         end;
         More := TRUE;
@@ -3667,7 +3848,7 @@ begin
     FFileStarted := FALSE;
     FEncoding    := FDefaultEncoding;                                   {AG}
     {AG start}
-    { FMailessage.Text will be encoded/wrapped later on the fly,        }
+    { FMailMessage.Text will be encoded/wrapped later on the fly,       }
     { see also TriggerGetData and DoGetMsgTextLine                      }
     FMailMsgText.SetText(FMailMessage.Text, FCodePage, FWrapMessageText);
     { Check if we have to change Encoding.                              }
@@ -3697,6 +3878,75 @@ begin
     end
     else
         FMimeBoundary := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ This may take a while!                                                    }
+{ Do not expect 100% exact values returned by this function, though they    }
+{ are pretty exact!                                                         }
+procedure TCustomSmtpClient.CalcMsgSize;
+const
+    Msg = 'CalcMsgSize';
+begin
+    FOldSendMode   := FSendMode;
+    FOldOnDisplay  := FOnDisplay;
+
+    CheckReady;
+
+    if not FHighLevelFlag then
+        FRequestType := smtpCalcMsgSize;
+
+    FOkResponses[0]   := 200;
+    FOkResponses[1]   := 0;
+    FRequestDoneFlag  := FALSE;
+    FFctPrv           := smtpFctCalcMsgSize;
+    FMsgSizeFlag      := TRUE;
+    FMsgSize          := 0;
+    FSendMode         := smtpToStream; // Has to be reset later in EndSendToStream
+    StateChange(smtpInternalBusy);
+    TriggerCommand(Msg);
+    TriggerDisplay('> ' + Msg);
+    FOnDisplay     := nil;  // Has to be reset later in EndSendToStream
+    Data;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ This may take a while!                                                    }
+{ Do not expect 100% exact values returned by this function, though they    }
+{ are pretty exact!                                                         }
+procedure TSmtpCli.CalcMsgSizeSync;
+var
+    Dummy     : THandle;
+    OldState  : TSmtpState;
+begin
+    FOldSendMode     := FSendMode;
+    FOldOnDisplay    := FOnDisplay;
+    OldState         := FState;
+    try
+        CalcMsgSize;
+        Dummy := INVALID_HANDLE_VALUE;
+        while FState = smtpInternalBusy do
+        begin
+            if MsgWaitForMultipleObjects(0, Dummy, False, 250, QS_ALLINPUT) = WAIT_FAILED then
+                raise SmtpException.Create('Wait failed in CalcMsgSizeSync');
+            if FMultiThreaded then
+                FWSocket.ProcessMessages
+            else
+            {$IFNDEF NOFORMS}
+                Application.ProcessMessages;
+            {$ELSE}
+                FWSocket.ProcessMessages;
+            {$ENDIF}
+        end;
+    except
+        FMsgSizeFlag  := FALSE;
+        FSendMode     := FOldSendMode;
+        FOnDisplay    := FOldOnDisplay;
+        StateChange(OldState);
+        raise;
+    end;
 end;
 
 
@@ -4280,9 +4530,16 @@ begin
                 end;
             else
                 if Assigned(FStream) then begin
-                    if FAttachmentEncoding = smtpEncodeBase64 then          {AG}
-                        LineBuf := DoFileEncBase64(FStream, More)
-                    else if FAttachmentEncoding = smtpEncodeQP then         {AG}                                         {AG}
+                    if FAttachmentEncoding = smtpEncodeBase64 then begin    {AG}
+                        if not FMsgSizeFlag then                            {AG}
+                            LineBuf := DoFileEncBase64(FStream, More)
+                        else begin                                          {AG}
+                            if FStream.Size > 0 then                        {AG}
+                                Inc(FMsgSize, CalcBase64AttachmentGrow(FStream.Size) - 2);{AG}
+                            More := FALSE;                                  {AG}
+                        end;
+                    end
+                    else if FAttachmentEncoding = smtpEncodeQP then         {AG}
                         LineBuf := DoFileEncQuotedPrintable(FStream, More)  {AG}
                     else
                         LineBuf := DoTextFileReadNoEncoding(FStream, More); {AG}
@@ -4750,6 +5007,21 @@ begin
             Quit;
             Exit;
         end;
+
+        if smtpFctCalcMsgSize in FFctSet then begin
+            FFctPrv := smtpFctCalcMsgSize;
+            FFctSet := FFctSet - [FFctPrv];
+            CalcMsgSize;
+            Exit;
+        end;
+
+        if smtpFctMailFromSIZE in FFctSet then begin
+            FFctPrv := smtpFctMailFromSIZE;
+            FFctSet := FFctSet - [FFctPrv];
+            MailFromSIZE;
+            Exit;
+        end;
+        
     except
         on E : Exception do begin
           {$IFDEF TRACE}
