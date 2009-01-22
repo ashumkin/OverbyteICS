@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.02b
+Version:      7.02c
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -409,8 +409,11 @@ Jan 11, 2009 V7.02 A. Garrels - Added Digest Access Authentication.
              ** Also cleaned up the source code a bit, thus a comparison
              with previous version, unfortunately won't be fun. **
 Jan 12, 2009 V7.02a Arno added two missing lines for digest auth to the SSL code.
-Jan 22, 2009 V7.02.b Sorry guys! Re-added property OnBeforeHeaderSend again
+Jan 22, 2009 V7.02b Sorry guys! Re-added property OnBeforeHeaderSend again
              which I (Arno) removed in V7.02 accidently :(
+Jan 22, 2009 V7.02c Arno - Conditional define UseDigestAuthentication was not
+             set properly in THttpCli.StateChange.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpProt;
@@ -484,7 +487,7 @@ uses
 
 const
     HttpCliVersion       = 702;
-    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.02b ';
+    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.02c ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -1452,11 +1455,11 @@ begin
         {$ENDIF}
                 PrepareBasicAuth(FlgClean) then begin
     {$ELSE}
-            if PrepareDigestAuth(FlgClean)
         {$IFDEF UseDigestAuthentication}
-                or PrepareBasicAuth(FlgClean)
+            if PrepareDigestAuth(FlgClean) or PrepareBasicAuth(FlgClean) then begin
+        {$ELSE}
+            if PrepareBasicAuth(FlgClean) then begin
         {$ENDIF}
-                then begin
     {$ENDIF}
                 if FStatusCode = 401 then begin
                     { If the connection will be closed then check if we must
