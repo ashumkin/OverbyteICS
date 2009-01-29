@@ -9,11 +9,11 @@ Description:  A small utility to export SSL certificate from IE certificate
               Make use of OpenSSL (http://www.openssl.org)
               Make use of the Jedi CryptoAPI2
               (http://delphi-jedi.org/Jedi:APILIBRARY:172871)(CryptoAPI2.zip).
-Version:      1.09
+Version:      1.10
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2008 by François PIETTE
+Legal issues: Copyright (C) 2003-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -57,6 +57,8 @@ Jun 30, 2008 V1.07 Some RSA and Blowfish crypto functions.
 Jul 14, 2008 V1.08 Paul <paul.blommaerts@telenet.be> added an option to import
              Windows certificates to a single file (CA bundle).
 Jul 15, 2008 V1.09 Made one change to prepare SSL code for Unicode.
+Jan 29, 2009 V1.10 Removed some string cast warnings.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPemtool1;
@@ -84,10 +86,10 @@ uses
   OverbyteIcsLibeayEx, OverbyteIcsSslX509Utils, OverByteIcsMimeUtils;
 
 const
-     PemToolVersion     = 109;
-     PemToolDate        = 'July 15, 2008';
+     PemToolVersion     = 110;
+     PemToolDate        = 'January 29, 2009';
      PemToolName        = 'PEM Certificate Tool';
-     CopyRight : String = '(c) 2003-2008 Arno Garrels V1.09 ';
+     CopyRight : String = '(c) 2003-2009 by François PIETTE V1.10 ';
      CaptionMain        = 'ICS PEM Certificate Tool - ';
      WM_APPSTARTUP      = WM_USER + 1;
 
@@ -1056,7 +1058,7 @@ begin
         { Load a certificate (public key) from PEM file, private key must not exist }
         Cert.LoadFromPemFile(PemFileName);
         { Encrypted string is Base64 encoded }
-        S := StrEncRsa(Cert.PublicKey, S, TRUE);
+        S := String(StrEncRsa(Cert.PublicKey, AnsiString(S), TRUE));
         ShowMessage('RSA encryted and Base64 encoded:'#13#10 + S);
     finally
         Cert.Free;
@@ -1067,7 +1069,7 @@ begin
         { Load a private key from PEM file }
         Cert.PrivateKeyLoadFromPemFile(PemFileName, Password);
         { Decrypt the Base64 encoded string }
-        S := StrDecRsa(Cert.PrivateKey, S, TRUE);
+        S := String(StrDecRsa(Cert.PrivateKey, AnsiString(S), TRUE));
         ShowMessage('Back to plain text again:'#13#10 + S);
     finally
         Cert.Free;
@@ -1079,16 +1081,16 @@ end;
 procedure TfrmPemTool1.MMExtrasEncryptStringBlowfishClick(Sender: TObject);
 var
     IV : TIVector;
-    S  : String;
+    S  : AnsiString;
 begin
     if not LibeayExLoaded then
         LoadLibeayEx;
     S := 'This the plain text This the plain text This the plain text';
     f_RAND_bytes(@IV, SizeOf(IV));
     S := StrEncBF(S, 'password', @IV, cklDefault, TRUE);
-    ShowMessage(S);
+    ShowMessage(String(S));
     S := StrDecBF(S, 'password', @IV, cklDefault, TRUE);
-    ShowMessage(S);
+    ShowMessage(String(S));
 end;
 
 
@@ -1121,14 +1123,14 @@ begin
             SetLength(S, Dest.Size);
             Dest.Position := 0;
             Dest.Read(S[1], Length(S));
-            ShowMessage(Base64Encode(S));
+            ShowMessage(String(Base64Encode(S)));
             { Decrytion takes place here }
             StreamDecrypt(Dest, Src, 1024, DecCtx, False);
             { Just to display decrypted plain result }
             SetLength(S, Src.Size);
             Src.Position := 0;
             Src.Read(S[1], Length(S));
-            ShowMessage(S);
+            ShowMessage(String(S));
         finally
             Src.Free;
             Dest.Free;
@@ -1183,7 +1185,7 @@ begin
     end;
     FillChar(EncCtx, SizeOf(EncCtx), #0);
     
-    CiphInitialize(EncCtx, Password, nil, nil, ctBfCbc, cklDefault, True);
+    CiphInitialize(EncCtx, AnsiString(Password), nil, nil, ctBfCbc, cklDefault, True);
     try
         Src  := TFileStream.Create(SrcFileName, fmOpenRead or fmShareDenyWrite);
         Dest := TFileStream.Create(DestFileName, fmCreate);
@@ -1238,7 +1240,7 @@ begin
         OpenDlg.Title := OldTitle;
     end;
     FillChar(DecCtx, SizeOf(DecCtx), #0);
-    CiphInitialize(DecCtx, Password, nil, nil, ctBfCbc, cklDefault, False);
+    CiphInitialize(DecCtx, AnsiString(Password), nil, nil, ctBfCbc, cklDefault, False);
     try
         Src  := TFileStream.Create(SrcFileName, fmOpenRead or fmShareDenyWrite);
         Dest := TFileStream.Create(DestFileName, fmCreate);
