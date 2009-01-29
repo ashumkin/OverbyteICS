@@ -24,7 +24,6 @@ package OverbyteIcsD2009Run;
 {$R 'OverbyteIcsMultiProgressBar.dcr'}
 {$R 'OverbyteIcsSslSessionCache.dcr'}
 {$R 'OverbyteIcsSslThrdLock.dcr'}
-{$R 'OverbyteIcsWSocketTS.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
