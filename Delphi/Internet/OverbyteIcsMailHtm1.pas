@@ -87,6 +87,10 @@ type
     ImageFilesMemo: TMemo;
     AttachedFilesMemo: TMemo;
     ConfirmCheckBox: TCheckBox;
+    UsernameEdit: TEdit;
+    Label5: TLabel;
+    PasswordEdit: TEdit;
+    Label6: TLabel;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -136,6 +140,8 @@ const
     KeyImageFiles         = 'ImageFiles';
     SectionAttachedFiles  = 'AttachedFiles';
     KeyAttachedFiles      = 'AttachedFiles';
+    KeyPassword           = 'Password';
+    KeyUsername           = 'Username';
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -147,7 +153,7 @@ procedure SaveStringsToIniFile(
 var
     nItem   : Integer;
 begin
-    if (IniSection = '') or (IniKey = '') or  (not Assigned(Strings)) then
+    if (IniSection = '') or (IniKey = '') or (not Assigned(Strings)) then
         Exit;
     IniFile.EraseSection(IniSection);
     if Strings.Count <= 0 then
@@ -252,6 +258,9 @@ begin
                                                'your_name');
         ConfirmCheckBox.Checked  := Boolean(IniFile.ReadInteger(SectionData,
                                             KeyConfirm, 0));
+        UsernameEdit.Text := IniFile.ReadString(SectionData, KeyUsername, '');
+        PasswordEdit.Text := IniFile.ReadString(SectionData, KeyPassword, '');
+
         if not LoadStringsFromIniFile(IniFile, SectionImageFiles,
                                       KeyImageFiles, ImageFilesMemo.Lines) then
             ImageFilesMemo.Text := 'ics_logo.gif' + #13#10 + 'fp_small.gif';
@@ -351,6 +360,8 @@ begin
     IniFile.WriteString(SectionData,    KeySubject,   SubjectEdit.Text);
     IniFile.WriteString(SectionData,    KeySignOn,    SignOnEdit.Text);
     IniFile.WriteInteger(SectionData,   KeyConfirm,  Ord(ConfirmCheckBox.Checked));
+    IniFile.WriteString(SectionData,    KeyUsername, UsernameEdit.Text);
+    IniFile.WriteString(SectionData,    KeyPassword, PasswordEdit.Text);
     SaveStringsToIniFile(IniFile, SectionImageFiles,
                          KeyImageFiles, ImageFilesMemo.Lines);
     SaveStringsToIniFile(IniFile, SectionAttachedFiles,
@@ -418,7 +429,12 @@ begin
         HtmlSmtpClient.HdrTo           := ToEdit.Text;
         HtmlSmtpClient.HdrCc           := CcEdit.Text;
         HtmlSmtpClient.HdrSubject      := SubjectEdit.Text;
-        HtmlSmtpClient.AuthType        := smtpAuthNone;
+        HtmlSmtpClient.Username        := UsernameEdit.Text;
+        HtmlSmtpClient.Password        := PasswordEdit.Text;
+        if (HtmlSmtpClient.Username <> '') and (HtmlSmtpClient.Password <> '') then
+            HtmlSmtpClient.AuthType        := smtpAuthAutoSelect
+        else
+            HtmlSmtpClient.AuthType        := smtpAuthNone;
         HtmlSmtpClient.ConfirmReceipt  := ConfirmCheckbox.Checked;
         { Recipient list is computed from To, Cc and Bcc fields }
         HtmlSmtpClient.RcptName.Clear;

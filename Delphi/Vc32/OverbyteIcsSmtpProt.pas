@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.23
+Version:      7.24
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -359,7 +359,9 @@ Jan 17, 2009 v7.23  A. Garrels - New methods CalcMsgSize, CalcMsgSizeSync and
                     SendToFile() no longer takes a ShareMode argument which
                     was useless, and TBufferedFileStream is now used which is
                     much faster than TFileStream.
-                    
+Feb 09, 2009 v7.24  Arno changed MIME part generation of THtlmSmtpCli when
+                    files are attached (beside inline images).
+
 
 ToDo:
 The THtmlSmtpCli still sends file names in headers converted with default
@@ -478,7 +480,8 @@ type
                         smtpWaitingResponse, smtpAbort,
                         smtpInternalBusy);
     TSmtpMimeState   = (smtpMimeIntro,       smtpMimePlainText,
-                        smtpMimeHtmlText,    smtpMimeImages,    smtpMimeDone);
+                        smtpMimeHtmlText,    smtpMimeImages,
+                        smtpMimeAttach,      smtpMimeDone);
 {Start AG/SSL}
     TSmtpRequest     = (smtpConnect,         smtpHelo,          smtpMailFrom,
                         smtpVrfy,            smtpRcptTo,        smtpData,
@@ -1114,6 +1117,7 @@ type
         FStreamArray     : TList;
         FOutsideBoundary : AnsiString;
         FInsideBoundary  : AnsiString;
+        FInnerBoundary   : AnsiString;
         FMimeState       : TSmtpMimeState;
         FHtmlCharSet     : String;
         FHtmlCodePage    : Cardinal;
@@ -4309,23 +4313,60 @@ begin
 
     if FMimeState = smtpMimeIntro then begin
         case LineNum of
-        1: StrPCopy(PAnsiChar(MsgLine), 'This is a multipart MIME formatted message.');
-        2, 6, 10: StrPCopy(PAnsiChar(MsgLine), '');
-        3: StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
-        4: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: multipart/alternative;');
-        5: StrPCopy(PAnsiChar(MsgLine), #9'boundary="' + FInsideBoundary + '"'); // Folded!
+            1: StrPCopy(PAnsiChar(MsgLine), 'This is a multipart MIME formatted message.');
+            2: StrPCopy(PAnsiChar(MsgLine), '');
+            3: StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
+        else
 
-        7: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
-        8: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/plain; charset="' + AnsiString(FCharSet) + '"');
-        9: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
-        11: begin
-                FMimeState  := smtpMimePlainText;
-                FLineOffset := LineNum - 1;
-                FMailMsgText.SetText(FPlainText.Text, FHtmlCodePage);
-                FEncoding := smtpEncQuotedPrintable;
-                FMailMsgText.Encoding := FEncoding;
-                FMsgLineCount := 0;
+        if FEmailFiles.Count > 0 then begin
+            case LineNum of
+            //1: StrPCopy(PAnsiChar(MsgLine), 'This is a multipart MIME formatted message.');
+            {2,} 7, 11, 15: StrPCopy(PAnsiChar(MsgLine), '');
+            //3: StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
+            4: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: multipart/related;');
+            5: StrPCopy(PAnsiChar(MsgLine), #9'type="multipart/alternative";');
+            6: StrPCopy(PAnsiChar(MsgLine), #9'boundary="' + FInsideBoundary + '"'); // Folded!
+
+            8:  StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
+            9:  StrPCopy(PAnsiChar(MsgLine), 'Content-Type: multipart/alternative;');
+            10: StrPCopy(PAnsiChar(MsgLine), #9'boundary="' + FInnerBoundary + '"');
+
+            12: StrPCopy(PAnsiChar(MsgLine), '--' + FInnerBoundary);
+            13: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/plain; charset="' +
+                                             AnsiString(FCharSet) + '"');
+            14: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
+            16: begin
+                    FMimeState  := smtpMimePlainText;
+                    FLineOffset := LineNum - 1;
+                    FMailMsgText.SetText(FPlainText.Text, FHtmlCodePage);
+                    FEncoding := smtpEncQuotedPrintable;
+                    FMailMsgText.Encoding := FEncoding;
+                    FMsgLineCount := 0;
+                end;
             end;
+        end
+        else begin
+            case LineNum of
+            //1: StrPCopy(PAnsiChar(MsgLine), 'This is a multipart MIME formatted message.');
+            {2,} 6, 10: StrPCopy(PAnsiChar(MsgLine), '');
+            //3: StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
+            4: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: multipart/alternative;');
+            5: StrPCopy(PAnsiChar(MsgLine), #9'boundary="' + FInsideBoundary + '"'); // Folded!
+
+            7: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
+            8: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/plain; charset="' +
+                                            AnsiString(FCharSet) + '"');
+            9: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
+            11: begin
+                    FMimeState  := smtpMimePlainText;
+                    FLineOffset := LineNum - 1;
+                    FMailMsgText.SetText(FPlainText.Text, FHtmlCodePage);
+                    FEncoding := smtpEncQuotedPrintable;
+                    FMailMsgText.Encoding := FEncoding;
+                    FMsgLineCount := 0;
+                end;
+            end;
+        end;
         end;
     end;
     if FMimeState = smtpMimeIntro then begin
@@ -4338,7 +4379,11 @@ begin
         if FMailMsgText.CurrentIdx = 0 then begin
             case LineNum - FLineOffset - FMsgLineCount of
             1: StrPCopy(PAnsiChar(MsgLine), '');
-            2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
+            //2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
+            2: if FEmailFiles.Count > 0 then
+                   StrPCopy(PAnsiChar(MsgLine), '--' + FInnerBoundary)
+               else
+                   StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary);
             3: StrPCopy(PAnsiChar(MsgLine), 'Content-Type: text/html; charset="' +
                                  AnsiString(FHtmlCharSet) + '"');
             4: StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable');
@@ -4371,7 +4416,11 @@ begin
         if FMailMsgText.CurrentIdx = 0 then begin
             case LineNum - FLineOffset - FMsgLineCount of
             1: StrPCopy(PAnsiChar(MsgLine), '');
-            2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary + '--');
+            //2: StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary + '--');
+            2: if FEmailFiles.Count > 0 then
+                  StrPCopy(PAnsiChar(MsgLine), '--' + FInnerBoundary + '--')
+               else
+                  StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary + '--');
             3: StrPCopy(PAnsiChar(MsgLine), '');
             else
                 FMimeState   := smtpMimeImages;
@@ -4394,8 +4443,17 @@ begin
         Exit;
     end;
 
-    if FMimeState = smtpMimeImages then begin
-        if FImageNumber > (FEmailImages.Count + FEmailFiles.Count) then begin
+    if FMimeState in [smtpMimeImages, smtpMimeAttach] then begin
+        if (FMimeState = smtpMimeImages) and (FEmailFiles.Count > 0) and
+           (FImageNumber > FEmailImages.Count) then begin
+                case LineNum - FLineOffset of
+                  1:  StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary + '--');
+                else
+                    FMimeState := smtpMimeAttach;
+                    FLineOffset  := LineNum;
+                end;
+        end
+        else if FImageNumber > (FEmailImages.Count + FEmailFiles.Count) then begin
             case LineNum - FLineOffset of
             1:  StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary + '--');
             else
@@ -4404,7 +4462,11 @@ begin
         end
         else begin
             case LineNum - FLineOffset of
-            1:  StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
+            //1:  StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
+            1:  if (FMimeState = smtpMimeImages) and (FEmailFiles.Count > 0) then
+                    StrPCopy(PAnsiChar(MsgLine), '--' + FInsideBoundary)
+                else
+                    StrPCopy(PAnsiChar(MsgLine), '--' + FOutsideBoundary);
             2:  begin
                     if FImageNumber <= FEmailImages.Count then
                         { First we send the image files }
@@ -4428,7 +4490,7 @@ begin
                          StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable')  {AG}                                    {AG}
                     else
                         StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: 7bit');{AG}
-                end;    
+                end;
             4:  begin
                     if FImageNumber <= FEmailImages.Count then
                         StrPCopy(PAnsiChar(MsgLine),
@@ -4559,7 +4621,7 @@ begin
             end;
         end;
     end;
-    if FMimeState = smtpMimeImages then begin
+    if FMimeState in [smtpMimeImages, smtpMimeAttach] then begin
         if Assigned(FOnGetData) then
             FOnGetData(Self, LineNum, MsgLine, MaxLen, More);
         Exit;
@@ -4587,8 +4649,12 @@ begin
     { We must replace the Content-Type from parent component to our own }
     for I := 0 to HdrLines.Count - 1 do begin
         if CompareText(Copy(HdrLines[I], 1, 13), 'Content-Type:') = 0 then begin
-            HdrLines[I] := 'Content-Type: multipart/related; ' +
-                           'type="multipart/alternative";';  // Fold otherwise too long
+            if FEmailFiles.Count = 0 then
+                HdrLines[I] := 'Content-Type: multipart/related; ' +
+                               'type="multipart/alternative";'  
+            else
+                HdrLines[I] := 'Content-Type: multipart/mixed;';
+                
             HdrLines.Insert(I + 1, #9'boundary="' + String(FOutsideBoundary) + '"');
             break;
         end;
@@ -4607,6 +4673,7 @@ begin
     RandPart := IcsIntToHexA(Random(High(Integer)), 8);
     FOutsideBoundary := TickPart + '_0.' + RandPart;
     FInsideBoundary  := TickPart + '_1.' + RandPart;
+    FInnerBoundary   := TickPart + '_2.' + RandPart;
 end;
 
 
