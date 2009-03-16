@@ -32,12 +32,17 @@ Aug  13, 2008  TCacheTree uses own CompareStr(UnicodeString) and
                AnsiCompareText() rather than CompareText(), if no
                case-sensitive key searches shall be performed.
 Mar  15, 2009  Fixed a memory leak with secondary duplicated index.
+Mar  16, 2009  CompareStr ignored the first char (Unicode only), uses
+               Windows.pas in D2009 up to avoid a compiler warning.
 
 /////////////////////////////////////////////////////////////////////////////}
 
 interface
 
 uses
+  {$IFDEF UNICODE}
+    Windows,
+  {$ENDIF}
     SysUtils,
     Classes;
 
@@ -595,7 +600,7 @@ begin
         MinLen := L1;
     P1 := Pointer(S1);
     P2 := Pointer(S2);
-    for I := 1 to MinLen do
+    for I := 0 to MinLen do
     begin
         if (P1[I] <> P2[I]) then
         begin
