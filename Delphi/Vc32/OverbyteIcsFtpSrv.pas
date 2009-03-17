@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.05
+Version:      7.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -352,6 +352,16 @@ Nov 22, 2008 V7.05 Arno fixed the FEAT response, rfc2389 says that each feature
              line in the feature-listing begins with a single space. But in the
              ICS FTP server a feature line in the listing began with two spaces
              which prevented some clients from seeing the features.
+Mar 17, 2009 V7.06 Angus added MaxAttempts property to limit failed login attempts
+             (default 12) and delays the failed password answer by about five seconds
+             after a third of the failed attempts have been exceeded.
+             This feature should be combined with an IP black list to
+             stop new connections for failed logins (one hacker tried 250,000
+             passwords over 36 hours on one of my FTP servers)
+
+
+
+
 
 
 Angus pending -
@@ -445,8 +455,8 @@ uses
 
 
 const
-    FtpServerVersion         = 705;
-    CopyRight : String       = ' TFtpServer (c) 1998-2008 F. Piette V7.05 ';
+    FtpServerVersion         = 706;
+    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.06 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -572,7 +582,7 @@ type
 type
     EFtpCtrlSocketException = class(Exception);
     TFtpCtrlState = (ftpcInvalid, ftpcWaitingUserCode, ftpcWaitingPassword,
-                     ftpcReady, ftpcWaitingAnswer);
+                     ftpcReady, ftpcWaitingAnswer, ftpcFailedAuth);  { angus V7.06 }
 
     { TFtpCmdType is now defined as a byte and enumerated items as constants, }
     { so that new values can be added by sub-components who add new commands  }
@@ -699,6 +709,8 @@ type
         //CodePage          : Cardinal;    { angus V7.01 for UTF8 support }
 //        RawParams         : RawByteString;  { angus V7.01 raw UTF8 parameter before conversion to Unicode }
 //        RawAnswer         : RawByteString;  { angus V7.01 raw UTF8 answer after conversion from Unicode }
+        FailedAttempts    : Integer;     { angus V7.06 }
+        DelayAnswerTick   : Longword;    { angus V7.06 tick when delayed answer should be sent }
 {$IFDEF USE_SSL}
         ProtP             : Boolean;
         AuthFlag          : Boolean;
@@ -939,6 +951,7 @@ type
         FZlibMaxSize            : Int64;        { angus V1.55 }
         FCodePage               : Cardinal;     { angus V7.01 for UTF8 support }
         FLanguage               : String;       { angus V7.01 for UTF8 support }
+        FMaxAttempts            : Integer;      { angus V7.06 }
         FMsg_WM_FTPSRV_CLOSE_REQUEST  : UINT;
 {       FMsg_WM_FTPSRV_CLIENT_CLOSED  : UINT; 		gone angus V7.00 }
         FMsg_WM_FTPSRV_ABORT_TRANSFER : UINT;
@@ -1486,6 +1499,8 @@ type
                                                       write FCodePage;       { angus V7.01 }
         property  Language               : String     read  FLanguage
                                                       write FLanguage;       { angus V7.01 }
+        property  MaxAttempts            : Integer    read  FMaxAttempts
+                                                      write FMaxAttempts ;   { angus V7.06 }
         property  OnStart                : TNotifyEvent
                                                       read  FOnStart
                                                       write FOnStart;
@@ -1893,6 +1908,7 @@ const
     msgReinUnavail    = '421 Reinitialise unavailable.';             { angus V7.01 }
     msgLangOK         = '200 %s Ok.';                                { angus V7.01 }
     msgLangUnknown    = '504 %s unknown.' ;                          { angus V7.01 }
+    msgNotAllowed     = '421 Connection not allowed.';               { angus V7.06 }
 
 {$IFDEF USE_SSL}
     msgAuthOk         = '234 Using authentication type %s';
@@ -2126,6 +2142,7 @@ begin
     FCodePage           := CP_ACP;  { angus V7.01 }
     FLanguage           := 'EN*';   { angus V7.01 we only support ENglish }
     FSystemCodePage     := GetAcp;  { AG 7.02 }
+    FMaxAttempts        := 12 ;     { angus V7.06 }
  { !!!!!!!!!!! NGB: Added next five lines }
     FPasvIpAddr         := '';
     FPasvPortRangeStart := 0;
@@ -2133,7 +2150,7 @@ begin
     FPasvPortTable      := nil;
     FPasvPortTableSize  := 0;
 { !!!!!!!!!!! NGB: Added previous five lines }
-    FPasvNextNr         := 0;  { angus V1.56 } 
+    FPasvNextNr         := 0;  { angus V1.56 }
     SetLength(FCmdTable, ftpcLast + 1 + 5);
     AddCommand('PORT', CommandPORT);
     AddCommand('STOR', CommandSTOR);
@@ -3251,6 +3268,7 @@ procedure TFtpServer.CommandPASS(
 var
     Authenticated : Boolean;
     UserPassword : String ;
+    Secs: Integer ;
 begin
     if Client.FtpState <> ftpcWaitingPassword then
         Answer := msgNoUser
@@ -3278,8 +3296,21 @@ begin
             Answer           := Format(msgLogged, [Client.UserName])
         end
         else begin
-            Client.FtpState  := ftpcWaitingUserCode;
-            Answer           := msgLoginFailed;
+            {angus V7.06 - count failed login attempts, after third MaxAttempts
+              delay answer to slow down extra attempts, finally close client
+              once MaxAttempts reached (done in EventTimer event) }
+            inc (Client.FailedAttempts) ;
+            if Client.FailedAttempts > (FMaxAttempts div 3) then begin
+                Secs := (Client.FailedAttempts * 2);
+                if (Secs > FTimeoutSecsLogin) then Secs := FTimeoutSecsLogin;
+                Client.DelayAnswerTick := IcsGetTrgSecs (Secs);
+                Client.FtpState        := ftpcFailedAuth;
+                Client.AnswerDelayed   := true;
+            end
+            else begin
+                Client.FtpState  := ftpcWaitingUserCode;
+                Answer           := msgLoginFailed;
+            end;
         end;
     end;
 end;
@@ -6615,14 +6646,32 @@ var
 begin
     FEventTimer.Enabled := false;
     try
-//        if not Assigned(FClientList) then exit;
-        if (FTimeoutSecsLogin <= 0) and (FTimeoutSecsIdle <= 0) and
-                                     (FTimeoutSecsXfer <= 0) then exit;  { no timeouts }
+     {   if (FTimeoutSecsLogin <= 0) and (FTimeoutSecsIdle <= 0) and   angus V7.06 gone
+                                     (FTimeoutSecsXfer <= 0) then exit;    no timeouts }
         if FSocketServer.ClientCount = 0 then exit;                              { no clients }
         CurTicks := IcsGetTickCountX; {  V1.56 AG }
         for I := 0 to Pred (FSocketServer.ClientCount) do begin
             Client := FSocketServer.Client[I] as TFtpCtrlSocket;
             if Client.FSessionClosedFlag then Continue;  { Client will close soon AG }
+
+          { V7.06 angus - failed authentication, send delayed answer to slow to
+              failed login attempts, closing connection after MaxAttempts }
+            if Client.FtpState = ftpcFailedAuth then begin
+                if IcsTestTrgTick (Client.DelayAnswerTick) then begin
+                    Client.DelayAnswerTick := TriggerDisabled;
+                    Client.FtpState := ftpcWaitingUserCode;
+                    if Client.FailedAttempts >= FMaxAttempts then begin
+                        SendAnswer(Client, msgNotAllowed);
+                     { close control channel }
+                        Client.Close;
+                    end
+                    else begin
+                        SendAnswer(Client, msgLoginFailed);
+                    end;
+                    continue ; // skip testing timeouts
+                end;
+            end ;
+
          { different length timeouts depending on what's happening }
             Timeout := 0;
             case Client.FtpState of
@@ -6688,6 +6737,8 @@ begin
     ReqDurMilliSecs  := 0;    { angus V1.54 how long last request took, in ticks }
     TotGetBytes      := 0;    { angus V1.54 how many bytes GET during session, data and control }
     TotPutBytes      := 0;    { angus V1.54 how many bytes PUT during session, data and control }
+    FailedAttempts   := 0;    { angus V7.06 count failed login attempts }
+    DelayAnswerTick  := TriggerDisabled;  { angus V7.06 when to send a delayed failed login answer }
 end;
 
 
