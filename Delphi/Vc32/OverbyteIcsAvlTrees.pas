@@ -33,16 +33,14 @@ Aug  13, 2008  TCacheTree uses own CompareStr(UnicodeString) and
                case-sensitive key searches shall be performed.
 Mar  15, 2009  Fixed a memory leak with secondary duplicated index.
 Mar  16, 2009  CompareStr ignored the first char (Unicode only), uses
-               Windows.pas in D2009 up to avoid a compiler warning.
+               Windows.pas to avoid a compiler warning.
 
 /////////////////////////////////////////////////////////////////////////////}
 
 interface
 
 uses
-  {$IFDEF UNICODE}
     Windows,
-  {$ENDIF}
     SysUtils,
     Classes;
 
