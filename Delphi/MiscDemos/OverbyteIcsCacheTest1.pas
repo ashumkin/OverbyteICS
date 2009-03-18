@@ -184,7 +184,8 @@ begin
     'The FastMM is open source, supports older compiler as well'#13#10 +
     'and is downloadable at http://fastmm.sourceforge.net.'#13#10 +
     'In order to get best performance define RELEASE in the project'#13#10 +
-    'options.');
+    'options. If your compiler is Delphi 2009 turn off "String format'#13#10 +
+    'checking" in the project options as well');
 end;
 
 
