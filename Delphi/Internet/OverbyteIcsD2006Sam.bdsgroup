@@ -10,8 +10,7 @@
 	</PersonalityInfo>
 	<Default.Personality>  <Projects>
       <Projects Name="OverbyteIcsD2006Run.bpl">..\Vc32\OverbyteIcsD2006Run.bdsproj</Projects>
-      <Projects Name="OverbyteIcsD2006Design.bpl">..\Vc32\OverbyteIcsD2006Design.bdsproj</Projects> 
-      <Projects Name="OverByteIcsWndControlTest.exe">OverbyteIcsWndControlTest.bdsproj</Projects>
+      <Projects Name="OverbyteIcsD2006Design.bpl">..\Vc32\OverbyteIcsD2006Design.bdsproj</Projects>
       <Projects Name="OverbyteIcsConFtp.exe">OverbyteIcsConFtp.bdsproj</Projects>
       <Projects Name="OverbyteIcsFtpTst.exe">OverbyteIcsFtpTst.bdsproj</Projects>
       <Projects Name="OverbyteIcsHttpTst.exe">OverbyteIcsHttpTst.bdsproj</Projects>
@@ -31,8 +30,8 @@
       <Projects Name="OverbyteIcsConHttp.exe">OverbyteIcsConHttp.bdsproj</Projects>
       <Projects Name="OverbyteIcsHttpAsy.exe">OverbyteIcsHttpAsy.bdsproj</Projects>
       <Projects Name="OverbyteIcsHttpAsp.exe">OverbyteIcsHttpAsp.bdsproj</Projects>
-      <Projects Name="OverbyteIcsCliDemo.exe">OverbyteIcsCliDemo.bdsproj</Projects>      
-      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverByteIcsWndControlTest.exe OverbyteIcsConFtp.exe OverbyteIcsFtpTst.exe OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe OverbyteIcsWebServ.exe OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe OverbyteIcsTelnetClient.exe OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe OverbyteIcsHttpMultipartDownload.exe OverbyteIcsFtpMultipartDownload.exe OverbyteIcsDnsLook.exe OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe OverbyteIcsCliDemo.exe</Projects>
+      <Projects Name="OverbyteIcsCliDemo.exe">OverbyteIcsCliDemo.bdsproj</Projects>
+      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverbyteIcsConFtp.exe OverbyteIcsFtpTst.exe OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe OverbyteIcsWebServ.exe OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe OverbyteIcsTelnetClient.exe OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe OverbyteIcsHttpMultipartDownload.exe OverbyteIcsFtpMultipartDownload.exe OverbyteIcsDnsLook.exe OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe OverbyteIcsCliDemo.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>

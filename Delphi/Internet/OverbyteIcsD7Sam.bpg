@@ -9,18 +9,15 @@ MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$**
 DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
-PROJECTS = OverbyteIcsD7Run.bpl OverbyteIcsD7Design.bpl \
-  OverByteIcsWndControlTest.exe OverbyteIcsConFtp.exe OverbyteIcsFtpTst.exe \
-  OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe OverbyteIcsWebServ.exe \
-  OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe \
-  OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe OverbyteIcsTelnetClient.exe \
-  OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe \
+PROJECTS = OverbyteIcsD7Run.bpl OverbyteIcsD7Design.bpl OverbyteIcsConFtp.exe \
+  OverbyteIcsFtpTst.exe OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe \
+  OverbyteIcsWebServ.exe OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe \
+  OverbyteIcsMailRcv.exe OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe \
+  OverbyteIcsTelnetClient.exe OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe \
   OverbyteIcsHttpMultipartDownload.exe OverbyteIcsFtpMultipartDownload.exe \
   OverbyteIcsMailHtml.exe OverbyteIcsDnsLook.exe OverbyteIcsDnsResolver.exe \
   OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe \
-  OverbyteIcsCliDemo.exe OverbyteIcsBinCliDemo.exe OverbyteIcsMimeDemo.exe \
-  OverbyteIcsSHA1Test.exe OverbyteIcsMD4Test.exe OverbyteIcsMD5Test.exe \
-  OverbyteIcsTimerDemo.exe
+  OverbyteIcsCliDemo.exe OverbyteIcsBinCliDemo.exe OverbyteIcsMimeDemo.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -29,9 +26,6 @@ OverbyteIcsD7Run.bpl: ..\Vc32\OverbyteIcsD7Run.dpk
   $(DCC)
 
 OverbyteIcsD7Design.bpl: ..\Vc32\OverbyteIcsD7Design.dpk
-  $(DCC)
-
-OverByteIcsWndControlTest.exe: OverByteIcsWndControlTest.dpr
   $(DCC)
 
 OverbyteIcsHttpTst.exe: OverbyteIcsHttpTst.dpr
@@ -104,18 +98,6 @@ OverbyteIcsBinCliDemo.exe: OverbyteIcsBinCliDemo.dpr
   $(DCC)
 
 OverbyteIcsMimeDemo.exe: OverbyteIcsMimeDemo.dpr
-  $(DCC)
-
-OverbyteIcsSHA1Test.exe: OverbyteIcsSHA1Test.dpr
-  $(DCC)
-
-OverbyteIcsMD4Test.exe: OverbyteIcsMD4Test.dpr
-  $(DCC)
-
-OverbyteIcsMD5Test.exe: OverbyteIcsMD5Test.dpr
-  $(DCC)
-
-OverbyteIcsTimerDemo.exe: OverbyteIcsTimerDemo.dpr
   $(DCC)
 
 
