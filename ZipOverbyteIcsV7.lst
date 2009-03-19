@@ -3,6 +3,7 @@ ZipOverbyteIcsV7.bat
 ZipOverbyteIcsV7.lst
 IcsMidwareCodingStyle.doc
 ReadMe7.txt
+ReadMeOverbyteIcsV6beta.txt
 Clean.bat
 IcsSslHowTo.txt
 Default.dof
@@ -329,6 +330,8 @@ Delphi\Internet\OverbyteIcsMimeDemo.res
 Delphi\Internet\OverbyteIcsMimeDemo1.dfm
 Delphi\Internet\OverbyteIcsMimeDemo1.pas
 Delphi\Internet\mime-demo1.txt
+Delphi\Internet\mime-demo2.txt
+Delphi\Internet\mime-demo3.txt
 Delphi\Internet\mime-demo4.txt
 Delphi\Internet\mime-demo5.txt
 
@@ -446,6 +449,7 @@ Delphi\SslInternet\OverbyteIcsSslFtpServ.dpr
 Delphi\SslInternet\OverbyteIcsSslFtpServ.dof
 Delphi\SslInternet\OverbyteIcsSslFtpServ1.dfm
 Delphi\SslInternet\OverbyteIcsSslFtpServ1.pas
+Delphi\SslInternet\OverbyteIcsSslFtpServ.res
 Delphi\SslInternet\ftpaccounts-default.ini
 Delphi\SslInternet\ftpaccounts-[127.0.0.1].ini
 
@@ -455,6 +459,13 @@ Delphi\SslInternet\OverbyteIcsSslMailSnd.dpr
 Delphi\SslInternet\OverbyteIcsSslMailSnd.dof
 Delphi\SslInternet\OverbyteIcsSslMailSnd1.dfm
 Delphi\SslInternet\OverbyteIcsSslMailSnd1.pas
+
+Delphi\SslInternet\OverbyteIcsSslMailRcv.dpr
+Delphi\SslInternet\OverbyteIcsSslMailRcv.res
+Delphi\SslInternet\OverbyteIcsSslMailRcv1.dfm
+Delphi\SslInternet\OverbyteIcsSslMailRcv1.pas
+Delphi\SslInternet\OverbyteIcsSslMailRcv2.dfm
+Delphi\SslInternet\OverbyteIcsSslMailRcv2.pas
 
 Delphi\SslInternet\OverbyteIcsSslNewsRdr.bdsproj
 Delphi\SslInternet\OverbyteIcsSslNewsRdr.dproj
@@ -534,3 +545,5 @@ Delphi\MiscDemos\OverbyteIcsWndControlTest.dproj
 Delphi\MiscDemos\OverbyteIcsWndControlTest.res
 Delphi\MiscDemos\OverbyteIcsWndControlTest1.dfm
 Delphi\MiscDemos\OverbyteIcsWndControlTest1.pas
+
+Delphi\MiscDemos\OverbyteIcsRtlTest.dpr
