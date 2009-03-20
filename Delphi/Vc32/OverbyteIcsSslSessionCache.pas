@@ -7,7 +7,7 @@ Description:  A very fast external SSL-session-cache component.
               Uses OpenSSL (http://www.openssl.org).
               Uses freeware TSslWSocket component  from ICS
               (Internet Component Suite).
-Version:      1.02
+Version:      1.03
 EMail:        <arno.garrels@gmx.de>
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -43,6 +43,7 @@ Legal issues: Copyright (C) 2006-2007 by Arno Garrels, Berlin, Germany,
 History:
 06/28/2007 v1.01 A. Garrels fixed a bug with multiple instances.
 Jul 03, 2008 V1.02 A. Garrels made a few changes to prepare code for Unicode.
+Mar 20, 2009 v1.03 A. Garrels exchanged 4 * PChar by PAnsiChar (was no bug!)
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -451,7 +452,7 @@ end;
 function TSslAvlSessionCache.CacheSession(const SslSession: Pointer;
   const Key: String): Boolean;
 var
-    Buf     : PChar;
+    Buf     : PAnsiChar;
     Len     : Integer;
     t1,t2   : TDateTime;
     Data    : Pointer;
@@ -467,7 +468,7 @@ begin
         while (FCacheTree.Count >= FMaxCacheSize) and (FCacheTree.Count > 0) do
             FCacheTree.Remove(FCacheTree.Oldest);
         GetMem(Data, Len);
-        Buf := PChar(Data);
+        Buf := PAnsiChar(Data);
         Len := f_i2d_SSL_SESSION(SslSession, @Buf); // sets internal Time = now (UTC)
         if Len > 0 then
         begin
@@ -501,7 +502,7 @@ end;
 function TSslAvlSessionCache.GetSession(const Key: String): Pointer;
 var
     Node   : TCacheNode;
-    Buf    : PChar;
+    Buf    : PAnsiChar;
     t1, t2 : TDateTime;
 begin
     Result := nil;
@@ -516,7 +517,7 @@ begin
             FCacheTree.Remove(Node);
             Exit;
         end;
-        Buf := PChar(Node.Data);
+        Buf := PAnsiChar(Node.Data);
         Result := f_d2i_SSL_SESSION(nil, @Buf, Node.Len);
         if Result <> nil then
         begin
