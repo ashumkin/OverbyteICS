@@ -5,7 +5,7 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      6.08
+Version:      6.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -57,8 +57,10 @@ July 2007    V6.04 changes for .net compatibility
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 17 Apr, 2008 MD5UpdateBuffer String to AnsiString type-change.
 Aug 05, 2008 V6.07 F. Piette added casts to AnsiString to avoid warnings
-Jan 03, 2009 V6.07 A. Garrels added function MD5SameDigest and an overload
+Jan 03, 2009 V6.08 A. Garrels added function MD5SameDigest and an overload
              to MD5UpdateBuffer() which takes a TMD5Digest.
+Apr 03, 2009 V6.09 Angus added StreamMD5, StreamMD5Context, MD5DigestToHex, MD5DigestInit,
+             which allow duplicated code to be removed
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -75,8 +77,8 @@ uses
     SysUtils, Classes;
 
 const
-    MD5Version         = 608;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V6.08 ';
+    MD5Version         = 609;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V6.09 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}
@@ -163,6 +165,13 @@ function FileListMD5(FileList: TStringList; Obj: TObject;
     ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 
 function MD5SameDigest(D1, D2: TMD5Digest): Boolean;
+
+procedure StreamMD5Context(Stream: TStream; Obj: TObject; ProgressCallback :
+                 TMD5Progress; StartPos, EndPos: Int64; var MD5Context: TMD5Context); { V6.09 }
+function StreamMD5(Stream: TStream; Obj: TObject; ProgressCallback : TMD5Progress;
+                                                StartPos, EndPos: Int64): AnsiString; { V6.09 }
+function MD5DigestToHex (const MD5Digest: TMD5Digest): AnsiString;  { V6.09 }
+procedure MD5DigestInit (var MD5Digest: TMD5Digest);                { V6.09 }
 
 implementation
 
@@ -539,6 +548,24 @@ begin
 {$ENDIF}
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.09 }
+function MD5DigestToHex (const MD5Digest: TMD5Digest): AnsiString;
+var
+    I: integer;
+begin
+    Result := '';
+    for I := 0 to 15 do
+        Result := Result + IntToHex(MD5Digest[I], 2);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.09 }
+procedure MD5DigestInit (var MD5Digest: TMD5Digest);
+var
+    I: integer;
+begin
+     for I := 0 to 15 do
+         MD5Digest[I] := I + 1;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetMD5(
@@ -549,20 +576,16 @@ function GetMD5(
 {$ENDIF}
     BufSize: Integer): AnsiString;
 var
-    I          : Integer;
     MD5Digest  : TMD5Digest;
     MD5Context : TMD5Context;
 begin
-    for I := 0 to 15 do
-        MD5Digest[I] := I + 1;
+    Result := '';
+    MD5DigestInit(MD5Digest);  { V6.09 }
     MD5Init(MD5Context);
     MD5UpdateBuffer(MD5Context, Buffer, BufSize);
     MD5Final(MD5Digest, MD5Context);
-    Result := '';
-    for I := 0 to 15 do
-        Result := Result + AnsiString(IntToHex(MD5Digest[I], 2));
+    Result := MD5DigestToHex(MD5Digest);  { V6.09 }
 end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StrMD5(Buffer : String): String;
@@ -597,178 +620,103 @@ begin
 end;
 {$ENDIF}
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  {  { V6.05 }
-{$IFDEF SAFE}
-function FileMD5(
-    const Filename   : String;
-    Obj              : TObject;
-    ProgressCallback : TMD5Progress;
-    StartPos, EndPos : Int64;              { V6.05 }
-    Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.09 }
+procedure StreamMD5Context(Stream: TStream; Obj: TObject; ProgressCallback : TMD5Progress;
+                      StartPos, EndPos: Int64; var MD5Context: TMD5Context);
 const
     ChunkSize : Cardinal = 102400;
 var
-    I          : Integer;
     J          : Integer;
     Num        : Integer;
     Rest       : Integer;
-    MD5Digest  : TMD5Digest;
-    MD5Context : TMD5Context;
     Buf        : TBytes;
-    Stream     : TFileStream;
     Cancel     : Boolean;
     FSize      : Int64;
 begin
-    Result := '';
+    { Allocate buffer to read file }
+    SetLength(Buf, ChunkSize);
 
-    { Open file }
-    Stream := TFileStream.Create(Filename, Mode);  { V6.06 not necessarily share locked }
-    try
-        { Allocate buffer to read file }
-        SetLength(Buf, ChunkSize);
+    { V6.05 calculate how much of the file we are processing }
+    FSize := Stream.Size;
+    if (StartPos >= FSize) then StartPos := 0;
+    if (EndPos > FSize) or (EndPos = 0) then EndPos := FSize;
 
-        { Initialize MD5 engine }
-        for I := 0 to 15 do
-            MD5Digest[I] := I + 1;
-        MD5Init(MD5Context);
+    { Calculate number of full chunks that will fit into the buffer }
+    Num  := EndPos div ChunkSize;
+    { Calculate remaining bytes }
+    Rest := EndPos mod ChunkSize;
 
-        { V6.05 calculate how much of the file we are processing }
-        FSize := Stream.Size;
-        if (StartPos >= FSize) then StartPos := 0;
-        if (EndPos > FSize) or (EndPos = 0) then EndPos := FSize;
+    { Set the stream to the beginning of the file }
+    Stream.Position := StartPos;
 
-        { Calculate number of full chunks that will fit into the buffer }
-        Num  := EndPos div ChunkSize;
-        { Calculate remaining bytes }
-        Rest := EndPos mod ChunkSize;
-
-        { Set the stream to the beginning of the file }
-        Stream.Position := StartPos;
-
-        { Process full chunks }
-        Cancel := FALSE;
-        for J := 0 to Num - 1 do begin
-            Stream.Read(buf{$IFNDEF CLR}[0]{$ENDIF}, ChunkSize);
-            MD5UpdateBuffer(MD5Context, buf, ChunkSize);
-            if Assigned(ProgressCallback) then begin
-                ProgressCallback(Obj, Stream.Position, Cancel);   { V6.03 }
-                if Cancel then
-                    Exit;
-            end;
+    { Process full chunks }
+    Cancel := FALSE;
+    for J := 0 to Num - 1 do begin
+        Stream.Read(buf{$IFNDEF CLR}[0]{$ENDIF}, ChunkSize);
+        MD5UpdateBuffer(MD5Context, buf, ChunkSize);
+        if Assigned(ProgressCallback) then begin
+            ProgressCallback(Obj, Stream.Position, Cancel);   { V6.03 }
+            if Cancel then
+                Exit;
         end;
-
-        { Process remaining bytes }
-        if Rest > 0 then begin
-            Stream.Read(buf{$IFNDEF CLR}[0]{$ENDIF}, Rest);
-            MD5UpdateBuffer(MD5Context, buf, Rest);
-        end;
-
-        { Finalize MD5 calculation }
-        MD5Final(MD5Digest, MD5Context);
-        for I := 0 to 15 do
-            Result := Result + IntToHex(MD5Digest[I], 2);
-    finally
-        { Free the file }
-        Stream.Free;
     end;
+
+    { Process remaining bytes }
+    if Rest > 0 then begin
+        Stream.Read(buf{$IFNDEF CLR}[0]{$ENDIF}, Rest);
+        MD5UpdateBuffer(MD5Context, buf, Rest);
+    end;
+
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.09 }
+function StreamMD5(Stream: TStream; Obj: TObject; ProgressCallback : TMD5Progress;
+                                                  StartPos, EndPos: Int64): AnsiString;
+var
+    MD5Digest  : TMD5Digest;
+    MD5Context : TMD5Context;
+begin
+    Result := '';
+    MD5DigestInit (MD5Digest);
+    MD5Init(MD5Context);
+    StreamMD5Context(Stream, Obj, ProgressCallback, StartPos, EndPos, MD5Context);
+    MD5Final(MD5Digest, MD5Context);
+    Result := MD5DigestToHex(MD5Digest);
 end;
-{$ELSE}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.05 }
 function FileMD5(
     const Filename   : String;
     Obj              : TObject;
     ProgressCallback : TMD5Progress;
     StartPos, EndPos : Int64;              { V6.05 }
     Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
-const
-{$IFDEF VER80}
-    ChunkSize : Cardinal = 1024 * 31;
-{$ELSE}
-    ChunkSize : Cardinal = 102400;
-{$ENDIF}
 var
-    I          : Integer;
-    J          : Integer;
-    Num        : Integer;
-    Rest       : Integer;
-    MD5Digest  : TMD5Digest;
-    MD5Context : TMD5Context;
-    Buf        : ^Byte;
     Stream     : TFileStream;
-    Cancel     : Boolean;
-    FSize      : Int64;
 begin
     Result := '';
-
     { Open file }
     Stream := TFileStream.Create(Filename, Mode);  { V6.06 not necessarily share locked }
-
     try
-        { Allocate buffer to read file }
-        GetMem(Buf, ChunkSize);
-        try
-            { Initialize MD5 engine }
-            for I := 0 to 15 do
-                MD5Digest[I] := I + 1;
-            MD5Init(MD5Context);
-
-            { V6.05 calculate how much of the file we are processing }
-            FSize := Stream.Size;
-            if (StartPos >= FSize) then StartPos := 0;
-            if (EndPos > FSize) or (EndPos = 0) then EndPos := FSize;
-
-            { Calculate number of full chunks that will fit into the buffer }
-            Num  := EndPos div ChunkSize;
-            { Calculate remaining bytes }
-            Rest := EndPos mod ChunkSize;
-
-            { Set the stream to the beginning of the file }
-            Stream.Position := StartPos;
-
-            { Process full chunks }
-            Cancel := FALSE;
-            for J := 0 to Num-1 do begin
-                Stream.Read(buf^, ChunkSize);
-                MD5UpdateBuffer(MD5Context, buf, ChunkSize);
-                if Assigned(ProgressCallback) then begin
-                    ProgressCallback(Obj, Stream.Position, Cancel);   { V6.03 }
-                    if Cancel then
-                        Exit;
-                end;
-            end;
-
-            { Process remaining bytes }
-            if Rest > 0 then begin
-                Stream.Read(buf^, Rest);
-                MD5UpdateBuffer(MD5Context, buf, Rest);
-            end;
-
-        finally
-            FreeMem(Buf, ChunkSize);
-        end;
-
-        { Finalize MD5 calculation }
-        MD5Final(MD5Digest, MD5Context);
-        for I := 0 to 15 do
-            Result := Result + AnsiString(IntToHex(MD5Digest[I], 2));
+        Result := StreamMD5(Stream, Obj, ProgressCallback, StartPos, EndPos); { V6.09 }
     finally
         { Free the file }
         Stream.Free;
     end;
 end;
-{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FileMD5(const Filename: String; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5 (FileName, 0, 0, Mode);
-        end;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FileMD5(const Filename: String; StartPos, EndPos: Int64;
                                     Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
 begin
     Result := FileMD5(Filename, Nil, Nil, StartPos, EndPos, Mode);
-        end;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.05 }
 function FileMD5(const Filename: String; Obj: TObject;
@@ -780,88 +728,46 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FileListMD5(FileList: TStringList; Obj: TObject;
     ProgressCallback : TMD5Progress; Mode: Word = DefaultMode) : AnsiString;    { V6.06 }
-const
-    ChunkSize : Cardinal = 102400;
 var
-    I          : Integer;
-    J          : Integer;
     K          : Integer;
-    Num        : Integer;
-    Rest       : Integer;
-    TotSize    : Int64 ;
     MD5Digest  : TMD5Digest;
     MD5Context : TMD5Context;
-    Buf        : ^Byte;
     Stream     : TFileStream;
     Cancel     : Boolean;
 begin
     Result := '';
-    if NOT Assigned (FileList) then exit; 
+    if NOT Assigned (FileList) then exit;
     if FileList.Count = 0 then exit;
 
-  { files must be processed in same order to match md5sum, so sort case insensitive }
+   { files must be processed in same order to match md5sum, so sort case insensitive }
     for K := 0 to FileList.Count - 1 do FileList [K] := Lowercase (FileList [K]) ;
     FileList.Sort ;
 
-        { Allocate buffer to read file }
-        GetMem(Buf, ChunkSize);
+   { Initialize MD5 engine }
+    MD5DigestInit (MD5Digest);     { V6.09 }
+    MD5Init(MD5Context);
+
+    { process each file in list }
+    for K := 0 to FileList.Count - 1 do begin
+
+    { Open file }
+        if Assigned(ProgressCallback) then begin
+            ProgressCallback(Obj, 0, Cancel);   { V6.03 }
+            if Cancel then
+                Exit;
+        end;
+        Stream := TFileStream.Create(FileList [K], Mode);
         try
-            { Initialize MD5 engine }
-            for I := 0 to 15 do
-            Byte(MD5Digest[I]) := I + 1;
-            MD5Init(MD5Context);
-
-        { process each file in list }
-        for K := 0 to FileList.Count - 1 do begin
-
-        { Open file }
-            if Assigned(ProgressCallback) then begin
-                ProgressCallback(Obj, 0, Cancel);   { V6.03 }
-                if Cancel then
-                    Exit;
-            end;
-            Stream := TFileStream.Create(FileList [K], Mode);
-            try
-            { Calculate number of full chunks that will fit into the buffer }
-                TotSize := Stream.Size;
-                Num  := TotSize div ChunkSize;
-            { Calculate remaining bytes }
-                Rest := TotSize mod ChunkSize;
-
-            { Set the stream to the beginning of the file }
-            Stream.Position := 0;
-
-            { Process full chunks }
-            for J := 0 to Num-1 do begin
-                Stream.Read(buf^, ChunkSize);
-                MD5UpdateBuffer(MD5Context, buf, ChunkSize);
-                if Assigned(ProgressCallback) then begin  
-                    ProgressCallback(Obj, Stream.Position, Cancel);   { V6.03 }
-                    if Cancel then
-                        Exit;
-                end;
-            end;
-
-            { Process remaining bytes }
-            if Rest > 0 then begin
-                Stream.Read(buf^, Rest);
-                MD5UpdateBuffer(MD5Context, buf, Rest);
-            end;
-
+            StreamMD5Context(Stream, Obj, ProgressCallback, 0, 0, MD5Context);   { V6.09 }
         finally
-                { Free the file }
-                Stream.Free;
-            end;
+            { Free the file }
+            Stream.Free;
         end;
-    finally
-            FreeMem(Buf, ChunkSize);
-        end;
-
-        { Finalize MD5 calculation }
-        MD5Final(MD5Digest, MD5Context);
-        for I := 0 to 15 do
-        Result := Result + AnsiString(IntToHex(Byte(MD5Digest[I]), 2));
     end;
+    { Finalize MD5 calculation }
+    MD5Final(MD5Digest, MD5Context);
+    Result := MD5DigestToHex(MD5Digest);    { V6.09 }
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function MD5GetBufChar(const MD5Context : TMD5Context; Index : Integer) : Byte;
