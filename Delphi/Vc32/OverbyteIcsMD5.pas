@@ -59,8 +59,9 @@ Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 Aug 05, 2008 V6.07 F. Piette added casts to AnsiString to avoid warnings
 Jan 03, 2009 V6.08 A. Garrels added function MD5SameDigest and an overload
              to MD5UpdateBuffer() which takes a TMD5Digest.
-Apr 03, 2009 V6.09 Angus added StreamMD5, StreamMD5Context, MD5DigestToHex, MD5DigestInit,
-             which allow duplicated code to be removed
+Apr 03, 2009 V6.09 Angus added StreamMD5, StreamMD5Context, MD5DigestToHex,
+             MD5DigestInit, which allow duplicated code to be removed
+Apr 04, 2009 V6.10 F. Piette added OverbyteIcsTypes for TBytes definition.
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -74,7 +75,8 @@ unit OverbyteIcsMD5;
 interface
 
 uses
-    SysUtils, Classes;
+    SysUtils, Classes,
+    OverbyteIcsTypes;   // For TBytes
 
 const
     MD5Version         = 609;
