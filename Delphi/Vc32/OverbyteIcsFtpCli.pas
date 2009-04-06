@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.05
+Version:      V7.06
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -952,6 +952,7 @@ Nov 18, 2008 V7.03 Arno - Protection level on the data channel was not set
              properly. Set it only in case of PROT command succeeded.
 Nov 21, 2008 V7.04 Arno - Allow C++ Builder
 Jan 7, 2009  V7.05 Angus - allow 200 response for HOST (for ws_ftp server)
+Apr 6, 2009  V7.06 Angus check response for XMD5 properly (220 or 250 and no file name)
 
 
 
@@ -1035,9 +1036,9 @@ uses
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 705;
-  CopyRight : String = ' TFtpCli (c) 1996-2009 F. Piette V7.05 ';
-  FtpClientId : String = 'ICS FTP Client V7.05 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 706;
+  CopyRight : String = ' TFtpCli (c) 1996-2009 F. Piette V7.06 ';
+  FtpClientId : String = 'ICS FTP Client V7.06 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -2784,9 +2785,14 @@ begin
             FDirResult := '';
             FMd5Result := '';
             p := GetInteger(@FLastResponse[1], NumericCode);
+          { MD5 response may be 251 "filename" 8D75F2E65DF7358D7A4001E658CF6001 or 251 filename 8D75F2E65DF7358D7A4001E658CF6001 }
             if NumericCode = 251 then begin
                 p := GetQuotedString(p, FDirResult);
                 if FDirResult = '' then p := GetNextString(p, FDirResult);
+                GetNextString(p, FMd5Result);
+            end;
+          { XMD5 response may be 220 8D75F2E65DF7358D7A4001E658CF6001 or  250 8D75F2E65DF7358D7A4001E658CF6001 }
+            if (NumericCode = 220) or (NumericCode = 250) then begin  { V7.06 either }
                 GetNextString(p, FMd5Result);
             end;
         end;
