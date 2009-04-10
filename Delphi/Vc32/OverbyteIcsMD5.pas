@@ -5,7 +5,7 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      6.09
+Version:      6.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -62,7 +62,8 @@ Jan 03, 2009 V6.08 A. Garrels added function MD5SameDigest and an overload
 Apr 03, 2009 V6.09 Angus added StreamMD5, StreamMD5Context, MD5DigestToHex,
              MD5DigestInit, which allow duplicated code to be removed
 Apr 04, 2009 V6.10 F. Piette added OverbyteIcsTypes for TBytes definition.
-
+Apr 10, 2009 V6.11 Arno added an explicit AnsiString cast to remove compiler
+             warnings from MD5DigestToHex().
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMD5;
@@ -79,8 +80,8 @@ uses
     OverbyteIcsTypes;   // For TBytes
 
 const
-    MD5Version         = 609;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V6.09 ';
+    MD5Version         = 611;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V6.11 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}
@@ -557,7 +558,7 @@ var
 begin
     Result := '';
     for I := 0 to 15 do
-        Result := Result + IntToHex(MD5Digest[I], 2);
+        Result := Result + AnsiString(IntToHex(MD5Digest[I], 2));
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}  { V6.09 }
