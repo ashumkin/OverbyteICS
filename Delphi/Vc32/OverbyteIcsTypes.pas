@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.00
+Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -37,12 +37,15 @@ Legal issues: Copyright (C) 2004-2007 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
-
+Apr 10, 2009 Arno changed TBytes to an alias of SysUtils.TBytes in D2007 and
+             better. Added alias EAbort.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTypes;
 
 interface
+
+{$I OverbyteIcsDefs.inc}
 
 uses
 {$IFDEF CLR}
@@ -55,12 +58,16 @@ uses
 {$ENDIF}
 
 const
-  OverbyteIcsTypesVersion = 100;
-  CopyRight : String      = ' OverbyteIcsTypes (c) 2004-2007 F. Piette V1.00 ';
+  OverbyteIcsTypesVersion = 102;
+  CopyRight : String      = ' OverbyteIcsTypes (c) 2004-2009 F. Piette V1.02 ';
 
 type
 {$IFDEF WIN32}
-  TBytes = array of Byte;
+  {$IFDEF COMPILER11_UP}
+    TBytes = SysUtils.TBytes;
+  {$ELSE}
+    TBytes = array of Byte;
+  {$ENDIF}
 {$ENDIF}
 {$IFDEF CLR}
   Exception           = Borland.Delphi.System.Exception;
@@ -151,6 +158,8 @@ type
   Exception                 = SysUtils.Exception;
   {$EXTERNALSYM ExceptClass}
   ExceptClass               = SysUtils.ExceptClass;
+  {$EXTERNALSYM EAbort}
+  EAbort                    = SysUtils.EAbort;
   {$EXTERNALSYM TSearchRec}
   TSearchRec                = SysUtils.TSearchRec;
   {$EXTERNALSYM TReplaceFlags}
