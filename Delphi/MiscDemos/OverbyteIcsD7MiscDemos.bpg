@@ -12,7 +12,7 @@ BRCC = $(ROOT)\bin\brcc32.exe $**
 PROJECTS = OverbyteIcsD7Run.bpl OverbyteIcsD7Design.bpl \
   OverByteIcsWndControlTest.exe OverbyteIcsSHA1Test.exe OverbyteIcsMD4Test.exe \
   OverbyteIcsMD5Test.exe OverbyteIcsTimerDemo.exe OverbyteIcsOneTimePassword.exe \
-  OverbyteIcsCacheTest.exe
+  OverbyteIcsCacheTest.exe OverbyteIcsBufStrmTst.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -42,6 +42,9 @@ OverbyteIcsOneTimePassword.exe: OverbyteIcsOneTimePassword.dpr
   $(DCC)
 
 OverbyteIcsCacheTest.exe: OverbyteIcsCacheTest.dpr
+  $(DCC)
+
+OverbyteIcsBufStrmTst.exe: OverbyteIcsBufStrmTst.dpr
   $(DCC)
 
 

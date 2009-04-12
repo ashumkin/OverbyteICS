@@ -6,6 +6,7 @@
   <ItemGroup>
     <Projects Include="..\Vc32\OverbyteIcsD2007Design.dproj" />
     <Projects Include="..\Vc32\OverbyteIcsD2007Run.dproj" />
+    <Projects Include="OverbyteIcsBufStrmTst.dproj" />
     <Projects Include="OverbyteIcsCacheTest.dproj" />
     <Projects Include="OverbyteIcsMD4Test.dproj" />
     <Projects Include="OverbyteIcsMD5Test.dproj" />
@@ -101,14 +102,23 @@
   <Target Name="OverbyteIcsOneTimePassword:Make">
     <MSBuild Projects="OverbyteIcsOneTimePassword.dproj" Targets="Make" />
   </Target>
+  <Target Name="OverbyteIcsBufStrmTst">
+    <MSBuild Projects="OverbyteIcsBufStrmTst.dproj" Targets="" />
+  </Target>
+  <Target Name="OverbyteIcsBufStrmTst:Clean">
+    <MSBuild Projects="OverbyteIcsBufStrmTst.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="OverbyteIcsBufStrmTst:Make">
+    <MSBuild Projects="OverbyteIcsBufStrmTst.dproj" Targets="Make" />
+  </Target>
   <Target Name="Build">
-    <CallTarget Targets="OverbyteIcsD2007Run;OverbyteIcsD2007Design;OverbyteIcsWndControlTest;OverbyteIcsMD5Test;OverbyteIcsMD4Test;OverbyteIcsSHA1Test;OverbyteIcsTimerDemo;OverbyteIcsCacheTest;OverbyteIcsOneTimePassword" />
+    <CallTarget Targets="OverbyteIcsD2007Run;OverbyteIcsD2007Design;OverbyteIcsWndControlTest;OverbyteIcsMD5Test;OverbyteIcsMD4Test;OverbyteIcsSHA1Test;OverbyteIcsTimerDemo;OverbyteIcsCacheTest;OverbyteIcsOneTimePassword;OverbyteIcsBufStrmTst" />
   </Target>
   <Target Name="Clean">
-    <CallTarget Targets="OverbyteIcsD2007Run:Clean;OverbyteIcsD2007Design:Clean;OverbyteIcsWndControlTest:Clean;OverbyteIcsMD5Test:Clean;OverbyteIcsMD4Test:Clean;OverbyteIcsSHA1Test:Clean;OverbyteIcsTimerDemo:Clean;OverbyteIcsCacheTest:Clean;OverbyteIcsOneTimePassword:Clean" />
+    <CallTarget Targets="OverbyteIcsD2007Run:Clean;OverbyteIcsD2007Design:Clean;OverbyteIcsWndControlTest:Clean;OverbyteIcsMD5Test:Clean;OverbyteIcsMD4Test:Clean;OverbyteIcsSHA1Test:Clean;OverbyteIcsTimerDemo:Clean;OverbyteIcsCacheTest:Clean;OverbyteIcsOneTimePassword:Clean;OverbyteIcsBufStrmTst:Clean" />
   </Target>
   <Target Name="Make">
-    <CallTarget Targets="OverbyteIcsD2007Run:Make;OverbyteIcsD2007Design:Make;OverbyteIcsWndControlTest:Make;OverbyteIcsMD5Test:Make;OverbyteIcsMD4Test:Make;OverbyteIcsSHA1Test:Make;OverbyteIcsTimerDemo:Make;OverbyteIcsCacheTest:Make;OverbyteIcsOneTimePassword:Make" />
+    <CallTarget Targets="OverbyteIcsD2007Run:Make;OverbyteIcsD2007Design:Make;OverbyteIcsWndControlTest:Make;OverbyteIcsMD5Test:Make;OverbyteIcsMD4Test:Make;OverbyteIcsSHA1Test:Make;OverbyteIcsTimerDemo:Make;OverbyteIcsCacheTest:Make;OverbyteIcsOneTimePassword:Make;OverbyteIcsBufStrmTst:Make" />
   </Target>
   <Import Condition="Exists('$(MSBuildBinPath)\Borland.Group.Targets')" Project="$(MSBuildBinPath)\Borland.Group.Targets" />
 </Project>
