@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      2.30
+Version:      7.07
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
               Compatible with Delphi 1, 2, 3, 4 and 5
@@ -68,6 +68,8 @@ Oct 31, 2004  V2.28 Added account button
 Nov 02, 2004  V2.29 Fixed problem displaying dir list when "Display Data"
               checkbox checked. Added persistance for all checkboxes.
 Dec 19, 2004  V2.30 Added Trim() and similar for Delphi 1 compatibility.
+Apr 16, 2009  V7.07 Angus assume STREAM64, USE_ONPROGRESS64_ONLY, removed OnProgress
+              Removed local GetFileSize using IcsGetFileSize instead
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -81,11 +83,11 @@ uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls, WinSock,
   OverbyteIcsWSocket, OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsLogger,
-  OverbyteIcsWndControl, OverbyteIcsFtpCli, OverByteIcsUtils;
+  OverbyteIcsWndControl, OverbyteIcsFtpCli, OverbyteIcsFtpSrvT, OverByteIcsUtils;
 
 const
-  FTPTstVersion      = 230;
-  CopyRight : String = ' FtpTst (c) 1997-2006 F. Piette V2.30 ';
+  FTPTstVersion      = 707;
+  CopyRight : String = ' SslFtpTst (c) 1997-2009 F. Piette V7.07 ';
   WM_SSL_NOT_TRUSTED = WM_USER + 1;
   WM_TMP_SOMETHING   = WM_USER + 2;
 type
@@ -209,8 +211,6 @@ type
     procedure ExitButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DisplayHandler(Sender: TObject; var Msg : String);
-    procedure FtpClient1Progress(Sender: TObject; Count: Longint;
-      var Abort: Boolean);
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure OpenAsyncButtonClick(Sender: TObject);
@@ -281,10 +281,11 @@ type
     procedure SslRenegotiateButtonClick(Sender: TObject);
     procedure CccButtonClick(Sender: TObject);
     procedure OptsAsyncButtonClick(Sender: TObject);
+    procedure FtpClient1Progress64(Sender: TObject; Count: Int64; var Abort: Boolean);
   private
     FIniFileName   : String;
     FInitialized   : Boolean;
-    FLastProgress  : DWORD;
+    FLastProgress  : Int64;
     FProgressCount : LongInt;
     FRunning       : Boolean;
     FTrustedList   : TStringList;
@@ -347,45 +348,6 @@ const
     KeySessCache       = 'SessCache';
     KeySslType         = 'SslType';
     KeySslPort         = 'SslPort';
-
-function GetFileSize(const FileName: string): LongInt; forward;
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}  { Missing functions in Delphi 1 }
-function TrimRight(Str : String) : String;
-var
-    i : Integer;
-begin
-    i := Length(Str);
-    while (i > 0) and (Str[i] in [' ', #9]) do
-        i := i - 1;
-    Result := Copy(Str, 1, i);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TrimLeft(Str : String) : String;
-var
-    i : Integer;
-begin
-    if Str[1] <> ' ' then
-        Result := Str
-    else begin
-        i := 1;
-        while (i <= Length(Str)) and (Str[i] = ' ') do
-            i := i + 1;
-        Result := Copy(Str, i, Length(Str) - i + 1);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Trim(Str : String) : String;
-begin
-    Result := TrimLeft(TrimRight(Str));
-end;
-{$ENDIF}
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF VER80 }
@@ -623,10 +585,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpReceiveForm.FtpClient1Progress(
-    Sender    : TObject;
-    Count     : Longint;
-    var Abort : Boolean);
+procedure TFtpReceiveForm.FtpClient1Progress64(Sender: TObject; Count: Int64; var Abort: Boolean);
 begin
     FProgressCount := Count;
     { Be sure to update screen only once every second }
@@ -636,7 +595,6 @@ begin
         InfoLabel.Repaint;
     end;
 end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpReceiveForm.DisplayFile(FileName : String);
@@ -711,7 +669,7 @@ begin
                                              FtpClient1.DirResult + '"');
         ftpGetAsync                     :
             begin
-            InfoLabel.Caption := InfoLabel.Caption + ' [' + IntToStr(GetFileSize(FtpClient1.LocalFileName)) + ']';
+            InfoLabel.Caption := InfoLabel.Caption + ' [' + IntToStr(IcsGetFileSize(FtpClient1.LocalFileName)) + ']';
             {WriteLn(LogFile, 'FTP GET RequestDone "',
                              FtpClient1.HostFileName, '" FileSize = ',
                              GetFileSize(FtpClient1.LocalFileName));}

@@ -3,7 +3,7 @@
 Author:       François PIETTE.
 Description:  MD5 self test routine for OverByteIcsMD5 unit.
 Creation:     Aug 01, 2007
-Version:      1.01
+Version:      7.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -39,6 +39,8 @@ Legal issues: Copyright (C) 2007 by François PIETTE
 Updates:
 Dec 21, 2008 V1.01 F.Piette added a string cast in RunButtonClick to avoid
              a warning when compiling with Delphi 2009.
+Apr 16, 2009 V7.00 Angus allow choose specific file, compare buffered and
+             non-buffered MD5 and CRC32B
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -50,7 +52,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, OverbyteIcsMD5;
+  Dialogs, StdCtrls, OverbyteIcsMD5, OverbyteIcsCrc, OverbyteIcsFtpSrvT;
 
 type
   TForm1 = class(TForm)
@@ -58,9 +60,21 @@ type
     RunButton: TButton;
     Button1: TButton;
     Button2: TButton;
+    OpenDialog: TOpenDialog;
+    TestFileName: TEdit;
+    dpFtpFileMd5: TButton;
+    doFileMd5: TButton;
+    doSelectFile: TButton;
+    doFileCrcB: TButton;
+    doFtpFileCrcB: TButton;
     procedure RunButtonClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
+    procedure doSelectFileClick(Sender: TObject);
+    procedure doFileMd5Click(Sender: TObject);
+    procedure dpFtpFileMd5Click(Sender: TObject);
+    procedure doFileCrcBClick(Sender: TObject);
+    procedure doFtpFileCrcBClick(Sender: TObject);
   end;
 
 var
@@ -154,6 +168,90 @@ begin
     Memo1.Lines.Add(IntToHex(MD5Context.BufLong[0], 8));
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TForm1.doFileCrcBClick(Sender: TObject);
+var
+    starttick: longword ;
+    filesize: int64 ;
+begin
+    filesize :=  IcsGetFileSize (TestFileName.Text) ;
+    if filesize < 0 then
+    begin
+        Form1.Memo1.Lines.Add('File not found: ' + TestFileName.Text) ;
+        exit ;
+    end;
+    Form1.Memo1.Lines.Add ('Starting non-buffered CRC32B for: ' + TestFileName.Text +
+                                                             ', Size ' + IntToKbyte (filesize)) ;
+    starttick := IcsGetTickCountX ;
+    Form1.Memo1.Lines.Add ('FileCRC32B: ' + FileCRC32B(TestFileName.Text)) ;
+    Form1.Memo1.Lines.Add ('Took ' + IntToStr (IcsElapsedMSecs (starttick)) + 'ms') ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TForm1.doFileMd5Click(Sender: TObject);
+var
+    starttick: longword ;
+    filesize: int64 ;
+begin
+    filesize :=  IcsGetFileSize (TestFileName.Text) ;
+    if filesize < 0 then
+    begin
+        Form1.Memo1.Lines.Add('File not found: ' + TestFileName.Text) ;
+        exit ;
+    end;
+    Form1.Memo1.Lines.Add ('Starting non-buffered MD5 for: ' + TestFileName.Text +
+                                                             ', Size ' + IntToKbyte (filesize)) ;
+    starttick := IcsGetTickCountX ;
+    Form1.Memo1.Lines.Add ('FileMD5: ' + String(FileMD5(TestFileName.Text))) ;
+    Form1.Memo1.Lines.Add ('Took ' + IntToStr (IcsElapsedMSecs (starttick)) + 'ms') ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TForm1.doFtpFileCrcBClick(Sender: TObject);
+var
+    starttick: longword ;
+    filesize: int64 ;
+begin
+    filesize :=  IcsGetFileSize (TestFileName.Text) ;
+    if filesize < 0 then
+    begin
+        Form1.Memo1.Lines.Add('File not found: ' + TestFileName.Text) ;
+        exit ;
+    end;
+    Form1.Memo1.Lines.Add ('Starting buffered CRC32B for: ' + TestFileName.Text +
+                                                             ', Size ' + IntToKbyte (filesize)) ;
+    starttick := IcsGetTickCountX ;
+    Form1.Memo1.Lines.Add ('FtpFileCRC32B: ' + FtpFileCRC32B(TestFileName.Text)) ;
+    Form1.Memo1.Lines.Add ('Took ' + IntToStr (IcsElapsedMSecs (starttick)) + 'ms') ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TForm1.doSelectFileClick(Sender: TObject);
+begin
+    OpenDialog.FileName := TestFileName.Text ;
+    if OpenDialog.Execute then
+        TestFileName.Text := OpenDialog.FileName ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TForm1.dpFtpFileMd5Click(Sender: TObject);
+var
+    starttick: longword ;
+    filesize: int64 ;
+begin
+    filesize :=  IcsGetFileSize (TestFileName.Text) ;
+    if filesize < 0 then
+    begin
+        Form1.Memo1.Lines.Add('File not found: ' + TestFileName.Text) ;
+        exit ;
+    end;
+    Form1.Memo1.Lines.Add ('Starting buffered MD5 for: ' + TestFileName.Text +
+                                                             ', Size ' + IntToKbyte (filesize)) ;
+    starttick := IcsGetTickCountX ;
+    Form1.Memo1.Lines.Add ('FtpFileMD5: ' + FtpFileMD5(TestFileName.Text)) ;
+    Form1.Memo1.Lines.Add ('Took ' + IntToStr (IcsElapsedMSecs (starttick)) + 'ms') ;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TForm1.RunButtonClick(Sender: TObject);

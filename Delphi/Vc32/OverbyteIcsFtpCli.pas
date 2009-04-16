@@ -2,13 +2,13 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.06
+Version:      V7.07
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2008 by François PIETTE
+Legal issues: Copyright (C) 1996-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -953,6 +953,8 @@ Nov 18, 2008 V7.03 Arno - Protection level on the data channel was not set
 Nov 21, 2008 V7.04 Arno - Allow C++ Builder
 Jan 7, 2009  V7.05 Angus - allow 200 response for HOST (for ws_ftp server)
 Apr 6, 2009  V7.06 Angus check response for XMD5 properly (220 or 250 and no file name)
+Apr 16, 2009 V7.07 Angus assume STREAM64, USE_MODEZ, USE_ONPROGRESS64_ONLY, USE_BUFFERED_STREAM
+             Remove old conditional and suppressed code, OnProgress gone (BREAKING CHANGE)
 
 
 
@@ -970,27 +972,12 @@ unit OverbyteIcsFtpCli;
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-    {$DEFINE USE_MODEZ}          { V2.102 }
-    {$DEFINE USE_BUFFERED_STREAM}   { V2.105 }
-    {$DEFINE UseBandwidthControl}   { V2.106 }
-    {$IFDEF STREAM64}               { V2.108 } // defined in the INC-file
-        { Uncomment this to get rid of 32-bit OnProgress event and to publish }
-        { OnProgress64 instead.                                               }
-        {#$DEFINE USE_ONPROGRESS64_ONLY}
-    {$ELSE}
-        {$IFDEF USE_ONPROGRESS64_ONLY}
-            {$UNDEF USE_ONPROGRESS64_ONLY}
-        {$ENDIF}
-    {$ENDIF}
-{$ENDIF}
-{$IFNDEF VER80}   { Not for Delphi 1                    }
-    {$H+}         { Use long strings                    }
-    {$J+}         { Allow typed constant to be modified }
-{$ENDIF}
+{$WARN SYMBOL_PLATFORM   OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
+{$DEFINE UseBandwidthControl}   { V2.106 }
+{$H+}         { Use long strings                    }
+{$J+}         { Allow typed constant to be modified }
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
@@ -1015,30 +1002,26 @@ uses
 {$IFDEF USE_SSL}
     OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
 {$ENDIF}
-{$IFDEF USE_MODEZ}              { V2.102 }
-    {$I OverbyteIcsZlib.inc}
-    OverbyteIcsZlibHigh,
-    {$IFDEF USE_ZLIB_OBJ}
-        OverbyteIcsZLibObj,     {interface to access ZLIB C OBJ files}
-    {$ELSE}
-        OverbyteIcsZLibDll,     {interface to access zLib1.dll}
-    {$ENDIF}
+{$I OverbyteIcsZlib.inc}
+OverbyteIcsZlibHigh,     { V2.102 }
+{$IFDEF USE_ZLIB_OBJ}
+     OverbyteIcsZLibObj,     {interface to access ZLIB C OBJ files}
+{$ELSE}
+     OverbyteIcsZLibDll,     {interface to access zLib1.dll}
 {$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
-{$IFDEF USE_BUFFERED_STREAM}
     OverbyteIcsStreams,
-{$ENDIF}
     OverbyteIcsUtils,
     OverbyteIcsLibrary,
     OverbyteIcsOneTimePw,  { V2.113 }
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 706;
-  CopyRight : String = ' TFtpCli (c) 1996-2009 F. Piette V7.06 ';
-  FtpClientId : String = 'ICS FTP Client V7.06 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 707;
+  CopyRight : String = ' TFtpCli (c) 1996-2009 F. Piette V7.07 ';
+  FtpClientId : String = 'ICS FTP Client V7.07 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1122,16 +1105,9 @@ type
   TFtpConnectionType  = (ftpDirect, ftpProxy, ftpSocks4, ftpSocks4A, ftpSocks5);
   TFtpDisplay     = procedure(Sender    : TObject;
                               var Msg   : String) of object;
-{$IFNDEF USE_ONPROGRESS64_ONLY}         { V2.108 }
-  TFtpProgress    = procedure(Sender    : TObject;
-                              Count     : LongInt;
-                              var Abort : Boolean) of object;
-{$ENDIF}
-{$IFDEF STREAM64}                      { V2.101 }
   TFtpProgress64  = procedure(Sender    : TObject;
                               Count     : Int64;
                               var Abort : Boolean) of object;
-{$ENDIF}
   TFtpCommand     = procedure(Sender    : TObject;
                               var Cmd   : String) of object;
   TFtpRequestDone = procedure(Sender    : TObject;
@@ -1196,9 +1172,6 @@ type
     FOnSessionClosed    : TSessionClosed;
     FOnStateChange      : TNotifyEvent;
     FOnRequestDone      : TFtpRequestDone;
-{$IFNDEF USE_ONPROGRESS64_ONLY}            { V2.108 }
-    FOnProgress         : TFtpProgress;
-{$ENDIF}
     FOnReadyToTransmit  : TFtpReadyToTransmit;
     FOnBgException      : TBgExceptionEvent;
     FLocalStream        : TStream;
@@ -1215,9 +1188,7 @@ type
     FGetCommand         : String;
     FConnected          : Boolean;
     FSendBuffer         : array [0..FTP_SND_BUF_SIZE - 1] of AnsiChar;  { angus 7.00 }
-{$IFDEF STREAM64}
     FOnProgress64       : TFtpProgress64;
-{$ENDIF}
     FByteCount          : TFtpBigInt;         { V2.108 }
     FSizeResult         : TFtpBigInt;         { V2.108 }
     FResumeAt           : TFtpBigInt;         { V2.108 }
@@ -1259,14 +1230,12 @@ type
     FSocksUserCode      : String;        { V7.00 }
     FLanguage           : String;        { V7.01 language argment for LANG command }
     FLangSupport        : String;        { V7.01 list of languages server supports }
-{$IFDEF USE_MODEZ}
     FZStreamState       : TZStreamState; { V2.102 current Zlib stream state }
   { FZStreamRec         : TZStreamRec;    V2.102 Zlib stream control record, used for Immediate }
     FModeZStream        : TStream;       { V2.113 compressed data stream, was TMemoryStream, now buffered file }
     FOnZlibProgress     : TZlibProgress; { V2.113 call back event during ZLIB processing }
     FZCompFileName      : String;        { V2.113 zlib file name of compressed file }
     FZlibWorkDir        : String;        { V2.113 zlib work directory }
-{$ENDIF}
 {$IFDEF UseBandwidthControl}              { V2.106 }
     FBandwidthLimit     : Integer;  // Bytes per second
     FBandwidthSampling  : Integer;  // mS sampling interval
@@ -1488,10 +1457,8 @@ type
                                                          write FOptions;
     property    LocalStream       : TStream              read  FLocalStream
                                                          write SetLocalStream;
-{$IFDEF STREAM64}
     property    OnProgress64      : TFtpProgress64       read  FOnProgress64
                                                          write FOnProgress64;
-{$ENDIF}
     property    ByteCount         : TFtpBigInt           read  FByteCount;     { V2.108 }
     property    SizeResult        : TFtpBigInt           read  FSizeResult;    { V2.108 }
     property    ResumeAt          : TFtpBigInt           read  FResumeAt       { V2.108 }
@@ -1580,16 +1547,10 @@ type
                                                          write FOnCommand;
     property OnResponse           : TNotifyEvent         read  FOnResponse
                                                          write FOnResponse;
-{$IFNDEF USE_ONPROGRESS64_ONLY}            { V2.108 }
-    property OnProgress           : TFtpProgress         read  FOnProgress
-                                                         write FOnProgress;
-{$ENDIF}
-{$IFDEF USE_MODEZ}
     property OnZlibProgress       : TZlibProgress        read  FOnZlibProgress { V2.113 }
                                                          write FOnZlibProgress;
     property ZlibWorkDir          : String               read  FZlibWorkDir    { V2.113 }
                                                          write FZlibWorkDir;
-{$ENDIF}
     property OnSessionConnected   : TSessionConnected    read  FOnSessionConnected
                                                          write FOnSessionConnected;
     property OnSessionClosed      : TSessionClosed       read  FOnSessionClosed
@@ -1728,11 +1689,7 @@ type
     property OnCommand;
     property OnError;
     property OnResponse;
-{$IFNDEF USE_ONPROGRESS64_ONLY}                                  { V2.108 }
-    property OnProgress;
-{$ELSE}
     property OnProgress64;                                       { V2.108 }
-{$ENDIF}
     property OnSessionConnected;
     property OnSessionClosed;
     property OnRequestDone;
@@ -1984,41 +1941,21 @@ begin
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ V2.108 }
-{function GetFileSize(const FileName: String): LongInt;
-var
-    SearchRec: TSearchRec;
-begin
-    if FindFirst(ExpandFileName(FileName), faAnyFile, SearchRec) = 0 then begin
-        Result := SearchRec.Size;
-        SysUtils.FindClose(SearchRec);
-    end
-    else
-        Result := -1;
-end;}
 
 function GetFileSize(FileName : String) : TFtpBigInt; { V2.108 }
 var
     SR : TSearchRec;
-{$IFDEF STREAM64}
     TempSize: TULargeInteger ;  // 64-bit integer record
-{$ENDIF}
 begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
     if FindFirst(FileName, faReadOnly or faHidden or
                  faSysFile or faArchive, SR) = 0 then begin
-{$IFDEF STREAM64}
         TempSize.LowPart  := SR.FindData.nFileSizeLow;
         TempSize.HighPart := SR.FindData.nFileSizeHigh;
         Result := TempSize.QuadPart;
-{$ELSE}
-        Result := SR.Size
-{$ENDIF}
         FindClose(SR);
     end
     else
         Result := -1;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
 end;
 
 
@@ -2054,8 +1991,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF STREAM64}                      { V2.101 }
-function GetInt64(Data : PChar; var Number : Int64) : PChar;
+function GetInt64(Data : PChar; var Number : Int64) : PChar;   { V2.101 }
 var
     bSign : Boolean;
 begin
@@ -2083,7 +2019,6 @@ begin
     if bSign then
         Number := -Number;
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2138,10 +2073,8 @@ end;
 {* *                                                                     * *}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TCustomFtpCli.Create(AOwner: TComponent);
-{$IFDEF USE_MODEZ}
 var
     Len : Cardinal;
-{$ENDIF}    
 begin
     inherited Create(AOwner);
     AllocateHWnd;
@@ -2172,12 +2105,10 @@ begin
     FControlSocket.OnDnsLookupDone    := ControlSocketDnsLookupDone;
     FDataSocket                       := TWSocket.Create(Self);
     FStreamFlag                       := FALSE;
-{$IFDEF USE_MODEZ}
     SetLength(FZlibWorkDir, 1024);
     Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.03 }
     SetLength(FZlibWorkDir, Len);                                 { AG V6.03 }
     FZlibWorkDir := IncludeTrailingPathDelimiter (FZlibWorkDir);  { V2.113 }
-{$ENDIF}
 {$IFDEF UseBandwidthControl}
     FBandwidthLimit     := 10000;  // Bytes per second
     FBandwidthSampling  := 1000;   // mS sampling interval
@@ -2313,7 +2244,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF USE_MODEZ}
 procedure ZlibOnProgress(
     Sender: TObject;
     Count: Int64;
@@ -2326,16 +2256,12 @@ begin
         MyClient.FOnZlibProgress (Sender, Count, Cancel);
     end;
 end;
-{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.DestroyLocalStream;
-{$IFDEF USE_MODEZ}
 var
     NewSize: Int64;
-{$ENDIF}
 begin
-{$IFDEF USE_MODEZ}
     if FCurrTransMode = ftpTransModeZDeflate then begin    { V1.103 }
         if FZStreamState > ftpZStateNone then begin
             if (FZStreamState = ftpZStateSaveDecom) and (FModeZStream.Size > 0) and
@@ -2365,7 +2291,6 @@ begin
             end;
         end;
     end;
-{$ENDIF}
     if Assigned(FLocalStream) and (FStreamFlag = FALSE) then begin
         FLocalStream.Destroy;
         FLocalStream := nil;
@@ -2375,11 +2300,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomFtpCli.OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
 begin
-{$IFDEF USE_BUFFERED_STREAM}
     result := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
-{$ELSE}
-    result := TFileStream.Create(FileName, Mode);
-{$ENDIF}
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2585,14 +2506,8 @@ var
     Abort : Boolean;
 begin
     Abort := FALSE;
-{$IFNDEF USE_ONPROGRESS64_ONLY}      { V2.108 } // ERangeError etc. possible
-    if Assigned(FOnProgress) then
-        FOnProgress(Self, FByteCount + FResumeAt, Abort);
-{$ENDIF}
-{$IFDEF STREAM64}                      { V2.101 }
-    if Assigned(FOnProgress64) then
+    if Assigned(FOnProgress64) then   { V2.101 }
         FOnProgress64(Self, FByteCount + FResumeAt, Abort);
-{$ENDIF}
     if Abort then begin
      //   TriggerDisplay('! Abort requested');
      //   FDataSocket.Close;
@@ -2762,11 +2677,7 @@ begin
     if FRequestResult = 0 then begin
         if FFctPrv in [ftpFctSize] then begin
             p := GetInteger(@FLastResponse[1], NumericCode);
-{$IFDEF STREAM64}                      { V2.101 }
-            GetInt64(p, FSizeResult);
-{$ELSE}
-            GetInteger(p, FSizeResult);
-{$ENDIF}
+            GetInt64(p, FSizeResult);     { V2.101 }
         end;
         if FFctPrv in [ftpFctMdtm] then begin  { V2.90 get file modification time }
             p := GetInteger(@FLastResponse[1], NumericCode);
@@ -4067,14 +3978,11 @@ begin
             TriggerDisplay('! Data ignored while aborting');
             exit;
         end ;
-
-{$IFDEF USE_MODEZ}
         if FZStreamState = ftpZStateSaveDecom then begin   { V1.103 }
             FModeZStream.WriteBuffer(Buffer, Len);
             FByteCount := FByteCount + Len;  { compressed size }
             exit;
         end ;
-{$ENDIF}
         if FLocalStream <> nil then begin
             try
                 LocalStreamWrite(Buffer, Len);
@@ -4451,11 +4359,9 @@ begin
     end;
 
     try
-{$IFDEF USE_MODEZ}
         if FZStreamState = ftpZStateSaveComp then
             Count := FModeZStream.Read(FSendBuffer, SizeOf(FSendBuffer))  { angus 7.00 simplified }
          else
-{$ENDIF}
             Count := FLocalStream.Read(FSendBuffer, SizeOf(FSendBuffer));
 {$IFNDEF NO_DEBUG_LOG}                                        { 2.104 }
         if CheckLogOptions(loProtSpecInfo) then
@@ -4937,8 +4843,7 @@ begin
                 { new position.                                                    }
                 NewPos := GetFileSize(FLocalFileName);                    { V2.108 }
                 if FResumeAt <= NewPos then                               { V2.108 }
-                    NewPos := FLocalStream.Seek(FResumeAt,
-                    {$IFDEF STREAM64} soBeginning {$ELSE} sofromBeginning{$ENDIF});
+                    NewPos := FLocalStream.Seek(FResumeAt, soBeginning);
                 if NewPos <> FResumeAt then begin
                     FLastResponse := 'Unable to set resume position in local file';
                     FStatusCode   := 550;
@@ -4950,7 +4855,6 @@ begin
                 end;
             end;
         end;
-{$IFDEF USE_MODEZ}
         if FCurrTransMode = ftpTransModeZDeflate then begin    { V1.103 }
             zlibProblemString := '';
      //     FModeZStream := TMemoryStream.Create;  { V2.113 memorystream very slow, use filesteam }
@@ -4962,17 +4866,14 @@ begin
 
          // option 2 - decode immediately (still need to save a little - not done yet)
         end;
-{$ENDIF}
     except
         on E:Exception do begin
-{$IFDEF USE_MODEZ}
             if Assigned (FModeZStream) then FModeZStream.Destroy;
             FModeZStream := nil;
             try
                 if FileExists(FZCompFileName) then DeleteFile (FZCompFileName);  { V1.113 }
             except
             end;
-{$ENDIF}
             FLastResponse := 'Unable to open local file ' +
                                            FLocalFileName + ': ' + E.Message; { V2.101}
             FStatusCode   := 550;
@@ -5196,20 +5097,11 @@ begin
         FEofFlag     := FALSE;
         NewPos       := FResumeAt;
         if not Assigned(FLocalStream) and not FStreamFlag then begin
-(*
-{$IFDEF USE_BUFFERED_STREAM}    { V2.105 }
-            FLocalStream := TBufferedFileStream.Create(FLocalFileName,
-                            fmOpenRead + FShareMode, MAX_BUFSIZE);  { V2.103 }
-{$ELSE}
-            FLocalStream := TFileStream.Create(FLocalFileName,
-                                               fmOpenRead + FShareMode);
-{$ENDIF}  *)
             FLocalStream := OpenFileStream(FLocalFileName,
                                                fmOpenRead + FShareMode); { V2.113 }
-            end;
+        end;
         if FResumeAt > 0 then
-            NewPos := FLocalStream.Seek(FResumeAt,
-               {$IFDEF STREAM64} soBeginning {$ELSE} sofromBeginning {$ENDIF});
+            NewPos := FLocalStream.Seek(FResumeAt, soBeginning);
         if NewPos <> FResumeAt then begin
             FLastResponse := 'Unable to set resume position in local file';
             FStatusCode   := 550;
@@ -5234,7 +5126,6 @@ begin
     end;
 
     Uploadsize := FLocalStream.Size - FLocalStream.Position;
-{$IFDEF USE_MODEZ}
     if FCurrTransMode = ftpTransModeZDeflate then begin    { V1.103 }
         zlibProblemString := '';
    //   FModeZStream := TMemoryStream.Create;   { V1.113 memorystream very slow, use filestream }
@@ -5272,7 +5163,6 @@ begin
      { option 2 - compress during send - not implemented yet }
     end
     else
-{$ENDIF}
         TriggerDisplay('! Upload Size ' + IntToKByte (Uploadsize)) ;
 
     if FPassive then begin

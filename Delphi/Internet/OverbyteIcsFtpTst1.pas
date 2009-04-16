@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      7.02
+Version:      7.07
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
               Compatible with Delphi 1, 2, 3, 4 and 5
@@ -83,6 +83,8 @@ Nov 16, 2008  V7.02 Arno added option ftpAutoDetectCodePage which actually
               detects UTF-8 only (it's not reliable). Modified code page related
               code, and the demo now sets property CodePage to CP_UTF8 after
               command Opts "UTF8 ON" succeeded.
+Apr 16, 2009  V7.07 Angus assume STREAM64, USE_ONPROGRESS64_ONLY, removed OnProgress
+              Removed local GetFileSize using IcsGetFileSize instead
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpTst1;
@@ -106,13 +108,12 @@ uses
   OverByteIcsWSocket, OverbyteIcsWndControl;
 
 const
-  FTPTstVersion      = 702;
-  CopyRight : String = ' FtpTst (c) 1997-2008 F. Piette V7.02 ';
+  FTPTstVersion      = 707;
+  CopyRight : String = ' FtpTst (c) 1997-2009 F. Piette V7.07 ';
 
 type
   TSyncCmd   = function : Boolean  of object;
   TAsyncCmd  = procedure of object;
-//  TFtpBigInt = {$IFDEF STREAM64} Int64 {$ELSE} Longint {$ENDIF};
 
   TFtpReceiveForm = class(TForm)
     DisplayMemo: TMemo;
@@ -234,12 +235,8 @@ type
     procedure ExitButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DisplayHandler(Sender: TObject; var Msg : String);
-    procedure FtpClient1Progress(Sender: TObject; Count: Longint;
-      var Abort: Boolean);
-{$IFDEF STREAM64}
     procedure FtpClient1Progress64(Sender: TObject; Count: Int64;
       var Abort: Boolean);
-{$ENDIF}
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure OpenAsyncButtonClick(Sender: TObject);
@@ -322,7 +319,7 @@ type
   private
     FIniFileName   : String;
     FInitialized   : Boolean;
-    FLastProgress  : DWORD;
+    FLastProgress  : Int64;
     FProgressCount : TFtpBigInt;
     FRunning       : Boolean;
     procedure DisplayFile(FileName : String);
@@ -370,8 +367,6 @@ const
     KeyPosStart   = 'PosStart';
     KeyPosEnd     = 'PosEnd';
     KeyMaxKB      = 'MaxKB';
-
-function GetFileSize(const FileName: string): TFtpBigInt; forward;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -543,25 +538,7 @@ begin
     Close;
 end;
 
-
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpReceiveForm.FtpClient1Progress(
-    Sender    : TObject;
-    Count     : Longint;
-    var Abort : Boolean);
-begin
-    FProgressCount := Count;
-    { Be sure to update screen only once every second }
-    if FLastProgress < GetTickCount then begin
-        FLastProgress := GetTickCount + 1000;
-        InfoLabel.Caption := IntToStr(FProgressCount);
-        InfoLabel.Repaint;
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF STREAM64}
 procedure TFtpReceiveForm.FtpClient1Progress64(
     Sender    : TObject;
     Count     : Int64;
@@ -575,7 +552,6 @@ begin
         InfoLabel.Repaint;
     end;
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -658,7 +634,7 @@ begin
                                              'Directory is "' +
                                              FtpClient1.DirResult + '"');
         ftpGetAsync  : InfoLabel.Caption := InfoLabel.Caption + ' [' +
-                       IntToStr(GetFileSize(FtpClient1.LocalFileName)) + ']';
+                       IntToStr(IcsGetFileSize(FtpClient1.LocalFileName)) + ']';
         end;
     end;
 end;
@@ -713,13 +689,6 @@ begin
     end
     else
         FtpClient1.Options := FtpClient1.Options - [ftpBandwidthControl];
-{$IFDEF STREAM64}
-    FtpClient1.OnProgress64       := FtpClient1Progress64;
-    FtpClient1.OnProgress         := nil;
-    { Note: In order to publish property OnProgress64 instead of the old }
-    { 32-bit OnProgress event go to FtpCli.pas, uncomment                }
-    { USE_ONPROGRESS64_ONLY and rebuild the ICS package.                 }
-{$ENDIF}
     if SyncCheckBox.Checked then begin
         if SyncCmd then
             Display('Command Success')
@@ -1325,30 +1294,6 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetFileSize(const FileName : String) : TFtpBigInt;
-var
-    SR : TSearchRec;
-{$IFDEF STREAM64}
-    TempSize: TULargeInteger ;  // 64-bit integer record
-{$ENDIF}
-begin
-    if FindFirst(FileName, faReadOnly or faHidden or
-                 faSysFile or faArchive, SR) = 0 then begin
-{$IFDEF STREAM64}
-        TempSize.LowPart  := SR.FindData.nFileSizeLow;
-        TempSize.HighPart := SR.FindData.nFileSizeHigh;
-        Result := TempSize.QuadPart;
-{$ELSE}
-        Result := SR.Size;
-{$ENDIF}
-        Sysutils.FindClose(SR);
-    end
-    else
-        Result := -1;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TFtpReceiveForm.SendFile : Boolean;
 var
     LocalSize : LongInt;
@@ -1380,7 +1325,7 @@ begin
             raise Exception.Create('FtpClient1.Put failed: ' + FtpClient1.LastResponse);
         if not FtpClient1.Size then
             raise Exception.Create('FtpClient1.Size failed: ' + FtpClient1.ErrorMessage);
-        LocalSize := GetFileSize(FtpClient1.LocalFileName);
+        LocalSize := IcsGetFileSize(FtpClient1.LocalFileName);
         Result    := (FtpClient1.SizeResult = LocalSize);
         if not Result then
             Display('Incorrect file size on server (S=' +

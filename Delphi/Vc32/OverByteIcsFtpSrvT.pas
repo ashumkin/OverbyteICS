@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  Time functions.
 Creation:     Nov 24, 1999 from Bruce Christensen <bkc51831234@hotmail.com>
               code used with his permission. Thanks.
-Version:      6.01
+Version:      7.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2007 by François PIETTE
+Legal issues: Copyright (C) 1999-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -59,6 +59,9 @@ Mar 10, 2008 V1.16 FPiette made some changes to prepare code for Unicode
 Apr 22, 2008 V1.17 AGarrels Removed checks for faVolumeID
 12 May 2008  V1.18 Removed function atoi it's in OverbyteIcsUtils.pas now.
 Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and later only                    
+Nov 16, 2008 V7.02 Angus added IcsGetFileSize
+Apr 16, 2009 V7.07 Angus FtpFileMD5 and FtpFileCrc32B using buffered stream with unicode
+                   Fixed IcsGetTickCountX to never return triggers (two in four billion bug)
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -90,11 +93,14 @@ uses
     WinTypes, WinProcs,
 {$ENDIF}
     Classes, SysUtils,
-    OverbyteIcsUtils;
+    OverbyteIcsCRC,        { angus V7.7 }
+    OverbyteIcsMD5,        { angus V7.7 }
+    OverbyteIcsUtils,
+    OverbyteIcsStreams;    { angus V7.7 }
 
 const
-    FtpSrvT_Unit       = 118;
-    CopyRight : String = ' FtpSrvT  (c) 1999-2008 F. Piette V1.18 ';
+    FtpSrvT_Unit       = 707;
+    CopyRight : String = ' FtpSrvT  (c) 1999-2009 F. Piette V7.07 ';
 
   { V1.16 Tick and Trigger constants }
   TicksPerDay      : longword =  24 * 60 * 60 * 1000 ;
@@ -159,7 +165,14 @@ function BackSlashesToSlashes(const S : String) : String;
 function IntToKbyte (Value: Int64): String;
 function GetUAgeSizeFile (const filename: string; var FileUDT: TDateTime;
                                                     var FSize: Int64): boolean;
-function GetFreeSpacePath (const Path: String): int64;
+function IcsGetFileSize(const FileName : String) : Int64;            { V7.02 }
+function GetFreeSpacePath(const Path: String): Int64;
+function FtpFileMD5(const Filename: String; Obj: TObject = Nil;
+                ProgressCallback : TMD5Progress = Nil; StartPos: Int64 = 0;
+                            EndPos: Int64 = 0; Mode: Word = DefaultMode): String;
+function FtpFileCRC32B(const Filename: String; Obj: TObject = Nil;
+                ProgressCallback : TCrcProgress = Nil; StartPos: Int64 = 0;
+                            EndPos: Int64 = 0; Mode: Word = DefaultMode): String;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -469,6 +482,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { helper functions for timers and triggers using GetTickCount - which wraps after 49 days }
+{ note: Vista/2008 and later have GetTickCount64 which returns 64-bits }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 var
    TicksTestOffset: longword ;  { testing GetTickCount wrapping }
@@ -478,6 +492,8 @@ var
     newtick: Int64 ;
 begin
     Result := GetTickCount ;
+  {ensure special trigger values never returned - V7.07 }
+    if (Result = TriggerDisabled) or (Result = TriggerImmediate) then Result := 1 ;
     if TicksTestOffset = 0 then
         exit;  { no testing, bye bye }
 
@@ -904,6 +920,7 @@ var
    TempSize: TULargeInteger ;  { 64-bit integer record }
 begin
    Result := FALSE ;
+   FSize := -1;
    SResult := SysUtils.FindFirst(filename, faAnyFile, SearchRec);
    if SResult = 0 then begin
         TempSize.LowPart  := SearchRec.FindData.nFileSizeLow ;
@@ -917,6 +934,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetFileSize(const FileName : String) : Int64;            { V7.02 }
+var
+    FileUDT: TDateTime;
+begin
+    Result := -1 ;
+    GetUAgeSizeFile (FileName, FileUDT, Result);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { get free space for path or drive }
 function GetFreeSpacePath (const Path: String): int64;
 var
@@ -925,6 +952,44 @@ begin
     Result := -1;
     if not GetDiskFreeSpaceEx (Pchar (Path), FreeSpace, TotalSpace, nil) then Exit;
     Result := FreeSpace;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}     { V7.07 }
+function FtpFileMD5(const Filename: String; Obj: TObject = Nil;
+                ProgressCallback : TMD5Progress = Nil; StartPos: Int64 = 0;
+                            EndPos: Int64 = 0; Mode: Word = DefaultMode): String;
+var
+    Stream: TStream;
+begin
+    Result := '';
+    { Open file }
+    Stream := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
+//  Stream := TFileStream.Create(Filename, Mode);
+    try
+        Result := StreamMD5(Stream, Obj, ProgressCallback, StartPos, EndPos);
+    finally
+        { Free the file }
+        Stream.Free;
+    end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}     { V7.07 }
+function FtpFileCRC32B(const Filename: String; Obj: TObject = Nil;
+                ProgressCallback : TCrcProgress = Nil; StartPos: Int64 = 0;
+                            EndPos: Int64 = 0; Mode: Word = DefaultMode): String;
+var
+    Stream: TStream;
+begin
+    Result := '';
+    { Open file }
+    Stream := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
+//  Stream := TFileStream.Create(Filename, Mode);
+    try
+        Result := StreamCRC32B(Stream, Obj, ProgressCallback, StartPos, EndPos);
+    finally
+        { Free the file }
+        Stream.Free;
+    end;
 end;
 
 

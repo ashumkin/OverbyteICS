@@ -1,9 +1,9 @@
 object FtpReceiveForm: TFtpReceiveForm
   Left = 436
   Top = 103
-  Width = 629
-  Height = 580
   Caption = 'FTP - http://www.overbyte.be'
+  ClientHeight = 553
+  ClientWidth = 621
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,7 +20,7 @@ object FtpReceiveForm: TFtpReceiveForm
     Left = 0
     Top = 376
     Width = 621
-    Height = 170
+    Height = 177
     Hint = 'This area show the activity with the host'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -1683,7 +1683,7 @@ object FtpReceiveForm: TFtpReceiveForm
     ConnectionType = ftpDirect
     Language = 'EN'
     OnDisplayFile = FtpClient1DisplayFile
-    OnProgress = FtpClient1Progress
+    OnProgress64 = FtpClient1Progress64
     OnSessionConnected = FtpClient1SessionConnected
     OnSessionClosed = FtpClient1SessionClosed
     OnRequestDone = FtpClient1RequestDone
