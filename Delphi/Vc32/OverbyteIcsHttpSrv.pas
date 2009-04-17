@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.17
+Version:      7.18
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -255,7 +255,10 @@ Jan 11, 2009 V7.16 A.Garrels - Removed some digest authentication code to new
              however takes a CodePage argument in D2009 and better.
 Jan 12, 2009 V7.17 A. Garrels fixed a bug with NTLM authentication in func.
              Answer401.  
-
+Apr 17, 2009 V7.18 A. Garrels added a CodePage argument to functions
+             ExtractURLEncodedValue(), UrlEncode() and UrlDecode.
+             Changed type of local var TotalBytes in BuildDirList() from
+             Cardinal to Int64 to avoid integer overruns.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -336,8 +339,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 717;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.17 ';
+    THttpServerVersion = 718;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.18 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     //HA_MD5             = 0;
     //HA_MD5_SESS        = 1;
@@ -1209,11 +1212,16 @@ function GetCookieValue(
     : Boolean;                      { Found or not found that's the question}
 { Retrieve a single value by name out of an URL encoded data stream.        }
 function ExtractURLEncodedValue(
-    Msg       : PChar;             { URL Encoded stream                     }
-    Name      : String;            { Variable name to look for              }
-    var Value : String): Boolean;  { Where to put variable value            }
-function UrlEncode(const S : String) : String;
-function UrlDecode(const Url : String) : String;
+    Msg         : PChar;            { URL Encoded stream                    }
+    Name        : String;           { Variable name to look for             }
+    var Value   : String;           { Where to put variable value           }
+    SrcCodePage : Cardinal = CP_ACP;{ D2006 and older CP_UTF8 only          }
+    DetectUtf8  : Boolean = TRUE)
+    : Boolean;
+function UrlEncode(const S : String; DstCodePage : Cardinal = CP_UTF8) : String;
+function UrlDecode(const Url   : String;
+                   SrcCodePage : Cardinal = CP_ACP;
+                   DetectUtf8  : Boolean = TRUE) : String;
 function FileDate(FileName : String) : TDateTime;
 function RFC1123_Date(aDate : TDateTime) : String;
 function DocumentToContentType(FileName : String) : String;
@@ -3455,7 +3463,7 @@ var
     Data       : THttpDirEntry;
     I          : Integer;
     Total      : Cardinal;
-    TotalBytes : Cardinal;
+    TotalBytes : Int64;
 begin
     { Create a list of all directories }
     DirList := TStringList.Create;
@@ -3660,10 +3668,12 @@ end;
 { by a single '&' character. The special characters are coded by the '%'    }
 { followed by hex-ascii character code.                                     }
 function ExtractURLEncodedValue(
-    Msg       : PChar;    { URL Encoded stream                     }
-    Name      : String;   { Variable name to look for              }
-    var Value : String)   { Where to put variable value            }
-    : Boolean;                { Found or not found that's the question }
+    Msg         : PChar;    { URL Encoded stream                     }
+    Name        : String;   { Variable name to look for              }
+    var Value   : String;   { Where to put variable value            }
+    SrcCodePage : Cardinal; { D2006 and older CP_UTF8 only           }
+    DetectUtf8  : Boolean)
+    : Boolean;              { Found or not found that's the question }
 var
     NameLen  : Integer;
     FoundLen : Integer; {tps}
@@ -3707,13 +3717,12 @@ begin
         if P^ = '&' then
             Inc(P);
     end;
+    if (SrcCodePage = CP_UTF8) or (DetectUtf8 and IsUtf8Valid(U8Str)) then
 {$IFDEF COMPILER12_UP}
-    if IsUtf8Valid(U8Str) then
         Value := Utf8ToStringW(U8Str)
     else
-        Value := AnsiToUnicode(U8Str, CP_ACP);
+        Value := AnsiToUnicode(U8Str, SrcCodePage);
 {$ELSE}
-    if IsUtf8Valid(U8Str) then
         Value := Utf8ToStringA(U8Str)
     else
         Value := U8Str;
@@ -4068,27 +4077,34 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlEncode(const S : String) : String;
+function UrlEncode(const S : String; DstCodePage: Cardinal = CP_UTF8) : String;
 var
-    I, J : Integer;
-    U8Str: AnsiString;
-    RStr : AnsiString;
-    HexStr: String[2];
+    I, J   : Integer;
+    AStr   : AnsiString;
+    RStr   : AnsiString;
+    HexStr : String[2];
 begin
-    U8Str := StringToUtf8(S);
-    SetLength(RStr, Length(U8Str) * 3);
+{$IFDEF COMPILER12_UP}
+    AStr := UnicodeToAnsi(S, DstCodePage);
+{$ELSE}
+    if DstCodePage = CP_UTF8 then
+        AStr := StringToUtf8(S)
+    else
+        AStr := S;
+{$ENDIF}
+    SetLength(RStr, Length(AStr) * 3);
     J := 0;
-    for I := 1 to Length(U8Str) do begin
-        case U8Str[I] of
+    for I := 1 to Length(AStr) do begin
+        case AStr[I] of
             '0'..'9', 'a'..'z', 'A'..'Z', '.' :
                 begin
                     Inc(J);
-                    RStr[J] := U8Str[I];
+                    RStr[J] := AStr[I];
                 end
         else
             Inc(J);
             RStr[J] := '%';
-            HexStr  := IcsIntToHexA(Ord(U8Str[I]), 2);
+            HexStr  := IcsIntToHexA(Ord(AStr[I]), 2);
             Inc(J);
             RStr[J] := HexStr[1];
             Inc(J);
@@ -4101,7 +4117,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlDecode(const Url : String) : String;
+function  UrlDecode(const Url : String; SrcCodePage: Cardinal = CP_ACP;
+  DetectUtf8: Boolean = TRUE) : String;
 var
     I, J, L : Integer;
     U8Str : AnsiString;
@@ -4124,13 +4141,12 @@ begin
         Inc(I);
     end;
     SetLength(U8Str, J);
+    if (SrcCodePage = CP_UTF8) or IsUtf8Valid(U8Str) then
 {$IFDEF COMPILER12_UP}
-    if IsUtf8Valid(U8Str) then
         Result := Utf8ToStringW(U8Str)
     else
-        Result := AnsiToUnicode(U8Str, CP_ACP);
+        Result := AnsiToUnicode(U8Str, SrcCodePage);
 {$ELSE}
-    if IsUtf8Valid(U8Str) then
         Result := Utf8ToStringA(U8Str)
     else
         Result := U8Str;

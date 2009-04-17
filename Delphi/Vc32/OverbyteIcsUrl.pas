@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 08, 2004 (extracted from various ICS components)
-Version:      6.01
+Version:      6.02
 Description:  This unit contain support routines for URL handling.
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
@@ -41,7 +41,8 @@ Mar 26, 2006 V6.00 New version 6 started
 Sep 28, 2008 V6.01 A. Garrels modified UrlEncode() and UrlDecode() to support
              UTF-8 encoding. Moved IsDigit, IsXDigit, XDigit, htoi2 and htoin
              to OverbyteIcsUtils.
-
+Apr 17, 2009 V6.02 A. Garrels added argument CodePage to functions
+             UrlEncode() and UrlDecode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUrl;
@@ -81,8 +82,10 @@ const
 procedure ParseURL(const URL : String;
                    var Proto, User, Pass, Host, Port, Path : String);
 function  Posn(const s, t : String; count : Integer) : Integer;
-function  UrlEncode(const S : String) : String;
-function  UrlDecode(const S : String) : String;
+function  UrlEncode(const S : String; DstCodePage: Cardinal = CP_UTF8) : String;
+function  UrlDecode(const S     : String;
+                    SrcCodePage : Cardinal = CP_ACP;
+                    DetectUtf8  : Boolean = TRUE) : String;
 
 implementation
 
@@ -288,27 +291,34 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlEncode(const S : String) : String;
+function UrlEncode(const S : String; DstCodePage: Cardinal = CP_UTF8) : String;
 var
     I, J   : Integer;
-    U8Str  : AnsiString;
+    AStr   : AnsiString;
     RStr   : AnsiString;
     HexStr : String[2];
 begin
-    U8Str := StringToUtf8(S);
-    SetLength(RStr, Length(U8Str) * 3);
+{$IFDEF COMPILER12_UP}
+    AStr := UnicodeToAnsi(S, DstCodePage);
+{$ELSE}
+    if DstCodePage = CP_UTF8 then
+        AStr := StringToUtf8(S)
+    else
+        AStr := S;
+{$ENDIF}
+    SetLength(RStr, Length(AStr) * 3);
     J := 0;
-    for I := 1 to Length(U8Str) do begin
-        case U8Str[I] of
+    for I := 1 to Length(AStr) do begin
+        case AStr[I] of
             '0'..'9', 'A'..'Z', 'a'..'z' :
                 begin
                     Inc(J);
-                    RStr[J] := U8Str[I];
+                    RStr[J] := AStr[I];
                 end
         else
             Inc(J);
             RStr[J] := '%';
-            HexStr  := IcsIntToHexA(Ord(U8Str[I]), 2);
+            HexStr  := IcsIntToHexA(Ord(AStr[I]), 2);
             Inc(J);
             RStr[J] := HexStr[1];
             Inc(J);
@@ -347,7 +357,8 @@ begin
 end;
 *)
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlDecode(const S : String) : String;
+function UrlDecode(const S : String; SrcCodePage: Cardinal = CP_ACP;
+  DetectUtf8: Boolean = TRUE) : String;
 var
     I, J, L : Integer;
     U8Str   : AnsiString;
@@ -370,13 +381,12 @@ begin
         Inc(I);
     end;
     SetLength(U8Str, J);
+    if (SrcCodePage = CP_UTF8) or (DetectUtf8 and IsUtf8Valid(U8Str)) then
 {$IFDEF COMPILER12_UP}
-    if IsUtf8Valid(U8Str) then
         Result := Utf8ToStringW(U8Str)
     else
-        Result := AnsiToUnicode(U8Str, CP_ACP);
+        Result := AnsiToUnicode(U8Str, SrcCodePage);
 {$ELSE}
-    if IsUtf8Valid(U8Str) then
         Result := Utf8ToStringA(U8Str)
     else
         Result := U8Str;
