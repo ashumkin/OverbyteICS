@@ -62,6 +62,8 @@ Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and lat
 Nov 16, 2008 V7.02 Angus added IcsGetFileSize
 Apr 16, 2009 V7.07 Angus FtpFileMD5 and FtpFileCrc32B using buffered stream with unicode
                    Fixed IcsGetTickCountX to never return triggers (two in four billion bug)
+Apr 18, 2009 V7.08 Arno added an explicit string conversion in FtpFileMD5() to
+                   remove a compiler warning.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -966,7 +968,7 @@ begin
     Stream := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
 //  Stream := TFileStream.Create(Filename, Mode);
     try
-        Result := StreamMD5(Stream, Obj, ProgressCallback, StartPos, EndPos);
+        Result := String(StreamMD5(Stream, Obj, ProgressCallback, StartPos, EndPos));
     finally
         { Free the file }
         Stream.Free;
