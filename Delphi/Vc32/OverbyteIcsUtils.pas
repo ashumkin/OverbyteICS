@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.23
+Version:      7.24
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -78,7 +78,9 @@ Oct 23, 2008 V7.21 A. Garrels added IcsStrNextChar, IcsStrPrevChar and
              a ANSI character stream with known code page to Unicode in
              chunks. Added a PAnsiChar overload to function AnsiToUnicode.
 Nov 13, 2008 v7.22 Arno added CharsetDetect, IsUtf8Valid use CharsetDetect.
-Dec 05, 2008 v/.23 Arno added function IcsCalcTickDiff.
+Dec 05, 2008 v7.23 Arno added function IcsCalcTickDiff.
+Apr 18, 2009 V7.24 Arno added a PWideChar overload to UnicodeToAnsi().
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -159,6 +161,7 @@ type
     function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString): UnicodeString; overload;
+    function  UnicodeToAnsi(const Str: PWideChar; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
     function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
     function  UnicodeToAnsi(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  AnsiToUnicode(const Str: PAnsiChar; ACodePage: Cardinal): UnicodeString; overload;
@@ -397,6 +400,33 @@ begin
             SetLength(Result, Len - 1);
             MultiByteToWideChar(ACodePage, 0, Str, -1,
                                 Pointer(Result), Len);
+        end
+        else
+            Result := '';
+    end
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function UnicodeToAnsi(const Str: PWideChar; ACodePage: Cardinal;
+  SetCodePage: Boolean = False): RawByteString;
+var
+    Len : Integer;
+begin
+    if (Str <> nil) then begin
+        Len := WideCharToMultibyte(ACodePage, 0, Str, -1,
+                                   nil, 0, nil, nil);
+        if Len > 1 then begin // counts the null-terminator
+            SetLength(Result, Len - 1);
+            WideCharToMultibyte(ACodePage, 0, Str, -1,
+                                Pointer(Result), Len,
+                                nil, nil);
+        {$IFDEF COMPILER12_UP}
+            if SetCodePage and (ACodePage <> CP_ACP) then
+                PWord(Integer(Result) - 12)^ := ACodePage;
+        {$ENDIF}
         end
         else
             Result := '';
