@@ -5,7 +5,7 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      6.12
+Version:      7.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -66,6 +66,7 @@ Apr 10, 2009 V6.11 Arno added an explicit AnsiString cast to remove compiler
              warnings from MD5DigestToHex().
 Apr 18, 2009 V6.12 Arno fixed a bug in procedure MD5UpdateBuffer.
              Only Unicode compilers were effected.
+Apr 22, 2009 V7.00 Angus assume STREAM64
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -83,15 +84,15 @@ uses
     OverbyteIcsTypes;   // For TBytes
 
 const
-    MD5Version         = 612;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V6.12 ';
+    MD5Version         = 700;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2009 F. Piette V7.00 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}
 {$R-}
 
 type
-    TMD5Progress = procedure(Obj: TObject; Count: {$IFDEF STREAM64} Int64 {$ELSE} Integer {$ENDIF}; var Cancel: Boolean);  { V6.02 }
+    TMD5Progress = procedure(Obj: TObject; Count: Int64; var Cancel: Boolean);  { V6.02, V7.00 }
 
     TMD5State = array [0..3] of LongInt;
     TMD5Context = record
