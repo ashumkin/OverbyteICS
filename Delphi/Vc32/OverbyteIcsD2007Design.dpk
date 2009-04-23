@@ -30,7 +30,8 @@ package OverbyteIcsD2007Design;
 requires
   rtl,
   designide,
-  OverbyteIcsD2007Run;
+  OverbyteIcsD2007Run,
+  vcl;
 
 contains
   OverbyteIcsReg in 'OverbyteIcsReg.pas',
