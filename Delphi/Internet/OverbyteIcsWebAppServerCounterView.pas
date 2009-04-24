@@ -159,9 +159,9 @@ begin
 
     More := Row <= FCounters.Count;
     if More then begin
-        TagData.Add('CounterItem',     FCounters[Row - 1]);
+        TagData.Add('CounterItem',     FCounters[Row - 2]);
         if (NoTable <= FCountersSelected.Count) and
-           SameText(FCountersSelected[NoTable - 1], FCounters[Row - 1])  then
+           SameText(FCountersSelected[NoTable - 1], FCounters[Row - 2])  then
             TagData.Add('CounterSelected', 'SELECTED');
     end;
 end;
