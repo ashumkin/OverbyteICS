@@ -1752,7 +1752,7 @@ type
 {$IFNDEF OPENSSL_NO_ENGINE}
     ESslEngineError = class(Exception);
     TSslEngineState = (esClosed, esOpen, esInit);
-    TSslEngineCtxCapabilities = set of (eccLoadPrivKey, eccpLoadPubKey{, eccLoadClientCert});
+    TSslEngineCtxCapabilities = set of (eccLoadPrivKey, eccLoadPubKey{, eccLoadClientCert});
     TSslEngine = class(TSslBaseComponent)
     private
         FEngine           : PEngine;
