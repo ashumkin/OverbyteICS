@@ -287,6 +287,111 @@ const
     // The application is not happy
     X509_V_ERR_APPLICATION_VERIFICATION                 = 50;
 
+{$IFNDEF OPENSSL_NO_ENGINE}
+const
+    // engine.h //
+
+    //* These flags are used to control combinations of algorithm (methods)
+    //* by bitwise "OR"ing.
+    ENGINE_METHOD_RSA                   = $0001;
+    ENGINE_METHOD_DSA                   = $0002;
+    ENGINE_METHOD_DH                    = $0004;
+    ENGINE_METHOD_RAND                  = $0008;
+    ENGINE_METHOD_ECDH                  = $0010;
+    ENGINE_METHOD_ECDSA                 = $0020;
+    ENGINE_METHOD_CIPHERS               = $0040;
+    ENGINE_METHOD_DIGESTS               = $0080;
+    ENGINE_METHOD_STORE                 = $0100;
+    //* Obvious all-or-nothing cases. */
+    ENGINE_METHOD_ALL                   = $FFFF;
+    ENGINE_METHOD_NONE                  = $0000;
+
+    //* Error codes for the ENGINE functions. */
+
+    //* Function codes. */
+    {
+    ENGINE_F_DYNAMIC_CTRL                 = 180;
+    ENGINE_F_DYNAMIC_GET_DATA_CTX         = 181;
+    ENGINE_F_DYNAMIC_LOAD                 = 182;
+    ENGINE_F_DYNAMIC_SET_DATA_CTX         = 183;
+    ENGINE_F_ENGINE_ADD                   = 105;
+    ENGINE_F_ENGINE_BY_ID                 = 106;
+    ENGINE_F_ENGINE_CMD_IS_EXECUTABLE     = 170;
+    ENGINE_F_ENGINE_CTRL                  = 142;
+    ENGINE_F_ENGINE_CTRL_CMD              = 178;
+    ENGINE_F_ENGINE_CTRL_CMD_STRING       = 171;
+    ENGINE_F_ENGINE_FINISH                = 107;
+    ENGINE_F_ENGINE_FREE_UTIL             = 108;
+    ENGINE_F_ENGINE_GET_CIPHER            = 185;
+    ENGINE_F_ENGINE_GET_DEFAULT_TYPE      = 177;
+    ENGINE_F_ENGINE_GET_DIGEST            = 186;
+    ENGINE_F_ENGINE_GET_NEXT              = 115;
+    ENGINE_F_ENGINE_GET_PREV              = 116;
+    ENGINE_F_ENGINE_INIT                  = 119;
+    ENGINE_F_ENGINE_LIST_ADD              = 120;
+    ENGINE_F_ENGINE_LIST_REMOVE           = 121;
+    ENGINE_F_ENGINE_LOAD_PRIVATE_KEY      = 150;
+    ENGINE_F_ENGINE_LOAD_PUBLIC_KEY       = 151;
+    ENGINE_F_ENGINE_LOAD_SSL_CLIENT_CERT  = 192;
+    ENGINE_F_ENGINE_NEW                   = 122;
+    ENGINE_F_ENGINE_REMOVE                = 123;
+    ENGINE_F_ENGINE_SET_DEFAULT_STRING    = 189;
+    ENGINE_F_ENGINE_SET_DEFAULT_TYPE      = 126;
+    ENGINE_F_ENGINE_SET_ID                = 129;
+    ENGINE_F_ENGINE_SET_NAME              = 130;
+    ENGINE_F_ENGINE_TABLE_REGISTER        = 184;
+    ENGINE_F_ENGINE_UNLOAD_KEY            = 152;
+    ENGINE_F_ENGINE_UNLOCKED_FINISH       = 191;
+    ENGINE_F_ENGINE_UP_REF                = 190;
+    ENGINE_F_INT_CTRL_HELPER              = 172;
+    ENGINE_F_INT_ENGINE_CONFIGURE         = 188;
+    ENGINE_F_INT_ENGINE_MODULE_INIT       = 187;
+    ENGINE_F_LOG_MESSAGE                  = 141;
+    }
+    //* Reason codes. */
+    {
+    ENGINE_R_ALREADY_LOADED               = 100;
+    ENGINE_R_ARGUMENT_IS_NOT_A_NUMBER     = 133;
+    ENGINE_R_CMD_NOT_EXECUTABLE           = 134;
+    ENGINE_R_COMMAND_TAKES_INPUT          = 135;
+    ENGINE_R_COMMAND_TAKES_NO_INPUT       = 136;
+    ENGINE_R_CONFLICTING_ENGINE_ID        = 103;
+    ENGINE_R_CTRL_COMMAND_NOT_IMPLEMENTED = 119;
+    ENGINE_R_DH_NOT_IMPLEMENTED           = 139;
+    ENGINE_R_DSA_NOT_IMPLEMENTED          = 140;
+    ENGINE_R_DSO_FAILURE                  = 104;
+    ENGINE_R_DSO_NOT_FOUND                = 132;
+    ENGINE_R_ENGINES_SECTION_ERROR        = 148;
+    ENGINE_R_ENGINE_IS_NOT_IN_LIST        = 105;
+    ENGINE_R_ENGINE_SECTION_ERROR         = 149;
+    ENGINE_R_FAILED_LOADING_PRIVATE_KEY   = 128;
+    ENGINE_R_FAILED_LOADING_PUBLIC_KEY    = 129;
+    ENGINE_R_FINISH_FAILED                = 106;
+    ENGINE_R_GET_HANDLE_FAILED            = 107;
+    ENGINE_R_ID_OR_NAME_MISSING           = 108;
+    ENGINE_R_INIT_FAILED                  = 109;
+    ENGINE_R_INTERNAL_LIST_ERROR          = 110;
+    ENGINE_R_INVALID_ARGUMENT             = 143;
+    ENGINE_R_INVALID_CMD_NAME             = 137;
+    ENGINE_R_INVALID_CMD_NUMBER           = 138;
+    ENGINE_R_INVALID_INIT_VALUE           = 151;
+    ENGINE_R_INVALID_STRING               = 150;
+    ENGINE_R_NOT_INITIALISED              = 117;
+    ENGINE_R_NOT_LOADED                   = 112;
+    ENGINE_R_NO_CONTROL_FUNCTION          = 120;
+    ENGINE_R_NO_INDEX                     = 144;
+    ENGINE_R_NO_LOAD_FUNCTION             = 125;
+    ENGINE_R_NO_REFERENCE                 = 130;
+    ENGINE_R_NO_SUCH_ENGINE               = 116;
+    ENGINE_R_NO_UNLOAD_FUNCTION           = 126;
+    ENGINE_R_PROVIDE_PARAMETERS           = 113;
+    ENGINE_R_RSA_NOT_IMPLEMENTED          = 141;
+    ENGINE_R_UNIMPLEMENTED_CIPHER         = 146;
+    ENGINE_R_UNIMPLEMENTED_DIGEST         = 147;
+    ENGINE_R_VERSION_INCOMPATIBILITY      = 145;
+    }
+{$ENDIF}
+
 const
     BIO_CTRL_RESET         = 1;  // opt - rewind/zero etc
     BIO_CTRL_EOF           = 2;  // opt - are we at the eof
@@ -391,11 +496,37 @@ const
     X509V3_EXT_CTX_DEP      = $2;
     X509V3_EXT_MULTILINE    = $4;
 
+{$IFNDEF OPENSSL_NO_ENGINE}
+type
+    TEngine_st = record
+        Dummy : array [0..0] of Byte;
+    end;
+    PENGINE = ^TEngine_st;
+
+    TUi_method_st = record
+        Dummy : array [0..0] of Byte;
+    end;
+    PUI_METHOD = ^TUi_method_st;
+
+    TUi_st = record
+        Dummy : array [0..0] of Byte;
+    end;
+    PUI = ^TUi_st;
+
+    TUi_string_st = record
+        Dummy : array [0..0] of Byte;
+    end;
+    PUI_STRING = ^TUi_string_st;
+
+    TPinCallBack = function(ui: PUI; uis: PUI_STRING): Integer; cdecl; //AG
+{$ENDIF}
+
 const
     f_SSLeay :                                 function: Longword; cdecl = nil; //AG
     f_SSLeay_version :                         function(t: Integer): PAnsiChar; cdecl = nil; //AG
     f_ERR_get_error_line_data :                function(const FileName: PPAnsiChar; Line: PInteger; const Data: PPAnsiChar; Flags: PInteger): Cardinal; cdecl = nil;
     f_ERR_peek_error :                         function : Cardinal; cdecl = nil;
+    f_ERR_peek_last_error :                    function : Cardinal; cdecl = nil;
     f_ERR_get_error :                          function: Cardinal; cdecl = nil;
     f_ERR_error_string :                       function(Err: Cardinal; Buf: PAnsiChar): PAnsiChar; cdecl = nil;
     f_ERR_error_string_n :                     procedure(Err: Cardinal; Buf: PAnsiChar; Len: Cardinal); cdecl = nil;
@@ -536,15 +667,63 @@ const
     f_OpenSSL_add_all_digests :                procedure; cdecl = nil;
     f_EVP_cleanup :                            procedure; cdecl = nil;
     }
+{$IFNDEF OPENSSL_NO_ENGINE}
+    f_ENGINE_load_builtin_engines :            procedure; cdecl = nil; //AG;
+    f_ENGINE_register_all_complete :           procedure; cdecl = nil; //AG;
+    f_ENGINE_cleanup :                         procedure; cdecl = nil; //AG;
+    f_ENGINE_by_id :                           function(const id: PAnsiChar): PENGINE; cdecl = nil; //AG;
+    f_ENGINE_init :                            function(e: PENGINE): Integer; cdecl = nil; //AG;
+    f_ENGINE_finish :                          function(e: PENGINE): Integer; cdecl = nil; //AG;
+    f_ENGINE_set_default :                     function(e: PENGINE; flags: Cardinal): Integer; cdecl = nil; //AG;
+    f_ENGINE_ctrl_cmd_string :                 function(e: PENGINE; const cmd_name: PAnsiChar; const arg: PAnsiChar; cmd_optional: Integer): Integer; cdecl = nil; //AG;
+    f_ENGINE_free :                            function(e: PENGINE): Integer; cdecl = nil; //AG;
+    //* The following functions handle keys that are stored in some secondary
+    //* location, handled by the engine.  The storage may be on a card or
+    //* whatever. */
+    f_ENGINE_load_private_key :                function(e: PENGINE; key_id: PAnsiChar; ui_method: PUI_METHOD; callback_data: Pointer): PEVP_PKEY; cdecl = nil; //AG;
+    f_ENGINE_load_public_key :                 function(e: PENGINE; const key_id: PAnsiChar; ui_method: PUI_METHOD; callback_data: Pointer): PEVP_PKEY; cdecl = nil; //AG;
+    { Since V0.98i there's also: 
+    int ENGINE_load_ssl_client_cert(ENGINE *e, SSL *s,
+    STACK_OF(X509_NAME) *ca_dn, X509 **pcert, EVP_PKEY **ppkey,
+    STACK_OF(X509) **pother,
+    UI_METHOD *ui_method, void *callback_data);
+    }
+    // ui.h //
+    f_UI_new :                                 function: PUI; cdecl = nil; //AG;
+    f_UI_new_method :                          function(const method: PUI_METHOD): PUI; cdecl = nil; //AG;
+    f_UI_free :                                procedure(ui: PUI); cdecl = nil; //AG;
+    f_UI_create_method :                       function(name: PAnsiChar): PUI_METHOD; cdecl = nil; //AG;
+    f_UI_destroy_method :                      procedure(ui_method: PUI_METHOD); cdecl = nil; //AG;
+    f_UI_set_ex_data :                         function(r: PUI; idx: Integer; arg: Pointer): Integer; cdecl = nil; //AG;
+    f_UI_get_ex_data :                         function(r: PUI; idx: Integer): Pointer; cdecl = nil; //AG;
+    f_UI_method_set_reader :                   function(method: PUI_METHOD; reader: TPinCallBack):Integer; cdecl = nil; //AG;
+    f_UI_set_result :                          function(ui: PUI; uis: PUI_STRING; const result: PAnsiChar): Integer; cdecl = nil; //AG;
+    f_UI_OpenSSL :                             function: PUI_METHOD; cdecl = nil; //AG;
+ (*
+    http://openssl.org/docs/crypto/engine.html
+    Here we'll assume we want to load and register all ENGINE implementations
+    bundled with OpenSSL, such that for any cryptographic algorithm required by
+    OpenSSL - if there is an ENGINE that implements it and can be initialise, it
+    should be used. The following code illustrates how this can work;
+
+    /* Load all bundled ENGINEs into memory and make them visible */
+    ENGINE_load_builtin_engines();
+    /* Register all of them for every algorithm they collectively implement */
+    ENGINE_register_all_complete();
+
+    That's all that's required. Eg. the next time OpenSSL tries to set up an
+    RSA key, any bundled ENGINEs that implement RSA_METHOD will be passed to
+    ENGINE_init() and if any of those succeed, that ENGINE will be set as the
+    default for RSA use from then on.
+    *)
+{$ENDIF}
 
 function Load : Boolean;
 function WhichFailedToLoad : String;
-{$IFDEF SSL_NEVER}
 function ERR_GET_REASON(ErrCode : Cardinal) : Cardinal;
 function ERR_GET_LIB(ErrCode : Cardinal) : Cardinal;
 function ERR_GET_FUNC(ErrCode : Cardinal) : Cardinal;
 function ERR_FATAL_ERROR(ErrCode : Cardinal) : Boolean;
-{$ENDIF}
 function BIO_get_flags(b: PBIO): Integer;
 function BIO_should_retry(b: PBIO): Boolean;
 function BIO_should_read(b: PBIO): Boolean;
@@ -561,6 +740,10 @@ function f_Ics_X509_get_notBefore(X: PX509): PASN1_TIME;
 function f_Ics_X509_get_notAfter(X: PX509): PASN1_TIME;
 function Asn1ToUTDateTime(Asn1Time: PASN1_TIME; out UT: TDateTime): Boolean;
 function Asn1ToString(PAsn1 : PASN1_STRING): String;
+{$IFNDEF OPENSSL_NO_ENGINE}
+function f_Ics_UI_set_app_data(r: PUI; arg: Pointer): Integer;
+function f_Ics_UI_get_app_data(r: PUI): Pointer;
+{$ENDIF}
 
 const
     GLIBEAY_DLL_Handle   : THandle = 0;
@@ -677,6 +860,7 @@ begin
     f_SSLeay_version                         := GetProcAddress(GLIBEAY_DLL_Handle, 'SSLeay_version');
     f_ERR_get_error_line_data                := GetProcAddress(GLIBEAY_DLL_Handle, 'ERR_get_error_line_data');
     f_ERR_peek_error                         := GetProcAddress(GLIBEAY_DLL_Handle, 'ERR_peek_error');
+    f_ERR_peek_last_error                    := GetProcAddress(GLIBEAY_DLL_Handle, 'ERR_peek_last_error');
     f_ERR_get_error                          := GetProcAddress(GLIBEAY_DLL_Handle, 'ERR_get_error');
     f_ERR_error_string                       := GetProcAddress(GLIBEAY_DLL_Handle, 'ERR_error_string');
     f_ERR_error_string_n                     := GetProcAddress(GLIBEAY_DLL_Handle, 'ERR_error_string_n');
@@ -813,11 +997,35 @@ begin
     f_OpenSSL_add_all_digests                := GetProcAddress(GLIBEAY_DLL_Handle, 'OpenSSL_add_all_digests');
     f_EVP_cleanup                            := GetProcAddress(GLIBEAY_DLL_Handle, 'EVP_cleanup');
     }
+{$IFNDEF OPENSSL_NO_ENGINE}
+    f_ENGINE_load_builtin_engines            := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_load_builtin_engines'); //AG
+    f_ENGINE_register_all_complete           := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_register_all_complete'); //AG
+    f_ENGINE_cleanup                         := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_cleanup'); //AG
+    f_ENGINE_by_id                           := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_by_id'); //AG
+    f_ENGINE_init                            := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_init'); //AG
+    f_ENGINE_finish                          := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_finish'); //AG
+    f_ENGINE_set_default                     := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_set_default'); //AG
+    f_ENGINE_ctrl_cmd_string                 := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_ctrl_cmd_string'); //AG
+    f_ENGINE_free                            := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_free'); //AG
+    f_ENGINE_load_private_key                := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_load_private_key'); //AG
+    f_ENGINE_load_public_key                 := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_load_public_key'); //AG
+    f_UI_new                                 := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_new'); //AG
+    f_UI_new_method                          := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_new_method'); //AG
+    f_UI_free                                := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_free'); //AG
+    f_UI_create_method                       := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_create_method'); //AG
+    f_UI_destroy_method                      := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_destroy_method'); //AG
+    f_UI_set_ex_data                         := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_set_ex_data'); //AG
+    f_UI_get_ex_data                         := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_get_ex_data'); //AG
+    f_UI_method_set_reader                   := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_method_set_reader'); //AG
+    f_UI_set_result                          := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_set_result'); //AG
+    f_UI_OpenSSL                             := GetProcAddress(GLIBEAY_DLL_Handle, 'UI_OpenSSL'); //AG
+{$ENDIF}
     // Check if any failed
     Result := not ((@f_SSLeay                                 = nil) or
                    (@f_SSLeay_version                         = nil) or
                    (@f_ERR_get_error_line_data                = nil) or
                    (@f_ERR_peek_error                         = nil) or
+                   (@f_ERR_peek_last_error                    = nil) or
                    (@f_ERR_get_error                          = nil) or
                    (@f_ERR_error_string                       = nil) or
                    (@f_ERR_error_string_n                     = nil) or
@@ -949,7 +1157,32 @@ begin
                    (@f_OPENSSL_add_all_algorithms_conf        = nil) or
                    (@f_OpenSSL_add_all_ciphers                = nil) or
                    (@f_OpenSSL_add_all_digests                = nil) or
-                   (@f_EVP_cleanup                            = nil)});
+                   (@f_EVP_cleanup                            = nil)}
+                {$IFNDEF OPENSSL_NO_ENGINE}
+                                                                     or
+                   (@f_ENGINE_load_builtin_engines            = nil) or
+                   (@f_ENGINE_register_all_complete           = nil) or
+                   (@f_ENGINE_cleanup                         = nil) or
+                   (@f_ENGINE_by_id                           = nil) or
+                   (@f_ENGINE_init                            = nil) or
+                   (@f_ENGINE_finish                          = nil) or
+                   (@f_ENGINE_set_default                     = nil) or
+                   (@f_ENGINE_ctrl_cmd_string                 = nil) or
+                   (@f_ENGINE_free                            = nil) or
+                   (@f_ENGINE_load_private_key                = nil) or
+                   (@f_ENGINE_load_public_key                 = nil) or
+                   (@f_UI_new                                 = nil) or
+                   (@f_UI_new_method                          = nil) or
+                   (@f_UI_free                                = nil) or
+                   (@f_UI_create_method                       = nil) or
+                   (@f_UI_destroy_method                      = nil) or
+                   (@f_UI_set_ex_data                         = nil) or
+                   (@f_UI_get_ex_data                         = nil) or
+                   (@f_UI_method_set_reader                   = nil) or
+                   (@f_UI_set_result                          = nil) or
+                   (@f_UI_OpenSSL                             = nil)
+                {$ENDIF}
+                   );
 end;
 
 
@@ -961,6 +1194,7 @@ begin
     if @f_SSLeay_version                         = nil then Result := Result + ' SSLeay_version';
     if @f_ERR_get_error_line_data                = nil then Result := Result + ' ERR_get_error_line_data';
     if @f_ERR_peek_error                         = nil then Result := Result + ' ERR_peek_error';
+    if @f_ERR_peek_last_error                    = nil then Result := Result + ' ERR_peek_last_error';
     if @f_ERR_get_error                          = nil then Result := Result + ' ERR_get_error';
     if @f_ERR_error_string                       = nil then Result := Result + ' ERR_error_string';
     if @f_ERR_error_string_n                     = nil then Result := Result + ' ERR_error_string_n';
@@ -1090,11 +1324,50 @@ begin
     if @f_OpenSSL_add_all_digests                = nil then Result := Result + ' OpenSSL_add_all_ciphers';
     if @f_EVP_cleanup                            = nil then Result := Result + ' EVP_cleanup';
     }
+{$IFNDEF OPENSSL_NO_ENGINE}
+    if @f_ENGINE_load_builtin_engines            = nil then Result := Result + ' ENGINE_load_builtin_engines';//AG
+    if @f_ENGINE_register_all_complete           = nil then Result := Result + ' ENGINE_register_all_complete';//AG
+    if @f_ENGINE_cleanup                         = nil then Result := Result + ' ENGINE_cleanup';//AG
+    if @f_ENGINE_by_id                           = nil then Result := Result + ' ENGINE_by_id';//AG
+    if @f_ENGINE_init                            = nil then Result := Result + ' ENGINE_init';//AG
+    if @f_ENGINE_finish                          = nil then Result := Result + ' ENGINE_finish';//AG
+    if @f_ENGINE_set_default                     = nil then Result := Result + ' ENGINE_set_default';//AG
+    if @f_ENGINE_ctrl_cmd_string                 = nil then Result := Result + ' ENGINE_ctrl_cmd_string';//AG
+    if @f_ENGINE_free                            = nil then Result := Result + ' ENGINE_free';//AG
+    if @f_ENGINE_load_private_key                = nil then Result := Result + ' ENGINE_load_private_key';//AG
+    if @f_ENGINE_load_public_key                 = nil then Result := Result + ' ENGINE_load_public_key';//AG
+    if @f_UI_new                                 = nil then Result := Result + ' UI_new';//AG
+    if @f_UI_new_method                          = nil then Result := Result + ' UI_new_method';//AG
+    if @f_UI_free                                = nil then Result := Result + ' UI_free';//AG
+    if @f_UI_create_method                       = nil then Result := Result + ' UI_create_method';//AG
+    if @f_UI_destroy_method                      = nil then Result := Result + ' UI_destroy_method';//AG
+    if @f_UI_set_ex_data                         = nil then Result := Result + ' UI_set_ex_data';//AG
+    if @f_UI_get_ex_data                         = nil then Result := Result + ' UI_get_ex_data';//AG
+    if @f_UI_method_set_reader                   = nil then Result := Result + ' UI_method_set_reader';//AG
+    if @f_UI_set_result                          = nil then Result := Result + ' UI_set_result';//AG
+    if @f_UI_OpenSSL                             = nil then Result := Result + ' UI_OpenSSL';//AG
+{$ENDIF}
     if Length(Result) > 0 then
        Delete(Result, 1, 1);
 end;
 
-{$IFDEF SSL_NEVER}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF OPENSSL_NO_ENGINE}
+function f_Ics_UI_set_app_data(r: PUI; arg: Pointer): Integer;
+begin
+    Result := f_UI_set_ex_data(r, 0, arg);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_Ics_UI_get_app_data(r: PUI): Pointer;
+begin
+    Result := f_UI_get_ex_data(r, 0);
+end;
+{$ENDIF}
+
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ERR_GET_REASON(ErrCode : Cardinal) : Cardinal;
 begin
@@ -1121,7 +1394,7 @@ function ERR_FATAL_ERROR(ErrCode : Cardinal) : Boolean;
 begin
     Result := ((ErrCode and ERR_R_FATAL) <> 0);
 end;
-{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function f_Ics_X509_get_notBefore(X: PX509): PASN1_TIME;        {AG 03/03/06}

@@ -692,6 +692,7 @@ const
     f_SSL_CTX_set_default_passwd_cb :          procedure(C: PSSL_CTX; CallBack: TPem_password_cb); cdecl = nil;
     f_SSL_CTX_set_default_passwd_cb_userdata : procedure(C: PSSL_CTX; UData: Pointer); cdecl = nil;
     f_SSL_CTX_use_PrivateKey_file :            function(C: PSSL_CTX; const FileName: PAnsiChar; CertType: Integer): Integer; cdecl = nil;
+    f_SSL_CTX_use_PrivateKey :                 function(C: PSSL_CTX; pkey: PEVP_PKEY): Integer; cdecl = nil;
     f_SSL_CTX_load_verify_locations :          function(C: PSSL_CTX; const FileName: PAnsiChar; const SearchPath: PAnsiChar): Integer; cdecl = nil;
     f_SSL_CTX_set_default_verify_paths :       function(C: PSSL_CTX): Integer; cdecl = nil;
     f_SSL_CTX_set_verify :                     procedure(C: PSSL_CTX; Mode: Integer; CallBack : TSetVerify_cb); cdecl = nil;
@@ -932,6 +933,7 @@ begin
     f_SSL_CTX_set_default_passwd_cb          := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_default_passwd_cb');
     f_SSL_CTX_set_default_passwd_cb_userdata := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_default_passwd_cb_userdata');
     f_SSL_CTX_use_PrivateKey_file            := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_use_PrivateKey_file');
+    f_SSL_CTX_use_PrivateKey                 := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_use_PrivateKey');
     f_SSL_CTX_load_verify_locations          := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_load_verify_locations');
     f_SSL_CTX_set_default_verify_paths       := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_default_verify_paths');
     f_SSL_CTX_set_verify                     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_verify');
@@ -1075,7 +1077,9 @@ begin
                    (@f_SSL_set_wfd                            = nil) or
                    (@f_SSL_get_fd                             = nil) or
                    (@f_SSL_get_rfd                            = nil) or
-                   (@f_SSL_get_wfd                            = nil));
+                   (@f_SSL_get_wfd                            = nil) or
+                   (@f_SSL_CTX_use_PrivateKey                 = nil)
+                   );
 end;
 
 
@@ -1152,6 +1156,7 @@ begin
     if @f_SSL_CTX_set_timeout                    = nil then Result := Result + ' SSL_CTX_set_timeout';
     if @f_SSL_CTX_use_certificate_chain_file     = nil then Result := Result + ' SSL_CTX_use_certificate_chain_file';
     if @f_SSL_CTX_use_certificate_file           = nil then Result := Result + ' SSL_CTX_use_certificate_file';
+    if @f_SSL_CTX_use_PrivateKey                 = nil then Result := Result + ' SSL_CTX_use_certificate';
     if @f_SSL_CTX_set_default_passwd_cb          = nil then Result := Result + ' SSL_CTX_set_default_passwd_cb';
     if @f_SSL_CTX_set_default_passwd_cb_userdata = nil then Result := Result + ' SSL_CTX_set_default_passwd_cb_userdata';
     if @f_SSL_CTX_use_PrivateKey_file            = nil then Result := Result + ' SSL_CTX_use_PrivateKey_file';

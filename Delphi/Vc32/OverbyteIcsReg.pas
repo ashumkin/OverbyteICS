@@ -1,6 +1,9 @@
 unit OverbyteIcsReg;
 
 {$I OverbyteIcsDefs.inc}
+{$IFDEF USE_SSL}
+    {$I OverbyteIcsSslDefs.inc}
+{$ENDIF}
 
 interface
 
@@ -82,6 +85,9 @@ begin
     TSslStaticLock
   {$IFNDEF NO_DYNLOCK}
     ,TSslDynamicLock
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_ENGINE}
+    ,TSslEngine
   {$ENDIF}
   ]);
 {$ENDIF}

@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.22
+Version:      7.23
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -622,7 +622,7 @@ Jul 07, 2008 V6.17 Still a small fix from December 2007 missing in SSL code.
 Aug 11, 2008 V6.18 A. Garrels - Type AnsiString rolled back to String.
              Two bugs fixed in SSL code introduced with Unicode change.
              Socks was not fully prepared for Unicode.
-Sep 19, 2008 V6.19 A. Garrels changed some AnsiString types to RawByteString. 
+Sep 19, 2008 V6.19 A. Garrels changed some AnsiString types to RawByteString.
 Sep 21, 2008 V6.20 A. Garrels removed BoolToStr(), available since D7
 Oct 22, 2008 V7.21 A. Garrels removed the const modifier from parameter Data
              in function SendTo to fix a bug in C++ Builder.
@@ -630,6 +630,79 @@ Nov 03, 2008 V7.22 Added property Counter, a class reference to TWSocketCounter
              which provides some useful automatic counters. By default property
              Counter is unassigned and has to be enabled by a call to
              CreateCounter.
+Apr 24, 2009 V7.23 A. Garrels added *experimental* OpenSSL engine support which
+             is not compiled in by default. You have to uncomment conditional
+             define OPENSSL_NO_ENGINE in OverbyteIcsSsl.inc and rebuild your
+             packages to get it included. With engine support included a new
+             published property AutoEnableBuiltinEngines of TSslContext has to
+             be set to TRUE in order to enable OpenSSL's built-in hardware
+             accelerators support, that's all.
+
+             ******************************************************************
+             * Due to the lack of hardware this feature is completely untested*
+             ******************************************************************
+             
+             Any feedback and fixes are welcome, please contact the ICS mailing
+             list. The OpenSSL engine documentation can be found here:
+             http://openssl.org/docs/crypto/engine.html
+
+             Additionally a new component TSslEngine is installed on the palette.
+             Its purpose is to control (dynamic) engines.
+
+             Typically control commands of an OpenSC dynamic pkcs11 engine
+             (SmartCard) are :
+
+             Cmds.Add('SO_PATH=d:\opensc\bin\engine_pkcs11.dll');
+             Cmds.Add('ID=pkcs11');
+             Cmds.Add('LIST_ADD=1');
+             Cmds.Add('LOAD=');
+             Cmds.Add('MODULE_PATH=d:\opensc\bin\opensc-pkcs11.dll');
+             Cmds.Add('INIT='); <= Special ICS-control command to initialize the engine  
+
+             Sample test code (Dod couldn't get it working :(
+
+             It assumes that the X509 certificate has been exported from
+             the SmartCard to PEM file that is available in property
+             SslCertFile. It's also assumed that SslEngine1 is created
+             dynamically at run-time in this sample.
+             We are in new event TSslContext.OnBeforeInit:
+
+             if not Assigned(SslEngine1) then
+             begin
+                SslEngine1 := TSslEngine.Create(Self);
+                try
+                  SslEngine1.NameID := 'dynamic';
+
+                  // The SmartCard holds the private key.
+                  // Next two lines advise SslContext to load the key
+                  // from the engine instead from PEM file.
+                  TSslContext(Sender).CtxEngine := SslEngine1;
+                  SslEngine1.CtxCapabilities := [eccLoadPrivKey];
+
+                  // The PIN code is expected in property SslPassPhrase
+                  TSslContext(Sender).SslPassPhrase := 'ics';
+
+                  // Tell the engine which key to use.
+                  SslEngine1.KeyID := KeyIdEdit.Text;
+
+                  // At first open the engine
+                  if not SslEngine1.Open then
+                      raise Exception.Create(FEngine.LastErrorMsg);
+
+                  // Now send our vendor specific control commands
+                  for I := 0 to Cmds.Count -1 do
+                  begin
+                    if not SslEngine1.Control(Cmds.Names[I],
+                                              Cmds.ValueFromIndex[I]) then
+                        raise Exception.Create(SslEngine1.LastErrorMsg);
+                  end;
+
+                  Display('Engine set up and loaded successfully');
+                except
+                    FreeAndNil(SslEngine1);
+                    raise;
+                end;
+             end;
 
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
@@ -679,6 +752,9 @@ unit OverbyteIcsWSocket;
 {$X+}           { Enable extended syntax              }
 {$ALIGN 8}
 {$I OverbyteIcsDefs.inc}
+{$IFDEF USE_SSL}
+    {$I OverbyteIcsSslDefs.inc}
+{$ENDIF}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
     {$WARN IMPLICIT_STRING_CAST       ON}
@@ -941,7 +1017,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetIcsLogger(const Value : TIcsLogger); virtual;                { V5.21 }
     procedure   DebugLog(LogOption : TLogOption; const Msg : String); virtual;  { V5.21 }
     function    CheckLogOptions(const LogOption: TLogOption): Boolean; virtual; { V5.21 }
-{$ENDIF}    
+{$ENDIF}
     procedure   WndProc(var MsgRec: TMessage); override;
     function    MsgHandlersCount: Integer; override;
     procedure   AllocateMsgHandlers; override;
@@ -1433,7 +1509,7 @@ type
     TSslBaseComponent = class(TComponent)
     protected
         FSslInitialized : Boolean;
-        FLastSslError : Integer;
+        FLastSslError   : Integer;
 
     {$IFNDEF NO_DEBUG_LOG}                                             { V5.21 }
         FIcsLogger  : TIcsLogger;
@@ -1673,9 +1749,39 @@ type
                      ssl_X509_TRUST_OCSP_SIGN,
                      ssl_X509_TRUST_OCSP_REQUEST); }
 
+{$IFNDEF OPENSSL_NO_ENGINE}
+    ESslEngineError = class(Exception);
+    TSslEngineState = (esClosed, esOpen, esInit);
+    TSslEngineCtxCapabilities = set of (eccLoadPrivKey, eccpLoadPubKey{, eccLoadClientCert});
+    TSslEngine = class(TSslBaseComponent)
+    private
+        FEngine           : PEngine;
+        FNameID           : String;
+        FState            : TSslEngineState;
+        FCtxCapabilities  : TSslEngineCtxCapabilities;
+        FLastErrorMsg     : String;
+        FKeyID            : String;
+        procedure SetNameID(const Value: String);
+    public
+        destructor Destroy; override;
+        function  Open: Boolean;
+        function  Control(const Cmd, Arg: String): Boolean;
+        procedure Close;
+        function  Init: Boolean;
+        property  E : PEngine read FEngine;
+        property  State : TSslEngineState read FState;
+        property  LastErrorMsg : String read FLastErrorMsg write FLastErrorMsg;
+    published
+        property  KeyID : String read FKeyID write FKeyID;
+        property  NameID : String read FNameID write SetNameID;
+        property  CtxCapabilities : TSslEngineCtxCapabilities read FCtxCapabilities write FCtxCapabilities;
+    end;
+{$ENDIF}
+
     ESslContextException = class(Exception);
 
     TInfoExtractMode = (emCert, {emKey,} emCRL);
+    // TSslCertKeyFormat = (ckfPem {$IFNDEF OPENSSL_NO_ENGINE}, ckfEngine {$ENDIF}); {ckfPkcs12,}
     TSslContext = class(TSslBaseComponent)
     protected
         FSslCtx                     : PSSL_CTX;
@@ -1701,6 +1807,12 @@ type
         FSslVerifyPeerModes         : TSslVerifyPeerModes;
         FSslVerifyPeerModesValue    : Integer;
         //FSslX509Trust               : TSslX509Trust;
+        FOnBeforeInit               : TNotifyEvent;
+        //FSslKeyFormat             : TSslCertKeyFormat;
+    {$IFNDEF OPENSSL_NO_ENGINE}
+        FAutoEnableBuiltinEngines   : Boolean;
+        FCtxEngine                  : TSslEngine;
+    {$ENDIF}
 {$IFNDEF NO_ADV_MT}
         FLock                       : TRtlCriticalSection;
         procedure Lock;
@@ -1732,9 +1844,13 @@ type
         procedure LoadVerifyLocations(const CAFile, CAPath: String);
         procedure LoadCertFromChainFile(const FileName : String);
         procedure LoadPKeyFromFile(const FileName : String);
-        //procedure DebugLogInfo(const Msg: string);        { V5.21 } 
+        //procedure DebugLogInfo(const Msg: string);        { V5.21 }
         //procedure SetSslX509Trust(const Value: TSslX509Trust);
-        function  GetIsCtxInitialized : Boolean; 
+        function  GetIsCtxInitialized : Boolean;
+    {$IFNDEF OPENSSL_NO_ENGINE}
+        procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+        procedure SetCtxEngine(const Value: TSslEngine);
+    {$ENDIF}
     public
         constructor Create(AOwner: TComponent); override;
         destructor  Destroy; override;
@@ -1743,6 +1859,10 @@ type
         function    TrustCert(Cert : TX509Base): Boolean;
         procedure   LoadCrlFromFile(const Filename: String);
         procedure   LoadCrlFromPath(const Path: String);
+    {$IFNDEF OPENSSL_NO_ENGINE}
+        procedure   LoadPKeyFromEngine(CtxEngine: TSslEngine);
+        //function    SetupEngine(Engine: String; Commands: TStrings): PENGINE;
+    {$ENDIF}
         procedure   AddClientCAFromFile(const FileName: String);
         procedure   SetClientCAListFromFile(const FileName: String);
         property    IsCtxInitialized : Boolean read GetIsCtxInitialized;
@@ -1795,6 +1915,16 @@ type
         property  OnRemoveSession   : TSslContextRemoveSession
                                                         read  FOnRemoveSession
                                                         write FOnRemoveSession;
+        property  OnBeforeInit  : TNotifyEvent       read  FOnBeforeInit
+                                                     write FOnBeforeInit;
+        {property  SslKeyFormat : TSslCertKeyFormat
+                                                     read  FSslKeyFormat
+                                                     write FSslKeyFormat;}
+    {$IFNDEF OPENSSL_NO_ENGINE}
+        property  AutoEnableBuiltinEngines : Boolean read  FAutoEnableBuiltinEngines
+                                                     write FAutoEnableBuiltinEngines;
+        property  CtxEngine : TSslEngine read FCtxEngine write SetCtxEngine;                                             
+    {$ENDIF}
     end;
 
     {TSslState = (sslNone,
@@ -9907,7 +10037,8 @@ end;
 {$IFDEF USE_SSL}
 var
     //GSslInitialized     : Integer = 0;
-    SslRefCount         : Integer = 0;
+    SslRefCount               : Integer = 0;
+    GSslRegisterAllCompleted  : Boolean = FALSE;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 (* procedure OutputDebugString(const Msg : String);  angus
@@ -9965,7 +10096,7 @@ begin
                     _FreeLibrary(OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle);
                     OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle := 0
                 end;
-                raise Exception.Create('Unable to load LIBEAY DLL. Can''t find ' + S);
+                raise EIcsLibeayException.Create('Unable to load LIBEAY DLL. Can''t find ' + S);
             end;
             // Load SSlEAY DLL
             if not OverbyteIcsSSLEAY.Load then begin
@@ -9991,7 +10122,7 @@ begin
                     _FreeLibrary(OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle);
                     OverbyteIcsLIBEAY.GLIBEAY_DLL_Handle := 0
                 end;
-                raise Exception.Create('Unable to load SSLEAY DLL. Can''t find ' + S);
+                raise EIcsSsleayException.Create('Unable to load SSLEAY DLL. Can''t find ' + S);
             end;
 
             // Global system initialization
@@ -10008,6 +10139,10 @@ begin
             f_SSL_load_error_strings;
             Tick := _GetTickCount;           // probably weak
             f_RAND_seed(@Tick, SizeOf(Tick));
+        {$IFNDEF OPENSSL_NO_ENGINE}
+            //* Load all bundled ENGINEs into memory and make them visible */
+            f_ENGINE_load_builtin_engines;
+        {$ENDIF}    
         end; // SslRefCount = 0
         Inc(SslRefCount);
     finally
@@ -10024,6 +10159,9 @@ begin
         if SslRefCount > 0 then        {AG 12/30/07}
             Dec(SslRefCount);
         if SslRefCount = 0 then begin  {AG 12/30/07}
+        {$IFNDEF OPENSSL_NO_ENGINE}
+            f_ENGINE_cleanup;
+        {$ENDIF}
             if OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle <> 0 then begin
                 _FreeLibrary(OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle);
                 OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle := 0;
@@ -10154,6 +10292,7 @@ begin
     UnloadSsl;
     FSslInitialized := FALSE;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslBaseComponent.InitializeSsl;
@@ -10317,6 +10456,142 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TSslEngine }
+
+{$IFNDEF OPENSSL_NO_ENGINE}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslEngine.Close;
+begin
+    try
+        case FState of
+            esInit : f_ENGINE_finish(FEngine); // release the functional reference
+            esOpen : f_ENGINE_free(FEngine); // release the structural reference
+            else
+                Exit;
+        end;
+        FEngine := nil;
+        FState  := esClosed;
+    except
+        FEngine := nil;
+        FState  := esClosed;
+        raise;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSslEngine.Control(const Cmd, Arg: String): Boolean;
+var
+    PArg : PAnsiChar;
+    Msg  : String;
+begin
+    if FState = esClosed then
+        raise ESslEngineError.Create('Cannot control a closed engine');
+        
+    if _CompareStr(Cmd, 'INIT') = 0 then // special ICS control command 
+    begin
+        Result := Init;
+        Exit;
+    end;
+
+    if Arg = '' then
+    begin
+        PArg := nil;
+        Msg  := _Format('Executing engine control command %s', [Cmd]);
+    end
+    else begin
+        PArg := PAnsiChar(AnsiString(Arg));
+        Msg :=  _Format('Executing engine control command %s:%s', [Cmd, Arg]);
+    end;
+
+    if f_ENGINE_ctrl_cmd_string(FEngine, PAnsiChar(AnsiString(Cmd)), PArg, 0) = 0 then
+    begin
+        FLastSslError := f_ERR_peek_last_error;
+        FLastErrorMsg := Msg  + ' ' + String(LastOpenSslErrMsg(TRUE));
+        Result        := FALSE;
+    end
+    else begin
+        FLastSslError := 0;
+        FLastErrorMsg := Msg;
+        Result        := TRUE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TSslEngine.Destroy;
+begin
+    Close;
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSslEngine.Init: Boolean;
+begin
+    if FState = esClosed then
+        raise ESslEngineError.Create('Cannot initialize a closed engine');
+    FLastErrorMsg := 'Engine ' + FNameID + 'initialized';
+    FLastSslError := 0;
+    Result        := TRUE;
+    if FState = esInit then
+        Exit;
+    if f_ENGINE_init(FEngine) = 0 then
+    begin
+        FLastSslError := f_ERR_peek_last_error;
+        FLastErrorMsg := 'ENGINE_init'#13#10 + String(LastOpenSslErrMsg(TRUE));
+        Result        := FALSE;
+    end
+    else begin
+        { This should always succeed if 'FEngine' was initialised OK }
+        f_ENGINE_set_default(FEngine, ENGINE_METHOD_ALL);
+        FState := esInit;
+        f_ENGINE_free(FEngine); // release the structural reference
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSslEngine.Open: Boolean;
+begin
+    InitializeSsl;
+    {if _CompareStr(FNameID, 'auto') = 0 then
+    begin
+        f_ENGINE_register_all_complete;
+        FLastErrorMsg := 'Auto engine support enabled';
+        Result := TRUE;
+        Exit;
+    end;}
+
+    Close; // close the previous one (if assigned) 
+    FEngine := f_ENGINE_by_id(PAnsiChar(AnsiString(FNameID)));
+
+    if FEngine = nil then
+    begin
+        FLastSslError := f_ERR_peek_last_error;
+        FLastErrorMsg := String(LastOpenSslErrMsg(TRUE));
+        Result        := FALSE;
+    end
+    else begin
+        FState := esOpen;
+        Result := TRUE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslEngine.SetNameID(const Value: String);
+begin
+    Close;
+    FNameID := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF OPENSSL_NO_ENGINE}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TSslContext.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
@@ -10457,10 +10732,34 @@ begin
         end;
 {$IFNDEF NO_ADV_MT}
     finally
-        _LeaveCriticalSection(LockPwdCB)
+        _LeaveCriticalSection(LockPwdCB);
     end;
 {$ENDIF}
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF OPENSSL_NO_ENGINE}
+function PinCallback(ui: PUI; uis: PUI_STRING): Integer; cdecl;
+var
+    Obj : TSslContext;
+begin
+{$IFNDEF NO_ADV_MT}
+    _EnterCriticalSection(LockPwdCB);
+    try
+{$ENDIF}
+        Obj := TSslContext(f_Ics_UI_get_app_data(ui));
+        f_UI_set_result(ui, uis, PAnsiChar(AnsiString(Obj.FSslPassPhrase)));
+        Result := 1;
+
+{$IFNDEF NO_ADV_MT}
+    finally
+        _LeaveCriticalSection(LockPwdCB);
+    end;
+{$ENDIF}
+end;
+{$ENDIF}
+
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -11064,6 +11363,60 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF OPENSSL_NO_ENGINE}
+procedure TSslContext.Notification(
+    AComponent : TComponent;
+    Operation  : TOperation);
+begin
+    inherited Notification(AComponent, Operation);
+    if Operation = opRemove then begin
+        if AComponent = FCtxEngine then
+            FCtxEngine := nil;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslContext.SetCtxEngine(const Value: TSslEngine);
+begin
+    FCtxEngine := Value;
+    if Value <> nil then
+        Value.FreeNotification(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslContext.LoadPKeyFromEngine(CtxEngine: TSslEngine);
+var
+    PKey : PEVP_PKEY;
+    Uim  : PUI_METHOD;
+begin
+    if not Assigned(FSslCtx) then
+        raise ESslContextException.Create(msgSslCtxNotInit);
+    if (CtxEngine = nil) or (CtxEngine.KeyID = '') then
+        raise ESslContextException.Create('Engine and KeyID may not be empty');
+
+    if CtxEngine.State <> esInit then
+        if not CtxEngine.Init then
+            raise ESslContextException.Create(CtxEngine.LastErrorMsg);
+        Uim := f_UI_create_method(PAnsiChar('ICS WIN32 UI'));
+        f_UI_method_set_reader(Uim, PinCallback);
+        PKey := f_ENGINE_load_private_key(CtxEngine.E,
+                                          PAnsiChar(AnsiString(CtxEngine.KeyID)),
+                                          Uim, Pointer(Self));
+
+        if PKey = nil then
+            RaiseLastOpenSslError(ESslContextException, TRUE,
+                              'Can''t load private key from Engine');
+
+        if f_SSL_CTX_use_PrivateKey(FSslCtx, PKey) = 0 then
+            RaiseLastOpenSslError(ESslContextException, TRUE,
+                                  'Can''t use private key');
+end;
+{$ENDIF OPENSSL_NO_ENGINE}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Open a PEM CA certificate file and add the CA name extracted              }
 { to the list of CAs sent to the client when requesting a client            }
 { certificate, usefull only in server mode.                                 }
@@ -11124,6 +11477,15 @@ begin
     Lock;
     try
 {$ENDIF}
+    {$IFNDEF OPENSSL_NO_ENGINE}
+        if (not GSslRegisterAllCompleted) and FAutoEnableBuiltinEngines then
+        begin
+            // Register all of them for every algorithm they collectively implement /
+            f_ENGINE_register_all_complete;
+            GSslRegisterAllCompleted := TRUE;
+        end;
+    {$ENDIF}
+
         if not Assigned(FSslCtx) then begin
             // Create new context
             FSslCtx := InitializeCtx;
@@ -11132,12 +11494,25 @@ begin
         end;
 
         try
-            // Set the password callback and our custom user data
-            f_SSL_CTX_set_default_passwd_cb(FSslCtx, PasswordCallBack);
-            f_SSL_CTX_set_default_passwd_cb_userdata(FSslCtx, Self);
+            if Assigned(FOnBeforeInit) then
+                FOnBeforeInit(Self);
 
             // Load our key and certificate
-            LoadPKeyFromFile(FSslPrivKeyFile);
+        {$IFNDEF OPENSSL_NO_ENGINE}
+            if (FCtxEngine <> nil) and
+               (eccLoadPrivKey in FCtxEngine.CtxCapabilities) then
+                LoadPKeyFromEngine(FCtxEngine)
+            else begin
+        {$ENDIF}
+                // Set the password callback and our custom user data
+                f_SSL_CTX_set_default_passwd_cb(FSslCtx, PasswordCallBack);
+                f_SSL_CTX_set_default_passwd_cb_userdata(FSslCtx, Self);
+
+                LoadPKeyFromFile(FSslPrivKeyFile);
+        {$IFNDEF OPENSSL_NO_ENGINE}
+            end;
+        {$ENDIF}
+
             LoadCertFromChainFile(FSslCertFile);
 
             // See notes in the procedure
@@ -11210,7 +11585,7 @@ begin
     finally
         Unlock
     end;
-{$ENDIF}    
+{$ENDIF}
 end;
 
 
@@ -14112,7 +14487,7 @@ begin
     if not FSslEnable then
         Exit;
     if not Assigned(FSslContext) then
-        raise Exception.Create('SSL requires a context object');
+        raise ESslContextException.Create('SSL requires a context object');
     if Assigned(FSsl) then
         ResetSsl;    
     FSslState := sslHandshakeInit;
@@ -14148,7 +14523,7 @@ begin
     if not FSslEnable then
         Exit;
     if not Assigned(FSslContext) then
-        raise Exception.Create('SSL requires a context object');
+        raise ESslContextException.Create('SSL requires a context object');
     if Assigned(FSsl) then
         ResetSsl;
     FSslState      := sslHandshakeInit;
