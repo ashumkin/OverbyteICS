@@ -632,7 +632,7 @@ Nov 03, 2008 V7.22 Added property Counter, a class reference to TWSocketCounter
              CreateCounter.
 Apr 24, 2009 V7.23 A. Garrels added *experimental* OpenSSL engine support which
              is not compiled in by default. You have to uncomment conditional
-             define OPENSSL_NO_ENGINE in OverbyteIcsSsl.inc and rebuild your
+             define OPENSSL_NO_ENGINE in OverbyteIcsSslDefs.inc and rebuild your
              packages to get it included. With engine support included a new
              published property AutoEnableBuiltinEngines of TSslContext has to
              be set to TRUE in order to enable OpenSSL's built-in hardware
