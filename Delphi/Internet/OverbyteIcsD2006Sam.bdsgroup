@@ -31,7 +31,8 @@
       <Projects Name="OverbyteIcsHttpAsy.exe">OverbyteIcsHttpAsy.bdsproj</Projects>
       <Projects Name="OverbyteIcsHttpAsp.exe">OverbyteIcsHttpAsp.bdsproj</Projects>
       <Projects Name="OverbyteIcsCliDemo.exe">OverbyteIcsCliDemo.bdsproj</Projects>
-      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverbyteIcsConFtp.exe OverbyteIcsFtpTst.exe OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe OverbyteIcsWebServ.exe OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe OverbyteIcsTelnetClient.exe OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe OverbyteIcsHttpMultipartDownload.exe OverbyteIcsFtpMultipartDownload.exe OverbyteIcsDnsLook.exe OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe OverbyteIcsCliDemo.exe</Projects>
+      <Projects Name="OverbyteIcsWebAppServer.exe">OverbyteIcsWebAppServer.bdsproj</Projects>
+      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverbyteIcsConFtp.exe OverbyteIcsFtpTst.exe OverbyteIcsHttpTst.exe OverbyteIcsTcpSrv.exe OverbyteIcsWebServ.exe OverbyteIcsFtpServ.exe OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe OverbyteIcsHttpPost.exe OverbyteIcsNewsReader.exe OverbyteIcsTelnetClient.exe OverbyteIcsPingTst.exe OverbyteIcsNsLookup.exe OverbyteIcsHttpMultipartDownload.exe OverbyteIcsFtpMultipartDownload.exe OverbyteIcsDnsLook.exe OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe OverbyteIcsCliDemo.exe OverbyteIcsWebAppServer.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>

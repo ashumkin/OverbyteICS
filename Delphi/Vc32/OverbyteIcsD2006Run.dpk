@@ -24,6 +24,8 @@ package OverbyteIcsD2006Run;
 {$R 'OverbyteIcsMultiProgressBar.dcr'}
 {$R 'OverbyteIcsSslSessionCache.dcr'}
 {$R 'OverbyteIcsSslThrdLock.dcr'}
+{$R 'OverbyteIcsHttpAppServer.dcr'}
+{$R 'OverbyteIcsTimeList.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -107,6 +109,9 @@ contains
   OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
   OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas',
   OverbyteIcsMultiProgressBar in 'OverbyteIcsMultiProgressBar.pas',
-  OverbyteIcsDigestAuth in 'OverbyteIcsDigestAuth.pas';
+  OverbyteIcsDigestAuth in 'OverbyteIcsDigestAuth.pas',
+  OverbyteIcsWebSession in 'OverbyteIcsWebSession.pas',
+  OverbyteIcsHttpAppServer in 'OverbyteIcsHttpAppServer.pas',
+  OverbyteIcsTimeList in 'OverbyteIcsTimeList.pas';
 
 end.
