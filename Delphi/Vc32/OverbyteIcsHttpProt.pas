@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.02c
+Version:      7.03
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -413,6 +413,7 @@ Jan 22, 2009 V7.02b Sorry guys! Re-added property OnBeforeHeaderSend again
              which I (Arno) removed in V7.02 accidently :(
 Jan 22, 2009 V7.02c Arno - Conditional define UseDigestAuthentication was not
              set properly in THttpCli.StateChange.
+Apr 25, 2009 V7.03 Steve Endicott fixed a relocation bug with HTTPS.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -486,8 +487,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 702;
-    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.02c ';
+    HttpCliVersion       = 703;
+    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.03 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -2951,6 +2952,7 @@ begin
                 end
                 { We are not using a proxy }
                 else begin
+                    ParseURL(FURL, proto, user, pass, Host, port, Path); { V7.03 }
                     if Data[1] = '/' then begin
                         { Absolute location }
                         FPath     := Data;
