@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.24
+Version:      7.25
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -80,7 +80,7 @@ Oct 23, 2008 V7.21 A. Garrels added IcsStrNextChar, IcsStrPrevChar and
 Nov 13, 2008 v7.22 Arno added CharsetDetect, IsUtf8Valid use CharsetDetect.
 Dec 05, 2008 v7.23 Arno added function IcsCalcTickDiff.
 Apr 18, 2009 V7.24 Arno added a PWideChar overload to UnicodeToAnsi().
-
+May 02, 2009 V7.25 Arno added IcsNextCharIndex().
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -191,8 +191,8 @@ type
     function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  CharsetDetect(const Buf: Pointer; Len: Integer): TCharsetDetectResult; overload;
     function  CharsetDetect(const Str: RawByteString): TCharsetDetectResult; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar;
-    function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar;
+    function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
     function  htoin(Value : PWideChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  htoin(Value : PAnsiChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -227,7 +227,8 @@ type
     { preceding character in the string, or to the first character in the    }
     { string if the Current parameter equals the Start parameter.            }
     function  IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
-    function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer;
+    function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: Cardinal = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
 
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
@@ -1183,7 +1184,7 @@ begin
     if ACodePage = CP_UTF8 then
         Result := IcsCharNextUtf8(Str)
     else
-        Result := CharNextExA(Word(ACodePage), Str, 0);
+        Result := CharNextExA(Word(ACodePage), Str, 0); //CharNextExA doesn't work with UTF-8
 end;
 
 
@@ -1193,7 +1194,7 @@ begin
     if ACodePage = CP_UTF8 then
         Result := IcsCharPrevUtf8(Start, Current)
     else
-        Result := CharPrevExA(Word(ACodePage), Start, Current, 0);
+        Result := CharPrevExA(Word(ACodePage), Start, Current, 0); //CharPrevExA doesn't work with UTF-8
 end;
 
 
@@ -1201,6 +1202,17 @@ end;
 function IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer;
 begin
     Result := Integer(IcsStrNextChar(Str, ACodePage)) - Integer(Str);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: Cardinal = CP_ACP): Integer;
+begin
+    Result := Index + 1;
+    Assert((Index > 0) and (Index <= Length(S)));
+    if (ACodePage = CP_ACP) and not (S[Index] in LeadBytes) then
+        Exit;
+    Result := Index + IcsStrCharLength(PAnsiChar(S) + Index - 1, ACodePage);
 end;
 
 
