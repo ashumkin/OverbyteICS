@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.16
+Version:      7.16a
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -87,7 +87,8 @@ May 02, 2009 V7.16  A. Garrels fixed a bug in IcsWrapTextEx that could break
                     surrogate-pairs in the Unicode overload and multbyte characters
                     in the ANSI overloaded version. The latter takes a CodePage
                     argument now and RawByteString instead of AnsiString.
-
+May 02, 2009 V7.16a A. Garrels - Avoid unnecessary calls to IcsStrCharLength()
+                    in IcsWrapTextEx() ANSI overload.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -134,7 +135,7 @@ uses
     OverbyteIcsCharsetUtils;
 const
     TMimeUtilsVersion = 716;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.16 ';
+    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.16a ';
 
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
@@ -1236,10 +1237,13 @@ begin
         else begin }
 
         { Ensure MBCS (including UTF-8) are not wrapped in the middle of a codepoint }
-        L := IcsStrCharLength(PAnsiChar(@Line[cPos]), ACodePage) - 1;
-        if L > 0 then begin
-            Inc(cPos, L);
-            Inc(Col, L);
+        if SysLocale.FarEast or (ACodePage <> CP_ACP) then
+        begin
+            L := IcsStrCharLength(PAnsiChar(@Line[cPos]), ACodePage) - 1;
+            if L > 0 then begin
+                Inc(cPos, L);
+                Inc(Col, L);
+            end;
         end;
         CurChar := Line[cPos];
         //else begin
