@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.24
+Version:      7.25
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -361,7 +361,7 @@ Jan 17, 2009 v7.23  A. Garrels - New methods CalcMsgSize, CalcMsgSizeSync and
                     much faster than TFileStream.
 Feb 09, 2009 v7.24  Arno changed MIME part generation of THtlmSmtpCli when
                     files are attached (beside inline images).
-
+May 02, 2009 V7.25  Arno added/fixed ANSI 8-bit support (see also MimeUtils.pas).
 
 ToDo:
 The THtmlSmtpCli still sends file names in headers converted with default
@@ -425,8 +425,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 723;
-  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.23 ';
+  SmtpCliVersion     = 725;
+  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.25 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -459,6 +459,7 @@ type
         FNeedsEncoding : Boolean;
         FEncoding      : TSmtpDefaultEncoding;
         FWrapText      : Boolean;
+        FCodePage      : Cardinal;
     protected
         FText          : AnsiString;
         FCurrentIdx    : Integer;
@@ -469,6 +470,7 @@ type
         property    NeedsEncoding: Boolean read FNeedsEncoding;
         property    Encoding: TSmtpDefaultEncoding read FEncoding write FEncoding;
         property    CurrentIdx: Integer read FCurrentIdx;
+        property    Codepage: Cardinal read FCodePage write FCodePage;
     end;
 
     SmtpException    = class(Exception);
@@ -1340,6 +1342,7 @@ function TSmtpMessageText.SetText(
     WordWrap      : Boolean = TRUE): Integer;
 begin
     FText  := UnicodeToAnsi(AText, DestinationCP); // We send ansi only
+    FCodePage := DestinationCP;
     Result := Length(FText);
     if Result > 0 then begin
         FCurrentIdx := 1;
@@ -1391,10 +1394,10 @@ begin
             { Wrap text only }
             if FWrapText then
                 Result := _Trim(IcsWrapTextEx(FText, AnsiString(#13#10),
-                               [#09, #32, '.', ',', '-'], 76, [], FCurrentIdx, TRUE))
+                               [#09, #32, '.', ',', '-'], 76, [], FCurrentIdx, TRUE, FCodePage))
             else
                 Result := _Trim(IcsWrapTextEx(FText, AnsiString(#13#10),
-                               [#09, #32, '.', ',', '-'], MaxInt, [], FCurrentIdx));
+                               [#09, #32, '.', ',', '-'], MaxInt, [], FCurrentIdx, FALSE, FCodepage));
 
         smtpEncQuotedPrintable :
             { Encode QuotedPrintable incl. soft line breaks }

@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.15
+Version:      7.16
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -83,6 +83,11 @@ Jan 03, 2009 V7.14  A. Garrels added a PAnsiChar overload to Base64Encode().
 Jan 20, 2009 V7.15  A. Garrels added function CalcBase64AttachmentGrow and
                     fixed return of var More in DoFileEncBase64() which could
                     lead to an additional blank line in MIME part.
+May 02, 2009 V7.16  A. Garrels fixed a bug in IcsWrapTextEx that could break
+                    surrogate-pairs in the Unicode overload and multbyte characters
+                    in the ANSI overloaded version. The latter takes a CodePage
+                    argument now and RawByteString instead of AnsiString.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -128,8 +133,8 @@ uses
     OverbyteIcsLibrary,
     OverbyteIcsCharsetUtils;
 const
-    TMimeUtilsVersion = 715;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.15 ';
+    TMimeUtilsVersion = 716;
+    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.16 ';
 
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
@@ -211,13 +216,14 @@ procedure EndFileEncBase64(var Stream : TStream);
 { Dot at start of line escaping for SMTP and NNTP (double the dot)        }
 procedure DotEscape(var S : String; OnlyAfterCrLf : Boolean = False); {AG 11/04/07}
 { Similar to IcsWrapText, returns just a single line                      } {AG}
-function IcsWrapTextEx(const Line : AnsiString;
-                       const BreakStr : AnsiString;
+function IcsWrapTextEx(const Line : RawByteString;
+                       const BreakStr : RawByteString;
                        const BreakingChars: TSysCharSet;
                        MaxCol       : Integer;
                        QuoteChars   : TSysCharSet;
                        var cPos     : Integer;
-                       ForceBreak: Boolean = False): AnsiString; {$IFDEF COMPILER12_UP} overload;
+                       ForceBreak   : Boolean = False;
+                       ACodePage    : Cardinal = CP_ACP): RawByteString; {$IFDEF COMPILER12_UP} overload;
 
 function IcsWrapTextEx(const Line : String;
                        const BreakStr : String;
@@ -1195,13 +1201,14 @@ end;
 { Breaking chars appear at the end of a line. ForceBreak works outside quoted  }
 { strings only and forces a break at MaxCol if no breaking char has been found.}
 function IcsWrapTextEx(
-    const Line           : AnsiString;
-    const BreakStr       : AnsiString;
+    const Line           : RawByteString;
+    const BreakStr       : RawByteString;
     const BreakingChars  : TSysCharSet;
     MaxCol               : Integer;
     QuoteChars           : TSysCharSet;
     var cPos             : Integer;
-    ForceBreak           : Boolean): AnsiString;
+    ForceBreak           : Boolean = FALSE;
+    ACodePage            : Cardinal = CP_ACP): RawByteString;
 var
     Col                : Integer;
     LinePos, LineLen   : Integer;
@@ -1219,13 +1226,23 @@ begin
     BreakLen      := Length(BreakStr);
     Result        := '';
     while cPos <= LineLen do begin
+        {
         CurChar := Line[cPos];
         if IsCharInSysCharSet(CurChar, LeadBytes) then begin
             L := CharLength(Line, cPos) div SizeOf(Char) -1;
             Inc(cPos, L);
             Inc(Col, L);
         end
-        else begin
+        else begin }
+
+        { Ensure MBCS (including UTF-8) are not wrapped in the middle of a codepoint }
+        L := IcsStrCharLength(PAnsiChar(@Line[cPos]), ACodePage) - 1;
+        if L > 0 then begin
+            Inc(cPos, L);
+            Inc(Col, L);
+        end;
+        CurChar := Line[cPos];
+        //else begin
             if CurChar = BreakStr[1] then begin
                 if QuoteChar = #0 then begin
                     ExistingBreak := _StrLComp(PAnsiChar(BreakStr),
@@ -1258,7 +1275,7 @@ begin
                     (BreakPos = 0) then begin
                 BreakPos := cPos;
             end;
-        end;
+        //end;
         Inc(cPos);
         Inc(Col);
 
@@ -1321,12 +1338,15 @@ begin
     Result        := '';
     while cPos <= LineLen do begin
         CurChar := Line[cPos];
-        if IsCharInSysCharSet(CurChar, LeadBytes) then begin
+        { Ensure surrogate-pairs are not wrapped }
+        if IsLeadChar(CurChar) then begin // Check for surrogate-pairs
+        //if IsCharInSysCharSet(CurChar, LeadBytes) then begin
             L := CharLength(Line, cPos) div SizeOf(Char) -1;
             Inc(cPos, L);
             Inc(Col, L);
-        end
-        else begin
+            CurChar := Line[cPos];
+        end;
+        //else begin
             if CurChar = BreakStr[1] then begin
                 if QuoteChar = #0 then begin
                     ExistingBreak := _StrLComp(PChar(BreakStr),
@@ -1359,7 +1379,7 @@ begin
                     (BreakPos = 0) then begin
                 BreakPos := cPos;
             end;
-        end;
+        //end;
         Inc(cPos);
         Inc(Col);
 
