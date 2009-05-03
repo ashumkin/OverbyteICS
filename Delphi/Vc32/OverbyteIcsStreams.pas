@@ -66,7 +66,7 @@ Apr 17, 2009 V6.11 Arno fixed a bug in TBufferedFileStream that could corrupt
              both are still experimental.
              Removed plenty of old conditional code.
 May 03, 2009 V6.12 Arno fixed forced line breaks in TIcsStreamReader.
-             On forced line breaks a multi-byte character codeunit including
+             On forced line breaks a multi-byte character codepoint including
              UTF-8 will be preserved. Added method ReadToEnd.
 
 
