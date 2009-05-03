@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.11
+Version:      6.12
 Legal issues: Copyright (C) 2005-2009 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
@@ -65,6 +65,9 @@ Apr 17, 2009 V6.11 Arno fixed a bug in TBufferedFileStream that could corrupt
              TIcsBufferedStream ease reading and writing text from/to streams,
              both are still experimental.
              Removed plenty of old conditional code.
+May 03, 2009 V6.12 Arno fixed forced line breaks in TIcsStreamReader.
+             On forced line breaks a multi-byte character codeunit including
+             UTF-8 will be preserved. Added method ReadToEnd.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -247,23 +250,26 @@ type
         property    FastSize: Int64 read GetSize; // For compatibility with old TBufferedFileStream; 
     end;
 
+    EStreamReaderError = class(Exception);
     TIcsLineBreakStyle = (ilbsCRLF, ilbsLF, ilbsCR);
     TIcsStreamReader = class(TIcsBufferedStream)
     private
         FReadBuffer     : TBytes;
         FReadBufSize    : Integer;
         FCodePage       : Cardinal;
+        FLeadBytes      : set of AnsiChar;
         FDetectBOM      : Boolean;
-        { Max. number of chars forcing a new line even though none of the    }
-        { break chars was found. Note that this may split up multi-byte      }
-        { characters and put their bytes into different lines.               }
-        { Default value = 2048 Chars                                         }
+        { Max. number of chars (elements) forcing a new line even though     }
+        { none of the break chars was found. Note that this value is not     }
+        { accurate since multi-byte codeunits including UTF-8 will be        }
+        { preserved.                                                         }
         FMaxLineLength  : Integer;
         function    InternalReadLn: Boolean;
         function    InternalReadLnWLe: Boolean;
         function    InternalReadLnWBe: Boolean;
         procedure   EnsureReadBuffer(Size: Integer); {$IFDEF USE_INLINE} inline;{$ENDIF}
         procedure   SetMaxLineLength(const Value: Integer);
+        procedure   SetCodePage(const Value : Cardinal);
     protected
         function    GetCodePageFromBOM: Cardinal; virtual;
         procedure   Init; override;
@@ -296,8 +302,10 @@ type
         function    DetectLineBreakStyle: TIcsLineBreakStyle;
         function    ReadLine(var S: RawByteString): Boolean; overload; virtual;
         function    ReadLine(var S: UnicodeString): Boolean; overload; virtual;
+        procedure   ReadToEnd(var S: RawByteString); overload; virtual;
+        procedure   ReadToEnd(var S: UnicodeString); overload; virtual;
 
-        property    CurrentCodePage: Cardinal read FCodePage write FCodePage;
+        property    CurrentCodePage: Cardinal read FCodePage write SetCodePage;
         property    MaxLineLength: Integer read FMaxLineLength write SetMaxLineLength;
     end;
 
@@ -1464,7 +1472,9 @@ begin
     SetMaxLineLength(2048);
     SetLength(FReadBuffer, FReadBufSize + SizeOf(Char));
     if FDetectBom then
-        FCodePage := GetCodePageFromBOM;
+        SetCodePage(GetCodePageFromBOM)
+    else
+        SetCodePage(FCodePage);
 end;
 
 
@@ -1472,9 +1482,50 @@ end;
 procedure TIcsStreamReader.SetMaxLineLength(const Value: Integer);
 begin
     if Value < 1 then
-        FMaxLineLength := 1 * Sizeof(Char)
+        FMaxLineLength := 1
     else
-        FMaxLineLength := Value * Sizeof(Char);
+        FMaxLineLength := Value
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsStreamReader.SetCodePage(const Value: Cardinal);
+var
+    CPInfo : TCPInfo;
+    I      : Integer;
+    J      : Byte;
+begin
+    case Value of
+        CP_ACP      :
+            begin
+                FLeadBytes := SysUtils.Leadbytes;
+                FCodePage  := Value;
+            end;
+        CP_UTF8,
+        CP_UTF16Le,
+        CP_UTF16Be  :
+            begin
+                FLeadBytes := [];
+                FCodePage  := Value;
+            end;
+        else
+            if GetCPInfo(Value, CPInfo) then begin
+                FCodePage := Value;
+                if CPInfo.MaxCharSize > 1 then begin
+                    I := 0;
+                    while (I < MAX_LEADBYTES) and
+                          ((CPInfo.LeadByte[I] or CPInfo.LeadByte[I + 1]) <> 0) do begin
+                        for J := CPInfo.LeadByte[I] to CPInfo.LeadByte[I + 1] do
+                            Include(FLeadBytes, AnsiChar(J));
+                        Inc(I, 2);
+                    end;
+                end
+                else
+                    FLeadBytes := [];
+            end
+            else
+                raise EStreamReaderError.Create(SysErrorMessage(GetLastError));
+    end;
 end;
 
 
@@ -1604,9 +1655,14 @@ begin
     P := PAnsiChar(FReadBuffer);
     while Read(Ch, SizeOf(AnsiChar)) = SizeOf(AnsiChar) do begin
         Inc(Idx);
-        if Idx >= FMaxLineLength then begin
-            Result := TRUE;
-            Exit;
+        if (Idx >= FMaxLineLength) then begin
+            if ((FCodePage <> CP_UTF8) and (not (Ch in FLeadBytes))) or
+               ((FCodePage = CP_UTF8) and (not IsUtf8TrailByte(Byte(Ch)))) then
+            begin
+                Seek(-1, soCurrent);
+                Result := TRUE;
+                Exit;
+            end;
         end;
         EnsureReadBuffer(Idx + 1);
         case Ch of
@@ -1660,7 +1716,8 @@ begin
     while Read(Ch, SizeOf(WideChar)) = SizeOf(WideChar) do
     begin
         Inc(Idx);
-        if Idx >= FMaxLineLength then begin
+        if (Idx >= FMaxLineLength) and (not IsLeadChar(Ch)) then begin
+            Seek(-2, soCurrent);
             Result := TRUE;
             Exit;
         end;
@@ -1716,12 +1773,13 @@ begin
     P := PWideChar(FReadBuffer);
     while Read(Wrd, SizeOf(Word)) = SizeOf(Word) do begin
         Inc(Idx);
-        if Idx >= FMaxLineLength then begin
+        Ch := WideChar(((Wrd and $FF) shl 8) or ((Wrd shr 8) and $FF));
+        if (Idx >= FMaxLineLength) and (not IsLeadChar(Ch)) then begin
+            Seek(-2, soCurrent);
             Result := TRUE;
             Exit;
         end;
         EnsureReadBuffer((Idx + 1) * 2);
-        Ch := WideChar(((Wrd and $FF) shl 8) or ((Wrd shr 8) and $FF));
         case Ch of
             #10 :
                 begin
@@ -1819,6 +1877,66 @@ begin
         P^ := AnsiChar(Lo(Ch));
         Inc(P);
         Inc(Str);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsStreamReader.ReadToEnd(var S: RawByteString);
+var
+    Buf : TBytes;
+begin
+    case FCodePage of
+        CP_UTF16Le :
+            begin
+                SetLength(Buf, (Size - Position) + 2);
+                Read(Buf[0], Length(Buf) - 2);
+                Buf[Length(Buf) - 1] := 0;
+                Buf[Length(Buf) - 2] := 0;
+                S := UnicodeToAnsi(PWideChar(Buf), CP_ACP, TRUE);
+            end;
+        CP_UTF16Be :
+            begin
+                SetLength(Buf, (Size - Position) + 2);
+                Read(Buf[0], Length(Buf) - 2);
+                Buf[Length(Buf) - 1] := 0;
+                Buf[Length(Buf) - 2] := 0;
+                SwapByteOrder(PWideChar(Buf));
+                S := UnicodeToAnsi(PWideChar(Buf), CP_ACP, TRUE);
+            end;
+        else
+            SetLength(S, Size - Position);
+            Read(PAnsiChar(S)^, Length(S));
+        {$IFDEF COMPILER12_UP}
+            if (S <> '') and (FCodePage <> CP_ACP) then
+                PWord(Integer(S) - 12)^ := FCodePage;
+        {$ENDIF}
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsStreamReader.ReadToEnd(var S: UnicodeString);
+var
+    Buf : TBytes;
+begin
+    case FCodePage of
+        CP_UTF16Le :
+            begin
+                SetLength(S, (Size - Position) div 2);
+                Read(PWideChar(S)^, Length(S) * 2);
+            end;
+        CP_UTF16Be :
+            begin
+                SetLength(S, (Size - Position) div 2);
+                Read(PWideChar(S)^, Length(S) * 2);
+                SwapByteOrder(PWideChar(S));
+            end;
+        else
+            SetLength(Buf, (Size - Position) + 1);
+            Read(Buf[0], Length(Buf) - 1);
+            Buf[Length(Buf) - 1] := 0;
+            S := AnsiToUnicode(PAnsiChar(Buf), FCodePage);
     end;
 end;
 
