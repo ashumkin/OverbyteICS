@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.25
+Version:      7.26
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -81,6 +81,8 @@ Nov 13, 2008 v7.22 Arno added CharsetDetect, IsUtf8Valid use CharsetDetect.
 Dec 05, 2008 v7.23 Arno added function IcsCalcTickDiff.
 Apr 18, 2009 V7.24 Arno added a PWideChar overload to UnicodeToAnsi().
 May 02, 2009 V7.25 Arno added IcsNextCharIndex().
+May 03, 2009 V7.26 Arno added IsUtf8TrailByte and IsLeadChar.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -187,6 +189,11 @@ type
     function  Utf8ToStringW(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
+    { This is a weak check, it does not detect whether it's a valid UTF-8 byte }  
+    function  IsUtf8TrailByte(const B: Byte): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+{$IFNDEF COMPILER12_UP}
+    function  IsLeadChar(Ch: WideChar): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+{$ENDIF}
     function  IsUtf8Valid(const Str: RawByteString): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  CharsetDetect(const Buf: Pointer; Len: Integer): TCharsetDetectResult; overload;
@@ -936,6 +943,23 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsUtf8TrailByte(const B: Byte): Boolean;
+begin
+    Result := (B and $C0 <> $C0) and
+              (B and $80 = $80) or (B and $C0 = $80);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF COMPILER12_UP}
+function IsLeadChar(Ch: WideChar): Boolean;
+begin
+    Result := (Ch >= #$D800) and (Ch <= #$DFFF);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function CharsetDetect(const Buf: Pointer; Len: Integer): TCharsetDetectResult;
 var
     PEndBuf   : PByte;
