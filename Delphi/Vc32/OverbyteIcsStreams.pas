@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.12
+Version:      6.13
 Legal issues: Copyright (C) 2005-2009 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
@@ -66,9 +66,15 @@ Apr 17, 2009 V6.11 Arno fixed a bug in TBufferedFileStream that could corrupt
              both are still experimental.
              Removed plenty of old conditional code.
 May 03, 2009 V6.12 Arno fixed forced line breaks in TIcsStreamReader.
-             On forced line breaks a multi-byte character codepoint including
+             On forced line breaks a multi-byte character code point including
              UTF-8 will be preserved. Added method ReadToEnd.
-
+May 07, 2009 V6.13 TIcsStreamWriter did not convert from ANSI to UTF-7.
+             Note that on forced line breaks (MaxLineLength) TIcsStreamReader
+             may still break UTF-7 code points, however UTF-7 should normally be
+             used only in the context of 7 bit transports, such as e-mail where
+             line length restrictions exist, so setting property MaxLineLength
+             to >= 1024 should work around this issue.
+             
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsStreams;
@@ -261,8 +267,8 @@ type
         FDetectBOM      : Boolean;
         { Max. number of chars (elements) forcing a new line even though     }
         { none of the break chars was found. Note that this value is not     }
-        { accurate since multi-byte codeunits including UTF-8 will be        }
-        { preserved.                                                         }
+        { accurate since multi-byte code points including UTF-8 will be      }
+        { preserved. Default = 2048                                          }
         FMaxLineLength  : Integer;
         function    InternalReadLn: Boolean;
         function    InternalReadLnWLe: Boolean;
@@ -2273,10 +2279,10 @@ begin
                 WriteBuffer(FWriteBuffer[0], SLen * 2);
             end;
         else
-            Len := WideCharToMultibyte(FCodePage, 0, Pointer(S), SLen, nil, 0,
+            Len := WideCharToMultiByte(FCodePage, 0, Pointer(S), SLen, nil, 0,
                                        nil, nil);
             EnsureWriteBuffer(Len);
-            Len := WideCharToMultibyte(FCodePage, 0, Pointer(S), SLen,
+            Len := WideCharToMultiByte(FCodePage, 0, Pointer(S), SLen,
                                        @FWriteBuffer[0], Len, nil, nil);
             WriteBuffer(FWriteBuffer[0], Len);
     end; //case
@@ -2294,7 +2300,8 @@ begin
     SLen := Length(S);
     if SLen = 0 then Exit;
     case FCodePage of
-        CP_UTF8    :
+        CP_UTF8,
+        CP_UTF7     :
             begin
                 if SrcCodePage <> FCodePage then
                 begin
