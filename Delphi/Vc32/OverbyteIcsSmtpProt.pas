@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.25
+Version:      7.26
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -362,10 +362,16 @@ Jan 17, 2009 v7.23  A. Garrels - New methods CalcMsgSize, CalcMsgSizeSync and
 Feb 09, 2009 v7.24  Arno changed MIME part generation of THtlmSmtpCli when
                     files are attached (beside inline images).
 May 02, 2009 V7.25  Arno added/fixed ANSI 8-bit support (see also MimeUtils.pas).
+May 09, 2009 V7.26  Arno added code page support and charset conversion
+                    capabilities for ANSI compilers. Reworked all components
+                    including code in MimeUtils.pas, see new demo MailSnd and
+                    comments below in the interface section of TCustomSmtpClient.
+                    UTF-7 is now supported partly (though this charset is
+                    silently replaced by UTF-8 in header lines). Anyway I
+                    suggest to use UTF-8 rather than UTF-7 since UTF-7 is really
+                    very special.
+                    Fixed missing filenames in THtmlSmtpCli part headers.
 
-ToDo:
-The THtmlSmtpCli still sends file names in headers converted with default
-system code page. It also does not inline encode and fold too long headerlines.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -425,52 +431,79 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 725;
-  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.25 ';
+  SmtpCliVersion     = 726;
+  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.26 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
-  SmtpDefEncArray : array [0..3] of Ansistring = ('7bit',             '8bit',
+  SmtpDefEncArray : array [0..3] of AnsiString = ('7bit',             '8bit',
                                                   'quoted-printable', 'base64'); {AG}
-
 type
-    TSmtpHeaderLines = class(TStringList)
-    public
-        procedure   AddAddrHdr(const HdrName : String;                     {AG}
-                              const HdrBody  : String;
-                              EncType        : Char;
-                              const ACharset : String;
-                              Allow8Bit      : Boolean;
-                              DoFold         : Boolean;
-                              ACodePage      : Cardinal);
-
-        procedure   AddHdr(const HdrName   : String;
-                          HdrBody          : String;
-                          EncType          : Char;
-                          const ACharset   : String;
-                          Allow8Bit        : Boolean;
-                          DoFold           : Boolean;
-                          ACodePage        : Cardinal);
-    end;
+    TCustomSmtpClient = class;
     TSmtpDefaultEncoding      = (smtpEnc7bit,            smtpEnc8bit,
                                  smtpEncQuotedPrintable, smtpEncBase64);   {AG}
-    TSmtpMessageText = class(TObject)                                      {AG}
-    private
-        FNeedsEncoding : Boolean;
-        FEncoding      : TSmtpDefaultEncoding;
-        FWrapText      : Boolean;
-        FCodePage      : Cardinal;
+
+    TSmtpHeaderLines = class(TStringList)                                  {AG}
     protected
-        FText          : AnsiString;
-        FCurrentIdx    : Integer;
+        FAllow8Bit          : Boolean;
+        FDefaultEncoding    : TSmtpDefaultEncoding;
+        FCharset            : String;
+        FCodePage           : Cardinal;
+        FIsMultiByteCP      : Boolean;
+        FFoldLines          : Boolean;
+        FConvertToCharset   : Boolean; // Ignored in 2009 and better!
+        FEncType            : Char;
+
+        procedure SetCodePage(const Value: Cardinal);
+        procedure SetCharSet(const Value: String);
+        procedure SetConvertToCharset(const Value: Boolean);
+        procedure SetDefaultEncoding(const Value: TSmtpDefaultEncoding);
+    public
+        constructor Create;
+        procedure AddAddrHdr(const HdrName : String;
+                             const HdrBody  : String);
+        procedure AddHdr(const HdrName : String;
+                         HdrBody       : String);
+        property  Allow8Bit : Boolean   read  FAllow8Bit  write FAllow8Bit;
+        property  Charset   : String    read  FCharset    write SetCharset;
+        property  CodePage  : Cardinal  read  FCodePage   write SetCodePage;
+        property  ConvertToCharset : Boolean        read  FConvertToCharset
+                                                    write SetConvertToCharset;
+        property  FoldLines : Boolean read FFoldLines  write FFoldLines;
+        property  IsMultiByteCP : Boolean read FIsMultiByteCP write FIsMultiByteCP;
+        property  DefaultEncoding : TSmtpDefaultEncoding read  FDefaultEncoding
+                                                        write SetDefaultEncoding;
+        property  EncType : Char read FEncType;                                                
+    end;
+
+    TSmtpMessageText = class(TObject)                                      {AG}
+    protected
+        FTransferEncoding : TSmtpDefaultEncoding;
+        FWrapText         : Boolean;
+        FMaxLineLength    : Integer;
+        FCodePage         : Cardinal;
+        FIsMultiByteCP    : Boolean;
+        FText             : AnsiString;
+        FCurrentIdx       : Integer;
     public
         function    NextLineAsString: AnsiString;
-        function    SetText(const AText: UnicodeString; DestinationCP: Cardinal; WordWrap: Boolean = TRUE): Integer; overload;
-        function    SetText(const AText: AnsiString; DestinationCP: Cardinal; WordWrap: Boolean = TRUE): Integer; overload;
-        property    NeedsEncoding: Boolean read FNeedsEncoding;
-        property    Encoding: TSmtpDefaultEncoding read FEncoding write FEncoding;
+        function    SetText(
+                        {$IFDEF UNICODE}
+                            const AText       : UnicodeString;
+                        {$ELSE}
+                            const AText       : AnsiString;
+                        {$ENDIF}
+                            DstCodePage       : Cardinal;
+                            IsMultiByteCP     : Boolean;
+                            ConvertToCharset  : Boolean;
+                            DefaultEncoding   : TSmtpDefaultEncoding;
+                            Allow8Bit         : Boolean;
+                            WrapText          : Boolean = TRUE;
+                            MaxLineLength     : Integer = SmtpDefaultLineLength
+                            ): Integer;
+
+        property    TransferEncoding: TSmtpDefaultEncoding read FTransferEncoding;
         property    CurrentIdx: Integer read FCurrentIdx;
-        property    Codepage: Cardinal read FCodePage write FCodePage;
     end;
 
     SmtpException    = class(Exception);
@@ -601,12 +634,31 @@ type
         FHdrSender           : String;       { Mail Sender's Email          }
         FHdrPriority         : TSmtpPriority;
         FState               : TSmtpState;
-        FCharSet             : String;
-        FCodePage            : Cardinal;
-        FDefaultEncoding     : TSmtpDefaultEncoding; { Default transfer } {AG}
-        FAllow8bitChars      : Boolean;                                   {AG}
-        FFoldHeaders         : Boolean;                                   {AG}
-        FWrapMessageText     : Boolean;
+        FCharSet             : String;       { Charset of the e-mail        }
+        { Convert from system charset to FCharSet with ANSI compilers only  }
+        FConvertToCharset    : Boolean;      { Ignored in 2009 and better!  }
+        FCodePage            : Cardinal;     { Calculated from FCharset     }
+        FIsMultiByteCP       : Boolean;      { Calculated from FCodePage    }
+        { Default Transfer-Encoding of FMailMessage. Actual value used      }
+        { by the component may change if set to smtpEnc7Bit or smtpEnc8Bit. }
+        FDefaultEncoding     : TSmtpDefaultEncoding;
+        { Works similar as OE. If TRUE and FDefaultEncoding was smtpEnc7Bit }
+        { or smtpEnc8Bit 8-bit won't be encoded QP or B64. Note that it     }
+        { should be set to FALSE in most cases since 8-bit e-mail is not    }
+        { supported by every e-mail application around.                     }
+        FAllow8bitChars      : Boolean;
+        { Folds header lines, if enabled                                    }
+        FFoldHeaders         : Boolean;
+        { Attempts to break MailMessage.Text at common breaking chars like  }
+        { whitespace, dot or comma. Effects plain text, not encoded QP or   }
+        { B64 only. Tries to keep FWrapMsgMaxLineLen, however a line may    }
+        { become longer than that. Use one of the DefaultEncoding values    }
+        { smtpEncQuotedPrintable or smtpEncBase64 if line length may        }
+        { never exceed the suggested maximum line length of 76 bytes        }
+        { without CRLF in SMTP.                                             }
+        FWrapMessageText     : Boolean;      { Try to wrap text             }
+        { The maximum number of bytes after a line break should be inserted }
+        FWrapMsgMaxLineLen   : Integer;
         FContentType         : TSmtpContentType;
         FContentTypeStr      : String;
         FConfirmReceipt      : Boolean;      { Request confirmation of receipt } {AG}
@@ -666,8 +718,10 @@ type
         FMaxMsgSize          : Int64;  { Maximum message size accepted by the server }
         FOldSendMode         : TSmtpSendMode;
         FOldOnDisplay        : TSmtpDisplay;
-        procedure   SetCharset(const Value: String); {AG}
-        procedure   EndSendToStream;            {AG}
+        procedure   SetCharset(const Value: String);           {AG}
+        procedure   SetConvertToCharset(const Value: Boolean); {AG}
+        procedure   SetWrapMsgMaxLineLen(const Value: Integer); {AG}
+        procedure   EndSendToStream;                           {AG}
         procedure   SendLineToStream(Data: Pointer; Len: Integer); {AG}
         procedure   CreateSocket; virtual;                         {AG/SSL}
         procedure   AuthGetType;          { parse Ehlo response for AuthTypes }
@@ -805,6 +859,8 @@ type
                                                      write FHdrPriority;
         property CharSet      : String               read  FCharSet
                                                      write SetCharset;
+        property ConvertToCharset : Boolean          read  FConvertToCharset
+                                                     write SetConvertToCharset;
         property CodePage     : Cardinal             read  FCodePage       {AG}
                                                      write FCodePage;
         property DefaultEncoding : TSmtpDefaultEncoding  read  FDefaultEncoding {AG}
@@ -860,6 +916,8 @@ type
                                                      write FOnMessageDataSent;
         property MaxMessageSize    : Int64           read  FMaxMsgSize;
         property SizeSupported     : Boolean         read  FSizeExt;
+        property WrapMsgMaxLineLen : Integer         read  FWrapMsgMaxLineLen
+                                                     write SetWrapMsgMaxLineLen;
     end;
 
     { Descending component adding MIME (file attach) support }
@@ -874,7 +932,6 @@ type
         FBodyFlag               : Boolean;
         FBodyLine               : Integer;
         FMailMsgText            : TSmtpMessageText;                       {AG}
-        FEncoding               : TSmtpDefaultEncoding;                   {AG}
         FOnAttachContentType    : TSmtpAttachmentContentType;
         FOnAttachContentTypeEh  : TSmtpAttachmentContentTypeEh;           {AG}
         FOnAttachHeader         : TSmtpAttachHeader;
@@ -901,10 +958,11 @@ type
         destructor  Destroy;                     override;
         procedure   Data;                        override;
         procedure   CalcMsgSizeSync;
-        property    CodePage;           {AG}
-        property    AuthTypesSupported; {AG}
-        property    RequestType;        {AG}
-        property    OutStream;          {AG}
+        property    CodePage;              {AG}
+        property    AuthTypesSupported;    {AG}
+        property    RequestType;           {AG}
+        property    OutStream;             {AG}
+        property    MessageSize;           {AG}
         property    OnBeforeOutStreamFree; {AG}
         property    MaxMessageSize;
         property    SizeSupported;
@@ -931,12 +989,13 @@ type
         property HdrPriority;
         property State;
         property CharSet;
+        property ConvertToCharset;      {AG}
+        property WrapMsgMaxLineLen;        {AG}
         property SendMode;              {AG}
         property DefaultEncoding;       {AG}
         property Allow8bitChars;        {AG}
         property FoldHeaders;           {AG}
         property WrapMessageText;       {AG}
-        property MessageSize;           {AG}
         property ContentType;
         property ErrorMessage;
         property LastResponse;
@@ -1113,27 +1172,31 @@ type
 
     THtmlSmtpCli = class(TSmtpCli)
     private
-        FPlainText       : TStrings;
-        FEmailImages     : TStrings;
-        FHtmlText        : TStrings;
-        FStreamArray     : TList;
-        FOutsideBoundary : AnsiString;
-        FInsideBoundary  : AnsiString;
-        FInnerBoundary   : AnsiString;
-        FMimeState       : TSmtpMimeState;
-        FHtmlCharSet     : String;
-        FHtmlCodePage    : Cardinal;
-        FLineOffset      : Integer;
-        FImageNumber     : Integer;
-        FsContentType    : String;
-        FsFileName       : String;
-        FMsgLineCount    : Integer;
+        FPlainText              : TStrings;
+        FEmailImages            : TStrings;
+        FHtmlText               : TStrings;
+        FStreamArray            : TList;
+        FOutsideBoundary        : AnsiString;
+        FInsideBoundary         : AnsiString;
+        FInnerBoundary          : AnsiString;
+        FMimeState              : TSmtpMimeState;
+        FHtmlCharSet            : String;
+        FHtmlCodePage           : Cardinal;
+        FHtmlConvertToCharset   : Boolean;
+        FHtmlIsMultiByteCP      : Boolean;
+        FLineOffset             : Integer;
+        FImageNumber            : Integer;
+        FsContentType           : String;
+        FsFileName              : String;
+        FsAnsiFileName          : AnsiString;
+        FMsgLineCount           : Integer;
         procedure SetPlainText(const newValue: TStrings);
         procedure SetHtmlText(const newValue: TStrings);
         function  GetImageStream(Index: Integer): TStream;
         procedure SetImageStream(Index: Integer; const Value: TStream);
         function  GetImageStreamCount: Integer;
         procedure SetHtmlCharset(const Value: String);
+        procedure SetHtmlConvertToCharset(const Value: Boolean);
     protected
         procedure   SetEMailImages(newValue : TStrings);
         procedure   TriggerGetData(LineNum  : Integer;
@@ -1163,6 +1226,9 @@ type
                                               write SetHtmlText;
         property HtmlCharSet : String         read  FHtmlCharSet
                                               write SetHtmlCharset;
+        property HtmlConvertToCharset : Boolean
+                                              read  FHtmlConvertToCharset
+                                              write SetHtmlConvertToCharSet;
     end;
 
 { Function to convert a TDateTime to an RFC822 timestamp string }
@@ -1189,9 +1255,8 @@ const
 
 implementation
 
-{#$B-} { Partial boolean evaluation } // Is already set, don't ask me why but this turned
-                                      // partial boolean evaluation off again with current compiler {AG}
-
+const
+    CRLF = AnsiString(#13#10);
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function SmtpRqTypeToStr(RqType: TSmtpRequest): ShortString;
@@ -1225,34 +1290,79 @@ end;
 {$I+}   { Activate I/O check (EInOutError exception generated) }
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+{ TSmtpHeaderLines }
+
+constructor TSmtpHeaderLines.Create;
+begin
+    inherited;
+    SetConvertToCharset(FALSE);
+    SetDefaultEncoding(FDefaultEncoding);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpHeaderLines.SetCodePage(const Value: Cardinal);
+begin
+    { Currently we do not support UTF-7 header lines!! } 
+    if Value = CP_UTF7 then begin
+        FCodePage := CP_UTF8;
+        FCharSet  := 'utf-8';
+    end
+    else
+        FCodePage := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpHeaderLines.SetCharSet(const Value: String);
+begin
+    { Currently we do not support UTF-7 header lines!! } 
+    if CompareText('utf-7', Value) = 0 then begin
+        FCodePage := CP_UTF8;
+        FCharSet  := 'utf-8';
+    end    
+    else
+        FCharSet := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpHeaderLines.SetConvertToCharset(const Value: Boolean);
+begin
+{$IFDEF UNICODE}
+    FConvertToCharset := TRUE;
+{$ELSE}
+    FConvertToCharset := Value;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpHeaderLines.SetDefaultEncoding(
+  const Value: TSmtpDefaultEncoding);
+begin
+    FDefaultEncoding := Value;
+    if FDefaultEncoding = smtpEncBase64 then
+        FEncType := 'B'
+    else
+        FEncType := 'Q';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpHeaderLines.AddAddrHdr(
-    const HdrName   : String;
-    const HdrBody   : String;
-    EncType         : Char;
-    const ACharset  : String;
-    Allow8Bit       : Boolean;
-    DoFold          : Boolean;
-    ACodePage       : Cardinal);
+    const HdrName : String;
+    const HdrBody : String);
 var
     rPos, I : Integer;
     Alias, Addr, S, Res : String;
-    NeedsEnc : Boolean;
+    AStr : AnsiString;
 begin
     rPos  := 1;
-    if Allow8Bit and (not DoFold) then begin
-    {$IFDEF UNICODE}
-        if NeedsEncoding(HdrBody) and (IcsSystemCodePage <> ACodePage) then
-            Add(UnicodeString(UnicodeToAnsi(HdrName + HdrBody,  ACodePage)))
-        else
-            Add(HdrName + HdrBody);
-    {$ELSE}
-        Add(HdrName + HdrBody);
-    {$ENDIF}
-        Exit;
-    end;
-    
-    while rPos <= Length(HdrBody) do begin
-        S := IcsWrapTextEx(HdrBody, #13#10, [',', ';'], 1, ['"', ''''], rPos);
+    while rPos <= Length(HdrBody) do
+    begin
+        S := IcsWrapTextEx(HdrBody, String(CRLF), [',', ';'], 1, ['"', ''''], rPos
+        {$IFNDEF UNICODE}, FALSE, FCodePage, FIsMultiByteCP {$ENDIF});
         while (Length(S) > 0) and IsSpace(S[1]) do
             System.Delete(S, 1, 1);
         while (Length(S) > 0) and IsCharInSysCharSet(S[Length(S)], [',', ';']) do
@@ -1261,17 +1371,23 @@ begin
             Continue;
         Addr := ParseEmail(S, Alias);
         if Length(Alias) > 0 then begin
-            NeedsEnc := NeedsEncoding(Alias);
-        {$IFDEF UNICODE}
-            if NeedsEnc and (IcsSystemCodePage <> ACodePage) then
-                Alias := UnicodeString(UnicodeToAnsi(Alias, ACodePage));
-        {$ENDIF}
-            if (not Allow8Bit) and NeedsEnc then
-                Alias := HdrEncodeInLine(Alias, SpecialsRFC822,
-                                         EncType, ACharset,
-                                         75 - Length(HdrName) + 1,
-                                         DoFold)
+            {$IFDEF UNICODE}
+                AStr := UnicodeToAnsi(Alias, FCodePage);
+            {$ELSE}
+                if FConvertToCharset and (IcsSystemCodePage <> FCodePage) then
+                    AStr := ConvertCodepage(Alias, IcsSystemCodePage,
+                                             FCodePage)
+                else
+                    AStr := Alias;
+            {$ENDIF}
+            if (not Allow8Bit) and NeedsEncoding(AStr) then
+                Alias := String(HdrEncodeInLine(AStr, SpecialsRFC822,
+                                         AnsiChar(FEncType),
+                                         AnsiString(FCharset),
+                                         SmtpDefaultLineLength - Length(HdrName),
+                                         FFoldLines, FCodePage, FIsMultiByteCP))
             else begin
+                Alias := String(AStr);
                 { We have to quote some specials}
                 S := '"';
                 for I := 1 to Length(Alias) do
@@ -1293,8 +1409,9 @@ begin
         SetLength(Res, Length(Res) -1);
 
     Res := Trim(HdrName) + ' ' + Trim(Res);
-    if DoFold and (Length(Res) > 76) then
-        FoldHdrLine(Self, Res)
+    if FFoldLines and (Length(Res) > SmtpDefaultLineLength) then
+        FoldHdrLine(Self, Res
+           {$IFNDEF UNICODE}, FCodePage, FIsMultiByteCP {$ENDIF})
     else
         Add(Res);
 end;
@@ -1302,110 +1419,133 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpHeaderLines.AddHdr(
-    const HdrName   : String;
-    HdrBody         : String;
-    EncType         : Char;
-    const ACharset  : String;
-    Allow8Bit       : Boolean;
-    DoFold          : Boolean;
-    ACodePage       : Cardinal);
+    const HdrName : String;
+    HdrBody       : String);
+var
+    ABody : AnsiString;
+begin
+    {$IFDEF UNICODE}
+        ABody := UnicodeToAnsi(HdrBody, FCodePage);
+    {$ELSE}
+        if FConvertToCharset and (FCodePage <> IcsSystemCodePage) then
+            ABody := ConvertCodepage(HdrBody, IcsSystemCodePage, FCodePage)
+        else
+            ABody := HdrBody;
+    {$ENDIF}
+
+    if FAllow8Bit and (not FFoldLines) then
+        Add(HdrName + String(ABody))
+    else if (not Allow8Bit) then begin
+        if  NeedsEncoding(ABody) then
+            Add(HdrName + String(HdrEncodeInLine(ABody,
+                                          SpecialsRFC822,
+                                          AnsiChar(FEncType),
+                                          AnsiString(FCharset),
+                                          SmtpDefaultLineLength - Length(HdrName),
+                                          FFoldLines, FCodePage, IsMultiByteCP)))
+        else if FFoldLines then
+            FoldHdrLine(Self, AnsiString(HdrName) + ABody,
+                        FCodePage, FIsMultiByteCP)
+        else
+            Add(HdrName + String(ABody));
+    end
+    else
+        FoldHdrLine(Self, AnsiString(HdrName) + ABody, FCodePage, FIsMultiByteCP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSmtpMessageText.SetText(
+{$IFDEF UNICODE}
+    const AText       : UnicodeString;
+{$ELSE}
+    const AText       : AnsiString;
+{$ENDIF}
+    DstCodePage       : Cardinal;
+    IsMultiByteCP     : Boolean;
+    ConvertToCharset  : Boolean;
+    DefaultEncoding   : TSmtpDefaultEncoding;
+    Allow8Bit         : Boolean;
+    WrapText          : Boolean = TRUE;
+    MaxLineLength     : Integer = SmtpDefaultLineLength): Integer;
 var
     NeedsEnc : Boolean;
 begin
-    NeedsEnc := NeedsEncoding(HdrBody);
-{$IFDEF UNICODE}
-    if NeedsEnc and (Integer(ACodePage) <> DefaultSystemCodePage) then
-        HdrBody := UnicodeString(UnicodeToAnsi(HdrBody, ACodePage));
-{$ENDIF}
-    if Allow8Bit and (not DoFold) then
-        Add(HdrName + HdrBody)
-    else if not Allow8Bit then begin
-        if NeedsEnc then
-            Add(HdrName + HdrEncodeInLine(HdrBody,
-                                          SpecialsRFC822,
-                                          EncType,
-                                          ACharset,
-                                          66,
-                                          DoFold))
-        else
-            FoldHdrLine(Self, HdrName + HdrBody);
-    end
-    else
-        FoldHdrLine(Self, HdrName + HdrBody);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSmtpMessageText.SetText(
-    const AText   : UnicodeString;
-    DestinationCP : Cardinal;
-    WordWrap      : Boolean = TRUE): Integer;
-begin
-    FText  := UnicodeToAnsi(AText, DestinationCP); // We send ansi only
-    FCodePage := DestinationCP;
-    Result := Length(FText);
-    if Result > 0 then begin
-        FCurrentIdx := 1;
-        FNeedsEncoding := OverbyteIcsMimeUtils.NeedsEncoding(FText);
-    end
-    else begin
-        FCurrentIdx    := 0;
-        FNeedsEncoding := FALSE;
-    end;
-    FEncoding := smtpEnc7bit;
-    FWrapText := WordWrap;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSmtpMessageText.SetText(
-    const AText   : AnsiString;
-    DestinationCP : Cardinal;    { No effect so far }
-    WordWrap      : Boolean = TRUE): Integer;
-{var
-    UStr : UnicodeString; }
-begin
-    {if Integer(DestinationCP) <> DefaultSystemCodePage then begin  ?? not yet
-        UStr  := AnsiToUnicode(AText);
-        FText := UnicodeToAnsi(AText, DestinationCP);
-    end
+    FCodePage := DstCodePage;
+    FIsMultiByteCP := IsMultiByteCP;
+    { No longer lines than our internal line buffer - 2, has already  }
+    { been checked, so could be skipped.                              }
+    {if MaxLineLength > 1022 then
+        FMaxLineLength := 1022
+    else if MaxLineLength < 16 then
+        FMaxLineLength := 16
     else }
+        FMaxLineLength := MaxLineLength;
+{$IFDEF UNICODE}
+    { We send ANSI including UTF-8 and UTF-7 only }
+    FText := UnicodeToAnsi(AText, FCodePage);
+{$ELSE}
+    if ConvertToCharset and (FCodePage <> IcsSystemCodePage) then
+        FText := ConvertCodepage(AText, IcsSystemCodePage, FCodePage)
+    else
         FText := AText;
+{$ENDIF}
     Result := Length(FText);
     if Result > 0 then begin
-        FCurrentIdx := 1;
-        FNeedsEncoding := OverbyteIcsMimeUtils.NeedsEncoding(FText);
+        FCurrentIdx     := 1;
+        FWrapText       := WrapText;
+        NeedsEnc        := OverbyteIcsMimeUtils.NeedsEncoding(FText);
+        if (not NeedsEnc) and (DefaultEncoding = smtpEnc8bit) then
+            FTransferEncoding := smtpEnc7bit
+        else if NeedsEnc and Allow8Bit and (DefaultEncoding = smtpEnc7bit) then
+            FTransferEncoding := smtpEnc8bit
+        else if NeedsEnc and (not Allow8Bit) and
+           (DefaultEncoding in [smtpEnc7bit, smtpEnc8bit]) then
+            FTransferEncoding := smtpEncQuotedPrintable
+        else
+            FTransferEncoding := DefaultEncoding;
     end
     else begin
-        FCurrentIdx    := 0;
-        FNeedsEncoding := FALSE;
+        FWrapText         := FALSE;
+        FTransferEncoding := smtpEnc7bit;
+        FCurrentIdx       := 0;
     end;
-    FEncoding := smtpEnc7bit;
-    FWrapText := WordWrap;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TSmtpMessageText.NextLineAsString: AnsiString;
 begin
-    case FEncoding of
+    case FTransferEncoding of
         smtpEnc7bit,
         smtpEnc8bit :
-            { Wrap text only }
+            { Wrap plain text, default length = 76. UTF-7 won't survive  }
+            { it with ForceBreak = TRUE. Line may become longer if none  }
+            { of the breaking chars were found.                          }
+            { UTF-8 and other multi-byte codepoints are preserved.       }
             if FWrapText then
-                Result := _Trim(IcsWrapTextEx(FText, AnsiString(#13#10),
-                               [#09, #32, '.', ',', '-'], 76, [], FCurrentIdx, TRUE, FCodePage))
-            else
-                Result := _Trim(IcsWrapTextEx(FText, AnsiString(#13#10),
-                               [#09, #32, '.', ',', '-'], MaxInt, [], FCurrentIdx, FALSE, FCodepage));
+                Result := _Trim(IcsWrapTextEx(FText, CRLF,
+                               [#09, #32, '.', ',', '-'], FMaxLineLength, [],
+                               FCurrentIdx, FALSE, FCodePage, FIsMultiByteCP))
+            else  { Force line break before max. line buffer = 1022 }
+                Result := _Trim(IcsWrapTextEx(FText, CRLF,
+                               [#09, #32, '.', ',', '-'], 1022, [],
+                               FCurrentIdx, TRUE, FCodepage, FIsMultiByteCP));
 
         smtpEncQuotedPrintable :
-            { Encode QuotedPrintable incl. soft line breaks }
-            Result := StrEncodeQPEx(FText, 75, [], False, FCurrentIdx, True);
+            { Encode QuotedPrintable incl. soft line breaks.    }
+            { Multi-byte codepoints do not have to be preserved }
+            { so IsMultiByteCP is always FALSE here.            }
+            Result := StrEncodeQPEx(FText, SmtpDefaultLineLength -1,
+                                    [], False, FCurrentIdx, True,
+                                    FCodepage, FAlSE);
 
         smtpEncBase64 :
             { Encode Base64 }
-            Result := Base64EncodeEx(FText, 76, FCurrentIdx);
+            { Multi-byte codepoints do not have to be preserved }
+            { so IsMultiByteCP is always FALSE here.            }
+            Result := Base64EncodeEx(FText, SmtpDefaultLineLength, FCurrentIdx,
+                                     FCodepage, FAlSE);
     end; {case}
 
     if FCurrentIdx > Length(FText) then
@@ -1526,8 +1666,11 @@ begin
     SetContentType(smtpPlainText);
     FShareMode               := fmShareDenyWrite;
     FHdrPriority             := smtpPriorityNone;
-    SetContentType(smtpPlainText);
     FAllow8bitChars          := True; { backwards compatibility }        {AG}
+{$IFDEF UNICODE}
+    FConvertToCharset        := TRUE;
+{$ENDIF}
+    FWrapMsgMaxLineLen       := SmtpDefaultLineLength;
     Randomize;                                                           {AG}
 end;
 
@@ -2718,8 +2861,9 @@ begin
     FCharSet := _LowerCase(Value);
     { If empty set the default system codepage }
     if Length(FCharSet) = 0 then begin
-        FCodePage := IcsSystemCodePage;
-        FCharSet  := CodePageToMimeCharsetString(FCodePage);
+        FCodePage   := IcsSystemCodePage;
+        FCharSet    := CodePageToMimeCharsetString(FCodePage);
+        FIsMultiByteCP := not IsSingleByteCodePage(FCodePage);
     end
     else begin
         if not MimeCharsetToCodePage(FCharSet, FCodePage) then
@@ -2727,9 +2871,41 @@ begin
             { Set default system codepage and charset }
             FCodePage := IcsSystemCodePage;
             FCharSet  := CodePageToMimeCharsetString(FCodePage);
+            FIsMultiByteCP := not IsSingleByteCodePage(FCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
-        end;
+        end
+        else
+            FIsMultiByteCP := not IsSingleByteCodePage(FCodePage);
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.SetConvertToCharset(const Value: Boolean);
+begin
+{$IFDEF UNICODE}
+    FConvertToCharset := TRUE; // We have to convert to ANSI or ANSI-UTF anyway!!
+    if (Value = FALSE) and (csDesigning in ComponentState) and
+       (not (csLoading in ComponentState)) then
+        raise SmtpException.Create('ConvertToCharset can only be disabled ' +
+                                   'with old ANSI compilers for backwards ' +
+                                   'compatibility.');
+{$ELSE}
+    FConvertToCharset := Value;  
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.SetWrapMsgMaxLineLen(const Value: Integer);
+begin
+    { Line buffer size minus 2, one for a doubled dot, another one to be very sure. }
+    if Value > 1022 then
+        FWrapMsgMaxLineLen := 1022
+    else if Value < 16 then
+        FWrapMsgMaxLineLen := 16 // Not less than 16 bytes
+    else
+        FWrapMsgMaxLineLen := Value;
 end;
 
 
@@ -2748,8 +2924,6 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.Data;
-var
-    EncType : Char;                                                      {AG}
 begin
     FLineNum   := 0;
     if FSendMode <> smtpToStream then
@@ -2760,57 +2934,46 @@ begin
         FHdrLines := TSmtpHeaderLines.Create
     else
         FHdrLines.Clear;
+
+    { Set encoding properties we may need it even though OwnHeaders was TRUE }
+    FHdrLines.DefaultEncoding   := FDefaultEncoding;
+    FHdrLines.Charset           := FCharSet;
+    FHdrLines.CodePage          := FCodePage;
+    FHdrLines.IsMultiByteCP     := FIsMultiByteCP;
+    FHdrLines.FoldLines         := FFoldHeaders;
+    FHdrLines.Allow8Bit         := FAllow8bitChars;
+    FHdrLines.ConvertToCharset  := FConvertToCharset;
+
     if not FOwnHeaders then begin
         { Angus V2.21 - the body must contain all the headers }
-        if FDefaultEncoding = smtpEncBase64 then                         {AG}
-            EncType := 'B'                                               {AG}
-        else                                                             {AG}
-            EncType := 'Q';                                              {AG}
-
         FHdrReplyTo := Trim(FHdrReplyTo);
         if Length(FHdrReplyTo) > 0 then
-            FHdrLines.AddAddrHdr('Reply-To: ', FHdrReplyTo, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+            FHdrLines.AddAddrHdr('Reply-To: ', FHdrReplyTo);
 
         FHdrReturnPath := Trim(FHdrReturnPath);
         if Length(FHdrReturnPath) > 0 then
-            FHdrLines.AddAddrHdr('Return-Path: ', FHdrReturnPath, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+            FHdrLines.AddAddrHdr('Return-Path: ', FHdrReturnPath);
 
         FHdrFrom := Trim(FHdrFrom);
         if Length(FHdrFrom) > 0 then
-            FHdrLines.AddAddrHdr('From: ', FHdrFrom, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+            FHdrLines.AddAddrHdr('From: ', FHdrFrom);
 
         FHdrTo := Trim(FHdrTo);
         if Length(FHdrTo) > 0 then
-             FHdrLines.AddAddrHdr('To: ', FHdrTo, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+             FHdrLines.AddAddrHdr('To: ', FHdrTo);
 
         FHdrCc := Trim(FHdrCc);
         if Length(FHdrCc) > 0 then
-             FHdrLines.AddAddrHdr('Cc: ', FHdrCc, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+             FHdrLines.AddAddrHdr('Cc: ', FHdrCc);
 
-        FHdrLines.AddHdr('Subject: ', Trim(FHdrSubject), EncType,
-                         FCharSet, FAllow8bitChars, FFoldHeaders,
-                         FCodePage);
+        FHdrLines.AddHdr('Subject: ', Trim(FHdrSubject));
 
         FHdrSender := Trim(FHdrSender);
         FHdrFrom   := Trim(FHdrFrom);
         if Length(FHdrSender) > 0 then
-            FHdrLines.AddAddrHdr('Sender: ', FHdrSender, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage)
+            FHdrLines.AddAddrHdr('Sender: ', FHdrSender)
         else if Length(FHdrFrom) > 0 then
-            FHdrLines.AddAddrHdr('Sender: ', FHdrFrom, EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+            FHdrLines.AddAddrHdr('Sender: ', FHdrFrom);
         FHdrLines.Add('Mime-Version: 1.0');
         FHdrLines.Add('Content-Type: ' + FContentTypeStr +
                       '; charset="' + FCharSet + '"');
@@ -2834,10 +2997,7 @@ begin
         FHdrLines.Add('Message-ID: <' + FMessageID + '>');       
             
        if FConfirmReceipt and (Length(FHdrFrom) > 0) then
-             FHdrLines.AddAddrHdr('Disposition-Notification-To: ', FHdrFrom,
-                                 EncType,
-                                 FCharSet, FAllow8bitChars, FFoldHeaders,
-                                 FCodePage);
+             FHdrLines.AddAddrHdr('Disposition-Notification-To: ', FHdrFrom);
 
         FHdrLines.Add('X-Mailer: ICS SMTP Component V' +
                       IntToStr(SmtpCliVersion div 100) + '.' +
@@ -2887,7 +3047,7 @@ begin
 
         FWSocket.OnDataSent := WSocketDataSent;
         FWSocket.PutDataInSendBuffer(@MsgLine, FCurrSize);
-        FWSocket.SendStr(AnsiString(#13#10));
+        FWSocket.SendStr(CRLF);
         Inc(FCurrSize, 2);
     end
     else begin
@@ -2927,7 +3087,7 @@ begin
 
             FWSocket.OnDataSent := WSocketDataSent;
             FWSocket.PutDataInSendBuffer(@MsgLine, FCurrSize);
-            FWSocket.SendStr(AnsiString(#13#10));
+            FWSocket.SendStr(CRLF);
             Inc(FCurrSize, 2);
         end
         else begin
@@ -3409,7 +3569,7 @@ begin
             FOutStream.Write(PAnsiChar(Data)[1], Len - 1)
         else
             FOutStream.Write(Data^, Len);
-        FOutStream.Write(PAnsiChar(#13#10)^, 2);
+        FOutStream.Write(PAnsiChar(CRLF)^, 2);
     except
         on E: Exception do begin
             FLastResponse   := '500 ' + E.ClassName + ' ' + E.Message;
@@ -3598,7 +3758,6 @@ var
     sContentType : String;
     BAction      : TSmtpBeforeOpenFileAction;                               {AG}
     AAction      : TSmtpAfterOpenFileAction;                                {AG}
-    EncType      : AnsiChar;                                                {AG}
 begin
     if FEmailBody.Count > 0 then begin
         {if MaxLen > (1022 * SizeOf(Char)) then // already checked in DataNext
@@ -3714,39 +3873,37 @@ begin
         TriggerAttachContentTypeEh(FCurrentFile, sFileName, sContentType);
         FEmailBody.Add('--' + String(FMimeBoundary));
         FEmailBody.Add('Content-Type: ' + sContentType + ';');
+
         {AG start}
         { In order to not TriggerAttachHeader with a modified filename we add }
         { inline encoding and folding to a copy.                              }
-        if not FAllow8bitChars and NeedsEncoding(sFileName) then begin
-            if (FEncoding = smtpEncBase64) then
-                EncType := 'B'
+        {$IFDEF UNICODE}
+            sLine := UnicodeToAnsi(sFileName, FHdrLines.CodePage);
+        {$ELSE}
+            if FHdrLines.ConvertToCharset and
+               (FHdrLines.CodePage <> IcsSystemCodePage) then
+                sLine := ConvertCodePage(sFileName, IcsSystemCodePage,
+                                         FHdrLines.CodePage)
             else
-                EncType := 'Q';
+                sLine := sFileName;
+        {$ENDIF}
+        if (not FHdrLines.Allow8bit) and NeedsEncoding(sLine) then begin
            { Length of (#9'filename=""') equals 12 }
-        {$IFDEF UNICODE}
-            sLine := AnsiString(HdrEncodeInline(UnicodeToAnsi(sFileName, FCodePage),
+            sLine := HdrEncodeInline(sLine,
                                      SpecialsRFC822,
-                                     EncType, AnsiString(FCharSet),
-                                     75 - 12,
-                                     FFoldHeaders));
-        {$ELSE}
-            sLine := HdrEncodeInline(sFileName, SpecialsRFC822,
-                                     EncType, FCharSet,
-                                     75 - 12,
-                                     FFoldHeaders);
-        {$ENDIF}
+                                     AnsiChar(FHdrLines.EncType),
+                                     AnsiString(FHdrLines.CharSet),
+                                     SmtpDefaultLineLength - 12 - 1,
+                                     FHdrLines.FoldLines,
+                                     FHdrLines.CodePage,
+                                     FHdrLines.IsMultiByteCP);
         end
-        else begin
-        {$IFDEF UNICODE}
-            sLine := UnicodeToAnsi(sFileName, FCodePage);
-        {$ELSE}
-            sLine := sFileName;
-        {$ENDIF}
-            if FFoldHeaders and (Length(sLine) + 12 > 76) then
-                sLine := FoldString(sLine,
-                                    [#32, 'A'..'Z', 'a'..'z', '0'..'9'],
-                                    75 - 12);
-        end;
+        else
+            if FHdrLines.FoldLines and
+               (Length(sLine) + 12 > SmtpDefaultLineLength) then
+                sLine := FoldString(sLine, [#32, 'A'..'Z', 'a'..'z', '0'..'9'],
+                                    SmtpDefaultLineLength - 12 - 1);
+
         {AG end}
         FEmailBody.Add(#9'name="' + String(sLine) + '"');                  {AG}
         if FAttachmentEncoding = smtpEncodeBase64 then                     {AG}
@@ -3806,10 +3963,13 @@ begin
                      + FMimeBoundary + '"');
     end
     else if (StrLen(PAnsiChar(Line)) > 0) and
-            (StrLIComp('CONTENT-TYPE: TEXT', Line, 18) = 0) then           {AG}
-        if FEncoding <> smtpEnc7bit then begin                             {AG}
-            StrCat(PAnsiChar(Line), PAnsiChar(#13#10 + 'Content-Transfer-Encoding: '));
-            StrCat(PAnsiChar(Line), PAnsiChar(SmtpDefEncArray[Ord(FEncoding)]));
+            (StrLIComp(PAnsiChar('CONTENT-TYPE: TEXT'),
+             PAnsiChar(Line), 18) = 0) then                                {AG}
+        { 7-bit transfer is the default and not required }     
+        if FMailMsgText.TransferEncoding <> smtpEnc7bit then begin         {AG}
+            StrCat(PAnsiChar(Line), PAnsiChar(CRLF + 'Content-Transfer-Encoding: '));
+            StrCat(PAnsiChar(Line),
+                PAnsiChar(SmtpDefEncArray[Ord(FMailMsgText.TransferEncoding)]));
         end;
     inherited TriggerHeaderLine(Line, Size);
 end;
@@ -3853,22 +4013,12 @@ begin
     FCurrentFile := 0;
     FBodyLine    := 0;
     FFileStarted := FALSE;
-    FEncoding    := FDefaultEncoding;                                   {AG}
-    {AG start}
     { FMailMessage.Text will be encoded/wrapped later on the fly,       }
     { see also TriggerGetData and DoGetMsgTextLine                      }
-    FMailMsgText.SetText(FMailMessage.Text, FCodePage, FWrapMessageText);
-    { Check if we have to change Encoding.                              }
-    if FMailMsgText.CurrentIdx > 0 then begin
-        if (FEncoding in [smtpEnc7bit, smtpEnc8bit]) and (not FAllow8bitChars) and
-           FMailMsgText.FNeedsEncoding then
-            FEncoding := smtpEncQuotedPrintable
-        else if (FEncoding = smtpEnc7bit) and FAllow8bitChars and
-             FMailMsgText.FNeedsEncoding then
-            FEncoding := smtpEnc8bit;
-
-        FMailMsgText.Encoding := FEncoding;
-    end;
+    if not (Self is THtmlSmtpCli) then // Don't set the wrong props !!
+        FMailMsgText.SetText(FMailMessage.Text, FCodePage, FIsMultiByteCP,
+                         ConvertToCharset, FDefaultEncoding, FAllow8BitChars,
+                         FWrapMessageText, FWrapMsgMaxLineLen);
     FEmailBody.Clear;
     if Assigned(FEMailFiles) and (FEmailFiles.Count > FCurrentFile) then begin
         FMimeBoundary := '= Multipart Boundary ' +
@@ -3879,8 +4029,7 @@ begin
         FEmailBody.Add('Content-Type: ' + FContentTypeStr +
                        '; charset="' + FCharSet + '"');
         FEmailBody.Add('Content-Transfer-Encoding: ' +
-                        String(SmtpDefEncArray[Ord(FEncoding)]));        {AG}
-        {FEmailBody.Add('Content-Transfer-Encoding: 7bit');}             {AG}
+                        String(SmtpDefEncArray[Ord(FMailMsgText.TransferEncoding)])); {AG}
         FEmailBody.Add('');
     end
     else
@@ -4132,6 +4281,9 @@ begin
     FHtmlCodePage := IcsSystemCodePage;
     FHtmlCharSet  := CodePageToMimeCharsetString(FCodePage);
     SetContentType(smtpHtml);
+{$IFDEF UNICODE}
+    FHtmlConvertToCharset := TRUE;
+{$ENDIF}
 end;
 
 
@@ -4152,6 +4304,22 @@ begin
         FEmailImages := nil;
     end;
     inherited Destroy;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THtmlSmtpCli.SetHtmlConvertToCharset(const Value: Boolean);
+begin
+{$IFDEF UNICODE}
+    FHtmlConvertToCharset := TRUE; // We have to convert to ANSI or ANSI-UTF anyway!!
+    if (Value = FALSE) and (csDesigning in ComponentState) and
+       (not (csLoading in ComponentState)) then
+        raise SmtpException.Create('ConvertToHtmlCharset can only be disabled ' +
+                                   'with old ANSI compilers for backwards ' +
+                                   'compatibility.');
+{$ELSE}
+    FHtmlConvertToCharset := Value;
+{$ENDIF}
 end;
 
 
@@ -4231,6 +4399,7 @@ begin
     if Length(FHtmlCharSet) = 0 then begin
         FHtmlCodePage := IcsSystemCodePage;
         FHtmlCharSet  := CodePageToMimeCharsetString(FHtmlCodePage);
+        FHtmlIsMultiByteCP := not IsSingleByteCodePage(FHtmlCodePage);
     end
     else begin
         if not MimeCharsetToCodePage(FHtmlCharset, FHtmlCodePage) then
@@ -4238,8 +4407,11 @@ begin
             { Set default system codepage and charset }
             FHtmlCodePage := IcsSystemCodePage;
             FHtmlCharset  := CodePageToMimeCharsetString(FHtmlCodePage);
+            FHtmlIsMultiByteCP := not IsSingleByteCodePage(FHtmlCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
-        end;
+        end
+        else
+            FHtmlIsMultiByteCP := not IsSingleByteCodePage(FHtmlCodePage);
     end;
 end;
 
@@ -4275,11 +4447,9 @@ procedure THtmlSmtpCli.TriggerGetData(
     MaxLen   : Integer; // Must not be > 1022
     var More : Boolean);
 var
-//  Len          : Integer;
-    LineBuf      : AnsiString;
-    FileName     : String;
-    BAction      : TSmtpBeforeOpenFileAction;
-    AAction      : TSmtpAfterOpenFileAction;
+    LineBuf  : AnsiString;
+    BAction  : TSmtpBeforeOpenFileAction;
+    AAction  : TSmtpAfterOpenFileAction;
 begin
     if FContentType = smtpPlainText then begin
         { Strange but the user ask to send plain text message }
@@ -4341,9 +4511,9 @@ begin
             16: begin
                     FMimeState  := smtpMimePlainText;
                     FLineOffset := LineNum - 1;
-                    FMailMsgText.SetText(FPlainText.Text, FHtmlCodePage);
-                    FEncoding := smtpEncQuotedPrintable;
-                    FMailMsgText.Encoding := FEncoding;
+                    FMailMsgText.SetText(FPlainText.Text, FCodePage, FIsMultiByteCP,
+                                         ConvertToCharSet, smtpEncQuotedPrintable,
+                                         FALSE);
                     FMsgLineCount := 0;
                 end;
             end;
@@ -4363,9 +4533,9 @@ begin
             11: begin
                     FMimeState  := smtpMimePlainText;
                     FLineOffset := LineNum - 1;
-                    FMailMsgText.SetText(FPlainText.Text, FHtmlCodePage);
-                    FEncoding := smtpEncQuotedPrintable;
-                    FMailMsgText.Encoding := FEncoding;
+                    FMailMsgText.SetText(FPlainText.Text, FCodePage, FIsMultiByteCP,
+                                       ConvertToCharset, smtpEncQuotedPrintable,
+                                       FALSE);
                     FMsgLineCount := 0;
                 end;
             end;
@@ -4394,9 +4564,9 @@ begin
             else
                 FMimeState := smtpMimeHtmlText;
                 FLineOffset := LineNum - 1;
-                FMailMsgText.SetText(FHtmlText.Text, FCodePage);
-                FEncoding := smtpEncQuotedPrintable;
-                FMailMsgText.Encoding := FEncoding;
+                FMailMsgText.SetText(FHtmlText.Text, FHtmlCodePage,
+                                     FHtmlIsMultiByteCP, FHtmlConvertToCharset,
+                                     smtpEncQuotedPrintable, FALSE);
                 FMsgLineCount := 0;
             end;
         end
@@ -4473,23 +4643,46 @@ begin
             2:  begin
                     if FImageNumber <= FEmailImages.Count then
                         { First we send the image files }
-                        FileName := ExtractFileName(
-                                        FEmailImages[FImageNumber - 1])
+                        FsFileName := ExtractFileName(
+                                                 FEmailImages[FImageNumber - 1])
                     else
                         { Then we send attached files }
-                        FileName := ExtractFileName(FEmailFiles[FImageNumber -
-                                                    FEmailImages.Count - 1]);
-                    FsFileName    := ExtractFileName(FileName);
+                        FsFileName := ExtractFileName(FEmailFiles[FImageNumber -
+                                                      FEmailImages.Count - 1]);
                     FsContentType := FilenameToContentType(FsFileName);
                     TriggerAttachContentType(FCurrentFile, FsFileName, FsContentType);
                     TriggerAttachContentTypeEh(FCurrentFile, FsFileName, FsContentType);
+                    { Encode the file name }
+                {$IFDEF UNICODE}
+                    FsAnsiFileName := UnicodeToAnsi(FsFileName, FHdrLines.CodePage);
+                {$ELSE}
+                    if FHdrLines.ConvertToCharset and
+                       (FHdrLines.CodePage <> IcsSystemCodePage) then
+                        FsAnsiFileName := ConvertCodePage(FsFileName,
+                                                         IcsSystemCodePage,
+                                                         FHdrLines.CodePage)
+                    else
+                        FsAnsiFileName := FsFileName;
+                {$ENDIF}
+                    { We may not fold lines since otherwise line numbers would change }
+                    if (not FHdrLines.Allow8Bit) and NeedsEncoding(FsAnsiFileName) then
+                    begin
+                        FsAnsiFileName := HdrEncodeInline(FsAnsiFileName,
+                                                        SpecialsRFC822,
+                                                        AnsiChar(FHdrLines.EncType),
+                                                        AnsiString(FHdrLines.CharSet),
+                                                        MaxInt,
+                                                        FALSE,
+                                                        FHdrLines.CodePage,
+                                                        FHdrLines.IsMultiByteCP);
+                    end;
                     StrPCopy(PAnsiChar(MsgLine), 'Content-Type: ' + AnsiString(FsContentType) +
-                                      ';' + #13#10#9 + 'name="' + AnsiString(FsFileName) + '"');
+                                      ';' + #13#10#9 + 'name="' + FsAnsiFileName + '"');
                 end;
             3:  begin
                     if FAttachmentEncoding = smtpEncodeBase64 then          {AG}
                         StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: base64')
-                    else if FAttachmentEncoding = smtpEncodeQP then         {AG}                                         {AG}
+                    else if FAttachmentEncoding = smtpEncodeQP then         {AG}
                          StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: quoted-printable')  {AG}                                    {AG}
                     else
                         StrPCopy(PAnsiChar(MsgLine), 'Content-Transfer-Encoding: 7bit');{AG}
@@ -4498,11 +4691,11 @@ begin
                     if FImageNumber <= FEmailImages.Count then
                         StrPCopy(PAnsiChar(MsgLine),
                                  'Content-Disposition: inline;' + #13#10#9 +
-                                 'filename="' + AnsiString(FsFileName) + '"')
+                                 'filename="' + FsAnsiFileName + '"')
                     else
                         StrPCopy(PAnsiChar(MsgLine),
                                  'Content-Disposition: attachment;' + #13#10#9 +
-                                 'filename="' + AnsiString(FsFileName) + '"');
+                                 'filename="' + FsAnsiFileName + '"');
                 end;
             5:  begin
                     if FImageNumber <= FEmailImages.Count then
@@ -4689,17 +4882,10 @@ begin
         // To be sure initialize FLineOffset to zero.
         FLineOffset := 0;
         { Strange but the user ask to send plain text message }
+        FMailMsgText.SetText(FPlainText.Text, FCodePage, FIsMultiByteCP,
+                             ConvertToCharset, DefaultEncoding, FAllow8BitChars,
+                             FWrapMessageText, FWrapMsgMaxLineLen);
         inherited PrepareEMail;
-        FMailMsgText.SetText(FPlainText.Text, FCodePage);
-        if FMailMsgText.CurrentIdx > 0 then begin
-            if (FEncoding in [smtpEnc7bit, smtpEnc8bit]) and
-               (not FAllow8bitChars) and FMailMsgText.NeedsEncoding then
-                FEncoding := smtpEncQuotedPrintable
-            else if (FEncoding = smtpEnc7bit) and FAllow8bitChars and
-                     FMailMsgText.FNeedsEncoding then
-                FEncoding := smtpEnc8bit;
-            FMailMsgText.Encoding := FEncoding;
-        end;
     end;
     { Nothing to do here }
 end;
@@ -5194,6 +5380,13 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$ENDIF} // USE_SSL
+
+
+
+
+
+
+
 
 
 end.

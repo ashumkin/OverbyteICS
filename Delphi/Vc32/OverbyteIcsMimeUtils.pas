@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.16a
+Version:      7.17
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -89,6 +89,9 @@ May 02, 2009 V7.16  A. Garrels fixed a bug in IcsWrapTextEx that could break
                     argument now and RawByteString instead of AnsiString.
 May 02, 2009 V7.16a A. Garrels - Avoid unnecessary calls to IcsStrCharLength()
                     in IcsWrapTextEx() ANSI overload.
+May 10, 2009 V7.17  A. Garrels - Some AnsiString types changed to RawByteString.
+                    Made some changes to work around an issue in 2009 where global
+                    var Syslocale.FarEast is always True.   
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -134,9 +137,10 @@ uses
     OverbyteIcsLibrary,
     OverbyteIcsCharsetUtils;
 const
-    TMimeUtilsVersion = 716;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.16a ';
+    TMimeUtilsVersion = 717;
+    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.17 ';
 
+    SmtpDefaultLineLength = 76; // without CRLF
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
                 AnsiChar('>'), AnsiChar('@'), AnsiChar(','), AnsiChar(';'),
@@ -154,12 +158,12 @@ const
                                         'A','B','C','D','E','F');      {HLX}
 
 { Functions to encode/decode string as a "quoted-printable" string RFC2045}
-function  EncodeQuotedPrintable(const S: AnsiString) : String; overload;
+function  EncodeQuotedPrintable(const S: RawByteString) : String; overload;
 {$IFDEF COMPILER12_UP}
 function  EncodeQuotedPrintable(const S: UnicodeString; ACodePage: Cardinal) : UnicodeString;  overload;
 function  EncodeQuotedPrintable(const S: UnicodeString) : UnicodeString; overload;
 {$ENDIF}
-function  DecodeQuotedPrintable(const S: AnsiString) : AnsiString; overload;
+function  DecodeQuotedPrintable(const S: RawByteString) : RawByteString; overload;
 {$IFDEF COMPILER12_UP}
 function  DecodeQuotedPrintable(const S: UnicodeString; ACodePage: Cardinal) : UnicodeString; overload;
 function  DecodeQuotedPrintable(const S: UnicodeString) : UnicodeString; overload;
@@ -201,9 +205,11 @@ function  DoTextFileReadNoEncoding(var Stream     : TStream;                {AG}
 function  DoFileLoadNoEncoding(var Stream     : TStream;               {Bjørnar}
                           var More       : Boolean) : String;
 { Similar to Base64Encode, returns just a coded line                      }
-function  Base64EncodeEx(const Input : AnsiString;
-                         MaxCol      : Integer;
-                         var cPos    : Integer) : AnsiString; overload;
+function  Base64EncodeEx(const Input    : RawByteString;
+                         MaxCol         : Integer;
+                         var cPos       : Integer;
+                         CodePage       : Cardinal = CP_ACP;
+                         IsMultiByteCP  : Boolean = FALSE) : RawByteString; overload;
 {$IFDEF COMPILER12_UP}
 function  Base64EncodeEx(const Input : UnicodeString;
                          MaxCol      : Integer;
@@ -220,11 +226,12 @@ procedure DotEscape(var S : String; OnlyAfterCrLf : Boolean = False); {AG 11/04/
 function IcsWrapTextEx(const Line : RawByteString;
                        const BreakStr : RawByteString;
                        const BreakingChars: TSysCharSet;
-                       MaxCol       : Integer;
-                       QuoteChars   : TSysCharSet;
-                       var cPos     : Integer;
-                       ForceBreak   : Boolean = False;
-                       ACodePage    : Cardinal = CP_ACP): RawByteString; {$IFDEF COMPILER12_UP} overload;
+                       MaxCol         : Integer;
+                       QuoteChars     : TSysCharSet;
+                       var cPos       : Integer;
+                       ForceBreak     : Boolean = False;
+                       ACodePage      : Cardinal = CP_ACP;
+                       IsMultiByteCP  : Boolean  = FALSE): RawByteString; {$IFDEF COMPILER12_UP} overload;
 
 function IcsWrapTextEx(const Line : String;
                        const BreakStr : String;
@@ -249,39 +256,49 @@ function HdrEncodeInLine(const Input   : RawByteString;         { V7.13 was Ansi
                          EncType       : AnsiChar;    { Either 'Q' or 'B' }
                          const CharSet : AnsiString;  { e.g. 'iso-8859-1' existing Input charset }
                          MaxCol        : Integer;
-                         DoFold        : Boolean): RawByteString; {$IFDEF COMPILER12_UP} overload;
+                         DoFold        : Boolean;
+                         CodePage      : Cardinal = CP_ACP;
+                         IsMultiByteCP : Boolean = FALSE): RawByteString; {$IFDEF COMPILER12_UP} overload;
 
 function HdrEncodeInLine(const Input   : UnicodeString;
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
                          EncType       : WideChar;    { Either 'Q' or 'B'        }
                          const CharSet : UnicodeString;  { e.g. 'iso-8859-1'     }
                          MaxCol        : Integer;
-                         DoFold        : Boolean): UnicodeString; overload;
+                         DoFold        : Boolean;
+                         Codepage       : Cardinal = CP_ACP;
+                         IsMultiByteCP  : Boolean = FALSE): UnicodeString; overload;
 {$ENDIF}
 function HdrEncodeInLineEx(const Input : UnicodeString;    { V7.13 }
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
                          EncType       : WideChar;    { Either 'Q' or 'B'        }
                          CodePage      : Integer;     { Input will be encoded into this CharSet }
                          MaxCol        : Integer;
-                         DoFold        : Boolean): RawByteString;
+                         DoFold        : Boolean;
+                         IsMultiByteCP : Boolean = FALSE): RawByteString;
 { Alternate of functions:                                                      }
 { EncodeQuotedPrintable + SplitQuotedPrintableString + DotEscape               }
-function StrEncodeQP(const Input : AnsiString;                         {HLX, AG}
-                     MaxCol      : Integer;
-                     Specials    : TSysCharSet): String; overload;
+function StrEncodeQP(const Input   : RawByteString;                    {HLX, AG}
+                     MaxCol        : Integer;
+                     Specials      : TSysCharSet;
+                     CodePage      : Cardinal = CP_ACP;
+                     IsMultibyteCP : Boolean = FALSE): String; overload;
 {$IFDEF COMPILER12_UP}
-function StrEncodeQP(const Input : UnicodeString;                      {HLX, AG}
-                     MaxCol      : Integer;
-                     Specials    : TSysCharSet;
-                     ACodePage   : Cardinal): UnicodeString; overload;
+function StrEncodeQP(const Input   : UnicodeString;                    {HLX, AG}
+                     MaxCol        : Integer;
+                     Specials      : TSysCharSet;
+                     ACodePage     : Cardinal;
+                     IsMultibyteCP : Boolean = FALSE): UnicodeString; overload;
 {$ENDIF}
 { Similar to StrEncodeQP, returns just a single line                      } {AG}
-function StrEncodeQPEx(const Buf   : AnsiString;
-                       MaxCol      : Integer;
-                       Specials    : TSysCharSet;
-                       ShortSpace  : Boolean; {'_' e.g. for in-line}
-                       var cPos    : Integer;
-                       DoFold      : Boolean) : AnsiString; overload;
+function StrEncodeQPEx(const Buf     : RawByteString;
+                       MaxCol        : Integer;
+                       Specials      : TSysCharSet;
+                       ShortSpace    : Boolean; {'_' e.g. for in-line}
+                       var cPos      : Integer;
+                       DoFold        : Boolean;
+                       CodePage      : Cardinal = CP_ACP;
+                       IsMultibyteCP : Boolean = FALSE) : RawByteString; overload;
 {$IFDEF COMPILER12_UP}
 function StrEncodeQPEx(const Buf   : UnicodeString;
                        MaxCol      : Integer;
@@ -289,18 +306,25 @@ function StrEncodeQPEx(const Buf   : UnicodeString;
                        ShortSpace  : Boolean; {'_' e.g. for in-line}
                        var cPos    : Integer;
                        DoFold      : Boolean) : UnicodeString; overload;
-{$ENDIF}
+
 
 procedure FoldHdrLine(HdrLines      : TStrings;                             {AG}
-                      const HdrLine : String);
+                      const HdrLine : String); overload;
+{$ENDIF}
+procedure FoldHdrLine(HdrLines      : TStrings;                             {AG}
+                      const HdrLine : RawByteString;
+                      ACodePage     : Cardinal = CP_ACP;
+                      IsMultiByteCP : Boolean = FALSE); overload;
 
-function FoldString(const Input : AnsiString;                               {AG}
+function FoldString(const Input   : RawByteString;                          {AG}
                     BreakCharsSet : TSysCharSet;
-                    MaxCol      : Integer): AnsiString; overload;
+                    MaxCol        : Integer;
+                    ACodePage     : Cardinal = CP_ACP;
+                    IsMultiByteCP : Boolean = False): RawByteString; overload;
 {$IFDEF COMPILER12_UP}
-function FoldString(const Input : UnicodeString;
+function FoldString(const Input   : UnicodeString;
                     BreakCharsSet : TSysCharSet;
-                    MaxCol      : Integer): UnicodeString; overload;
+                    MaxCol        : Integer): UnicodeString; overload;
 {$ENDIF}
 
 { Calculates Base64 grow including CRLFs }
@@ -320,7 +344,7 @@ const
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { See also SplitQuotedPrintableString !                                     }
-function EncodeQuotedPrintable(const S: AnsiString) : String;
+function EncodeQuotedPrintable(const S: RawByteString) : String;
 var
     I, J : Integer;
 begin
@@ -380,7 +404,7 @@ end;
 { This routine doesn't take care of the equal sign at the end of string.    }
 { It is simply ignored. The caller must check that condition and merge      }
 { successives lines. But the routine handle embedded soft line break.       }
-function DecodeQuotedPrintable(const S: AnsiString) : AnsiString;
+function DecodeQuotedPrintable(const S: RawByteString) : RawByteString;
 var
     I, J : Integer;
 begin
@@ -442,14 +466,14 @@ function SplitQuotedPrintableString(const S : String) : String;
 var
     I, J : Integer;
 begin
-    if Length(S) <= 76 then begin
+    if Length(S) <= SmtpDefaultLineLength then begin
         { No need to split }
         Result := S;
         Exit;
     end;
     Result := '';
     J      := 1;
-    I      := 76;
+    I      := SmtpDefaultLineLength;
     while TRUE do begin
         if S[I - 1] = '=' then
             Dec(I)
@@ -561,9 +585,9 @@ function DoFileLoadNoEncoding(
     var Stream     : TStream;
     var More       : Boolean) : String;
 const
-    MAX_LENGTH            = 76; {HLX: Longer lines = less CRLF's, RFC does allow lines *that* long}
+    //MAX_LENGTH            = 76; {HLX: Longer lines = less CRLF's, RFC does allow lines *that* long}
     MULTIPLIER            = 4;
-    MAX_READ              = MAX_LENGTH * MULTIPLIER;
+    MAX_READ              = SmtpDefaultLineLength * MULTIPLIER;
 var
     DataOut      : array [0..MAX_READ]  of Byte;
     ByteCount    : Integer;
@@ -577,10 +601,10 @@ begin
     SetLength(Result, ByteCount);// + (Lines * 2));
     Move(DataOut[0], Result[1], Length(Result));
     { Splitting lines
-    I := MAX_LENGTH + 1;
+    I := SmtpDefaultLineLength + 1;
     while I < Lines do begin;
         Insert(#13#10, Result, I);
-        Inc(I, MAX_LENGTH + 2);
+        Inc(I, SmtpDefaultLineLength + 2);
         Inc(Lines);
     end;}
     More := (ByteCount = MAX_READ);
@@ -682,10 +706,10 @@ function DoFileEncBase64(
     var More       : Boolean) : String;
 const
     HLX_MULTIPLIER        = 3;  { for three lines at once }
-    MAX_LENGTH            = 76; {HLX: Longer lines = less CRLF's, RFC does allow lines *that* long}
-    MAX_LENGTH_MULTIPLIED = (MAX_LENGTH + 2) * HLX_MULTIPLIER;
-    MAX_READ              = ((MAX_LENGTH * 3)div 4) * HLX_MULTIPLIER;
-    MAX_READ_MOD          = (MAX_LENGTH * 3) div 4;
+    //MAX_LENGTH            = 76; {HLX: Longer lines = less CRLF's, RFC does allow lines *that* long}
+    MAX_LENGTH_MULTIPLIED = (SmtpDefaultLineLength + 2) * HLX_MULTIPLIER;
+    MAX_READ              = ((SmtpDefaultLineLength * 3)div 4) * HLX_MULTIPLIER;
+    MAX_READ_MOD          = (SmtpDefaultLineLength * 3) div 4;
 var
     Count, Place : Integer;
     DataIn       : array [0..MAX_READ]  of Byte;
@@ -1129,18 +1153,36 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Similar to Base64Encode, returns just a coded line                        }
-function Base64EncodeEx(const Input : AnsiString;
-                        MaxCol      : Integer;
-                        var cPos    : Integer) : AnsiString;
+function Base64EncodeEx(
+    const Input   : RawByteString;
+    MaxCol        : Integer;
+    var cPos      : Integer;
+    CodePage      : Cardinal = CP_ACP;
+    IsMultiByteCP : Boolean = FALSE) : RawByteString;
 var
     Len : Integer;
     I   : Integer;
+    NextCharIdx : Integer;
 begin
     Len := Length(Input);
     I   := 0;
     SetLength(Result, MaxCol + 3);
-    while (cPos <= Len) and (I < MaxCol) do begin
+    while (cPos <= Len) do begin
         Inc(I);
+
+        if IsMultibyteCP then begin
+            NextCharIdx := IcsNextCharIndex(Input, cPos, CodePage);
+            if ((NextCharIdx - cPos) * 3 + I > MaxCol) then
+            begin
+                Dec(I);
+                Break;
+            end;
+        end
+        else if (I > MaxCol) then begin
+            Dec(I);
+            Break;
+        end;
+        
         Result[I] := Base64OutA[(Byte(Input[cPos]) and $FC) shr 2];
         if (cPos + 1) <= Len  then begin
             Inc(I);
@@ -1209,7 +1251,8 @@ function IcsWrapTextEx(
     QuoteChars           : TSysCharSet;
     var cPos             : Integer;
     ForceBreak           : Boolean = FALSE;
-    ACodePage            : Cardinal = CP_ACP): RawByteString;
+    ACodePage            : Cardinal = CP_ACP;
+    IsMultiByteCP        : Boolean = False): RawByteString;
 var
     Col                : Integer;
     LinePos, LineLen   : Integer;
@@ -1226,18 +1269,11 @@ begin
     LineLen       := Length(Line);
     BreakLen      := Length(BreakStr);
     Result        := '';
-    while cPos <= LineLen do begin
-        {
-        CurChar := Line[cPos];
-        if IsCharInSysCharSet(CurChar, LeadBytes) then begin
-            L := CharLength(Line, cPos) div SizeOf(Char) -1;
-            Inc(cPos, L);
-            Inc(Col, L);
-        end
-        else begin }
 
-        { Ensure MBCS (including UTF-8) are not wrapped in the middle of a codepoint }
-        if SysLocale.FarEast or (ACodePage <> CP_ACP) then
+    while cPos <= LineLen do begin
+        { Ensure MBCS (including UTF-8) are not wrapped in the middle of a }
+        { code point. Doesn't work with UTF-7.                             }
+        if IsMultiByteCP and (ACodePage <> CP_UTF7) then
         begin
             L := IcsStrCharLength(PAnsiChar(@Line[cPos]), ACodePage) - 1;
             if L > 0 then begin
@@ -1511,7 +1547,9 @@ function HdrEncodeInLine(const Input    : RawByteString;     { V7.13 was Ansi }
                          EncType        : AnsiChar;    { Either 'Q' or 'B' }
                          const CharSet  : AnsiString;  { e.g. 'iso-8859-1' input is already in this }
                          MaxCol         : Integer;
-                         DoFold         : Boolean): RawByteString;
+                         DoFold         : Boolean;
+                         CodePage       : Cardinal = CP_ACP;
+                         IsMultiByteCP  : Boolean = FALSE): RawByteString;
 const
     Suffix    = '?=';
     LineBreak = #13#10#09;
@@ -1522,6 +1560,7 @@ var
     LenRes      : Integer;
     Prefix,
     Res         : AnsiString;
+    NextCharIdx : Integer;
 begin
     Result := '';
     if DoFold and (MaxCol < 25) then
@@ -1546,12 +1585,14 @@ begin
                                   Specials + QuotedCharSet,
                                   True,
                                   lPos,
-                                  DoFold);
+                                  DoFold,
+                                  CodePage,
+                                  IsMultiByteCP);
             if Length(Res) = 0 then
                 Exit;
             if Res[Length(Res)] = '=' then
                 SetLength(Res, Length(Res) - 1);
-            Result := Prefix + Res  + Suffix;
+            Result := Prefix + Res + Suffix;
         end;
         while lPos <= Length(Input) do begin
             Res :=  StrEncodeQPEx(Input,
@@ -1559,7 +1600,9 @@ begin
                                   Specials + QuotedCharSet,
                                   True,
                                   lPos,
-                                  DoFold);
+                                  DoFold,
+                                  CodePage,
+                                  IsMultiByteCP);
             if (Length(Res) > 0) then begin
                 if Res[Length(Res)] = '=' then
                     SetLength(Res, Length(Res) - 1);
@@ -1571,13 +1614,22 @@ begin
         { Base64 }
         { taken from function B64Encode and modified slightly }
         if not DoFold then
-            MaxCol := MaxInt;
+            MaxCol := 1022;
 
         Res    := Res + Prefix;
         LenRes := Length(Prefix) + 2;
 
         while lPos <= Len do begin
-            if (LenRes + 4 > MaxCol) then begin
+            if IsMultibyteCP then
+            begin
+                NextCharIdx := IcsNextCharIndex(Input, lPos, CodePage);
+                if ((NextCharIdx - lPos) * 4 + LenRes > MaxCol) then
+                begin
+                    Res := Res + Suffix + LineBreak {#13#10#09} + Prefix;
+                    LenRes := Length(Prefix) + 2;
+                end;
+            end
+            else if (LenRes + 4 > MaxCol) then begin
                 Res := Res + Suffix + LineBreak {#13#10#09} + Prefix;
                 LenRes := Length(Prefix) + 2;
             end;
@@ -1614,10 +1666,13 @@ function HdrEncodeInLine(const Input    : UnicodeString;
                          EncType        : WideChar;       { Either 'Q' or 'B' }
                          const CharSet  : UnicodeString;  { e.g. 'iso-8859-1' }
                          MaxCol         : Integer;
-                         DoFold         : Boolean): UnicodeString;
+                         DoFold         : Boolean;
+                         Codepage       : Cardinal = CP_ACP;
+                         IsMultiByteCP  : Boolean = FALSE): UnicodeString;
 begin
     Result := HdrEncodeInLine(AnsiString(Input), Specials, AnsiChar(EncType),
-                              AnsiString(CharSet), MaxCol, DoFold);
+                              AnsiString(CharSet), MaxCol, DoFold, Codepage,
+                              IsMultiByteCP);
 end;
 {$ENDIF}
 
@@ -1628,13 +1683,15 @@ function HdrEncodeInLineEx(const Input : UnicodeString;
                          EncType       : WideChar;    { Either 'Q' or 'B'        }
                          CodePage      : Integer;     { Input will be encoded into this CharSet }
                          MaxCol        : Integer;
-                         DoFold        : Boolean): RawByteString;
+                         DoFold        : Boolean;
+                         IsMultiByteCP : Boolean = FALSE): RawByteString;
 var
     CharSet: AnsiString;
 begin
     CharSet := AnsiString(CodePageToMimeCharsetString(CodePage));
     Result := HdrEncodeInLine(UnicodeToAnsi(Input,CodePage), Specials,
-                                AnsiChar(EncType), CharSet, MaxCol, DoFold);
+                              AnsiChar(EncType), CharSet, MaxCol, DoFold,
+                              CodePage, IsMultiByteCP);
 end;
 
 { * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1642,21 +1699,59 @@ end;
 { Use it to code message text that includes extended ASCII chars, passing    }
 { empty Specials '[]' will work mostly.                                      }
 { Param MaxCol should be set to 1 below max. line length                     }
-function StrEncodeQP(const Input : AnsiString;
-                     MaxCol      : Integer;
-                     Specials    : TSysCharSet) : String;
+function StrEncodeQP(
+    const Input   : RawByteString;
+    MaxCol        : Integer;
+    Specials      : TSysCharSet;
+    CodePage      : Cardinal = CP_ACP;
+    IsMultiByteCP : Boolean = FALSE) : String;
 var
-    cPos, rPos, lPos :Integer;
+    cPos, rPos, lPos, ResLen, NextCharIdx : Integer;
+
+    procedure InsertSoftBreak;
+    begin
+        { Need to grow? Should never happen }
+        if cPos + 3 > ResLen then begin
+            Inc(ResLen, MaxCol);
+            SetLength(Result, ResLen);
+        end;
+        Result[cPos] := '=';
+        Inc(cPos);
+        Result[cPos] := #13;
+        Inc(cPos);
+        Result[cPos] := #10;
+        Inc(cPos);
+        lPos := 1;
+    end;
+    
 begin;
-    SetLength(Result, Length(Input) * 2);
+    if MaxCol < 16 then MaxCol := 16;
+    { Allocate max. possible result string        }
+    { Max. possible result length w/o soft breaks }
+    ResLen :=  Length(Input) * 3;
+    { Add length max. possible breaks             }
+    while ResLen mod MaxCol <> 0 do
+        Inc(ResLen);
+    Inc(ResLen, (ResLen div MaxCol) * 3);
+
+    SetLength(Result, ResLen);
+
     cPos   := 1;
     lPos   := 1;
+    NextCharIdx := 1;
     for rPos := 1 to Length(Input) do begin
+
+        if IsMultiByteCP and (rPos = NextCharIdx) then begin
+            NextCharIdx := IcsNextCharIndex(Input, rPos, CodePage);
+            if (NextCharIdx > rPos + 1) and
+               ((NextCharIdx - rPos) * 3 + lPos > MaxCol) then
+                InsertSoftBreak;
+        end;
+
         if (Ord(Input[rPos]) > 126)  or
            (Ord(Input[rPos]) < 32)   or
            (Input[rPos]      = '=')  or
-           //IsCharInSysCharSet(TSetType(Input[rPos]), Specials) then begin
-           (Input[rPos] in Specials) then begin
+           (Input[rPos] in Specials) then begin            
             Result[cPos] := '=';
             Inc(cPos);
             Result[cPos] := HexTable[(Ord(Input[rPos]) shr 4) and 15];
@@ -1664,33 +1759,16 @@ begin;
             Result[cPos] := HexTable[Ord(Input[rPos]) and 15];
             Inc(cPos);
             Inc(lPos, 3);
-            if lPos >= MaxCol then begin
-                Result[cPos] := '=';
-                Inc(cPos);
-                Result[cPos] := #13;
-                Inc(cPos);
-                Result[cPos] := #10;
-                Inc(cPos);
-                lPos := 1;
-            end;
+            if lPos >= MaxCol then
+                InsertSoftBreak;
         end
         else begin
             Result[cPos] := Char(Input[rPos]); // No problem here since plain US-ASCII
             Inc(cPos);
             Inc(lPos);
-            if lPos >= MaxCol then begin
-                Result[cPos] := '=';
-                Inc(cPos);
-                Result[cPos] := #13;
-                Inc(cPos);
-                Result[cPos] := #10;
-                Inc(cPos);
-                lPos := 1;
-            end;
+            if lPos >= MaxCol then
+                InsertSoftBreak;
         end;
-        { Grow }
-        if cPos > Length(Result) - 3 then
-            SetLength(Result, Length(Result) + MaxCol);
     end;
     Setlength(Result, cPos - 1);
 end;
@@ -1698,32 +1776,52 @@ end;
 
 { * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}
-function StrEncodeQP(const Input : UnicodeString;
-                     MaxCol      : Integer;
-                     Specials    : TSysCharSet;
-                     ACodePage   : Cardinal) : UnicodeString;
+function StrEncodeQP(const Input    : UnicodeString;
+                     MaxCol         : Integer;
+                     Specials       : TSysCharSet;
+                     ACodePage      : Cardinal;
+                     IsMultiByteCP  : Boolean = FALSE) : UnicodeString;
 begin;
-    Result := StrEncodeQP(UnicodeToAnsi(Input, ACodePage), MaxCol, Specials);
+    Result := StrEncodeQP(UnicodeToAnsi(Input, ACodePage), MaxCol, Specials,
+                          ACodePage, IsMultiByteCP);
 end;
 {$ENDIF}
 
 { * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Similar to StrEncodeQP, returns just a coded line                          }
-function StrEncodeQPEx(const Buf   : AnsiString;
-                       MaxCol      : Integer;
-                       Specials    : TSysCharSet;
-                       ShortSpace  : Boolean;
-                       var cPos    : Integer;
-                       DoFold      : Boolean) : AnsiString;
+function StrEncodeQPEx(
+    const Buf     : RawByteString;
+    MaxCol        : Integer;
+    Specials      : TSysCharSet;
+    ShortSpace    : Boolean;
+    var cPos      : Integer;
+    DoFold        : Boolean;
+    CodePage      : Cardinal = CP_ACP;
+    IsMultibyteCP : Boolean = FALSE) : RawByteString;
 var
     lPosRes : Integer;
+    NextCharIdx : Integer;
 begin
     lPosRes := 1;
+    NextCharIdx := cPos;
     if not DoFold then
         MaxCol := Length(Buf) * 3;                                     { AG }
-    if MaxCol < 4 then MaxCol := 4;                                    { AG }
+    if MaxCol < 16 then MaxCol := 16;                                  { AG }
     SetLength(Result, MaxCol);
     while cPos <= Length(Buf) do begin
+
+        if IsMultibyteCP and (cPos = NextCharIdx) then
+        begin
+            NextCharIdx := IcsNextCharIndex(Buf, cPos, CodePage);
+            if (NextCharIdx > cPos + 1) and
+               ((NextCharIdx - cPos) * 3 + lPosRes >= MaxCol - 2) then
+            begin
+                Result[lPosRes] := '=';
+                Inc(lPosRes);
+                Break;
+            end;
+        end;
+
         if (Ord(Buf[cPos]) > 126)  or
            (Ord(Buf[cPos]) < 32)   or
            (Buf[cPos] in Specials) or
@@ -1733,8 +1831,7 @@ begin
                 Inc(lPosRes);
                 Inc(cPos);
             end
-            else
-            if lPosRes < MaxCol - 2 then begin
+            else if (lPosRes < MaxCol - 2) then begin
                 Result[lPosRes] := '=';
                 Inc(lPosRes);
                 Result[lPosRes] := HexTableA[(Ord(Buf[cPos]) shr 4) and 15];
@@ -1777,7 +1874,7 @@ begin
     Result := StrEncodeQPEx(UnicodeToAnsi(Buf), MaxCol, Specials,
                             ShortSpace, cPos, DoFold);
 end;
-{$ENDIF}
+
 
 { * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { RFC822 - 3.1.1.  LONG HEADER FIELDS                                       }
@@ -1798,36 +1895,61 @@ begin
     rPos := 1;
     if rPos <= Length(HdrLine) then
         HdrLines.Add(_Trim(IcsWrapTextEx(HdrLine, #13#10#09,
-                          BreakCharsSet, 76, [], rPos)));
+                          BreakCharsSet, SmtpDefaultLineLength, [], rPos)));
     while rPos <= Length(HdrLine) do
         HdrLines.Add(#09 + _Trim(IcsWrapTextEx(HdrLine, #13#10#09,
-                                BreakCharsSet, 76, [], rPos)))
+                                BreakCharsSet, SmtpDefaultLineLength, [], rPos)))
+end;
+{$ENDIF}
+
+
+{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure FoldHdrLine(
+    HdrLines      : TStrings;
+    const HdrLine : RawByteString;
+    ACodePage     : Cardinal = CP_ACP;
+    IsMultiByteCP : Boolean = FALSE);
+var
+    rPos : Integer;
+begin
+    rPos := 1;
+    if rPos <= Length(HdrLine) then
+        HdrLines.Add(_Trim(IcsWrapTextEx(HdrLine, #13#10#09,
+                    BreakCharsSet, SmtpDefaultLineLength, [], rPos,
+                    FALSE, ACodePage, IsMultiByteCP)));
+    while rPos <= Length(HdrLine) do
+        HdrLines.Add(#09 + _Trim(IcsWrapTextEx(HdrLine, #13#10#09,
+                    BreakCharsSet, SmtpDefaultLineLength, [], rPos,
+                    FALSE, ACodePage, IsMultiByteCP)));
 end;
 
-
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *} {AG}
-function FoldString(const Input : AnsiString;
-                    BreakCharsSet : TSysCharSet;
-                    MaxCol      : Integer): AnsiString;
+function FoldString(const Input : RawByteString;
+    BreakCharsSet : TSysCharSet;
+    MaxCol        : Integer;
+    ACodePage     : Cardinal = CP_ACP;
+    IsMultiByteCP : Boolean = FALSE): RawByteString;
 var
     rPos : Integer;
 begin
     rPos := 1;
     if rPos <= Length(Input) then
         Result := _Trim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
-                       BreakCharsSet, MaxCol, [], rPos));
+                       BreakCharsSet, MaxCol, [], rPos,
+                       False, ACodePage, IsMultiByteCP));
     while rPos <= Length(Input) do
         Result := Result + AnsiString(#13#10#09) +
                   _Trim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
-                                      BreakCharsSet, MaxCol, [], rPos));
+                                      BreakCharsSet, MaxCol, [], rPos,
+                                      False, ACodePage, IsMultiByteCP));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}
-function FoldString(const Input : UnicodeString;
+function FoldString(const Input   : UnicodeString;
                     BreakCharsSet : TSysCharSet;
-                    MaxCol      : Integer): UnicodeString;
+                    MaxCol        : Integer): UnicodeString;
 var
     rPos : Integer;
 begin

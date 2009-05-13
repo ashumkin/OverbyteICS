@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.14
+Version:      1.15
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -70,6 +70,8 @@ Aug 07, 2008 V1.13 F. Piette found a bug in some AnsiString-functions.
                    They always call SetLength() on the result now.
 Aug 11, 2008 V1.14 A. Garrels added IcsCompareStrA() and an overload to
                    _CompareStr().
+May 09, 2009 V1.15 Arno added const CP_UTF7, and procedure _ShowException
+                   for future use.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -106,8 +108,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  OverbyteIcsLibraryVersion = 114;
-  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.14 ';
+  OverbyteIcsLibraryVersion = 115;
+  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2008 F. Piette V1.15 ';
 
 
 {$IFDEF CLR}
@@ -302,9 +304,12 @@ const
   CP_ACP           = Windows.CP_ACP;
   {$EXTERNALSYM CP_UTF8}
   CP_UTF8          = Windows.CP_UTF8;
+  {$EXTERNALSYM CP_UTF7}
+  CP_UTF7          = Windows.CP_UTF7;
 
 {#$EXTERNALSYM SysErrorMessage}
 function  _SysErrorMessage(ErrCode: Integer): String;
+procedure _ShowException(ExceptObject: TObject; ExceptAddr: Pointer);
 {#$EXTERNALSYM BoolToStr}
 function  _BoolToStr(B: Boolean; UseBoolStrs: Boolean = False): String;
 {#$EXTERNALSYM IntToStr}
@@ -799,6 +804,11 @@ end;
 function _SysErrorMessage(ErrCode: Integer): String;
 begin
     Result := SysUtils.SysErrorMessage(ErrCode);
+end;
+
+procedure _ShowException(ExceptObject: TObject; ExceptAddr: Pointer);
+begin
+    SysUtils.ShowException(ExceptObject, ExceptAddr);
 end;
 
 function _BoolToStr(B: Boolean; UseBoolStrs: Boolean = False): String;
