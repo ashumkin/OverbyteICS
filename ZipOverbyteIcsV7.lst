@@ -148,7 +148,8 @@ Delphi\vc32\OverbyteIcsTimeList.dcr
 Delphi\vc32\OverbyteIcsFormDataDecoder.pas
 Delphi\vc32\OverbyteIcsHttpAppServer.pas
 Delphi\vc32\OverbyteIcsHttpAppServer.dcr
-
+Delphi\vc32\OverbyteIcsXpManifest.rc
+Delphi\vc32\OverbyteIcsXp.manifest
 
 Delphi\vc32\ZOBJ123\adler32.obj
 Delphi\vc32\ZOBJ123\compress.obj
