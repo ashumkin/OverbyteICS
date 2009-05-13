@@ -1,6 +1,6 @@
 object SmtpTestForm: TSmtpTestForm
-  Left = 611
-  Top = 212
+  Left = 260
+  Top = 123
   Width = 593
   Height = 518
   Caption = 'SmtpTestForm'
@@ -574,7 +574,7 @@ object SmtpTestForm: TSmtpTestForm
             Hint = 
               'List of prefered MIME charset names supported. Aliases are suppo' +
               'rted as well,'#13#10'just type for example, "latin1" and hit Test '
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 0
           end
           object CharsetTestButton: TButton
@@ -729,7 +729,7 @@ object SmtpTestForm: TSmtpTestForm
       Top = 1
       Width = 65
       Height = 17
-      Hint = 'Show progress if files are attached'
+      Hint = 'Show progress'
       Alignment = taLeftJustify
       Caption = 'Progress'
       TabOrder = 1
