@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.26
+Version:      7.27
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -82,7 +82,10 @@ Dec 05, 2008 v7.23 Arno added function IcsCalcTickDiff.
 Apr 18, 2009 V7.24 Arno added a PWideChar overload to UnicodeToAnsi().
 May 02, 2009 V7.25 Arno added IcsNextCharIndex().
 May 03, 2009 V7.26 Arno added IsUtf8TrailByte and IsLeadChar.
-
+May 14, 2009 V7.27 Arno changed IcsNextCharIndex() to avoid a compiler
+             warning in C++ Builder (assertion moved one line up).
+             Removed uneccessary overload directives from IcsCharNextUtf8
+             and IcsCharPrevUtf8.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -198,8 +201,8 @@ type
     function  IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  CharsetDetect(const Buf: Pointer; Len: Integer): TCharsetDetectResult; overload;
     function  CharsetDetect(const Str: RawByteString): TCharsetDetectResult; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
     function  htoin(Value : PWideChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  htoin(Value : PAnsiChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -1232,8 +1235,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: Cardinal = CP_ACP): Integer;
 begin
-    Result := Index + 1;
     Assert((Index > 0) and (Index <= Length(S)));
+    Result := Index + 1;
     if (ACodePage = CP_ACP) and not (S[Index] in LeadBytes) then
         Exit;
     Result := Index + IcsStrCharLength(PAnsiChar(S) + Index - 1, ACodePage);
