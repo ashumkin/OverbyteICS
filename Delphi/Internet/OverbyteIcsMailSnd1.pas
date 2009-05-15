@@ -398,19 +398,19 @@ var
     I          : Integer;
     Charset    : String;
     CPList     : TObjectList;
-    CsSortList : TStringList;
+    SList      : TStringList;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
         Application.HintHidePause := MaxInt;
+        IniFile := nil;
+        SList   := TStringList.Create;
+        try
         { Get a list of MIME charset names supported on this system }
         { the numer of supported code pages also depends on whether }
         { or not an additinal Windows language is installed.        }
         CPList := TObjectList.Create(TRUE);
-        { Sorting takes a while.                                    }
-        CsSortList := TStringList.Create;
         try
-            CsSortList.Sorted := TRUE;
             GetSystemCodePageList(CPList);
             for I := 0 to CPList.Count -1 do
             begin
@@ -418,12 +418,12 @@ begin
                      TCodePageObj(CPList.Items[I]).CodePage);
                 { Check whether a mapping exists and avoid duplicates }
                 if (Charset <> '') and (CharsetComboBox.Items.IndexOf(Charset) = -1) then
-                    CsSortList.Add(Charset);
-                CharsetComboBox.Items := CsSortList;
+                    SList.Add(Charset);
             end;
+            SList.Sort;
+            CharsetComboBox.Items := SList;
         finally
             CPList.Free;
-            CsSortList.Free;
         end;
         SettingsPageControl.ActivePageIndex := 0;
         CharsetInfoLabel1.Caption           := '';
@@ -469,12 +469,14 @@ begin
         DefEncodingComboBox.ItemIndex := IniFile.ReadInteger(SectionData, KeyDefTransEnc, 0);
 
         if not LoadStringsFromIniFile(IniFile, SectionFileAttach,
-                                      KeyFileAttach, FileAttachMemo.Lines) then
-        FileAttachMemo.Text := ExtractFilePath(ParamStr(0)) + 'ics_logo.gif' +
-                               #13#10 +
-                               ExtractFilePath(ParamStr(0)) + 'fp_small.gif';
+                                      KeyFileAttach, SList) then
+            FileAttachMemo.Text := ExtractFilePath(ParamStr(0)) +
+                                   'ics_logo.gif' + #13#10 +
+                                    ExtractFilePath(ParamStr(0)) + 'fp_small.gif'
+        else
+            FileAttachMemo.Lines := SList;
         if not LoadStringsFromIniFile(IniFile, SectionMsgMemo,
-                                      KeyMsgMemo, MsgMemo.Lines) then
+                                      KeyMsgMemo, SList) then
             MsgMemo.Text :=
             'This is the first line' + #13#10 +
             'Then the second one' + #13#10 +
@@ -482,13 +484,17 @@ begin
             '' + #13#10 +
             'The next one has only a single dot' + #13#10 +
             '.' + #13#10 +
-            'Finally the last one' + #13#10;
+            'Finally the last one' + #13#10
+        else
+            MsgMemo.Lines := SList;
         Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
         Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
         Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-
-        IniFile.Free;
+        finally
+            SList.Free;
+            IniFile.Free;
+        end;
     end;
 end;
 
