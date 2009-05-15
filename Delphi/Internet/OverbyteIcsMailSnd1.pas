@@ -417,7 +417,7 @@ begin
                 Charset := CodePageToMimeCharsetString(
                      TCodePageObj(CPList.Items[I]).CodePage);
                 { Check whether a mapping exists and avoid duplicates }
-                if (Charset <> '') and (CharsetComboBox.Items.IndexOf(Charset) = -1) then
+                if (Charset <> '') and (SList.IndexOf(Charset) = -1) then
                     SList.Add(Charset);
             end;
             SList.Sort;
