@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.15
+Version:      1.16
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -72,6 +72,10 @@ Aug 11, 2008 V1.14 A. Garrels added IcsCompareStrA() and an overload to
                    _CompareStr().
 May 09, 2009 V1.15 Arno added const CP_UTF7, and procedure _ShowException
                    for future use.
+May 15, 2009 V1.16 Arno added some EXTERNALSYM directives to make C++Builder
+                   happy (Ambiguity between '_fastcall Application()' and
+                   'Forms::Application')
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLibrary;
@@ -507,12 +511,16 @@ procedure _Sleep(dwMilliseconds: DWORD); stdcall;
 function _GetACP: Cardinal; stdcall;
 
 {$IFNDEF NOFORMS}
+{$EXTERNALSYM Application}
 function Application : TApplication;
 {$ENDIF}
-{$ENDIF}
+{$ENDIF WIN32}
 
+{$EXTERNALSYM MakeWord}
 function MakeWord(a, b: Byte): Word;
+{$EXTERNALSYM MakeLong}
 function MakeLong(a, b: Word): Longint;
+{$EXTERNALSYM HiWord}
 function HiWord(L: DWORD): Word;
 
 implementation
@@ -1602,10 +1610,10 @@ end;
 {$IFNDEF NOFORMS}
 function Application : TApplication;
 begin
-     Result := Forms.Application;
+    Result := Forms.Application;
 end;
 {$ENDIF}
-{$ENDIF}
+{$ENDIF WIN32}
 
 function MakeWord(a, b: Byte): Word;
 begin
