@@ -1,7 +1,7 @@
 object SmtpTestForm: TSmtpTestForm
   Left = 260
   Top = 123
-  Width = 593
+  Width = 567
   Height = 518
   Caption = 'SmtpTestForm'
   Color = clBtnFace
@@ -20,7 +20,7 @@ object SmtpTestForm: TSmtpTestForm
   object MsgMemo: TMemo
     Left = 0
     Top = 235
-    Width = 585
+    Width = 559
     Height = 120
     Hint = 'Enter the message text in this memo'
     Align = alTop
@@ -40,7 +40,7 @@ object SmtpTestForm: TSmtpTestForm
   object DisplayMemo: TMemo
     Left = 0
     Top = 441
-    Width = 585
+    Width = 559
     Height = 43
     Hint = 'This memo shows info messages'
     Align = alClient
@@ -61,12 +61,12 @@ object SmtpTestForm: TSmtpTestForm
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
-    Width = 585
+    Width = 559
     Height = 235
     Align = alTop
     TabOrder = 2
     DesignSize = (
-      585
+      559
       235)
     object Label5: TLabel
       Left = 12
@@ -269,7 +269,7 @@ object SmtpTestForm: TSmtpTestForm
       Top = 4
       Width = 385
       Height = 211
-      ActivePage = BasicSettingsTabSheet
+      ActivePage = CharsetSettingsTabSheet
       TabOrder = 16
       object BasicSettingsTabSheet: TTabSheet
         Caption = 'Basic Settings'
@@ -622,13 +622,11 @@ object SmtpTestForm: TSmtpTestForm
               ' Base64 this encoding is forced.'
             Style = csDropDownList
             ItemHeight = 13
-            ItemIndex = 0
             TabOrder = 5
-            Text = 'smptEnc7bit'
             Items.Strings = (
-              'smptEnc7bit'
-              'smptEnc8bit'
-              'smptEncQuotedPrintable'
+              'smtpEnc7bit'
+              'smtpEnc8bit'
+              'smtpEncQuotedPrintable'
               'smtpEncBase64')
           end
           object FoldHeadersCheckBox: TCheckBox
@@ -667,7 +665,7 @@ object SmtpTestForm: TSmtpTestForm
   object AttachPanel: TPanel
     Left = 0
     Top = 355
-    Width = 585
+    Width = 559
     Height = 17
     Align = alTop
     TabOrder = 3
@@ -682,7 +680,7 @@ object SmtpTestForm: TSmtpTestForm
   object FileAttachMemo: TMemo
     Left = 0
     Top = 372
-    Width = 585
+    Width = 559
     Height = 49
     Hint = 'Enter the attached file path, one per line'
     Align = alTop
@@ -702,12 +700,12 @@ object SmtpTestForm: TSmtpTestForm
   object InfoPanel: TPanel
     Left = 0
     Top = 421
-    Width = 585
+    Width = 559
     Height = 20
     Align = alTop
     TabOrder = 5
     DesignSize = (
-      585
+      559
       20)
     object Label7: TLabel
       Left = 16
@@ -719,7 +717,7 @@ object SmtpTestForm: TSmtpTestForm
     object ProgressBar1: TProgressBar
       Left = 192
       Top = 3
-      Width = 350
+      Width = 347
       Height = 14
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
