@@ -3,11 +3,11 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  Logger class donated to ICS.
 Creation:     December 2005
-Version:      6.02
+Version:      6.03
 EMail:        francois.piette@overbyte.be      http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2005-2008 by François PIETTE
+Legal issues: Copyright (C) 2005-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -45,6 +45,8 @@ Aug 20, 2006 V6.01 F. Piette adapted to Delphi.NET
 Jul 03, 2008 V6.02 A. Garrels made some changes to prepare code for Unicode.
                    When new LogFileEncoding is set to lfeUtf16 logging to file
                    will be probably faster than lfeUtf8.
+May 08, 2009 V6.03 Added properties TimeStampFormatString and TimeStampSeparator
+                   similar as suggested by Anton Sviridov.
                                       
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -53,15 +55,13 @@ unit OverbyteIcsLogger;
 {$B-}              { Enable partial boolean evaluation   }
 {$T-}              { Untyped pointers                    }
 {$X+}              { Enable extended syntax              }
+{$H+}              { Use long Strings                    }
+{$J+}              { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
-{$IFDEF COMPILER2_UP}{ Not for Delphi 1                    }
-    {$H+}            { Use long Strings                    }
-    {$J+}            { Allow typed constant to be modified }
 {$ENDIF}
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
@@ -70,10 +70,6 @@ unit OverbyteIcsLogger;
 { If NO_ADV_MT is defined, then there is less multithread code compiled.    }
 
 {#$DEFINE NO_ADV_MT}
-
-{$IFDEF DELPHI1}
-    {$DEFINE NO_ADV_MT}
-{$ENDIF}
 
 {$IFDEF WIN32}
     {$DEFINE VCL}
@@ -97,8 +93,8 @@ uses
 {$ENDIF}
 
 const
-    TIcsLoggerVersion   = 602;
-    CopyRight : String  = ' IcsLogger (c) 2005-2008 by François PIETTE V6.02 ';
+    TIcsLoggerVersion   = 603;
+    CopyRight : String  = ' IcsLogger (c) 2005-2009 by François PIETTE V6.03 ';
 
 type
     ELoggerException = class(Exception);
@@ -122,24 +118,26 @@ type
                     etAuditSuccess, etAuditFailure);
     TIcsLogEvent = procedure (Sender: TObject; LogOption: TLogOption;
                               const Msg : String) of object;
-{$IFDEF CLR}
+{$IFNDEF CLR} { Makes the OI looking a little bit nicer } {V6.03}
+    TIcsLogger = class(TComponent)
+{$ELSE}
     [DesignTimeVisibleAttribute(TRUE)]
     TIcsLogger = class({$IFDEF VCL}TComponent{$ELSE}Component{$ENDIF})
-{$ELSE}
-    TIcsLogger = class(TComponent)
 {$ENDIF}
     protected
-        FLogOptions         : TLogOptions;
-        FOnIcsLogEvent      : TIcsLogEvent;
-        FLogFileName        : String;
-        FLogFile            : TFileStream;
-        FLogFileOption      : TLogFileOption;
+        FLogOptions             : TLogOptions;
+        FOnIcsLogEvent          : TIcsLogEvent;
+        FLogFileName            : String;
+        FLogFile                : TFileStream;
+        FLogFileOption          : TLogFileOption;
+        FTimeStampFormatString  : String;  {V6.03}
+        FTimeStampSeparator     : String;  {V6.03}
     {$IFDEF COMPILER12_UP}
-        FLogFileEncoding    : TLogFileEncoding;
-        FLogFileInternalEnc : TLogFileEncoding;
+        FLogFileEncoding        : TLogFileEncoding;
+        FLogFileInternalEnc     : TLogFileEncoding;
     {$ENDIF}
     {$IFNDEF NO_ADV_MT}
-        FLock               : TRtlCriticalSection;
+        FLock                   : TRtlCriticalSection;
         procedure   Lock;
         procedure   UnLock;
     {$ENDIF}
@@ -150,6 +148,7 @@ type
         procedure   SetOnIcsLogEvent(const Value: TIcsLogEvent);
         procedure   InternalOpenLogFile;
         procedure   InternalCloseLogFile;
+        function    AddTimeStamp: String;  {V6.03}
     public
         constructor Create{$IFDEF VCL}(AOwner: TComponent); override;{$ELSE}; virtual;{$ENDIF}
         destructor  Destroy; override;
@@ -162,6 +161,10 @@ type
         procedure FreeNotification(Obj : TObject);
     {$ENDIF}
     published
+        property    TimeStampFormatString : String       read  FTimeStampFormatString {V6.03}
+                                                         write FTimeStampFormatString;
+        property    TimeStampSeparator : String          read  FTimeStampSeparator {V6.03}
+                                                         write FTimeStampSeparator;
         property    LogFileOption : TLogFileOption       read  FLogFileOption
                                                          write SetLogFileOption;
 {$IFDEF COMPILER12_UP}
@@ -187,20 +190,7 @@ type
 procedure OutputDebugString(const Msg : TOutputDebugStringType);
 {$ENDIF}
 
-function IcsLoggerAddTimeStamp: String;
-
 implementation
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsLoggerAddTimeStamp: String;
-begin
-{$IFDEF VCL}
-    DateTimeToString(Result, 'hh:nn:ss:zzz', Time);
-{$ELSE}
-    Result := DateTime.Now.ToString('T');  // Format to be checked
-{$ENDIF}
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -210,6 +200,8 @@ begin
 {$IFNDEF NO_ADV_MT}
     InitializeCriticalSection(FLock);
 {$ENDIF}
+    FTimeStampFormatString := 'hh:nn:ss:zzz'; {V6.03}
+    FTimeStampSeparator    := ' ';            {V6.03}
 end;
 
 
@@ -299,6 +291,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsLogger.AddTimeStamp: String; {V6.03}
+begin
+{$IFDEF VCL}
+    DateTimeToString(Result, FTimeStampFormatString, Now);
+{$ELSE}
+    Result := DateTime.Now.ToString('T');  // Format to be checked
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.WriteToLogFile(const S: String);
 {$IFDEF CLR}
 var
@@ -347,12 +350,14 @@ begin
         if loAddStamp in FLogOptions then begin
             if loDestEvent in FLogOptions then
                 if Assigned(FOnIcsLogEvent) then
-                    FOnIcsLogEvent(Sender, LogOption, IcsLoggerAddTimeStamp +
-                                   ' ' + Msg);
+                    FOnIcsLogEvent(Sender, LogOption, AddTimeStamp +
+                                   FTimeStampSeparator + Msg); {V6.03}
             if loDestOutDebug in FLogOptions then
-                OutputDebugString(TOutputDebugStringType(IcsLoggerAddTimeStamp + ' ' + Msg));
+                OutputDebugString(TOutputDebugStringType(AddTimeStamp +
+                                  FTimeStampSeparator + Msg)); {V6.03}
             if loDestFile in FLogOptions then
-                WriteToLogFile(IcsLoggerAddTimeStamp + ' ' + Msg + #13#10);
+                WriteToLogFile(AddTimeStamp + FTimeStampSeparator +
+                               Msg + #13#10); {V6.03}
         end
         else begin
             if loDestEvent in FLogOptions then
