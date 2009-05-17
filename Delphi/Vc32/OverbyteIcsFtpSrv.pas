@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.07
+Version:      7.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -361,8 +361,24 @@ Mar 17, 2009 V7.06 Angus added MaxAttempts property to limit failed login attemp
 Apr 16, 2009 V7.07 Angus MD5 and CRC use buffered stream
              Clean-up MD5 on the fly
              Assume STREAM64, USE_BUFFERED_STREAM, USE_MODEZ
-
-
+May 17, 2009 V7.08 Angus renamed FileMD5ThreadOnProgress to UpdateThreadProgress since
+                used for various functions other than md5 and made public
+             UpdateTheadProgress called by Client.BuildDirList so session does not timeout
+                 indexing large directories and can be aborted
+             Rename Client.BuildDirectory to BuildDirList to avoid confusion with
+                Server.BuildDirectory, made virtual, removed Path no longer used and
+                return total files listed, and log number of files listed
+             Added OnAddVirtFiles event called from BuildDirList which allows extra virtual
+                directories or files to be added to directory listings
+             Fixed bug in Server.BuildDirectory that meant BuildFilePath was bypassed for a
+                blank directory argument which prevented virtual directories working
+             Fixed bugs in CommandChangeDir and CommandALLO that meant virtual directories not
+                supported because BuildFilePath was not called when checking directory
+             IsPathAllowed now calls BuildFilePath event which may validate if a virtual
+                directory is allowed by returning non-blank
+             FormatResponsePath also calls BuildFilePath to convert translated virtual
+                path back to original path in home directory, so it can be removed
+             TriggerLang now calls correct event handler
 
 
 
@@ -449,8 +465,8 @@ uses
 
 
 const
-    FtpServerVersion         = 707;
-    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.07 ';
+    FtpServerVersion         = 708;
+    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.08 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -710,9 +726,9 @@ type
         constructor Create(AOwner: TComponent); override;
         destructor  Destroy; override;
         procedure   SendAnswer(const Answer : RawByteString);         { angus V7.01 }{ AG V7.02 }
-        procedure   SetDirectory(newValue : String); virtual;
+        procedure   SetDirectory(newValue : String); virtual;   
         procedure   SetAbortingTransfer(newValue : Boolean);
-        procedure   BuildDirectory(const Path : String);
+        procedure   BuildDirList(var TotalFiles: integer); virtual; {angus V7.08 was BuildDirectory, made virtual }
         procedure   TriggerSessionClosed(Error : Word); override;
 {$IFDEF USE_SSL}
         function    SslSendPlain(Data : TWSocketData; Len : Integer) : Integer;
@@ -902,6 +918,12 @@ type
                                    Client      : TFtpCtrlSocket;
                                    Lang        : TFtpString;
                                    var Allowed : Boolean) of object;
+    TFtpSrvAddVirtFilesEvent = procedure (Sender          : TObject;             { angus V7.08 }
+                                          Client          : TFtpCtrlSocket;
+                                          var LocFiles    : TIcsFileRecs;
+                                          var LocFileList : TList;
+                                          var TotalFiles  : Integer;
+                                          ProgressCallback: TMD5Progress) of object;
 
     TFtpServer = class(TIcsWndControl)
     protected
@@ -993,6 +1015,7 @@ type
         FOnRein                 : TFtpSrvReinEvent;          { angus V7.01 }
         FOnLang                 : TFtpSrvLangEvent;          { angus V7.01 }
         FSystemCodePage         : Cardinal;                  { AG 7.02 }
+        FOnAddVirtFiles         : TFtpSrvAddVirtFilesEvent;  { angus V7.08 }
 {$IFNDEF NO_DEBUG_LOG}
         function  GetIcsLogger: TIcsLogger;                                      { V1.46 }
         procedure SetIcsLogger(const Value: TIcsLogger);                         { V1.46 }
@@ -1019,7 +1042,8 @@ type
         procedure PreparePassiveRetrDataSocket(Client : TFtpCtrlSocket);
         function  IsPathAllowed(Client : TFtpCtrlSocket; const Path : String;
                                 ExcludeBackslash : Boolean = FALSE): Boolean; { V1.52 AG}
-        procedure BuildDirectory(Client : TFtpCtrlSocket; var Path : TFtpString); { angus V1.54 }
+        function  FormatResponsePath(Client: TFtpCtrlSocket; const InPath : TFtpString): TFtpString; { AG V1.52 angus V7.08 }
+        procedure BuildDirectory(Client : TFtpCtrlSocket; var Path : TFtpString); { angus V1.54, V7.08 }
         procedure EventTimerOnTimer(Sender : TObject);                            { angus V1.54 }
         procedure ServerClientConnect(Sender: TObject;
                                 Client: TWSocketClient; Error: Word);    { angus V7.00 }
@@ -1160,7 +1184,11 @@ type
         procedure TriggerLang          (Client        : TFtpCtrlSocket;
                                         Lang          : TFtpString;
                                         var Allowed   : Boolean); virtual;      { angus V7.01 }
-
+        procedure TriggerAddVirtFiles  (Client          : TFtpCtrlSocket;
+                                        var LocFiles    : TIcsFileRecs;
+                                        var LocFileList : TList;
+                                        var TotalFiles  : Integer;
+                                        ProgressCallback: TMD5Progress); virtual; { angus V7.08 }
         function BuildFilePath(Client      : TFtpCtrlSocket;
                                Directory   : String;
                                FileName    : String) : String; virtual;
@@ -1635,6 +1663,10 @@ type
         property  OnLang                 : TFtpSrvLangEvent                  { angus V7.01 }
                                                       read  FOnLang
                                                       write FOnLang;
+        property  OnAddVirtFiles         : TFtpSrvAddVirtFilesEvent          { angus V7.08 }
+                                                      read  FOnAddVirtFiles
+                                                      write FOnAddVirtFiles;
+
     end;
 
 { You must define USE_SSL so that SSL code is included in the component.   }
@@ -1750,6 +1782,8 @@ function GetZlibCacheFileName(const S : String) : String;  { angus V1.54 }
 function  IsUNC(S : String) : Boolean;
 procedure PatchIE5(var S : String);
 function FormatFactsDirEntry(F : TSearchRec; const FileName: string) : String;  { angus 1.54  }
+function FormatUnixDirEntry(F : TSearchRec; const FileName: String) : String;   { V7.08 }
+procedure UpdateThreadOnProgress(Obj: TObject; Count: Int64; var Cancel: Boolean);          { V7.08 }
 
 implementation
 
@@ -1972,35 +2006,6 @@ begin
     I := Length(Ticks);
     if I < 6 then Ticks := '123' + Ticks; { if windows running short }  
     Result := Result + '_' + Copy (Ticks, I-6, 6) + '.zlib';
-end;
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function FormatResponsePath(                                       { AG V1.52 }
-    Client       : TFtpCtrlSocket;
-    const InPath : TFtpString): String;
-const
-    Slash = '/';
-var
-    Home : String;
-begin
-    Result := InPath;
-    if (ftpHidePhysicalPath in Client.Options) and
-       (ftpCdUpHome in Client.Options) then begin
-        Home := ExcludeTrailingPathDelimiter(Client.HomeDir);
-        if Pos(LowerCase(Home), LowerCase(InPath)) = 1 then
-            Result := Copy(InPath, Length(Home) + 1, Length(InPath));
-    end;
-    while (Length(Result) > 0) and (Result[Length(Result)] = '\') do
-        SetLength(Result, Length(Result) - 1);
-    if (Length(Result) = 0) then
-        Result := Slash
-    else begin
-        Result := BackSlashesToSlashes(Result);
-        if Result[Length(Result)] = ':' then
-            Result := Result + Slash;
-        if Result[1] <> Slash then
-            Result := Slash + Result;
-    end;
 end;
 
 
@@ -3169,7 +3174,19 @@ procedure TFtpServer.TriggerLang(
     var Allowed   : Boolean);      { angus V7.01 }
 begin
     if Assigned(FOnLang) then
-        FOnHost(Self, Client, Lang, Allowed);
+        FOnLang(Self, Client, Lang, Allowed);     { angus V7.08 }
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.TriggerAddVirtFiles(     { angus V7.08 }
+    Client          : TFtpCtrlSocket;
+    var LocFiles    : TIcsFileRecs;
+    var LocFileList : TList;
+    var TotalFiles  : Integer;
+    ProgressCallback: TMD5Progress);
+begin
+    if Assigned(FOnAddVirtFiles) then
+        FOnAddVirtFiles(Self, Client, LocFiles, LocFileList, TotalFiles, ProgressCallback);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3309,7 +3326,7 @@ begin
         if Allowed then begin
             TriggerEnterSecurityContext(Client);             { V1.52 AG }
             try
-                DExists := DirExists(Client.Directory);
+                DExists := DirExists(BuildFilePath(Client, Client.Directory, '')); { angus V7.08 support virtual path }
             finally
                 TriggerLeaveSecurityContext(Client);         { V1.52 AG }
             end;
@@ -3829,9 +3846,16 @@ function TFtpServer.IsPathAllowed(                                 { AG V1.52 }
     Client           : TFtpCtrlSocket;
     const Path       : String;
     ExcludeBackslash : Boolean) : Boolean;
+var
+    NewFileName  : String;    { angus V7.08 }
 begin
     if (ftpCdUpHome in Client.Options) then begin
-       if ExcludeBackslash then
+    { angus V7.08 check if a virtual directory is being used, assume allowed if non-blank }
+        NewFileName := '';
+        TriggerBuildFilePath(Client, Path, '?', NewFileName);   { ? used as flag for reverse translation }
+        if NewFileName <> '' then
+            Result := TRUE  { end V7.08 change }
+        else if ExcludeBackslash then
           Result := (Pos(LowerCase(ExcludeTrailingPathDelimiter(Client.HomeDir)),
                          LowerCase(Path)) = 1)
        else
@@ -3841,6 +3865,39 @@ begin
         Result := TRUE;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TFtpServer.FormatResponsePath(                                       { AG V1.52 angus V7.08 }
+    Client       : TFtpCtrlSocket;
+    const InPath : TFtpString): TFtpString;
+const
+    Slash = '/';
+var
+    Home : String;
+    NewPath : String ;     { angus V7.08 }
+begin
+    Result := InPath;
+    if (ftpHidePhysicalPath in Client.Options) and
+       (ftpCdUpHome in Client.Options) then begin
+    { angus V7.08 check if a translated virtual directory is being used, returns original virtual path }
+        NewPath := '';
+        TriggerBuildFilePath(Client, InPath, '?', NewPath);  { ? used as flag for reverse translation }
+        if NewPath = '' then NewPath := InPath ;         { no virtual dir, use original path }
+		Home := ExcludeTrailingPathDelimiter(Client.HomeDir);
+        if Pos(LowerCase(Home), LowerCase(InPath)) = 1 then
+            Result := Copy(InPath, Length(Home) + 1, Length(InPath));
+    end;
+    while (Length(Result) > 0) and (Result[Length(Result)] = '\') do
+        SetLength(Result, Length(Result) - 1);
+    if (Length(Result) = 0) then
+        Result := Slash
+    else begin
+        Result := BackSlashesToSlashes(Result);
+        if Result[Length(Result)] = ':' then
+            Result := Result + Slash;
+        if Result[1] <> Slash then
+            Result := Slash + Result;
+    end;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { serge le 5/10/2002 }
@@ -4418,6 +4475,7 @@ var
 begin
     try
         CloseFileStreams(Client);      { angus V1.54 }
+        Client.AbortingTransfer := FALSE;  { V7.08 }
 
         try
 { angus 1.54  parse optional file and directory parameters, ie
@@ -4500,7 +4558,7 @@ begin
     finally
         { check for success 150..159 in passive mode }
         if (Client.HasOpenedFile) and (Client.PassiveMode) and
-                                            (Copy(Answer, 1, 2) <> '15') then begin
+                     (NOT Client.AnswerDelayed) and (Copy(Answer, 1, 2) <> '15') then begin  { V7.08 }
             { flag for ClientRetrSessionClosed that the error-message was already sent! }
             Client.TransferError    := '';
             Client.AbortingTransfer := TRUE;
@@ -4552,7 +4610,9 @@ procedure TFtpServer.BuildDirectory(
 var
     Buf        : String;
     Allowed    : Boolean;
+    TotalFiles : integer;  { V7.08 }
 begin
+    DecodeDate(Now, ThisYear, ThisMonth, ThisDay);  { V7.08 moved from BuildDirList }
 
  {  angus 1.54 hidden argument now parsed in CommandDirectory2,
                params is now only path or file name }
@@ -4560,7 +4620,8 @@ begin
  { angus 1.54 remove leading / to keep BuildFilePath happy, probably not backward compatible!! }
     if (Length (Path) >= 1) and (Path [1] = '\') then Path := Copy (Path, 2, 999);
     if Path = '' then
-        Client.DirListPath := Client.Directory + '*.*'
+{        Client.DirListPath := Client.Directory + '*.*'   V7.08 }
+        Client.DirListPath := BuildFilePath(Client, Client.Directory, '*.*')  { angus V7.08 must not skip buildpath }
     else begin
         if Path[Length(Path)] = '\' then Path := Path + '*.*';
         Client.DirListPath := BuildFilePath(Client, Client.Directory, Path);
@@ -4595,13 +4656,22 @@ begin
     TriggerEnterSecurityContext(Client);                  { AG V1.52 }
     try
      { angus 1.54 moved all listing code to FtpSrvC }
-        Client.BuildDirectory(Path);
+        Client.BuildDirList(TotalFiles);         { V7.08 }
+        if TotalFiles = -1 then
+            TriggerDisplay(Client, 'Completed directory listing for: ' +
+                                                    Client.DirListPath + ' failed')
+        else
+            TriggerDisplay(Client, 'Completed directory listing for: ' +
+                        Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles));
     finally
         TriggerLeaveSecurityContext(Client);              { AG V1.52 }
     end;
 
     if Client.DataStream.Size = 0 then begin
-        Buf := FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10; { AG V1.52 }
+        if TotalFiles = -1 then
+            Buf := 'Listing failed' + #13#10  { V7.08 }
+        else
+            Buf := FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10; { AG V1.52 }
         Client.DataStreamWriteString(Buf, Client.CurrentCodePage);  { AG V6.03 }{ AG 7.02 }
     end;
 end;
@@ -5939,7 +6009,7 @@ begin
   { otherwise check for free space on drive with working directory }
     try
         Size := atoi64(Params);
-        FreeSpace := GetFreeSpacePath (Client.Directory);
+        FreeSpace := GetFreeSpacePath (BuildFilePath(Client, Client.Directory, '')); { angus V7.08 support virtual path }
         if FreeSpace < 0 then
            Answer := Format(msgAlloOk, [0])   { failed, but pretend Ok for backward compatibility }
         else if (Size = 0) then
@@ -7011,6 +7081,25 @@ begin
 end;
 
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *} { AG V1.46}
+procedure UpdateThreadOnProgress(
+    Obj: TObject;
+    Count: Int64;
+    var Cancel: Boolean);
+begin
+    if (Obj is TClientProcessingThread) then   { V7.08 }
+    begin
+        Cancel := (Obj as TClientProcessingThread).Terminated;
+        (Obj as TClientProcessingThread).Client.LastTick := IcsGetTickCountX;
+    end
+    else if (Obj is TFtpCtrlSocket) then       { V7.08 } 
+    begin
+        Cancel := (Obj as TFtpCtrlSocket).AbortingTransfer;
+        (Obj as TFtpCtrlSocket).LastTick := IcsGetTickCountX;
+    end
+end;
+
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function FormatUnixDirEntry(F : TSearchRec; const FileName: string) : String;
 var
@@ -7067,7 +7156,6 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF VER80}
 function FileTimeToStr(const FileTime: TFileTime): String;     { angus V1.38 }
 const
   FileTimeBase = -109205.0;   { days between years 1601 and 1900 }
@@ -7080,7 +7168,6 @@ begin
     TempDT := TempDT + FileTimeBase;
     Result := FormatDateTime (UtcDateMaskPacked, TempDT);
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -7151,8 +7238,9 @@ begin
         '; ' + FileName;    { note space before filename is delimiter }
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TFtpCtrlSocket.BuildDirectory(const Path : String);     { angus 1.54  }
+procedure TFtpCtrlSocket.BuildDirList(var TotalFiles: integer);  { angus V7.08 was BuildDirectory, removed Path, added TotalFiles }
 var
     Buf        : String;
     LocFiles   : TIcsFileRecs;  { angus 1.54 dynamic array of File Records }
@@ -7161,7 +7249,8 @@ var
     TotFiles   : Integer;
     FileRecX   : PTIcsFileRec;
 begin
-    DecodeDate(Now, ThisYear, ThisMonth, ThisDay);
+    TotalFiles := 0 ;  { V7.08 }
+{    DecodeDate(Now, ThisYear, ThisMonth, ThisDay);   V7.08 moved to BuildDirectory so this procedure can be overriden }
 
  { angus 1.54 build sorted recursive directory }
     SetLength (LocFiles, 250);   { initial expected number of files }
@@ -7169,7 +7258,10 @@ begin
     try
      { fill LocFiles dynamic array with SearchRecs, sorted by LocFileList }
         TotFiles := IcsGetDirList (DirListPath, DirListSubDir,
-                                        DirListHidden, LocFiles, LocFileList) ;
+                     DirListHidden, LocFiles, LocFileList, Self, UpdateThreadOnProgress) ;  { V7.08 }
+     { V7.08 allow extra virtual files to be added to the dynamic File Records array }
+        if TotFiles <> -1 then
+            FtpServer.TriggerAddVirtFiles(Self, LocFiles, LocFileList, TotFiles, UpdateThreadOnProgress) ;
         if TotFiles > 0 then begin
           { need a descendent of TMemoryStream with SetCapacity }
           {  TMemoryStream (Stream).SetCapacity (TotFiles * 128);  }
@@ -7194,9 +7286,12 @@ begin
                     if CurCmdType in [ftpcSiteCmlsd, ftpcXCMLSD] then
                                                        Buf := '250-' + Buf;    { angus 7.01 }
                     DataStreamWriteString(Buf, CurrentCodePage);
+                    inc (TotalFiles) ;   { V7.08 }
                 end;
             end;
-        end;
+        end
+        else
+            TotalFiles := TotFiles;   { V7.08 -1 is an error }
     finally
         SetLength (LocFiles, 0);
         LocFileList.Free;
@@ -7210,16 +7305,6 @@ begin
     Result := RealSend(Data, Len);
 end;
 {$ENDIF}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *} { AG V1.46}
-procedure FileMD5ThreadOnProgress(
-    Obj: TObject;
-    Count: Int64;
-    var Cancel: Boolean);
-begin
-    Cancel := (Obj as TClientProcessingThread).Terminated;
-    (Obj as TClientProcessingThread).Client.LastTick := IcsGetTickCountX;
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -7252,25 +7337,40 @@ end;
 procedure TClientProcessingThread.Execute;                        { AG V1.46}
 var
     NewSize: Int64;
+    TotalFiles: integer;  { V7.08 }
+    Buf: TFtpString;      { V7.08 }
 begin
     ClientID := Client.ID;
     try
         with Client.ProcessingThread do begin
             StartTick := IcsGetTickCountX;
             if (Keyword = 'MD5') or (Keyword = 'XMD5')  then    { angus V1.54 }
-                OutData := FtpFileMD5(InData, Self, FileMD5ThreadOnProgress,  { AG V7.02 }
-                   Client.HashStartPos, Client.HashEndPos, Client.FileModeRead) { angus V1.57, V7.07 }
+                OutData := FtpFileMD5(InData, Self, UpdateThreadOnProgress,  { AG V7.02, angus V7.08  }
+                   Client.HashStartPos, Client.HashEndPos, Client.FileModeRead) { angus V1.57 }
             else if (Keyword = 'XCRC') then                                   { angus V1.54 }
-                OutData := FtpFileCRC32B(InData, Self, FileMD5ThreadOnProgress, { AG V7.02 }
-                   Client.HashStartPos, Client.HashEndPos, Client.FileModeRead) { angus V1.57 V7.07 }
+                OutData := FtpFileCRC32B(InData, Self, UpdateThreadOnProgress, { AG V7.02 }
+                   Client.HashStartPos, Client.HashEndPos, Client.FileModeRead) { angus V1.57, V7.08 }
             else if (Keyword = 'DIRECTORY') then begin                  { angus V1.54 }
                 OutData := Keyword;
                 TriggerEnterSecurityContext;      { AG V7.02 }
                 try
-                    Client.BuildDirectory(InData);
+                    Client.BuildDirList(TotalFiles);         { V7.08 }
+                    if TotalFiles = -1 then
+                        Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
+                                                           Client.DirListPath + ' failed')
+                    else
+                        Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
+                                              Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles));
                     Client.DataStream.Seek(0, 0);
                 finally
                     TriggerLeaveSecurityContext;  { AG V7.02 }
+                end;
+               if Client.DataStream.Size = 0 then begin   { V7.08 }
+                    if TotalFiles = -1 then
+                        Buf := 'Listing failed' + #13#10
+                    else
+                        Buf := Client.FtpServer.FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10;
+                    Client.DataStreamWriteString(Buf, Client.CurrentCodePage);
                 end;
             end
      { angus V1.54 }
@@ -7285,7 +7385,7 @@ begin
                             Exit;
                         end;
                         ZlibCompressStreamEx(DataStream, ZFileStream, ZCurLevel,
-                                         zsZLib, false, Self, FileMD5ThreadOnProgress); { angus V1.55 }
+                                         zsZLib, false, Self, UpdateThreadOnProgress); { angus V1.55, V7.08 }
                         ZFileStream.Position := 0 ;
                         ZCompInfo := ' compressed size ' + IntToKbyte(ZFileStream.Size) +
                             'bytes, uncompressed size ' + IntToKbyte(NewSize) + 'bytes' ;
@@ -7307,7 +7407,7 @@ begin
                         ZFileStream.Position := 0;
                         NewSize := DataStream.Size ;
                         ZlibDecompressStreamEx(ZFileStream, DataStream,
-                                                 Self, FileMD5ThreadOnProgress) ;   { angus V1.55 }
+                                                 Self, UpdateThreadOnProgress) ;   { angus V1.55, V7.08 }
                         NewSize := DataStream.Size - NewSize ;
                         ZCompInfo := ' compressed size ' + IntToKbyte(Client.ZFileStream.Size) +
                              'bytes, uncompressed size ' + IntToKbyte(NewSize) + 'bytes' ;
