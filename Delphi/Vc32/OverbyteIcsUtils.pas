@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.27
+Version:      7.28
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -59,7 +59,7 @@ Jul 29, 2008 V1.10 Added parameter "SetCodePage" to UnicodeToAnsi(), defaults
              to "False". Utf-8 functions adjusted accordingly. Does effect
              compiler post RDS2007 only.
 Jun 05, 2008 Utf-8 functions modified to take and return AnsiString rather than
-             Utf8String.
+             UTF8String.
 Aug 11, 2008 CheckUnicodeToAnsi() added. Changed the DefaultFailChar to "?".
 Aug 23, 2008 Utf-8 functions modified RawByteString rather than AnsiString.
 Aug 27, 2008 Arno Garrels added WideString functions and other stuff.
@@ -86,6 +86,10 @@ May 14, 2009 V7.27 Arno changed IcsNextCharIndex() to avoid a compiler
              warning in C++ Builder (assertion moved one line up).
              Removed uneccessary overload directives from IcsCharNextUtf8
              and IcsCharPrevUtf8.
+May 17, 2009 V7.28 Arno prefixed argument names of various UTF-8 overloads
+             by "Utf8" so that C++Builder user know that UTF-8 encoded 
+             AnsiStrings are expected.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -129,6 +133,7 @@ type
     UnicodeString = WideString;
     RawByteString = AnsiString;
 {$ENDIF}
+
     TCharsetDetectResult = (cdrAscii, cdrUtf8, cdrUnknown);
 
     TIcsSearchRecW = record
@@ -154,10 +159,10 @@ type
     private
         FFileName: UnicodeString;
     public
-        constructor Create(const AFileName: UnicodeString; Mode: Word); overload;
-        constructor Create(const AFileName: UnicodeString; Mode: Word; Rights: Cardinal); overload;
-        constructor Create(const AFileName: Utf8String; Mode: Word); overload;
-        constructor Create(const AFileName: Utf8String; Mode: Word; Rights: Cardinal); overload;
+        constructor Create(const FileName: UnicodeString; Mode: Word); overload;
+        constructor Create(const FileName: UnicodeString; Mode: Word; Rights: Cardinal); overload;
+        constructor Create(const Utf8FileName: UTF8String; Mode: Word); overload;
+        constructor Create(const Utf8FileName: UTF8String; Mode: Word; Rights: Cardinal); overload;
         destructor  Destroy; override;
         property    FileName: UnicodeString read FFileName;
     end;
@@ -242,11 +247,11 @@ type
 
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
-    function IcsFileCreateW(const FileName: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileCreateW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileCreateW(const FileName: UnicodeString; Rights: LongWord): Integer; overload;
-    function IcsFileCreateW(const FileName: Utf8String; Rights: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileCreateW(const Utf8FileName: UTF8String; Rights: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileOpenW(const FileName: UnicodeString; Mode: LongWord): Integer; overload;
-    function IcsFileOpenW(const FileName: Utf8String; Mode: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileOpenW(const Utf8FileName: UTF8String; Mode: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsStrScanW(const Str: PWideChar; Ch: WideChar): PWideChar;
     function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;
     function IcsExtractFileDirW(const FileName: UnicodeString): UnicodeString;
@@ -259,35 +264,35 @@ type
     function IcsStrAllocW(Len: Cardinal): PWideChar;
     function IcsStrLenW(Str: PWideChar): Cardinal;
     function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function IcsAnsiCompareFileNameW(const S1, S2: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsAnsiCompareFileNameW(const Utf8S1, Utf8S2: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
     function IcsDirExistsW(const FileName: PWideChar): Boolean; overload;
     function IcsDirExistsW(const FileName: UnicodeString): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function IcsDirExistsW(const FileName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsDirExistsW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFindFirstW(const Path: UnicodeString; Attr: Integer; var F: TIcsSearchRecW): Integer; overload;
-    function IcsFindFirstW(const Path: Utf8String; Attr: Integer; var F: TIcsSearchRecW): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFindFirstW(const Utf8Path: UTF8String; Attr: Integer; var F: TIcsSearchRecW): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     procedure IcsFindCloseW(var F: TIcsSearchRecW);
     function IcsFindNextW(var F: TIcsSearchRecW): Integer;
     function IcsIncludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
     function IcsExcludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
     function IcsFileGetAttrW(const FileName: UnicodeString): Integer; overload;
-    function IcsFileGetAttrW(const FileName: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileGetAttrW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer; overload;
-    function IcsFileSetAttrW(const FileName: Utf8String; Attr: Integer): Integer;  {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileSetAttrW(const Utf8FileName: UTF8String; Attr: Integer): Integer;  {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsDeleteFileW(const FileName: UnicodeString): Boolean; overload;
-    function IcsDeleteFileW(const FileName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsDeleteFileW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsRenameFileW(const OldName, NewName: UnicodeString): Boolean; overload;
-    function IcsRenameFileW(const OldName, NewName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsRenameFileW(const Utf8OldName, Utf8NewName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsForceDirectoriesW(Dir: UnicodeString): Boolean; overload;
-    function IcsForceDirectoriesW(Dir: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsForceDirectoriesW(Utf8Dir: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsCreateDirW(const Dir: UnicodeString): Boolean; overload;
-    function IcsCreateDirW(const Dir: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsCreateDirW(const Utf8Dir: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsRemoveDirW(const Dir: UnicodeString): Boolean; overload;
-    function IcsRemoveDirW(const Dir: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsRemoveDirW(const Utf8Dir: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileAgeW(const FileName: UnicodeString): Integer; overload;
-    function IcsFileAgeW(const FileName: Utf8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileAgeW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileExistsW(const FileName: UnicodeString): Boolean; overload;
-    function IcsFileExistsW(const FileName: Utf8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsFileExistsW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
     // NT4 and better
@@ -1478,10 +1483,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFindFirstW(const Path: Utf8String; Attr: Integer;
+function IcsFindFirstW(const Utf8Path: UTF8String; Attr: Integer;
   var  F: TIcsSearchRecW): Integer;
 begin
-    Result := IcsFindFirstW(AnsiToUnicode(Path, CP_UTF8), Attr, F);
+    Result := IcsFindFirstW(AnsiToUnicode(Utf8Path, CP_UTF8), Attr, F);
 end;
 
 
@@ -1503,9 +1508,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsCreateDirW(const Dir: Utf8String): Boolean; overload;
+function IcsCreateDirW(const Utf8Dir: UTF8String): Boolean; overload;
 begin
-    Result := CreateDirectoryW(PWideChar(AnsiToUnicode(Dir, CP_UTF8)), nil);
+    Result := CreateDirectoryW(PWideChar(AnsiToUnicode(Utf8Dir, CP_UTF8)), nil);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1528,9 +1533,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsForceDirectoriesW(Dir: Utf8String): Boolean;
+function IcsForceDirectoriesW(Utf8Dir: UTF8String): Boolean;
 begin
-    Result := IcsForceDirectoriesW(AnsiToUnicode(Dir, CP_UTF8));
+    Result := IcsForceDirectoriesW(AnsiToUnicode(Utf8Dir, CP_UTF8));
 end;
 
 
@@ -1553,9 +1558,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsDirExistsW(const FileName: Utf8String): Boolean; overload;
+function IcsDirExistsW(const Utf8FileName: UTF8String): Boolean; overload;
 begin
-    Result := IcsDirExistsW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)));
+    Result := IcsDirExistsW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)));
 end;
 
 
@@ -1629,10 +1634,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsAnsiCompareFileNameW(const S1, S2: Utf8String): Integer;
+function IcsAnsiCompareFileNameW(const Utf8S1, Utf8S2: UTF8String): Integer;
 begin
-    Result := IcsAnsiCompareFileNameW(AnsiToUnicode(S1, CP_UTF8),
-                                      AnsiToUnicode(S2, CP_UTF8))
+    Result := IcsAnsiCompareFileNameW(AnsiToUnicode(Utf8S1, CP_UTF8),
+                                      AnsiToUnicode(Utf8S2, CP_UTF8))
 end;
 
 
@@ -1854,9 +1859,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsDeleteFileW(const FileName: Utf8String): Boolean;
+function IcsDeleteFileW(const Utf8FileName: UTF8String): Boolean;
 begin
-    Result := Windows.DeleteFileW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)));
+    Result := Windows.DeleteFileW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)));
 end;
 
 
@@ -1868,9 +1873,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFileGetAttrW(const FileName: Utf8String): Integer;
+function IcsFileGetAttrW(const Utf8FileName: UTF8String): Integer;
 begin
-    Result := GetFileAttributesW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)));
+    Result := GetFileAttributesW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)));
 end;
 
 
@@ -1884,10 +1889,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFileSetAttrW(const FileName: Utf8String; Attr: Integer): Integer;
+function IcsFileSetAttrW(const Utf8FileName: UTF8String; Attr: Integer): Integer;
 begin
     Result := 0;
-    if not SetFileAttributesW(PWideChar(AnsiToUnicode(FileName, CP_UTF8)), Attr) then
+    if not SetFileAttributesW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)), Attr) then
         Result := GetLastError;
 end;
 
@@ -1902,9 +1907,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFileCreateW(const FileName: Utf8String): Integer;
+function IcsFileCreateW(const Utf8FileName: UTF8String): Integer;
 begin
-    Result := IcsFileCreateW(AnsiToUnicode(FileName, CP_UTF8));
+    Result := IcsFileCreateW(AnsiToUnicode(Utf8FileName, CP_UTF8));
 end;
 
 
@@ -1916,9 +1921,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFileCreateW(const FileName: Utf8String; Rights: LongWord): Integer;
+function IcsFileCreateW(const Utf8FileName: UTF8String; Rights: LongWord): Integer;
 begin
-    Result := IcsFileCreateW(AnsiToUnicode(FileName, CP_UTF8));
+    Result := IcsFileCreateW(AnsiToUnicode(Utf8FileName, CP_UTF8));
 end;
 
 
@@ -1948,9 +1953,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
-function IcsFileOpenW(const FileName: Utf8String; Mode: LongWord): Integer;
+function IcsFileOpenW(const Utf8FileName: UTF8String; Mode: LongWord): Integer;
 begin
-    Result := IcsFileOpenW(AnsiToUnicode(FileName, CP_UTF8), Mode);
+    Result := IcsFileOpenW(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode);
 end;
 
 
@@ -1962,9 +1967,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsRemoveDirW(const Dir: Utf8String): Boolean;
+function IcsRemoveDirW(const Utf8Dir: UTF8String): Boolean;
 begin
-    Result := RemoveDirectoryW(PWideChar(AnsiToUnicode(Dir, CP_UTF8)));
+    Result := RemoveDirectoryW(PWideChar(AnsiToUnicode(Utf8Dir, CP_UTF8)));
 end;
 
 
@@ -1976,10 +1981,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsRenameFileW(const OldName, NewName: Utf8String): Boolean;
+function IcsRenameFileW(const Utf8OldName, Utf8NewName: UTF8String): Boolean;
 begin
-    Result := MoveFileW(PWideChar(AnsiToUnicode(OldName, CP_UTF8)),
-                        PWideChar(AnsiToUnicode(NewName, CP_UTF8)));
+    Result := MoveFileW(PWideChar(AnsiToUnicode(Utf8OldName, CP_UTF8)),
+                        PWideChar(AnsiToUnicode(Utf8NewName, CP_UTF8)));
 end;
 
 
@@ -2006,9 +2011,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFileAgeW(const FileName: Utf8String): Integer;
+function IcsFileAgeW(const Utf8FileName: UTF8String): Integer;
 begin
-    Result := IcsFileAgeW(AnsiToUnicode(FileName, CP_UTF8));
+    Result := IcsFileAgeW(AnsiToUnicode(Utf8FileName, CP_UTF8));
 end;
 
 
@@ -2020,9 +2025,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFileExistsW(const FileName: Utf8String): Boolean;
+function IcsFileExistsW(const Utf8FileName: UTF8String): Boolean;
 begin
-    Result := IcsFileAgeW(FileName) <> -1;
+    Result := IcsFileAgeW(Utf8FileName) <> -1;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2052,60 +2057,60 @@ end;
 { TIcsFileStreamW }
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsFileStreamW.Create(const AFileName: UnicodeString; Mode: Word);
+constructor TIcsFileStreamW.Create(const FileName: UnicodeString; Mode: Word);
 begin
-    Create(AFilename, Mode, 0);
+    Create(Filename, Mode, 0);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsFileStreamW.Create(const AFileName: UnicodeString; Mode: Word;
+constructor TIcsFileStreamW.Create(const FileName: UnicodeString; Mode: Word;
   Rights: Cardinal);
 begin
     if Mode = fmCreate then
     begin
-        inherited Create(IcsFileCreateW(AFileName));
+        inherited Create(IcsFileCreateW(FileName));
         if Cardinal(FHandle) = INVALID_HANDLE_VALUE then
         {$IFDEF COMPILER12_UP}
             raise Exception.CreateResFmt(@SFCreateErrorEx,
-                                [ExpandFileName(AFileName),
+                                [ExpandFileName(FileName),
                                 SysErrorMessage(GetLastError)]);
         {$ELSE}
             raise Exception.CreateResFmt(@SFCreateErrorEx,
-                                [IcsExpandFileNameW(AFileName),
+                                [IcsExpandFileNameW(FileName),
                                 SysErrorMessage(GetLastError)]);
         {$ENDIF}
 
     end
     else begin
-        inherited Create(IcsFileOpenW(AFileName, Mode));
+        inherited Create(IcsFileOpenW(FileName, Mode));
         if Cardinal(FHandle) = INVALID_HANDLE_VALUE then
         {$IFDEF COMPILER12_UP}
             raise Exception.CreateResFmt(@SFCreateErrorEx,
-                                [ExpandFileName(AFileName),
+                                [ExpandFileName(FileName),
                                 SysErrorMessage(GetLastError)]);
         {$ELSE}
             raise Exception.CreateResFmt(@SFCreateErrorEx,
-                                [IcsExpandFileNameW(AFileName),
+                                [IcsExpandFileNameW(FileName),
                                 SysErrorMessage(GetLastError)]);
         {$ENDIF}
     end;
-    FFileName := AFileName;
+    FFileName := FileName;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsFileStreamW.Create(const AFileName: Utf8String;
+constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String;
   Mode: Word);
 begin
-    Create(AnsiToUnicode(AFileName, CP_UTF8), Mode, 0);
+    Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, 0);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsFileStreamW.Create(const AFileName: Utf8String; Mode: Word;
+constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String; Mode: Word;
   Rights: Cardinal);
 begin
-    Create(AnsiToUnicode(AFileName, CP_UTF8), Mode, Rights);
+    Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, Rights);
 end;
 
 
