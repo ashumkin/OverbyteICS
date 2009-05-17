@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.07
+Version:      6.08
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -72,6 +72,7 @@ Aug 03, 2008  V6.05 A. Garrels changed code in OnGetDate event handler to prepar
 Jan 17, 2009  V6.06 A. Garrels added a progress bar and RFC-1870 SIZE extension.
 May 10, 2009  V6.07 A. Garrels added charset and code page properties which
               makes it easy to play with and test the new features.
+May 17, 2009  V6.08 A.Garrels added correct casts to PAnsiChar in SmtpClientHeaderLine.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMailSnd1;
@@ -101,8 +102,8 @@ uses
   OverbyteIcsSmtpProt;
 
 const
-    SmtpTestVersion    = 6.07;
-    CopyRight : String = ' MailSnd (c) 1997-2009 F. Piette V6.07 ';
+    SmtpTestVersion    = 6.08;
+    CopyRight : String = ' MailSnd (c) 1997-2009 F. Piette V6.08 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -576,9 +577,8 @@ begin
     if LineNum > MsgMemo.Lines.count then
         More := FALSE
     else
-        { Truncate the line if too long (should wrap to next line) }        
+        { Truncate the line if too long (should wrap to next line) }
         StrPLCopy(PAnsiChar(MsgLine), AnsiString(MsgMemo.Lines[LineNum - 1]), MaxLen - 1);
-  
 end;
 
 
@@ -588,12 +588,14 @@ procedure TSmtpTestForm.SmtpClientHeaderLine(
     Msg    : Pointer;
     Size   : Integer);
 begin
-    { This demonstrate how to add a line to the message header              }
+    { This demonstrates how to add a line to the message header             }
     { Just detect one of the header lines and add text at the end of this   }
-    { line. Use #13#10 to form a new line                                   }
+    { line. Use #13#10 to form a new line.                                  }
     { Here we check for the From: header line and add a Comments: line      }
-    if (StrLen(PChar(Msg)) > 0) and (StrLIComp(PChar(Msg), 'From:', 5) = 0) then
-        StrCat(PChar(Msg), #13#10 + 'Comments: This is a test');
+    { Cast properly in order to call the right overload in D2009            }
+    if (StrLen(PAnsiChar(Msg)) > 0) and
+       (StrLIComp(PAnsiChar(Msg), PAnsiChar('From:'), 5) = 0) then
+        StrCat(PAnsiChar(Msg), PAnsiChar(#13#10'Comments: This is a test'));
 end;
 
 

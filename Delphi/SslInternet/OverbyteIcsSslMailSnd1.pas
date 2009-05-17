@@ -46,6 +46,7 @@ Jul 23, 2008 A. Garrels changed code in OnGetDate event handler to prepare
              code for Unicode
 Aug 03, 2008 A. Garrels changed code in OnGetDate event handler to prepare
              code for Unicode again.
+May 17, 2009 A.Garrels added correct casts to PAnsiChar in SslSmtpClientHeaderLine.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslMailSnd1;
@@ -498,12 +499,14 @@ procedure TSslSmtpTestForm.SslSmtpClientHeaderLine(
     Msg    : Pointer;
     Size   : Integer);
 begin
-    { This demonstrate how to add a line to the message header              }
+    { This demonstrates how to add a line to the message header              }
     { Just detect one of the header lines and add text at the end of this   }
     { line. Use #13#10 to form a new line                                   }
     { Here we check for the From: header line and add a Comments: line      }
-    if StrLIComp(Msg, 'From:', 5) = 0 then
-        StrCat(Msg, #13#10 + 'Comments: This is a test');
+    { Cast properly in order to call the right overload in D2009            }
+    if (StrLen(PAnsiChar(Msg)) > 0) and
+       (StrLIComp(PAnsiChar(Msg), PAnsiChar('From:'), 5) = 0) then
+        StrCat(PAnsiChar(Msg), PAnsiChar(#13#10'Comments: This is a test'));
 end;
 
 
