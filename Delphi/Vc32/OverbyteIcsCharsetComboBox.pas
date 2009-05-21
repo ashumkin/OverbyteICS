@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  TIcsCharsetComboBox provides easy MIME charset selection.
 Creation:     May 10, 2009
-Version:      V1.00
+Version:      V1.00a
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -37,6 +37,7 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  street address, EMail address and any comment you like to say.
 
 History:
+May 21, 2009 V1.00a Preserve custom alias names.
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -249,7 +250,10 @@ begin
             PCsInfo := GetMimeInfo(Value);
         if Assigned(PCsInfo) then
         begin
-            FCharSet := ExtractMimeName(PCsInfo);
+            if Value <> '' then    // Preserve alias names
+                FCharSet := Value
+            else
+                FCharSet := ExtractMimeName(PCsInfo);
             CurCodePage := PCsInfo^.CodePage;
             { Change selected }
             for Item := 0 to Items.Count -1 do
