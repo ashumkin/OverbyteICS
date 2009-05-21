@@ -1,7 +1,7 @@
 object SmtpTestForm: TSmtpTestForm
-  Left = 260
-  Top = 123
-  Width = 567
+  Left = 336
+  Top = 151
+  Width = 584
   Height = 518
   Caption = 'SmtpTestForm'
   Color = clBtnFace
@@ -20,7 +20,7 @@ object SmtpTestForm: TSmtpTestForm
   object MsgMemo: TMemo
     Left = 0
     Top = 235
-    Width = 559
+    Width = 576
     Height = 120
     Hint = 'Enter the message text in this memo'
     Align = alTop
@@ -40,7 +40,7 @@ object SmtpTestForm: TSmtpTestForm
   object DisplayMemo: TMemo
     Left = 0
     Top = 441
-    Width = 559
+    Width = 576
     Height = 43
     Hint = 'This memo shows info messages'
     Align = alClient
@@ -61,12 +61,12 @@ object SmtpTestForm: TSmtpTestForm
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
-    Width = 559
+    Width = 576
     Height = 235
     Align = alTop
     TabOrder = 2
     DesignSize = (
-      559
+      576
       235)
     object Label5: TLabel
       Left = 12
@@ -269,7 +269,7 @@ object SmtpTestForm: TSmtpTestForm
       Top = 4
       Width = 385
       Height = 211
-      ActivePage = CharsetSettingsTabSheet
+      ActivePage = BasicSettingsTabSheet
       TabOrder = 16
       object BasicSettingsTabSheet: TTabSheet
         Caption = 'Basic Settings'
@@ -553,37 +553,19 @@ object SmtpTestForm: TSmtpTestForm
             Caption = '(default = 76)'
           end
           object CharsetInfoLabel1: TLabel
-            Left = 144
-            Top = 8
+            Left = 48
+            Top = 2
             Width = 89
             Height = 13
             Caption = 'CharsetInfoLabel1'
           end
-          object CharsetInfoLabel2: TLabel
-            Left = 144
-            Top = 24
-            Width = 89
-            Height = 13
-            Caption = 'CharsetInfoLabel2'
-          end
-          object CharsetComboBox: TComboBox
-            Left = 6
-            Top = 16
-            Width = 97
-            Height = 21
-            Hint = 
-              'List of prefered MIME charset names supported. Aliases are suppo' +
-              'rted as well,'#13#10'just type for example, "latin1" and hit Test '
-            ItemHeight = 13
-            TabOrder = 0
-          end
           object CharsetTestButton: TButton
-            Left = 104
+            Left = 249
             Top = 16
-            Width = 27
+            Width = 73
             Height = 21
             Hint = 'Test whether the charset is supported'
-            Caption = 'Test'
+            Caption = 'Test Charset'
             TabOrder = 1
             OnClick = CharsetTestButtonClick
           end
@@ -658,6 +640,30 @@ object SmtpTestForm: TSmtpTestForm
             TabOrder = 7
             Text = 'WrapAtEdit'
           end
+          object ToggleCsViewButton: TButton
+            Left = 177
+            Top = 16
+            Width = 73
+            Height = 21
+            Hint = 'Toggle view between user-friendly names and MIME charset names. '
+            Caption = 'Toggle View'
+            TabOrder = 8
+            OnClick = ToggleCsViewButtonClick
+          end
+          object IcsCharsetComboBox1: TIcsCharsetComboBox
+            Left = 6
+            Top = 16
+            Width = 171
+            Height = 21
+            Hint = 
+              'List of common charsets. Aliases are supported as well, just typ' +
+              'e for example, '#13#10'"latin1" and press button Test Charset '
+            CharSet = 'utf-7'
+            DropDownCount = 32
+            ItemHeight = 13
+            TabOrder = 0
+            OnChange = IcsCharsetComboBox1Change
+          end
         end
       end
     end
@@ -665,7 +671,7 @@ object SmtpTestForm: TSmtpTestForm
   object AttachPanel: TPanel
     Left = 0
     Top = 355
-    Width = 559
+    Width = 576
     Height = 17
     Align = alTop
     TabOrder = 3
@@ -680,7 +686,7 @@ object SmtpTestForm: TSmtpTestForm
   object FileAttachMemo: TMemo
     Left = 0
     Top = 372
-    Width = 559
+    Width = 576
     Height = 49
     Hint = 'Enter the attached file path, one per line'
     Align = alTop
@@ -696,16 +702,17 @@ object SmtpTestForm: TSmtpTestForm
     ScrollBars = ssVertical
     ShowHint = True
     TabOrder = 4
+    WordWrap = False
   end
   object InfoPanel: TPanel
     Left = 0
     Top = 421
-    Width = 559
+    Width = 576
     Height = 20
     Align = alTop
     TabOrder = 5
     DesignSize = (
-      559
+      576
       20)
     object Label7: TLabel
       Left = 16
