@@ -27,7 +27,7 @@
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_Description>Overbyte ICS Run-Time Package Delphi 2009</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\OverbyteIcsD2009Run.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\6.0\Bpl\OverbyteIcsD2009Run.bpl</DCC_DependencyCheckOutputName>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
 			<GenDll>true</GenDll>
@@ -85,6 +85,7 @@
 			<DCCReference Include="OverbyteIcsSslThrdLock.dcr"/>
 			<DCCReference Include="OverbyteIcsHttpAppServer.dcr"/>
 			<DCCReference Include="OverbyteIcsTimeList.dcr"/>
+			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="OverbyteIcsTypes.pas"/>
@@ -143,6 +144,7 @@
 			<DCCReference Include="OverbyteIcsHttpAppServer.pas"/>
 			<DCCReference Include="OverbyteIcsTimeList.pas"/>
 			<DCCReference Include="OverbyteIcsWebSession.pas"/>
+			<DCCReference Include="OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>
@@ -168,6 +170,7 @@
 			<DCCReference Include="OverbyteIcsSslThrdLock.dcr"/>
 			<DCCReference Include="OverbyteIcsHttpAppServer.dcr"/>
 			<DCCReference Include="OverbyteIcsTimeList.dcr"/>
+			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

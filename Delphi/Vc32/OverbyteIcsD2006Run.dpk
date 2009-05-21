@@ -26,6 +26,7 @@ package OverbyteIcsD2006Run;
 {$R 'OverbyteIcsSslThrdLock.dcr'}
 {$R 'OverbyteIcsHttpAppServer.dcr'}
 {$R 'OverbyteIcsTimeList.dcr'}
+{$R 'OverbyteIcsCharsetComboBox.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -112,6 +113,7 @@ contains
   OverbyteIcsDigestAuth in 'OverbyteIcsDigestAuth.pas',
   OverbyteIcsWebSession in 'OverbyteIcsWebSession.pas',
   OverbyteIcsHttpAppServer in 'OverbyteIcsHttpAppServer.pas',
-  OverbyteIcsTimeList in 'OverbyteIcsTimeList.pas';
+  OverbyteIcsTimeList in 'OverbyteIcsTimeList.pas',
+  OverbyteIcsCharsetComboBox in 'OverbyteIcsCharsetComboBox.pas';
 
 end.

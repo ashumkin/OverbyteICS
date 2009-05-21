@@ -295,6 +295,8 @@
         <FILE FILENAME="OverbyteIcsHttpAppServer.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsHttpAppServer" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsHttpAppServer.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsWebSession.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsWebSession" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsCharsetComboBox.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsCharsetComboBox" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsCharsetComboBox.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>

@@ -19,6 +19,7 @@ uses
   OverbyteIcsHttpProt, OverbyteIcsHttpSrv, OverbyteIcsMultipartHttpDownloader,
   OverbyteIcsHttpAppServer,
   OverbyteIcsTimeList,
+  OverbyteIcsCharsetComboBox,
   OverbyteIcsPop3Prot,
   OverbyteIcsSmtpProt,
   OverbyteIcsNntpCli,
@@ -66,7 +67,8 @@ begin
     THttpCli, THttpServer, TMultipartHttpDownloader,
     TPop3Cli, TSyncPop3Cli,
     TSmtpCli, TSyncSmtpCli, THtmlSmtpCli,
-    TNntpCli, THtmlNntpCli
+    TNntpCli, THtmlNntpCli,
+    TIcsCharsetComboBox
 {$IFDEF VCL}
     ,TIcsLogger
 {$ENDIF}

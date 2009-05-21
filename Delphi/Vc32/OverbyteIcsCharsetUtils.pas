@@ -20,7 +20,7 @@ Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2002-2008 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
-              <francois.piette@overbyte.be> 
+              <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
               implied warranty.  In no event will the author be held liable
@@ -321,6 +321,7 @@ type
       SHIFT_JIS,
       BIG_5,
       KOREAN_HANGUL,
+      EUC_KR,
       WIN_874,
       IBM_037,
       IBM_437,
@@ -356,12 +357,14 @@ type
       T_61,
       CS_LAST_ITEM // Dummy, must be the last item!
       );
+    TMimeCharsets = set of TMimeCharset;
 
     PCharsetInfo = ^TCharsetInfo;
     TCharsetInfo = record
         MimeCharset       : TMimeCharset;
         CodePage          : Cardinal;    // mapped (windows) codepage
         MimeName          : CsuString;   // preferred MIME name and alias list, space separated list.
+        FriendlyName      : String;      // Windows like user-friendly display name.
         { .NET class Encoding provides the following properties as well }
         {WindowsCodePage   : Cardinal;    // gets the Windows operating system code page that most closely corresponds to the current encoding.
         IsBrowserDisplay  : Boolean;     // indicating whether the current encoding can be used by browser clients for displaying content.
@@ -445,7 +448,7 @@ function  GetMimeInfo(AMimeCharSet: TMimeCharset): PCharSetInfo; overload;
 { is not mapped the return value is nil.                                  }
 function  GetMimeInfo(const AMimeCharSetString: CsuString): PCharSetInfo; overload;
 
-{ Returns a pointer to a TCharSetInfo record. If AMimeCharSetString       }
+{ Returns a pointer to a TCharSetInfo record. If ACodePage                }
 { is not mapped the return value is nil.                                  }
 function GetMimeInfo(ACodePage: Cardinal): PCharSetInfo; overload;
 
@@ -492,6 +495,8 @@ function  GetCPInfoExW(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEXW
 {$EXTERNALSYM GetCPInfoEx}
 function  GetCPInfoEx(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEX): BOOL; stdcall;
 {$ENDIF}
+procedure GetFriendlyCharsetList(Items: TStrings; IncludeList: TMimeCharsets; ClearItems: Boolean = True);
+procedure GetMimeCharsetList(Items: TStrings; IncludeList: TMimeCharsets; ClearItems: Boolean = True);
 
 var
     IcsSystemCodePage     : Cardinal;
@@ -499,6 +504,41 @@ var
     IcsSystemIsSingleByte : Boolean;
 
 implementation
+
+resourcestring
+    { Charsets, user-friendly names, known from OE and IE }  
+    sArabicISO                  = 'Arabic (ISO)'; //28596
+    sArabicWindows              = 'Arabic (Windows)'; //1256
+    sBalticISO                  = 'Baltic (ISO)'; //28594
+    sBalticWindows              = 'Baltic (Windows)'; //1257
+    sCentralEuropeanISO         = 'Central European (ISO)'; //28592
+    sCentralEuropeanWindows     = 'Central European (Windows)'; //1250
+    sChineseTraditionalBig5     = 'Chinese Traditional (Big5)'; //950
+    sChineseSimplifiedGB18030   = 'Chinese Simplified (GB18030)'; //54936
+    sChineseSimplifiedGB2312    = 'Chinese Simplified (GB2312)';//936
+    sChineseSimplifiedHZ        = 'Chinese Simplified (HZ)'; //52936
+    sCyrillicISO                = 'Cyrillic (ISO)'; //28595
+    sCyrillicKOI8R              = 'Cyrillic (KOI8-R)'; //20866
+    sCyrillicKOI8U              = 'Cyrillic (KOI8-U)'; //21866
+    sCyrillicWindows            = 'Cyrillic (Windows)'; //1251
+    sEstonianISO                = 'Estonian (ISO)'; //28603
+    sGreekISO                   = 'Greek (ISO)'; //28597
+    sGreekWindows               = 'Greek (Windows)'; //1253
+    sHebrewISOLogical           = 'Hebrew (ISO-Logical)'; //38598
+    sHebrewISOVisual            = 'Hebrew (ISO-Visual)'; //28598
+    sHebrewWindows              = 'Hebrew (Windows)'; //1255
+    sJapaneseJIS                = 'Japanese (JIS)'; //932
+    sKorean                     = 'Korean'; //949
+    sKoreanEUC                  = 'Korean (EUC)'; //51949
+    sLatin9                     = 'Latin 9 (ISO)'; //28605
+    sThaiWindows                = 'Thai (Windows)'; //874
+    sTurkishISO                 = 'Turkish (ISO)'; //28599
+    sTurkishWindows             = 'Turkish (Windows)'; //1254
+    sUnicodeUTF7                = 'Unicode (UTF-7)'; //65001
+    sUnicodeUTF8                = 'Unicode (UTF-8)'; //65000
+    sVietnameseWindows          = 'Vietnamese (Windows)'; //1258
+    sWesternEuropeanISO         = 'Western European (ISO)'; //28591
+    sWesternEuropeanWindows     = 'Western European (Windows)'; //1252
 
 var
     CharsetInfos : TCharsetInfos;
@@ -511,6 +551,43 @@ function GetCPInfoExW; external kernel32 name 'GetCPInfoExW';
 function GetCPInfoExA; external kernel32 name 'GetCPInfoExA';
 function GetCPInfoEx;  external kernel32 name {$IFDEF UNICODE}'GetCPInfoExW' {$ELSE} 'GetCPInfoExA' {$ENDIF};
 {$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure GetFriendlyCharsetList(
+    Items       : TStrings;
+    IncludeList : TMimeCharsets;
+    ClearItems  : Boolean = True);
+var
+    I  : Integer;
+begin
+    if ClearItems then
+        Items.Clear;
+    for I := 0 to Length(CharsetInfos) - 1 do begin
+        if (CharsetInfos[I].FriendlyName <> '') and
+           (CharsetInfos[I].MimeCharset in IncludeList) then
+            Items.AddObject(CharsetInfos[I].FriendlyName,
+                            @CharsetInfos[I].CodePage);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure GetMimeCharsetList(
+    Items       : TStrings;
+    IncludeList : TMimeCharsets;
+    ClearItems  : Boolean = True);
+var
+    I  : Integer;
+begin
+    if ClearItems then
+        Items.Clear;
+    for I := 0 to Length(CharsetInfos) - 1 do begin
+        if (CharsetInfos[I].MimeCharset in IncludeList) then
+            Items.AddObject(ExtractMimeName(@CharsetInfos[I]),
+                            @CharsetInfos[I].CodePage);
+    end;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsValidAnsiCodePage(ACodePage: Cardinal): Boolean;
@@ -527,7 +604,8 @@ var
     Info : _CpInfo;
 begin
     if not GetCPInfo(ACodePage, Info) then
-        raise Exception.Create('Codepage "' + IntToStr(ACodePage) + '" is no valid Ansi codepage');
+        raise Exception.Create('Codepage "' + IntToStr(ACodePage) +
+                               '" is no valid Ansi codepage');
     Result := Info.MaxCharSize = 1;
 end;
 
@@ -710,7 +788,7 @@ begin
         52936 :  Result := HZ_GB_2312;
         51936 :  Result := EUC_CN;
         54936 :  Result := GB_18030; //Windows XP and later
-
+        51949 :  Result := EUC_KR;
         65000 :  Result := UTF_7;
         65001 :  Result := UTF_8;
 
@@ -906,6 +984,8 @@ begin
     CharsetInfos[I].MimeCharset   := UTF_8;
     CharsetInfos[I].CodePage      := CP_UTF8;
     CharsetInfos[I].MimeName      := CsuString('utf-8');
+    CharsetInfos[I].FriendlyName  := sUnicodeUTF8;
+
     {CharsetInfos[I].WindowsCodePage   := 1200;
     CharsetInfos[I].IsBrowserDisplay  := TRUE;
     CharsetInfos[I].IsBrowserSave     := TRUE;
@@ -916,196 +996,235 @@ begin
     CharsetInfos[I].MimeCharset   := WIN_1250;
     CharsetInfos[I].CodePage      := 1250;
     CharsetInfos[I].MimeName      := CsuString('windows-1250');
+    CharsetInfos[I].FriendlyName  := sCentralEuropeanWindows;
 
     I := Ord(WIN_1251);
     CharsetInfos[I].MimeCharset   := WIN_1251;
     CharsetInfos[I].CodePage      := 1251;
     CharsetInfos[I].MimeName      := CsuString('windows-1251');
+    CharsetInfos[I].FriendlyName  := sCyrillicWindows;
 
     I := Ord(WIN_1252);
     CharsetInfos[I].MimeCharset   := WIN_1252;
     CharsetInfos[I].CodePage      := 1252;
     CharsetInfos[I].MimeName      := CsuString('windows-1252');
+    CharsetInfos[I].FriendlyName  := sWesternEuropeanWindows;
 
     I := Ord(WIN_1253);
     CharsetInfos[I].MimeCharset   := WIN_1253;
     CharsetInfos[I].CodePage      := 1253;
     CharsetInfos[I].MimeName      := CsuString('windows-1253');
+    CharsetInfos[I].FriendlyName  := sGreekWindows;
 
     I := Ord(WIN_1254);
     CharsetInfos[I].MimeCharset   := WIN_1254;
     CharsetInfos[I].CodePage      := 1254;
     CharsetInfos[I].MimeName      := CsuString('windows-1254');
+    CharsetInfos[I].FriendlyName  := sTurkishWindows;
 
     I := Ord(WIN_1255);
     CharsetInfos[I].MimeCharset   := WIN_1255;
     CharsetInfos[I].CodePage      := 1255;
     CharsetInfos[I].MimeName      := CsuString('windows-1255');
+    CharsetInfos[I].FriendlyName  := sHebrewWindows;
 
     I := Ord(WIN_1256);
     CharsetInfos[I].MimeCharset   := WIN_1256;
     CharsetInfos[I].CodePage      := 1256;
     CharsetInfos[I].MimeName      := CsuString('windows-1256');
+    CharsetInfos[I].FriendlyName  := sArabicWindows;
 
     I := Ord(WIN_1257);
     CharsetInfos[I].MimeCharset   := WIN_1257;
     CharsetInfos[I].CodePage      := 1257;
     CharsetInfos[I].MimeName      := CsuString('windows-1257');
+    CharsetInfos[I].FriendlyName  := sBalticWindows;
 
     I := Ord(WIN_1258);
     CharsetInfos[I].MimeCharset   := WIN_1258;
     CharsetInfos[I].CodePage      := 1258;
     CharsetInfos[I].MimeName      := CsuString('windows-1258');
+    CharsetInfos[I].FriendlyName  := sVietnameseWindows;
 
     I := Ord(ISO_8859_1);
     CharsetInfos[I].MimeCharset   := ISO_8859_1;
     CharsetInfos[I].CodePage      := 28591;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-1 iso_8859-1:1987 iso-ir-100 iso_8859-1 latin1 l1 ibm819 cp819 csisoatin1');
+    CharsetInfos[I].FriendlyName  := sWesternEuropeanISO;
 
     I := Ord(ISO_8859_2);
     CharsetInfos[I].MimeCharset   := ISO_8859_2;
     CharsetInfos[I].CodePage      := 28592;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-2 iso_8859-2:1987 iso-ir-101 iso_8859-2 latin2 l2 csisolatin2');
+    CharsetInfos[I].FriendlyName  := sCentralEuropeanISO;
 
     I := Ord(ISO_8859_3);
     CharsetInfos[I].MimeCharset   := ISO_8859_3;
     CharsetInfos[I].CodePage      := 28593;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-3 iso_8859-3:1988 iso-ir-109 iso_8859-3 latin3 l3 csisolatin3');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(ISO_8859_4);
     CharsetInfos[I].MimeCharset   := ISO_8859_4;
     CharsetInfos[I].CodePage      := 28594;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-4 iso_8859-4:1988 iso-ir-110 iso_8859-4 latin4 l4 csisolatin4');
+    CharsetInfos[I].FriendlyName  := sBalticISO;
 
     I := Ord(ISO_8859_5);
     CharsetInfos[I].MimeCharset   := ISO_8859_5;
     CharsetInfos[I].CodePage      := 28595;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-5 iso_8859-5:1988 iso-ir-144 iso_8859-5 cyrillic csisolatincyrillic');
+    CharsetInfos[I].FriendlyName  := sCyrillicISO;
 
     I := Ord(ISO_8859_6);
     CharsetInfos[I].MimeCharset   := ISO_8859_6;
     CharsetInfos[I].CodePage      := 28596;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-6 iso_8859-6:1987 iso-ir-127 iso_8859-6 ecma-114 asmo-708 arabic csisolatinarabic');
+    CharsetInfos[I].FriendlyName  := sArabicISO;
 
     I := Ord(ISO_8859_7);
     CharsetInfos[I].MimeCharset   := ISO_8859_7;
     CharsetInfos[I].CodePage      := 28597;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-7 iso_8859-7:1987 iso-ir-126 iso_8859-7 elot_928 ecma-118 greek greek8 csisolatingreek');
+    CharsetInfos[I].FriendlyName  := sGreekISO;
 
     I := Ord(ISO_8859_8);
     CharsetInfos[I].MimeCharset   := ISO_8859_8;
     CharsetInfos[I].CodePage      := 28598;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-8 iso_8859-8:1988 iso-ir-138 iso_8859-8 hebrew csisolatinhebrew');
+    CharsetInfos[I].FriendlyName  := sHebrewISOVisual;
 
     I := Ord(ISO_8859_8_i);
     CharsetInfos[I].MimeCharset   := ISO_8859_8_i;
     CharsetInfos[I].CodePage      := 38598;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-8-i csiso88598i');
+    CharsetInfos[I].FriendlyName  := sHebrewISOLogical;
 
     I := Ord(ISO_8859_9);
     CharsetInfos[I].MimeCharset   := ISO_8859_9;
     CharsetInfos[I].CodePage      := 28599;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-9 iso_8859-9:1989 iso-ir-148 iso_8859-9 latin5 l5 csisolatin5');
+    CharsetInfos[I].FriendlyName  := sTurkishISO;
 
     I := Ord(ISO_8859_13);
     CharsetInfos[I].MimeCharset   := ISO_8859_13;  //Estonia
     CharsetInfos[I].CodePage      := 28603;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-13');
+    CharsetInfos[I].FriendlyName  := sEstonianISO;
 
     I := Ord(ISO_8859_15);
     CharsetInfos[I].MimeCharset   := ISO_8859_15;
     CharsetInfos[I].CodePage      := 28605;
     CharsetInfos[I].MimeName      := CsuString('iso-8859-15 iso_8859-15 latin-9');
+    CharsetInfos[I].FriendlyName  := sLatin9;
 
     I := Ord(ISO_2022_JP);
     CharsetInfos[I].MimeCharset   := ISO_2022_JP;
     CharsetInfos[I].CodePage      := 50220;
     CharsetInfos[I].MimeName      := CsuString('iso-2022-jp'); // ?? // listed at IANA as (iso-2022-jp, csiso2022jp
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(ISO_2022_JP_1);
     CharsetInfos[I].MimeCharset   := ISO_2022_JP_1;
     CharsetInfos[I].CodePage      := 50221;
     CharsetInfos[I].MimeName      := CsuString('csiso2022jp'); // ?? // listed at IANA as (iso-2022-jp, csiso2022jp
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(ISO_2022_JP_2);
     CharsetInfos[I].MimeCharset   := ISO_2022_JP_2;
     CharsetInfos[I].CodePage      := 50222; // ?? // M$ mapping is iso-2022-jp as well
     CharsetInfos[I].MimeName      := CsuString('iso-2022-jp-2 csiso2022jp2');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(ISO_2022_KR);
     CharsetInfos[I].MimeCharset   := ISO_2022_KR;
     CharsetInfos[I].CodePage      := 50225;
     CharsetInfos[I].MimeName      := CsuString('iso-2022-kr csiso2022kr');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(ISO_2022_CN);
     CharsetInfos[I].MimeCharset   := ISO_2022_CN;
     CharsetInfos[I].CodePage      := 50229;
     CharsetInfos[I].MimeName      := CsuString('iso-2022-cn');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(X_CP50227);
     CharsetInfos[I].MimeCharset   := X_CP50227;
     CharsetInfos[I].CodePage      := 50227;
     CharsetInfos[I].MimeName      := CsuString('x-cp50227');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(EUC_JP);
     CharsetInfos[I].MimeCharset   := EUC_JP;
     CharsetInfos[I].CodePage      := 51932;
     CharsetInfos[I].MimeName      := CsuString('euc-jp cseucpkdfmtjapanese extended_unix_code_packed_format_for_japanese');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(GB_2312_80);
     CharsetInfos[I].MimeCharset   := GB_2312_80;
     CharsetInfos[I].CodePage      := 20936;
     CharsetInfos[I].MimeName      := CsuString('gb_2312-80 iso-ir-58 chinese csiso58gb231280');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(GB_2312);
     CharsetInfos[I].MimeCharset   := GB_2312;
     CharsetInfos[I].CodePage      := 936; //according to .NET mapping // was 52936
     CharsetInfos[I].MimeName      := CsuString('gb2312 csgb2312 gbk cp936 ms936 windows-936');
+    CharsetInfos[I].FriendlyName  := sChineseSimplifiedGB2312;
 
     I := Ord(HZ_GB_2312);
     CharsetInfos[I].MimeCharset   := HZ_GB_2312;
     CharsetInfos[I].CodePage      := 52936;
     CharsetInfos[I].MimeName      := CsuString('hz-gb-2312');
+    CharsetInfos[I].FriendlyName  := sChineseSimplifiedHZ;
 
     I := Ord(GB_18030);
     CharsetInfos[I].MimeCharset   := GB_18030;
     CharsetInfos[I].CodePage      := 54936;
     CharsetInfos[I].MimeName      := CsuString('gb18030');
+    CharsetInfos[I].FriendlyName  := sChineseSimplifiedGB18030;
 
     I := Ord(EUC_CN);
     CharsetInfos[I].MimeCharset   := EUC_CN; // Microsoft, not listed at iana.
     CharsetInfos[I].CodePage      := 51936;
     CharsetInfos[I].MimeName      := CsuString('euc-cn');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(KOI8_R);
     CharsetInfos[I].MimeCharset   := KOI8_R;
     CharsetInfos[I].CodePage      := 20866;
     CharsetInfos[I].MimeName      := CsuString('koi8-r cskoi8r');
+    CharsetInfos[I].FriendlyName  := sCyrillicKOI8R;
 
     I := Ord(KOI8_U);
     CharsetInfos[I].MimeCharset   := KOI8_U;
     CharsetInfos[I].CodePage      := 21866;
     CharsetInfos[I].MimeName      := CsuString('koi8-u');
+    CharsetInfos[I].FriendlyName  := sCyrillicKOI8U;
 
     I := Ord(UTF_16LE);
     CharsetInfos[I].MimeCharset   := UTF_16LE;
     CharsetInfos[I].CodePage      := 1200;
     CharsetInfos[I].MimeName      := CsuString('utf-16 utf-16le');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(UTF_16BE);
     CharsetInfos[I].MimeCharset   := UTF_16BE;
     CharsetInfos[I].CodePage      := 1201;
     CharsetInfos[I].MimeName      := CsuString('utf-16be unicodefffe');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(UTF_7);
     CharsetInfos[I].MimeCharset   := UTF_7;
     CharsetInfos[I].CodePage      := CP_UTF7;
     CharsetInfos[I].MimeName      := CsuString('utf-7 unicode-1-1-utf-7 csunicode11utf7');
+    CharsetInfos[I].FriendlyName  := sUnicodeUTF7;
 
     I := Ord(SHIFT_JIS);
     CharsetInfos[I].MimeCharset   := SHIFT_JIS;
     CharsetInfos[I].CodePage      := 932;
     CharsetInfos[I].MimeName      := CsuString('shift_jis ms_kanji csshiftjis');
+    CharsetInfos[I].FriendlyName  := sJapaneseJIS;
 
     {I := Ord(GBK);
     CharsetInfos[I].MimeCharset   := GBK;  // now  GB_2312 according to .NET mapping
@@ -1116,182 +1235,225 @@ begin
     CharsetInfos[I].MimeCharset   := BIG_5;
     CharsetInfos[I].CodePage      := 950;
     CharsetInfos[I].MimeName      := CsuString('big5 csbig5 big-5 cp950');
+    CharsetInfos[I].FriendlyName  := sChineseTraditionalBig5;
 
     I := Ord(KOREAN_HANGUL);
     CharsetInfos[I].MimeCharset   := KOREAN_HANGUL;
     CharsetInfos[I].CodePage      := 949;
     CharsetInfos[I].MimeName      := CsuString('ks_c_5601-1987 iso-ir-149 ks_c_5601-1989 ksc_5601 korean csksc56011987');
+    CharsetInfos[I].FriendlyName  := sKorean;
+
+    I := Ord(EUC_KR);
+    CharsetInfos[I].MimeCharset   := EUC_KR;
+    CharsetInfos[I].CodePage      := 51949;
+    CharsetInfos[I].MimeName      := CsuString('euc-kr');
+    CharsetInfos[I].FriendlyName  := sKoreanEUC;
 
     I := Ord(WIN_874);
     CharsetInfos[I].MimeCharset   := WIN_874;
     CharsetInfos[I].CodePage      := 874;
     CharsetInfos[I].MimeName      := CsuString('windows-874');
+    CharsetInfos[I].FriendlyName  := sThaiWindows;
 
     I := Ord(IBM_037);
     CharsetInfos[I].MimeCharset   := IBM_037;
     CharsetInfos[I].CodePage      := 037;
     CharsetInfos[I].MimeName      := CsuString('ibm037 cp037 ebcdic-cp-us ebcdic-cp-ca ebcdic-cp-wt ebcdic-cp-n csibm037');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_437);
     CharsetInfos[I].MimeCharset   := IBM_437;
     CharsetInfos[I].CodePage      := 437;
     CharsetInfos[I].MimeName      := CsuString('ibm437 cp437 437 cspc8codepage437');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_500);
     CharsetInfos[I].MimeCharset   := IBM_500;
     CharsetInfos[I].CodePage      := 500;
     CharsetInfos[I].MimeName      := CsuString('ibm500 cp500 ebcdic-cp-be ebcdic-cp-ch csibm500');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_850);
     CharsetInfos[I].MimeCharset   := IBM_850;
     CharsetInfos[I].CodePage      := 850;
     CharsetInfos[I].MimeName      := CsuString('ibm850 cp850 cspc850multilingual');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_852);
     CharsetInfos[I].MimeCharset   := IBM_852;
     CharsetInfos[I].CodePage      := 852;
     CharsetInfos[I].MimeName      := CsuString('ibm852 852 cp852 cspcp852');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_855);
     CharsetInfos[I].MimeCharset   := IBM_855;
     CharsetInfos[I].CodePage      := 855;
     CharsetInfos[I].MimeName      := CsuString('ibm855 cp855 855 csibm855');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_857);
     CharsetInfos[I].MimeCharset   := IBM_857;
     CharsetInfos[I].CodePage      := 857;
     CharsetInfos[I].MimeName      := CsuString('ibm857 cp857 857 csibm857');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_00858);
     CharsetInfos[I].MimeCharset   := IBM_00858;
     CharsetInfos[I].CodePage      := 858;
     CharsetInfos[I].MimeName      := CsuString('ibm00858 ccsid00858 cp00858 pc-multilingual-850+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_860);
     CharsetInfos[I].MimeCharset   := IBM_860;
     CharsetInfos[I].CodePage      := 860;
     CharsetInfos[I].MimeName      := CsuString('ibm860 cp860 860 csibm860');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_861);
     CharsetInfos[I].MimeCharset   := IBM_861;
     CharsetInfos[I].CodePage      := 861;
     CharsetInfos[I].MimeName      := CsuString('ibm861 cp861 861 cp-is csibm861');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_862);
     CharsetInfos[I].MimeCharset   := IBM_862;
     CharsetInfos[I].CodePage      := 862;
     CharsetInfos[I].MimeName      := CsuString('ibm862 cp862 862 cspc862latinhebrew');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_863);
     CharsetInfos[I].MimeCharset   := IBM_863;
     CharsetInfos[I].CodePage      := 863;
     CharsetInfos[I].MimeName      := CsuString('ibm863 cp863 863 csibm863');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_864);
     CharsetInfos[I].MimeCharset   := IBM_864;
     CharsetInfos[I].CodePage      := 864;
     CharsetInfos[I].MimeName      := CsuString('ibm864 cp864 csibm864');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_865);
     CharsetInfos[I].MimeCharset   := IBM_865;
     CharsetInfos[I].CodePage      := 865;
     CharsetInfos[I].MimeName      := CsuString('ibm865 cp865 865 csibm865');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_866);
     CharsetInfos[I].MimeCharset   := IBM_866;
     CharsetInfos[I].CodePage      := 866;
     CharsetInfos[I].MimeName      := CsuString('ibm866 cp866 866 csibm866');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_869);
     CharsetInfos[I].MimeCharset   := IBM_869;
     CharsetInfos[I].CodePage      := 869;
     CharsetInfos[I].MimeName      := CsuString('ibm869 cp869 869 cp-gr csibm869');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_870);
     CharsetInfos[I].MimeCharset   := IBM_870;
     CharsetInfos[I].CodePage      := 870;
     CharsetInfos[I].MimeName      := CsuString('ibm870 cp870 ebcdic-cp-roece ebcdic-cp-yu csibm870');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_1026);
     CharsetInfos[I].MimeCharset   := IBM_1026;
     CharsetInfos[I].CodePage      := 1026;
     CharsetInfos[I].MimeName      := CsuString('ibm1026 cp1026 csibm1026');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01047);
     CharsetInfos[I].MimeCharset   := IBM_01047;
     CharsetInfos[I].CodePage      := 1047;
     CharsetInfos[I].MimeName      := CsuString('ibm1047 ibm-1047');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01140);
     CharsetInfos[I].MimeCharset   := IBM_01140;
     CharsetInfos[I].CodePage      := 1140;
     CharsetInfos[I].MimeName      := CsuString('ibm01140 ccsid01140 cp01140 ebcdic-us-37+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01141);
     CharsetInfos[I].MimeCharset   := IBM_01141;
     CharsetInfos[I].CodePage      := 1141;
     CharsetInfos[I].MimeName      := CsuString('ibm01141 ccsid01141 cp01141 ebcdic-de-273+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01142);
     CharsetInfos[I].MimeCharset   := IBM_01142;
     CharsetInfos[I].CodePage      := 1142;
     CharsetInfos[I].MimeName      := CsuString('ibm01142 ccsid01142 cp01142 ebcdic-dk-277+euro ebcdic-no-277+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01143);
     CharsetInfos[I].MimeCharset   := IBM_01143;
     CharsetInfos[I].CodePage      := 1143;
     CharsetInfos[I].MimeName      := CsuString('ibm01143 ccsid01143 cp01143 ebcdic-fi-278+euro ebcdic-se-278+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01144);
     CharsetInfos[I].MimeCharset   := IBM_01144;
     CharsetInfos[I].CodePage      := 1144;
     CharsetInfos[I].MimeName      := CsuString('ibm01144 ccsid01144 cp01144 ebcdic-it-280+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01145);
     CharsetInfos[I].MimeCharset   := IBM_01145;
     CharsetInfos[I].CodePage      := 1145;
     CharsetInfos[I].MimeName      := CsuString('ibm01145 ccsid01145 cp01145 ebcdic-es-284+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01146);
     CharsetInfos[I].MimeCharset   := IBM_01146;
     CharsetInfos[I].CodePage      := 1146;
     CharsetInfos[I].MimeName      := CsuString('ibm01146 ccsid01146 cp01146 ebcdic-gb-285+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01147);
     CharsetInfos[I].MimeCharset   := IBM_01147;
     CharsetInfos[I].CodePage      := 1147;
     CharsetInfos[I].MimeName      := CsuString('ibm01147 ccsid01147 cp01147 ebcdic-fr-297+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01148);
     CharsetInfos[I].MimeCharset   := IBM_01148;
     CharsetInfos[I].CodePage      := 1148;
     CharsetInfos[I].MimeName      := CsuString('ibm01148 ccsid01148 cp01148 ebcdic-international-500+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(IBM_01149);
     CharsetInfos[I].MimeCharset   := IBM_01149;
     CharsetInfos[I].CodePage      := 1149;
     CharsetInfos[I].MimeName      := CsuString('ibm01149 ccsid01149 cp01149 ebcdic-is-871+euro');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(MACINTOSH);
     CharsetInfos[I].MimeCharset   := MACINTOSH;
     CharsetInfos[I].CodePage      := 10000;
     CharsetInfos[I].MimeName      := CsuString('macintosh mac csmacintosh');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(US_ASCII);
     CharsetInfos[I].MimeCharset   := US_ASCII;
     CharsetInfos[I].CodePage      := CP_US_ASCII;
     CharsetInfos[I].MimeName      := CsuString('us-ascii ascii us ansi_x3.4-1968 iso-ir-6 ansi_x3.4-1986 iso_646.irv:1991 iso646-us ibm367 cp367 csascii');
+    CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(T_61);
     CharsetInfos[I].MimeCharset   := T_61; //7-bit or 8-bit?
     CharsetInfos[I].CodePage      := 20261;
     CharsetInfos[I].MimeName      := CsuString('t.61-8bit t.61-7bit iso-ir-103 iso-ir-102 csiso103t618bit csiso102t617bit');
+    CharsetInfos[I].FriendlyName  := '';
 
     //---------
     { Finally replace our dummy name by the correct MIME name if mapped }
     Cs := CodePageToMimeCharset(CharsetInfos[Ord(CS_DEFAULT)].CodePage);
-    if Cs <> CS_DEFAULT then
+    if Cs <> CS_DEFAULT then begin
         CharsetInfos[Ord(CS_DEFAULT)].MimeName  := CharsetInfos[Ord(CS)].MimeName;
+        //CharsetInfos[Ord(CS_DEFAULT)].FriendlyName := CharsetInfos[Ord(CS)].FriendlyName;
+    end;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
