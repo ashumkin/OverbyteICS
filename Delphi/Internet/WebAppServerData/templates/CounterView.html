@@ -49,8 +49,7 @@
         <tr><td>Counter</td><td>Value</td></tr>
         <tr>
           <td><select name="CounterName1"
-                      onchange="DoShow(document.getElementById('CounterName1').value,
-                                       'CounterValue1')">
+                      onchange="DoShow(this.value, 'CounterValue1')">
                 <#table_rows 1>
                   <option value="<#CounterItem>" <#CounterSelected>><#CounterItem>
                 <#/table_rows>
@@ -60,8 +59,7 @@
 
         <tr>
           <td><select name="CounterName2"
-                      onchange="DoShow(document.getElementById('CounterName2').value,
-                                       'CounterValue2')">
+					  onchange="DoShow(this.value, 'CounterValue2')">
                 <#table_rows 2>
                   <option value="<#CounterItem>" <#CounterSelected>><#CounterItem>
                 <#/table_rows>
