@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.17
+Version:      7.18
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -91,7 +91,10 @@ May 02, 2009 V7.16a A. Garrels - Avoid unnecessary calls to IcsStrCharLength()
                     in IcsWrapTextEx() ANSI overload.
 May 10, 2009 V7.17  A. Garrels - Some AnsiString types changed to RawByteString.
                     Made some changes to work around an issue in 2009 where global
-                    var Syslocale.FarEast is always True.   
+                    var Syslocale.FarEast is always True.
+May 30, 2009 V7.18  A. Garrels fixed a bug in IcsWrapTextEx that could truncate
+                    a line.
+                    
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -138,7 +141,7 @@ uses
     OverbyteIcsCharsetUtils;
 const
     TMimeUtilsVersion = 717;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.17 ';
+    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.18 ';
 
     SmtpDefaultLineLength = 76; // without CRLF
     { Explicit type cast to Ansi works in .NET as well }
@@ -1328,7 +1331,7 @@ begin
                 Result := Copy(Line, LinePos, BreakPos - LinePos + 1);
             if (not IsCharInSysCharSet(CurChar, QuoteChars)) or
                (ExistingBreak) then begin
-                if cPos <= LineLen then begin
+                if (cPos <= LineLen) and (BreakPos + 1 = cPos) then begin
                     if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
                         if not ExistingBreak then begin
                             { Break due to one of the breaking chars found and CRLF follows }
