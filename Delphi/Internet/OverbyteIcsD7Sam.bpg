@@ -18,7 +18,7 @@ PROJECTS = OverbyteIcsD7Run.bpl OverbyteIcsD7Design.bpl OverbyteIcsConFtp.exe \
   OverbyteIcsMailHtml.exe OverbyteIcsDnsLook.exe OverbyteIcsDnsResolver.exe \
   OverbyteIcsConHttp.exe OverbyteIcsHttpAsy.exe OverbyteIcsHttpAsp.exe \
   OverbyteIcsCliDemo.exe OverbyteIcsBinCliDemo.exe OverbyteIcsMimeDemo.exe \
-  OverbyteIcsWebAppServer.exe
+  OverbyteIcsWebAppServer.exe OverbyteIcsConSmtp.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -102,6 +102,9 @@ OverbyteIcsMimeDemo.exe: OverbyteIcsMimeDemo.dpr
   $(DCC)
 
 OverbyteIcsWebAppServer.exe: OverbyteIcsWebAppServer.dpr
+  $(DCC)
+
+OverbyteIcsConSmtp.exe: OverbyteIcsConSmtp.dpr
   $(DCC)
 
 
