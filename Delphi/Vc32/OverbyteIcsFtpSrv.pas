@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.08
+Version:      7.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -379,6 +379,10 @@ May 17, 2009 V7.08 Angus renamed FileMD5ThreadOnProgress to UpdateThreadProgress
              FormatResponsePath also calls BuildFilePath to convert translated virtual
                 path back to original path in home directory, so it can be removed
              TriggerLang now calls correct event handler
+June 04, 2009 V7.09 Angus called TriggerMd5Calculated when changing file date/time
+             default for TimeoutSecsXfer reduced from 900 to 60 secs and only aborts
+                 data channel not control channel, it must be shorter than TimeoutSecsIdle
+             SessIdInfo add client numeric id to identify separate sessions from same IP
 
 
 
@@ -465,8 +469,8 @@ uses
 
 
 const
-    FtpServerVersion         = 708;
-    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.08 ';
+    FtpServerVersion         = 709;
+    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.09 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -2081,7 +2085,7 @@ begin
     FMd5UseThreadFileSize   := 0;  { AG V1.50 }
     FTimeoutSecsLogin   := 60;      { angus V1.54 }
     FTimeoutSecsIdle    := 300;     { angus V1.54 }
-    FTimeoutSecsXfer    := 900;     { angus V1.54 }
+    FTimeoutSecsXfer    := 60;      { angus V1.54, V7.09 reduced from 900 to 60 secs }
     FZlibMinLevel       := 1;       { angus V1.54 }
     FZlibMaxLevel       := 9;       { angus V1.54 }
     FZlibNoCompExt      := '.zip;.rar;.7z;.cab;.lzh;.gz;.avi;.wmv;.mpg;.mp3;.jpg;.png;'; { angus V1.54 }
@@ -2450,7 +2454,8 @@ begin
                  ' Client Connect Error - ' + GetWinsockErr(Error) + ' ' +
                   IntToStr(MyClient.HSocket));
 {$ENDIF}
-    MyClient.SessIdInfo      := Client.GetPeerAddr;  { angus V1.54 may be changed during event }
+    { angus V1.54 may be changed during event, V7.09 add client numeric id to identify separate sessions from same IP }
+    MyClient.SessIdInfo      := Client.GetPeerAddr + ' [' + IntToStr (Client.CliId) + ']' ;
     MyClient.CurrTransMode   := FtpTransModeStream ; { angus V1.54 current zlib transfer mode }
     MyClient.ZReqLevel       := FZlibMinLevel;       { angus V1.54 initial compression level, minimum }
     MyClient.FConnectedSince := Now;
@@ -5160,7 +5165,7 @@ var
 {$ENDIF}    
 begin
     if (FPasvPortRangeSize = 0) or (FPasvPortRangeStart = 0) then
-        Exit;          
+        Exit;
     { FLD changed following lines, because                                   }
     { FreeCurrentPasvPort might be called when the socket is already closed! }
     if AClient.DataSocket.State = wsClosed then
@@ -5405,6 +5410,8 @@ begin
                 TriggerLeaveSecurityContext(Client);          { V1.52 AG }
             end;
             if SuccFlag then begin
+              { Cached Md5Sum should be updated with a new time and date } { angus V7.09 }
+                TriggerMd5Calculated(Client, FileName, '');
                 if Client.CurCmdType = ftpcMFMT then    { angus V1.39 }
                     Answer := msgMfmtChangeOK
                 else
@@ -6573,7 +6580,9 @@ begin
                 ftpcWaitingUserCode, ftpcWaitingPassword: Timeout := FTimeoutSecsLogin;
                 ftpcReady, ftpcWaitingAnswer: Timeout := FTimeoutSecsIdle;
             end;
-            if Client.DataSocket.State = wsConnected then Timeout := FTimeoutSecsXfer;
+            if Client.DataSocket.State = wsConnected then begin
+                if FTimeoutSecsXfer < FTimeoutSecsIdle then Timeout := FTimeoutSecsXfer;  { V7.09 xfer timeout must be shorted than idle }
+            end;
             if Timeout > 0 then begin
                 Duration :=  IcsDiffTicks(Client.LastTick, CurTicks) div TicksPerSecond; { V1.56 AG}
                 if Duration >= Timeout then begin   { seconds }
@@ -6587,10 +6596,12 @@ begin
                             Client.TransferError    := 'ABORT on Timeout';
                             Client.AbortingTransfer := TRUE;
                             Client.DataSocket.Close;
+                        end
+                        else begin  { V7.09 xfer timeout only close data channel }
+                            SendAnswer(Client, WideFormat(msgTimeout, [Duration]));
+                          { close control channel }
+                            Client.Close;
                         end;
-                        SendAnswer(Client, Format(msgTimeout, [Duration]));
-                      { close control channel }
-                        Client.Close;
                     end;
                 end;
             end;
