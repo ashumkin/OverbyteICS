@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.28
+Version:      7.29
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -87,8 +87,10 @@ May 14, 2009 V7.27 Arno changed IcsNextCharIndex() to avoid a compiler
              Removed uneccessary overload directives from IcsCharNextUtf8
              and IcsCharPrevUtf8.
 May 17, 2009 V7.28 Arno prefixed argument names of various UTF-8 overloads
-             by "Utf8" so that C++Builder user know that UTF-8 encoded 
+             by "Utf8" so that C++Builder user know that UTF-8 encoded
              AnsiStrings are expected.
+June 4, 2009 V7.29 Angus added IcsExtractLastDir
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -275,6 +277,8 @@ type
     function IcsFindNextW(var F: TIcsSearchRecW): Integer;
     function IcsIncludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
     function IcsExcludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
+    function IcsExtractLastDir (const Path: String): String ; overload;                 // angus
+    function IcsExtractLastDir (const Path: UnicodeString): UnicodeString ; overload;   // angus
     function IcsFileGetAttrW(const FileName: UnicodeString): Integer; overload;
     function IcsFileGetAttrW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer; overload;
@@ -1855,6 +1859,40 @@ end;
 function IcsDeleteFileW(const FileName: UnicodeString): Boolean;
 begin
     Result := Windows.DeleteFileW(PWideChar(FileName));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractLastDir (const Path: String): String ;    // angus
+var
+    I, Len: integer;
+begin
+    Len := Length (Path);
+    if Path [Len] = '\' then Dec (Len) ;
+    for I := Len downto 1 do begin
+        if Path [I] = '\' then begin
+            Result := Copy (Path, I + 1, Len - I);
+            exit;
+        end;
+    end;
+    Result := Copy (Path, 1, Len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsExtractLastDir (const Path: UnicodeString): UnicodeString ;     // angus
+var
+    I, Len: integer;
+begin
+    Len := Length (Path);
+    if Path [Len] = '\' then Dec (Len) ;
+    for I := Len downto 1 do begin
+        if Path [I] = '\' then begin
+            Result := Copy (Path, I + 1, Len - I);
+            exit;
+        end;
+    end;
+    Result := Copy (Path, 1, Len);
 end;
 
 
