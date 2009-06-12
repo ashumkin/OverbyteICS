@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.18
+Version:      7.19
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -260,6 +260,14 @@ Apr 17, 2009 V7.18 A. Garrels added a CodePage argument to functions
              ExtractURLEncodedValue(), UrlEncode() and UrlDecode.
              Changed type of local var TotalBytes in BuildDirList() from
              Cardinal to Int64 to avoid integer overruns.
+Jun 12, 2009 V7.19 Angus made AuthBasicCheckPassword virtual
+             Added AnswerStatus numeric property for web logging purposes
+             Added OnBeforeAnswer event triggered once the answer is prepared
+                but before it is sent from ProcessRequest
+             Added OnAfterAnswer triggered after the answer is sent from
+                ConnectionDataSent so time taken to send reply can be logged
+             Ensure ConnectionDataSent is always called even for non-stream replies
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -340,8 +348,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 718;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.18 ';
+    THttpServerVersion = 719;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.19 ';
     //WM_HTTP_DONE       = WM_USER + 40;
     //HA_MD5             = 0;
     //HA_MD5_SESS        = 1;
@@ -384,6 +392,10 @@ type
                                       TagData         : TStringIndex;
                                       var More        : Boolean;
                                       UserData        : TObject) of object;
+    THttpBeforeAnswerEvent= procedure (Sender    : TObject;
+                                       Client    : TObject) of object;   { V7.19 }
+    THttpAfterAnswerEvent= procedure  (Sender    : TObject;
+                                       Client    : TObject) of object;   { V7.19 }
 
     THttpConnectionState = (hcRequest, hcHeader, hcPostedData);
     THttpOption          = (hoAllowDirList, hoAllowOutsideRoot);
@@ -530,7 +542,7 @@ type
         function  AuthDigestGetParams: Boolean;
     {$ENDIF}
         function  AuthBasicGetParams: Boolean;
-        function  AuthBasicCheckPassword(const Password: String): Boolean;
+        function  AuthBasicCheckPassword(const Password: String): Boolean; virtual;  { V7.19 }
 {$IFDEF USE_NTLM_AUTH}
         procedure AuthNtlmSessionBeforeValidate(Sender: TObject; var Allow: Boolean);
 {$ENDIF}
@@ -586,6 +598,7 @@ type
         FKeepAliveTimeSec      : Cardinal;
         FMaxRequestsKeepAlive  : Integer;
         FShutDownFlag          : Boolean;
+        FAnswerStatus          : Integer;  { V7.19 }
         FOnGetDocument         : THttpGetConnEvent;
         FOnHeadDocument        : THttpGetConnEvent;
         FOnPostDocument        : THttpGetConnEvent;
@@ -594,6 +607,8 @@ type
         FOnBeforeProcessRequest: TNotifyEvent;  {DAVID}
         FOnFilterDirEntry      : THttpFilterDirEntry;
         FOnGetRowData          : THttpGetRowDataEvent;
+        FOnBeforeAnswer        : TNotifyEvent;   { V7.19 }
+        FOnAfterAnswer         : TNotifyEvent;   { V7.19 }
         procedure SetSndBlkSize(const Value: Integer);
         procedure ConnectionDataAvailable(Sender: TObject; Error : Word); virtual;
         procedure ConnectionDataSent(Sender : TObject; Error : WORD); virtual;
@@ -615,6 +630,8 @@ type
         procedure TriggerHttpRequestDone; virtual;
         procedure TriggerBeforeProcessRequest; virtual; {DAVID}
         procedure TriggerFilterDirEntry(DirEntry: THttpDirEntry); virtual;
+        procedure TriggerBeforeAnswer;  { V7.19 }
+        procedure TriggerAfterAnswer;   { V7.19 }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         procedure TriggerAuthGetPassword(var PasswdBuf : String); virtual;
         procedure TriggerAuthResult(Authenticated : Boolean);
@@ -742,7 +759,8 @@ type
         property KeepAliveTimeSec      : Cardinal    read  FKeepAliveTimeSec
                                                      write FKeepAliveTimeSec;
         property MaxRequestsKeepAlive  : Integer     read  FMaxRequestsKeepAlive
-                                                     write FMaxRequestsKeepAlive;                                             
+                                                     write FMaxRequestsKeepAlive;
+        property AnswerStatus          : Integer     read  FAnswerStatus; { V7.19 }
     published
         { Where all documents are stored. Default to c:\wwwroot }
         property DocDir         : String            read  FDocDir
@@ -798,6 +816,12 @@ type
         property OnGetRowData      : THttpGetRowDataEvent
                                                     read  FOnGetRowData
                                                     write FOnGetRowData;
+        { Triggered once the answer is prepared but before it is sent from ProcessRequest V7.19 }
+         property OnBeforeAnswer : TNotifyEvent     read  FOnBeforeAnswer
+                                                    write FOnBeforeAnswer;
+        { Triggered after the answer is sent from ConnectionDataSent V7.19 }
+         property OnAfterAnswer : TNotifyEvent      read  FOnAfterAnswer
+                                                    write FOnAfterAnswer;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         { AuthType contains the actual authentication method selected by client }
         property AuthType          : TAuthenticationType
@@ -858,6 +882,8 @@ type
         FMaxRequestsKeepAlive     : Integer;
         FHeartBeat                : TIcsTimer;
         FHeartBeatBusy            : Boolean;
+        FOnBeforeAnswer           : THttpBeforeAnswerEvent;  { V7.19 }
+        FOnAfterAnswer            : THttpAfterAnswerEvent;   { V7.19 }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         FAuthTypes                : TAuthenticationTypes;
         FAuthRealm                : String;
@@ -911,6 +937,8 @@ type
         procedure TriggerFilterDirEntry(Sender   : TObject;
                                         Client   : TObject;
                                         DirEntry : THttpDirEntry); virtual;
+        procedure TriggerBeforeAnswer(Client : TObject);  { V7.19 }
+        procedure TriggerAfterAnswer(Client : TObject);   { V7.19 }
         procedure SetPortValue(const newValue : String);
         procedure SetAddr(const newValue : String);
         procedure SetDocDir(const Value: String);
@@ -1030,6 +1058,14 @@ type
         property OnFilterDirEntry   : THttpFilterDirEntry
                                                  read  FOnFilterDirEntry
                                                  write FOnFilterDirEntry;
+        { Triggered once the answer is prepared but before it is sent V7.19 }
+        property OnBeforeAnswer : THttpBeforeAnswerEvent
+                                                 read  FOnBeforeAnswer
+                                                 write FOnBeforeAnswer;
+        { Triggered after the answer is sent V7.19 }
+        property OnAfterAnswer : THttpAfterAnswerEvent
+                                                 read  FOnAfterAnswer
+                                                 write FOnAfterAnswer;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         property OnAuthGetPassword  : TAuthGetPasswordEvent
                                                  read  FOnAuthGetPassword
@@ -1057,7 +1093,7 @@ type
                                                  default daAuth;
         property AuthDigestNonceLifeTimeMin  : Cardinal
                                                  read  FAuthDigestNonceLifeTimeMin
-                                                 write FAuthDigestNonceLifeTimeMin default 1;                                         
+                                                 write FAuthDigestNonceLifeTimeMin default 1;
     {$ENDIF}
 {$ENDIF}
     end;
@@ -1708,6 +1744,8 @@ begin
     THttpConnection(Client).OnBeforeProcessRequest := TriggerBeforeProcessRequest; {DAVID}
     THttpConnection(Client).OnFilterDirEntry  := TriggerFilterDirEntry;
     THttpConnection(Client).MaxRequestsKeepAlive := Self.MaxRequestsKeepAlive;
+    THttpConnection(Client).OnBeforeAnswer    := TriggerBeforeAnswer;  { V7.19 }
+    THttpConnection(Client).OnAfterAnswer     := TriggerAfterAnswer;   { V7.19 }
     TriggerClientConnect(Client, Error);
 end;
 
@@ -1824,6 +1862,23 @@ procedure THttpServer.TriggerFilterDirEntry(
 begin
     if Assigned(FOnFilterDirEntry) then
         FOnFilterDirEntry(Self, Client, DirEntry);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.TriggerBeforeAnswer
+    (Client : TObject);  { V7.19 }
+begin
+    if Assigned(FOnBeforeAnswer) then
+        FOnBeforeAnswer(Self, Client);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.TriggerAfterAnswer
+    (Client : TObject);   { V7.19 }
+begin
+    if Assigned(FOnAfterAnswer) then
+        FOnAfterAnswer(Self, Client);
 end;
 
 
@@ -2149,7 +2204,7 @@ begin
         end;
         FAuthDigestOneTimeFlag := FALSE;
     end
-{$ENDIF}    
+{$ENDIF}
 {$IFDEF USE_NTLM_AUTH}
     else if AuthType = atNtlm then begin
         if not Assigned(FAuthNtlmSession) then begin
@@ -2278,6 +2333,8 @@ begin
         FHttpVerNum            := 11;     { Assume HTTP 1.1 by default }{ V1.6 }
         if FKeepAliveTimeSec > 0 then
             Dec(FMaxRequestsKeepAlive);
+        FAnswerStatus          := 0;      { V7.19 changed to 200, 404, etc whenever header status is set, used for logging }
+        OnDataSent             := ConnectionDataSent;  { V7.19 always need an event after header is sent }
         { The line we just received is HTTP command, parse it  }
         ParseRequest;
         { Next lines will be header lines }
@@ -2473,8 +2530,10 @@ var
 {$ENDIF}
 begin
     Flags := hgWillSendMySelf;
-    if Status = '' then
-        PutStringInSendBuffer(FVersion + ' 200 OK' + #13#10)
+    if Status = '' then begin
+        PutStringInSendBuffer(FVersion + ' 200 OK' + #13#10) ;
+        FAnswerStatus := 200;   { V7.19 }
+    end
     else
         PutStringInSendBuffer(FVersion + ' ' + Status + #13#10);
     if ContType = '' then
@@ -2649,8 +2708,9 @@ begin
             SendHeader(FVersion + ' 416 Requested range not satisfiable' + #13#10 +
             'Content-Type: text/html' + #13#10 +
             'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
-            GetKeepAliveHdrLines + 
+            GetKeepAliveHdrLines +
             #13#10);
+     FAnswerStatus := 416;  { V7.19 }
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
 end;
@@ -2668,8 +2728,9 @@ begin
             SendHeader(FVersion + ' 404 Not Found' + #13#10 +
             'Content-Type: text/html' + #13#10 +
             'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
-            GetKeepAliveHdrLines + 
+            GetKeepAliveHdrLines +
             #13#10);
+    FAnswerStatus := 404;   { V7.19 }
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
 end;
@@ -2709,6 +2770,7 @@ begin
             'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
             GetKeepAliveHdrLines +
             #13#10);
+    FAnswerStatus := 403;   { V7.19 }
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
 end;
@@ -2732,6 +2794,7 @@ begin
             ' requires authorization.<P></BODY></HTML>' + #13#10;
 
     Header := FVersion + ' 401 Access Denied' + #13#10;
+    FAnswerStatus := 401;   { V7.19 }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
   {$IFDEF USE_NTLM_AUTH}
     if (atNtlm in FAuthTypes) then begin
@@ -2758,7 +2821,7 @@ begin
         (*
         FAuthDigestServerNonce  := '';
         FAuthDigestServerOpaque := '';
-        //Randomize; MUST be called only once! Thus moved to the constructor. 
+        //Randomize; MUST be called only once! Thus moved to the constructor.
         //FAuthDigestServerNonce := Base64Encode(_DateTimeToStr(_Now)); IMO weak AG
         FAuthDigestOneTimeFlag  := FAuthDigestNonceLifeTimeMin = 0;
         { This is the original implementation by FastStream with slightly     }
@@ -2862,6 +2925,7 @@ begin
                'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
                GetKeepAliveHdrLines + 
                #13#10);
+    FAnswerStatus := 501;   { V7.19 }
     { Do not use AnswerString method because we don't want to use ranges }
     SendStr(Body);
 end;
@@ -2875,7 +2939,7 @@ var
 begin
     if FKeepAlive and (FKeepAliveTimeSec > 0) then
         FKeepAlive := FMaxRequestsKeepAlive > 0;
-        
+
     TriggerBeforeProcessRequest;
 
     if FPath = '/' then
@@ -2918,6 +2982,7 @@ begin
             PrepareGraceFullShutDown;
         Answer501;   { 07/03/2005 was Answer404 }
     end;
+    TriggerBeforeAnswer;  { V7.19 }
 end;
 
 
@@ -2958,6 +3023,22 @@ procedure THttpConnection.TriggerBeforeProcessRequest;  {DAVID}
 begin
     if Assigned(FOnBeforeProcessRequest) then
         FOnBeforeProcessRequest(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpConnection.TriggerBeforeAnswer;  { V7.19 }
+begin
+    if Assigned(FOnBeforeAnswer) then
+        FOnBeforeAnswer(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpConnection.TriggerAfterAnswer;  { V7.19 }
+begin
+    if Assigned(FOnAfterAnswer) then
+        FOnAfterAnswer(Self);
 end;
 
 
@@ -3342,6 +3423,7 @@ begin
     { Create Header }
     {ANDREAS Create Header for the several protocols}
     Header := CreateHttpHeader(FVersion, ProtoNumber, FAnswerContentType, RequestRangeValues, FDocSize, CompleteDocSize);
+    FAnswerStatus := ProtoNumber;   { V7.19 }
         if FLastModified <> 0 then
             Header := Header +
                       'Last-Modified: ' + RFC1123_Date(FLastModified) +
@@ -3619,6 +3701,7 @@ begin
               'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
               'Pragma: no-cache' + #13#10 +
               #13#10;
+    FAnswerStatus := 200;   { V7.19 }
     PutStringInSendBuffer(Header);
     FDocStream := TMemoryStream.Create;
     if SendType = httpSendDoc then
@@ -3637,17 +3720,21 @@ var
     ToSend : THttpRangeInt;
 begin
     if FShutDownFlag then begin
+        TriggerAfterAnswer;                   { V7.19 we can log how much data was sent from here }
         Shutdown(1);
         Exit;
     end;
-    if not Assigned(FDocStream) then
-        Exit; { End of file has been reached }
+    if not Assigned(FDocStream) then begin
+        TriggerAfterAnswer;                   { V7.19 we can log how much data was sent from here }
+        Exit; { no stream usually means just a header string has been sent }
+    end;
 
     if FDocSize <= 0 then
         Send(nil, 0);                         {Force send buffer flush}
 
     if FDataSent >= FDocSize then begin       {DAVID}
         { End of file found }
+        TriggerAfterAnswer;                   { V7.19 we can log how much data was sent from here }
         if Assigned(FDocStream) then begin    {DAVID}
             FDocStream.Free;                  {DAVID}
             FDocStream := nil;                {DAVID}

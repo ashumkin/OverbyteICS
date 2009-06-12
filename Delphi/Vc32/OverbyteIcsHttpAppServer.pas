@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      1.02
+Version:      7.03
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -63,6 +63,8 @@ History:
 16/09/2006 V1.01 Added THttpAppSrvConnection.BeforeGetHandler
 11/04/2009 V1.02 Added runtime readonly property THttpAppsrv.WSessions
                  Added overloaded CheckSession.
+Jun 12, 2009 V7.03 don't ignore event Flags in TriggerGetDocument otherwise
+                    authentication fails
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -768,6 +770,9 @@ procedure THttpAppSrv.TriggerGetDocument(
 begin
 //OutputDebugString(PChar('HTTP_GET  ' + (Sender as THttpAppSrvConnection).Path));
     inherited TriggerGetDocument(Sender, Flags);
+    if Flags in [hgWillSendMySelf, hg404, hg403, hg401, hgAcceptData,   { V7.03 don't ignore Flags }
+                                                        hgSendDirList] then
+        Exit ;
 
     // Handle all virtual documents. Returns TRUE if document handled.
     if GetDispatchVirtualDocument(Sender as THttpAppSrvConnection, Flags) then
