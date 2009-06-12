@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.23
+Version:      7.24
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -641,7 +641,7 @@ Apr 24, 2009 V7.23 A. Garrels added *experimental* OpenSSL engine support which
              ******************************************************************
              * Due to the lack of hardware this feature is completely untested*
              ******************************************************************
-             
+
              Any feedback and fixes are welcome, please contact the ICS mailing
              list. The OpenSSL engine documentation can be found here:
              http://openssl.org/docs/crypto/engine.html
@@ -704,6 +704,13 @@ Apr 24, 2009 V7.23 A. Garrels added *experimental* OpenSSL engine support which
                 end;
              end;
 
+Jun 12, 2009 V7.24 Angus added WriteCount property, how many bytes sent since
+                     connection opened
+                   Only reset ReadCount when connection opened, not closed
+
+}
+
+{
 About multithreading and event-driven:
     TWSocket is a pure asynchronous component. It is non-blocking and
     event-driven. It means that when you request an operation such as connect,
@@ -968,8 +975,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     ReadLineCount       : Integer;
     bAllSent            : Boolean;
     FReadCount          : Int64;   { V5.26 }
-
-
+    FWriteCount         : Int64;   { V7.24 }
 
     FPaused             : Boolean;
     FCloseInvoked       : Boolean;
@@ -1214,7 +1220,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property DnsResultList : TStrings               read  FDnsResultList;
     property State : TSocketState                   read  FState;
     property AllSent   : Boolean                    read  bAllSent;
-    property ReadCount : Int64   { V5.26 }          read  FReadCount;
+    property ReadCount : Int64                      read  FReadCount;    { V5.26 }
+    property WriteCount : Int64                     read  FWriteCount;   { V7.24 }
     property RcvdCount : LongInt                    read  GetRcvdCount;
     property LastError : Integer                    read  FLastError
                                                     write FLastError;  { V5.20 }
@@ -5104,7 +5111,7 @@ begin
     FState              := wsClosed;
     bAllSent            := TRUE;
     FPaused             := FALSE;
-    FReadCount          := 0;
+{   FReadCount          := 0;  V7.24 only reset when connection opened, not closed }
     FCloseInvoked       := FALSE;
     FFlushTimeout       := 60;
 end;
@@ -5465,6 +5472,8 @@ procedure TCustomWSocket.DupConnected;
 begin
     if Assigned(FCounter) then
         FCounter.SetConnected;
+    FReadCount  := 0;  { 7.24 }
+    FWriteCount := 0;  { 7.24 }
     ChangeState(wsConnected);
 end;
 
@@ -5697,6 +5706,7 @@ begin
     Result := WSocket_Synchronized_SendTo(FHSocket, Data, Len, FSendFlags,
                                           TSockAddr(Dest), DestLen);
     if Result > 0 then begin
+        FWriteCount := FWriteCount + Result;  { 7.24 }
         TriggerSendData(Result);
         { Post FD_WRITE message to have OnDataSent event triggered }
         if bAllSent and (FType = SOCK_DGRAM) then
@@ -5719,6 +5729,7 @@ begin
     else
         Result := WSocket_Synchronized_Send(FHSocket, Data, Len, FSendFlags);
     if Result > 0 then begin
+        FWriteCount := FWriteCount + Result;  { 7.24 }
         if Assigned(FCounter) then
             FCounter.FLastSendTick := _GetTickCount;
         TriggerSendData(Result);
@@ -8037,6 +8048,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.TriggerSessionConnected(Error : Word);
 begin
+    FReadCount  := 0;  { 7.24 }
+    FWriteCount := 0;  { 7.24 }
     if Assigned(FOnSessionConnected) then
         FOnSessionConnected(Self, Error);
 end;
