@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.19
+Version:      7.20
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -267,6 +267,15 @@ Jun 12, 2009 V7.19 Angus made AuthBasicCheckPassword virtual
              Added OnAfterAnswer triggered after the answer is sent from
                 ConnectionDataSent so time taken to send reply can be logged
              Ensure ConnectionDataSent is always called even for non-stream replies
+Jun 15, 2009 V7.20 pdfe@sapo.pt and Angus added content encoding using zlib
+               compression if Options hoContentEncoding set, and content
+               type is text/* and content size is between SizeCompressMin and
+               SizeCompressMax. New event HttpContentEncode called so application
+               can encode content itself if needed or read a cached file,
+               HttpContEncoded afterwards to save cached file or report compression
+             Added XML and PNG MIME types
+             Removed UseInt64ForHttpRange/Stream64 define, always use Int64
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -285,19 +294,13 @@ unit OverbyteIcsHttpSrv;
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
+{$WARN SYMBOL_PLATFORM OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
 
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
-{$IFDEF UseInt64ForHttpRange} // just for backwards compatibility
-    {$DEFINE STREAM64}
-{$ENDIF}
-{ DEFINE USE_ZLIB} { Experimental code, doesn't work yet }
 
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     {$DEFINE USE_NTLM_AUTH}
@@ -329,9 +332,13 @@ uses
 {$IFDEF USE_SSL}
     OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
 {$ENDIF}
-{$IFDEF USE_ZLIB}
-    dZLib, zDeflate, ZLibh,
-{$ENDIF}
+    {$I OverbyteIcsZlib.inc} { V7.20 }
+    OverbyteIcsZlibHigh,     { V7.20 }
+    {$IFDEF USE_ZLIB_OBJ}
+        OverbyteIcsZLibObj,     {interface to access ZLIB C OBJ files}
+    {$ELSE}
+        OverbyteIcsZLibDll,     {interface to access zLib1.dll}
+    {$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
@@ -348,13 +355,10 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 719;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.19 ';
-    //WM_HTTP_DONE       = WM_USER + 40;
-    //HA_MD5             = 0;
-    //HA_MD5_SESS        = 1;
-    //HASHLEN            = 16;
-    //HASHHEXLEN         = 32;
+    THttpServerVersion = 720;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.20 ';
+    CompressMinSize = 5000;  { V7.20 only compress responses within a size range }
+    CompressMaxSize = 5000000;
 
 type
     THttpServer          = class;
@@ -397,14 +401,20 @@ type
     THttpAfterAnswerEvent= procedure  (Sender    : TObject;
                                        Client    : TObject) of object;   { V7.19 }
 
+    THttpContentEncodeEvent= procedure (Sender    : TObject;           { V7.20 }
+                                        Client    : TObject;
+                                        out ContentEncoding: string;
+                                        var Handled: Boolean) of object;
+    TContentEncodeEvent= procedure (Sender    : TObject;           { V7.20 }
+                                    out ContentEncoding: string;
+                                    var Handled: Boolean) of object;
+    THttpContEncodedEvent= procedure (Sender    : TObject;                 { V7.20 }
+                                      Client    : TObject) of object;
+
     THttpConnectionState = (hcRequest, hcHeader, hcPostedData);
-    THttpOption          = (hoAllowDirList, hoAllowOutsideRoot);
+    THttpOption          = (hoAllowDirList, hoAllowOutsideRoot, hoContentEncoding);   { V7.20 }
     THttpOptions         = set of THttpOption;
-{$IFDEF STREAM64}
     THttpRangeInt        = Int64;
-{$ELSE}
-    THttpRangeInt        = LongInt;   { Limited to 2GB size }
-{$ENDIF}
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     TAuthenticationType     = (atNone, atBasic
                               {$IFNDEF NO_DIGEST_AUTH}, atDigest {$ENDIF}
@@ -489,11 +499,7 @@ type
                                  var SyntaxError : Boolean): Boolean;
         function Read(var Buffer; Count: Longint): Longint; override;
         function Write(const Buffer; Count: Longint): Longint; override;
-{$IFDEF STREAM64}
         function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-{$ELSE}
-        function Seek(Offset: Longint; Origin: Word): Longint; override;
-{$ENDIF}
         function PartStreamsCount: Integer;
         property PartStreams[NIndex : Integer] : THttpPartStream
                                                    read  GetPartStreams;
@@ -578,13 +584,6 @@ type
         FRequestHostPort       : String;        {DAVID}
         FRequestConnection     : String;
         FAcceptPostedData      : Boolean;
-{$IFDEF USE_ZLIB}
-        FReplyDeflate          : Boolean;
-        FCompressStream        : TCompressionStream;
-        FDecompressStream      : TDecompressionStream;
-        FZDocStream            : TMemoryStream;
-        FZBuffer               : array [0..8191] of Char;
-{$ENDIF}
         FServer                : THttpServer;
         FAuthRealm             : String;
         FOptions               : THttpOptions;
@@ -609,6 +608,8 @@ type
         FOnGetRowData          : THttpGetRowDataEvent;
         FOnBeforeAnswer        : TNotifyEvent;   { V7.19 }
         FOnAfterAnswer         : TNotifyEvent;   { V7.19 }
+        FOnContentEncode       : TContentEncodeEvent;  { V7.20 }
+        FOnContEncoded         : TNotifyEvent;         { V7.20 }
         procedure SetSndBlkSize(const Value: Integer);
         procedure ConnectionDataAvailable(Sender: TObject; Error : Word); virtual;
         procedure ConnectionDataSent(Sender : TObject; Error : WORD); virtual;
@@ -630,8 +631,11 @@ type
         procedure TriggerHttpRequestDone; virtual;
         procedure TriggerBeforeProcessRequest; virtual; {DAVID}
         procedure TriggerFilterDirEntry(DirEntry: THttpDirEntry); virtual;
-        procedure TriggerBeforeAnswer;  { V7.19 }
-        procedure TriggerAfterAnswer;   { V7.19 }
+        procedure TriggerBeforeAnswer; virtual; { V7.19 }
+        procedure TriggerAfterAnswer; virtual;  { V7.19 }
+        procedure TriggerContentEncode (out ContentEncoding: string;
+                                        var Handled: Boolean); virtual;  { V7.20 }
+        procedure TriggerContEncoded; virtual;    { V7.20 }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         procedure TriggerAuthGetPassword(var PasswdBuf : String); virtual;
         procedure TriggerAuthResult(Authenticated : Boolean);
@@ -822,6 +826,14 @@ type
         { Triggered after the answer is sent from ConnectionDataSent V7.19 }
          property OnAfterAnswer : TNotifyEvent      read  FOnAfterAnswer
                                                     write FOnAfterAnswer;
+        { Triggered before answer stream is sent, so it's content may be encoded or
+         retrieved from cache V7.20 }
+        property OnContentEncode : TContentEncodeEvent
+                                                    read FOnContentEncode
+                                                    write FOnContentEncode;
+        { Triggered after answer stream is compressed, so the stream may be cached V7.20 }
+        property OnContEncoded : TNotifyEvent       read FOnContEncoded
+                                                    write FOnContEncoded;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         { AuthType contains the actual authentication method selected by client }
         property AuthType          : TAuthenticationType
@@ -847,7 +859,7 @@ type
         property AuthNtlmSession   : TNtlmAuthSession
                                                     read  FAuthNtlmSession;
     {$ENDIF}
-{$ENDIF}        
+{$ENDIF}
     end;
 
     { This is the HTTP server component handling all HTTP connection }
@@ -884,6 +896,10 @@ type
         FHeartBeatBusy            : Boolean;
         FOnBeforeAnswer           : THttpBeforeAnswerEvent;  { V7.19 }
         FOnAfterAnswer            : THttpAfterAnswerEvent;   { V7.19 }
+        FOnHttpContentEncode      : THttpContentEncodeEvent;  { V7.20 }
+        FOnHttpContEncoded        : THttpContEncodedEvent;    { V7.20 }
+        FSizeCompressMin          : integer;  { V7.20 }
+        FSizeCompressMax          : integer;  { V7.20 }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         FAuthTypes                : TAuthenticationTypes;
         FAuthRealm                : String;
@@ -939,6 +955,10 @@ type
                                         DirEntry : THttpDirEntry); virtual;
         procedure TriggerBeforeAnswer(Client : TObject);  { V7.19 }
         procedure TriggerAfterAnswer(Client : TObject);   { V7.19 }
+        procedure TriggerContentEncode(Client : TObject;  { V7.20 }
+                                       out ContentEncoding: string;
+                                       var Handled: Boolean);
+        procedure TriggerContEncoded(Client : TObject);   { V7.20 }
         procedure SetPortValue(const newValue : String);
         procedure SetAddr(const newValue : String);
         procedure SetDocDir(const Value: String);
@@ -1005,6 +1025,12 @@ type
                                                  write SetKeepAliveTimeSec;
         property MaxRequestsKeepAlive : Integer  read  FMaxRequestsKeepAlive
                                                  write FMaxRequestsKeepAlive;
+        { Size between which textual responses should be compressed, too small is a
+          waste of compression, too large blocks web server during zlib compression }
+        property SizeCompressMin : integer       read  FSizeCompressMin
+                                                 write FSizeCompressMin;
+        property SizeCompressMax : integer       read  FSizeCompressMax
+                                                 write FSizeCompressMax;
         { OnServerStrated is triggered when server has started listening }
         property OnServerStarted    : TNotifyEvent
                                                  read  FOnServerStarted
@@ -1066,6 +1092,12 @@ type
         property OnAfterAnswer : THttpAfterAnswerEvent
                                                  read  FOnAfterAnswer
                                                  write FOnAfterAnswer;
+        property OnHttpContentEncode : THttpContentEncodeEvent      { V7.20 }
+                                                 read FOnHttpContentEncode
+                                                 write FOnHttpContentEncode;
+        property OnHttpContEncoded : THttpContEncodedEvent      { V7.20 }
+                                                 read FOnHttpContEncoded
+                                                 write FOnHttpContEncoded;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         property OnAuthGetPassword  : TAuthGetPasswordEvent
                                                  read  FOnAuthGetPassword
@@ -1324,52 +1356,6 @@ const
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}
-procedure SetLength(var S: string; NewLength: Integer);
-begin
-    S[0] := chr(NewLength);
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}
-function TrimRight(Str : String) : String;
-var
-    i : Integer;
-begin
-    i := Length(Str);
-    while (i > 0) and (Str[i] = ' ') do
-        i := i - 1;
-    Result := Copy(Str, 1, i);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TrimLeft(Str : String) : String;
-var
-    i : Integer;
-begin
-    if Str[1] <> ' ' then
-        Result := Str
-    else begin
-        i := 1;
-        while (i <= Length(Str)) and (Str[i] = ' ') do
-            i := i + 1;
-        Result := Copy(Str, i, Length(Str) - i + 1);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Trim(Str : String) : String;
-begin
-    Result := TrimLeft(TrimRight(Str));
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StreamWriteStrA(AStrm : TStream; const AStr: String): Integer;
 {$IFDEF COMPILER12_UP}
 var
@@ -1470,6 +1456,8 @@ begin
     FHeartBeat.OnTimer    := HeartBeatOnTimer;
     FHeartBeat.Interval   := 5000; { It's slow, just used for timeout detection }
     FHeartBeat.Enabled    := TRUE;
+    SizeCompressMin       := CompressMinSize;  { V7.20 only compress responses within a size range }
+    SizeCompressMax       := CompressMaxSize;
 end;
 
 
@@ -1746,6 +1734,8 @@ begin
     THttpConnection(Client).MaxRequestsKeepAlive := Self.MaxRequestsKeepAlive;
     THttpConnection(Client).OnBeforeAnswer    := TriggerBeforeAnswer;  { V7.19 }
     THttpConnection(Client).OnAfterAnswer     := TriggerAfterAnswer;   { V7.19 }
+    THttpConnection(Client).OnContentEncode   := TriggerContentEncode; { V7.20 }
+    THttpConnection(Client).OnContEncoded     := TriggerContEncoded;   { V7.20 }
     TriggerClientConnect(Client, Error);
 end;
 
@@ -1879,6 +1869,26 @@ procedure THttpServer.TriggerAfterAnswer
 begin
     if Assigned(FOnAfterAnswer) then
         FOnAfterAnswer(Self, Client);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.TriggerContentEncode
+    (Client : TObject;
+     out ContentEncoding: string;
+     var Handled: Boolean);  { V7.20 }
+begin
+    if Assigned(FOnHttpContentEncode) then
+        FOnHttpContentEncode(Self, Client, ContentEncoding, Handled);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.TriggerContEncoded
+    (Client : TObject);  { V7.20 }
+begin
+    if Assigned(FOnHttpContEncoded) then
+        FOnHttpContEncoded(Self, Client);
 end;
 
 
@@ -2405,10 +2415,6 @@ begin
                 else if _CompareText(FRequestConnection, 'close') = 0 then
                     FKeepAlive := FALSE;
             end
-            {else if _StrLIComp(@FRcvdLine[1], 'keep-alive:', 11) = 0 then begin
-            //Keep-Alive: timeout=3, max=100
-
-            end}
             {ANDREAS}
             else if _StrLIComp(@FRcvdLine[1], 'Range:', 6) = 0 then begin
                 { Init the Byte-range object }
@@ -2496,38 +2502,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF USE_ZLIB}
-function zlibAllocMem(AppData: Pointer; Items, Size: Cardinal): Pointer;
-begin
-  GetMem(Result, Items*Size);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure zlibFreeMem(AppData, Block: Pointer);
-begin
-  FreeMem(Block);
-end;
-
-function CCheck(code: Integer): Integer;
-begin
-  Result := code;
-  if code < 0 then
-    raise ECompressionError.Create('error');    {!!}
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.AnswerStream(
     var   Flags    : THttpGetFlag;
     const Status   : String;   { if empty, default to '200 OK'           }
     const ContType : String;   { if emtpy, default to text/html          }
     const Header   : String);  { Do not use Content-Length               }
-{$IFDEF USE_ZLIB}
 var
-    Count : Integer;
-{$ENDIF}
+  ContentEncoding: String;        { V7.20 }
+  CompressionHandled: Boolean;    { V7.20 }
+  ZDocStream: TMemoryStream;      { V7.20 }
+  ZStreamType: TZStreamType;      { V7.20 }
 begin
     Flags := hgWillSendMySelf;
     if Status = '' then begin
@@ -2540,58 +2524,42 @@ begin
         PutStringInSendBuffer('Content-Type: text/html' + #13#10)
     else
         PutStringInSendBuffer('Content-Type: ' + ContType + #13#10);
-    (*
-    {FP 22/05/05 begin}
-    if FKeepAlive then begin
-        if FHttpVerNum = 10 then { HTTP/1.0 only HTTP/1.1 is keep-alive by default } { V1.6 }
-            PutStringInSendBuffer('Connection: keep-alive' + #13#10);
-    end
-    else begin
-        if FHttpVerNum = 11 then { HTTP/1.1 only HTTP/1.0 is close by default }  { V1.6 }                              { V1.6 }
-            PutStringInSendBuffer('Connection: close' + #13#10);
-    end;
-    {FP 22/05/05 end}
-    *)
     PutStringInSendBuffer(GetKeepAliveHdrLines);
 
     if not Assigned(FDocStream) then
         PutStringInSendBuffer('Content-Length: 0' + #13#10)
     else begin
-{$IFDEF USE_ZLIB}
-        FReplyDeflate := (Pos('deflate', FRequestAcceptEncoding) > 0);
-        if FReplyDeflate then begin
-            PutStringInSendBuffer('Content-Encoding: deflate' + #13#10);
-            FreeAndNil(FZDocStream);
-            FreeAndNil(FCompressStream);
-            FZDocStream     := TMemoryStream.Create;
-            FCompressStream := TCompressionStream.Create(clDefault, FZDocStream);
-            FDocStream.Seek(0, 0);
-            while TRUE do begin
-                Count := FDocStream.Read(FZBuffer, SizeOf(FZBuffer));
-                if Count <= 0 then
-                    break;
-                FCompressStream.Write(FZBuffer, Count);
+        if hoContentEncoding in FServer.Options then begin  { V7.20 are we allowed to compress content }
+            if ((ContType = '') or (Pos ('text/', ContType) > 0)) and         { only compress textual stuff }
+              ((FDocStream.Size >= FServer.SizeCompressMin) and               { too small a waste of time }
+                     (FDocStream.Size < FServer.SizeCompressMax)) then begin  { too large will block server and use a lot of memory }
+                CompressionHandled := false;
+                TriggerContentEncode(ContentEncoding, CompressionHandled);    { let application do it, or find cached file }
+                if CompressionHandled then
+                   PutStringInSendBuffer('Content-Encoding: ' + ContentEncoding + #13#10)
+                else begin
+                    if Pos('deflate', FRequestAcceptEncoding) > 0 then begin
+                        PutStringInSendBuffer('Content-Encoding: deflate' + #13#10);
+                        ZStreamType := zsRaw;
+                    end
+                    else if Pos('gzip', FRequestAcceptEncoding) > 0 then begin
+                        PutStringInSendBuffer('Content-Encoding: gzip' + #13#10);
+                        ZStreamType := zSGZip;
+                    end
+                    else
+                        ZStreamType := zsZLib;
+                    if ZStreamType <> zsZLib then begin
+                        ZDocStream := TMemoryStream.Create;
+                        FDocStream.Seek (0, 0); { reset to start }
+                        ZlibCompressStreamEx(FDocStream, ZDocStream, clDefault, ZStreamType, true);
+                        FDocStream.free;
+                        FDocStream := ZDocStream;
+                        TriggerContEncoded;  { let application cache compressed file or report what we did }
+                    end;
+                end;
             end;
-            FCompressStream.Free;
-            FCompressStream := nil;
-            FZDocStream.Seek(0, 0);
-            FDocStream.Free;
-            FDocStream := FZDocStream;
-            FZDocStream := nil;
-{
-            FDecompressStream := TDecompressionStream.Create(FDocStream);
-            while TRUE do begin
-               Count := FDecompressStream.Read(FZBuffer, SizeOf(FZBuffer));
-               if Count <= 0 then
-                   break;
-            end;
-            FDecompressStream.Free;
-            FDecompressStream := nil;
-}
         end;
-{$ENDIF}
-        PutStringInSendBuffer('Content-Length: ' +
-                              _IntToStr(DocStream.Size) + #13#10);
+        PutStringInSendBuffer('Content-Length: ' + _IntToStr(FDocStream.Size) + #13#10);
     end;
     if Header <> '' then
         PutStringInSendBuffer(Header);
@@ -2879,11 +2847,6 @@ begin
     Header := Header +
         'Content-Type: text/html' + #13#10 +
         'Content-Length: '        + _IntToStr(Length(Body)) + #13#10;
-
-   { if (FHttpVerNum = 11) and (not FKeepAlive) then
-        Header := Header +  'Connection: close' + #13#10
-    else if (FHttpVerNum = 10) and  FKeepAlive then
-        Header := Header +  'Connection: keep-alive' + #13#10;}
     Header := Header + GetKeepAliveHdrLines;
 
     (*
@@ -3039,6 +3002,24 @@ procedure THttpConnection.TriggerAfterAnswer;  { V7.19 }
 begin
     if Assigned(FOnAfterAnswer) then
         FOnAfterAnswer(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpConnection.TriggerContentEncode
+     (out ContentEncoding: string;
+      var Handled: Boolean);  { V7.20 }
+begin
+    if Assigned(FOnContentEncode) then
+        FOnContentEncode(Self, ContentEncoding, Handled);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpConnection.TriggerContEncoded;  { V7.20 }
+begin
+    if Assigned(FOnContEncoded) then
+        FOnContEncoded(Self);
 end;
 
 
@@ -3213,7 +3194,7 @@ begin
             except
                 if FKeepAlive = FALSE then {Bjornar}
                     PrepareGraceFullShutDown;
-                Answer404;    
+                Answer404;
             end;
             if OK then
                 SendDocument(httpSendDoc)
@@ -3272,6 +3253,12 @@ begin
     { WAP support end }
     else if Ext = 'pdf' then
         Result := 'application/pdf'
+    else if Ext = 'png' then
+        Result := 'image/png'            { V7.20 }
+    else if Ext = 'xml' then
+        Result := 'application/xml'      { V7.20 }
+    else if Ext = 'xhtml' then
+        Result := 'application/xhtml+xml'    { V7.20 }
     else
         Result := 'application/binary';
 end;
@@ -3374,6 +3361,11 @@ var
     CompleteDocSize : THttpRangeInt;
     ErrorSend       : Boolean;
     SyntaxError     : Boolean;
+    ContentEncoding : String;       { V7.20 }
+    ContEncoderHdr  : String ;      { V7.20 }
+    CompressionHandled: Boolean;    { V7.20 }
+    ZDocStream: TMemoryStream;      { V7.20 }
+    ZStreamType: TZStreamType;      { V7.20 }
 begin
     ErrorSend          := FALSE;
     ProtoNumber        := 200;
@@ -3411,32 +3403,56 @@ begin
         end;
     end;
 
-    FDocSize := FDocStream.Size;
-
     FDataSent := 0;       { will be incremented after each send part of data }
+    FDocSize := FDocStream.Size;
+    OnDataSent := ConnectionDataSent;
+    ContEncoderHdr := '';  { V7.20 }
+
     { Seek to end of document because HEAD will not send actual document }
     if SendType = httpSendHead then
-        FDocStream.Seek(0, soFromEnd);
-
-    OnDataSent := ConnectionDataSent;
+        FDocStream.Seek(0, soFromEnd)
+    else begin
+        if hoContentEncoding in FServer.Options then begin  { V7.20 are we allowed to compress content }
+            if (Pos ('text/', FAnswerContentType) > 0) and         { only compress textual stuff }
+              ((FDocSize >= FServer.SizeCompressMin) and               { too small a waste of time }
+                     (FDocSize < FServer.SizeCompressMax)) then begin  { too large will block server and use a lot of memory }
+                CompressionHandled := false;
+                TriggerContentEncode(ContentEncoding, CompressionHandled);    { let application do it, or find cached file }
+                if CompressionHandled then
+                   ContEncoderHdr := 'Content-Encoding: ' + ContentEncoding + #13#10
+                else begin
+                    if Pos('deflate', FRequestAcceptEncoding) > 0 then begin
+                        ContEncoderHdr := 'Content-Encoding: deflate' + #13#10;
+                        ZStreamType := zsRaw;
+                    end
+                    else if Pos('gzip', FRequestAcceptEncoding) > 0 then begin
+                        ContEncoderHdr := 'Content-Encoding: gzip' + #13#10;
+                        ZStreamType := zSGZip;
+                    end
+                    else
+                        ZStreamType := zsZLib;
+                    if ZStreamType <> zsZLib then begin
+                        ZDocStream := TMemoryStream.Create;
+                        FDocStream.Seek (0, 0); { reset to start }
+                        ZlibCompressStreamEx(FDocStream, ZDocStream, clDefault, ZStreamType, true);
+                        FDocStream.free;
+                        FDocStream := ZDocStream;
+                        FDocSize := FDocStream.Size;
+                        TriggerContEncoded;  { let application cache compressed file or report what we did }
+                    end;
+                end;
+            end;
+        end;
+    end;
 
     { Create Header }
     {ANDREAS Create Header for the several protocols}
     Header := CreateHttpHeader(FVersion, ProtoNumber, FAnswerContentType, RequestRangeValues, FDocSize, CompleteDocSize);
     FAnswerStatus := ProtoNumber;   { V7.19 }
-        if FLastModified <> 0 then
-            Header := Header +
-                      'Last-Modified: ' + RFC1123_Date(FLastModified) +
-                      ' GMT' + #13#10;
-
-    {Bjornar}
-    {if FKeepAlive then
-        Header := Header + 'Connection: keep-alive' + #13#10
-    else
-        Header := Header + 'Connection: close' + #13#10;}
-    {Bjornar}
-
-    //Header := Header + #13#10;
+    if FLastModified <> 0 then
+        Header := Header +  'Last-Modified: ' + RFC1123_Date(FLastModified) + ' GMT' + #13#10;
+    if ContEncoderHdr <> '' then
+        Header := Header + ContEncoderHdr;  { V7.20 }
     Header := Header + GetKeepAliveHdrLines + #13#10;
 
     SendHeader(Header);
@@ -5083,11 +5099,7 @@ begin
         { Numeric Testing }
         if FromStr <> '' then begin
             try
-            {$IFDEF STREAM64}
                 _StrToInt64(FromStr);
-            {$ELSE}
-                _StrToInt(FromStr);
-            {$ENDIF}
             except
                 FromStr := '';
                 ToStr   := '';
@@ -5096,11 +5108,7 @@ begin
         end;
         if ToStr <> '' then begin
             try
-            {$IFDEF STREAM64}
                 _StrToInt64(ToStr);
-            {$ELSE}
-                _StrToInt(ToStr);
-            {$ENDIF}
             except
                 FromStr := '';
                 ToStr   := '';
@@ -5155,19 +5163,11 @@ begin
                 if FromStr = '' then
                     NewRange.RangeFrom := -1
                 else
-                {$IFDEF STREAM64}
                     NewRange.RangeFrom := _StrToInt64(FromStr);
-                {$ELSE}
-                    NewRange.RangeFrom := _StrToInt(FromStr);
-                {$ENDIF}
                 if ToStr = '' then
                     NewRange.RangeTo := -1
                 else
-                {$IFDEF STREAM64}
                     NewRange.RangeTo := _StrToInt64(ToStr);
-                {$ELSE}
-                    NewRange.RangeTo := _StrToInt(ToStr);
-                {$ENDIF}
                 Add(NewRange);
             end;
         end;
@@ -5418,13 +5418,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF STREAM64}
 function THttpRangeStream.Seek(
     const Offset: Int64;
     Origin: TSeekOrigin): Int64;
-{$ELSE}
-function THttpRangeStream.Seek(Offset: Longint; Origin: Word): Longint;
-{$ENDIF}
 begin
     case WORD(Origin) of
         soFromBeginning : FPosition := Offset;
