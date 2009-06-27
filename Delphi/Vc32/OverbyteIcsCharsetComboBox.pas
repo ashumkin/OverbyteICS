@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  TIcsCharsetComboBox provides easy MIME charset selection.
 Creation:     May 10, 2009
-Version:      V1.00a
+Version:      V1.01
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -37,7 +37,9 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  street address, EMail address and any comment you like to say.
 
 History:
-May 21, 2009 V1.00a Preserve custom alias names.
+May  21, 2009 V1.00a Preserve custom alias names.
+June 27, 2009 V1.01 Added the CodeGear-fix of QC #41940 for compilers below
+              D2007 UPD 3.
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -61,7 +63,10 @@ unit OverbyteIcsCharsetComboBox;
 interface
 
 uses
-  Windows, Classes, StdCtrls,
+  Windows, SysUtils, Classes, StdCtrls,
+{$IFDEF COMPILER7_UP}
+  Themes,
+{$ENDIF}  
   OverbyteIcsCharsetUtils;
 
 type
@@ -81,7 +86,7 @@ type
     procedure TriggerChange; virtual;
     procedure Click; override;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(AOwner: TComponent); override;    
     function IsCharsetSupported: Boolean;
     function GetCodePageDef: LongWord;
     function GetCodePage: LongWord;
@@ -125,7 +130,7 @@ type
     property Sorted default True;
     property TabOrder;
     property TabStop;
-    //property Text;
+    // property Text;
     property Visible;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
     property OnClick;
@@ -152,6 +157,7 @@ type
 
 implementation
 
+
 { TIcsCharsetCombobox }
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -170,9 +176,24 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF COMPILER11_UP} // Fixed in D2007 UPD 3
+// custom combobox control messages
+const
+  {$EXTERNALSYM CBM_FIRST}
+  CBM_FIRST               = $1700;      { Combobox control messages }
+  {$EXTERNALSYM CB_SETMINVISIBLE}
+  CB_SETMINVISIBLE        = CBM_FIRST + 1;
+{$ENDIF}
+
 procedure TIcsCharsetComboBox.CreateWnd;
 begin
     inherited CreateWnd;
+{$IFNDEF COMPILER11_UP} // Fixed in D2007 UPD 3
+{$IFDEF COMPILER7_UP}
+    if CheckWin32Version(5, 1) and ThemeServices.ThemesEnabled then
+        SendMessage(Handle, CB_SETMINVISIBLE, WPARAM(DropDownCount), 0);
+{$ENDIF}
+{$ENDIF}
     PopulateItems;
     SetCharset(FCharset);
 end;
@@ -342,4 +363,5 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
 end.
