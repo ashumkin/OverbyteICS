@@ -54,10 +54,14 @@ object WebAppSrvForm: TWebAppSrvForm
     Options = []
     KeepAliveTimeSec = 10
     MaxRequestsKeepAlive = 100
+    SizeCompressMin = 5000
+    SizeCompressMax = 5000000
     OnServerStarted = HttpAppSrv1ServerStarted
     OnServerStopped = HttpAppSrv1ServerStopped
     OnClientConnect = HttpAppSrv1ClientConnect
     OnGetDocument = HttpAppSrv1GetDocument
+    OnBeforeProcessRequest = HttpAppSrv1BeforeProcessRequest
+    OnAfterAnswer = HttpAppSrv1AfterAnswer
     AuthTypes = []
     AuthRealm = 'ics'
     SessionTimeout = 300

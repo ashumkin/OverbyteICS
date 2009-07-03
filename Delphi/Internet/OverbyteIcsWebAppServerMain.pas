@@ -4,7 +4,7 @@ Author:       François PIETTE
 Creation:     April 11, 2009
 Description:  WebAppServer is a demo application showing the HTTP application
               server component (THttpAppSrv).
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -38,6 +38,9 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Jul 3, 2009 V1.01 Angus - added mailer send email form demo
+                          added W3C format log file
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -51,6 +54,7 @@ uses
   OverbyteIcsWndControl,
   OverbyteIcsWebSession,
   OverbyteIcsHttpSrv,
+  OverbyteIcsFtpSrvT,
   OverbyteIcsHttpAppServer,
   OverbyteIcsWebAppServerDataModule,
   OverbyteIcsWebAppServerSessionData,
@@ -60,10 +64,28 @@ uses
   OverbyteIcsWebAppServerHelloWorld,
   OverbyteIcsWebAppServerCounter,
   OverbyteIcsWebAppServerLogin,
-  OverbyteIcsWebAppServerCounterView;
+  OverbyteIcsWebAppServerCounterView,
+  OverbyteIcsWebAppServerMailer;
 
 const
   WM_APPSTARTUP = WM_USER + 1;
+  SimpLogName = '"webapp-"yyyymmdd".log"' ;
+  WebLogFields = '#Fields: date time s-sitename s-computername s-ip cs-method cs-uri-stem cs-uri-query ' +
+                   's-port cs-username c-ip cs-version cs(User-Agent) cs(Referer) cs-host sc-status ' +
+                   'sc-bytes cs-bytes time-taken' ;
+  ISODateMask = 'yyyy-mm-dd' ;
+  ISODateTimeMask = 'yyyy-mm-dd"T"hh:nn:ss' ;
+  ISOTimeMask = 'hh:nn:ss' ;
+
+type
+  TAppHttpConnection = class(THttpAppSrvConnection)
+  protected
+  public
+    CStartTick: longword ;
+    CLastRead: int64 ;
+    CLastWrite: int64 ;
+    constructor Create(AOwner: TComponent); override;
+  end ;
 
 type
   TWebAppSrvForm = class(TForm)
@@ -81,6 +103,8 @@ type
     procedure HttpAppSrv1ServerStopped(Sender: TObject);
     procedure HttpAppSrv1DeleteSession(Sender: TObject; Session: TWebSession);
     procedure HousekeepingTimerTimer(Sender: TObject);
+    procedure HttpAppSrv1AfterAnswer(Sender, Client: TObject);
+    procedure HttpAppSrv1BeforeProcessRequest(Sender, Client: TObject);
   private
     FIniFileName : String;
     FInitialized : Boolean;
@@ -95,6 +119,7 @@ type
 
 var
   WebAppSrvForm: TWebAppSrvForm;
+  SrvCompName: string;
 
 implementation
 
@@ -107,6 +132,58 @@ const
     KeyWidth           = 'Width';
     KeyHeight          = 'Height';
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ simple log file, writes Msg to text file in progam directory with FNameMask
+  unless mask includes // or x:
+  mask generally includes date only - "mylog-"yyyymmdd".log"
+  path needed quote at start - "c:\temp\mylog-"yyyymmdd".log"  }
+procedure SimpleLogging (const FNameMask, Msg: String);
+var
+    LogFileName, S: String;
+    f: TextFile;
+begin
+    S := FormatDateTime (ISOTimeMask, Time) + ' ' + Msg;
+    try
+        LogFileName := FormatDateTime (FNameMask, Date) ;
+        if (Pos ('//', LogFileName) <> 1) and (Pos (':', LogFileName) <> 2) then
+            LogFileName := ExtractFileDir (ParamStr (0)) + '\' + LogFileName ;
+        AssignFile (f, LogFileName);
+        if FileExists (LogFileName) then
+        begin
+            Append (f);
+        end
+        else
+        begin
+            Rewrite (f);
+        end;
+        Writeln (f, S);
+        CloseFile(f);
+    except
+    end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ get the computer name from networking }
+function GetCompName: string;
+var
+    Buffer: array[0..255] of WideChar ;
+    NLen: DWORD ;
+begin
+    Buffer [0] := #0 ;
+    result := '' ;
+    NLen := Length (Buffer) ;
+    if GetComputerNameW (Buffer, NLen) then Result := Buffer ;
+end ;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TAppHttpConnection.Create(AOwner: TComponent);
+begin
+    inherited Create(AOwner);
+  { keep alive means connection may be used for multiple requests so we must track how much
+    data is sent before and after each request }
+    CLastRead := 0 ;
+    CLastWrite := 0 ;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.FormCreate(Sender: TObject);
@@ -143,6 +220,64 @@ begin
     CleanupTimeStampedDir(WebAppSrvDataModule.DataDir);
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ write W3C log, similar to Microsoft IIS, log line looks something like this:
+12:34:48 2009-07-03 12:34:48 WebAppDemo PC19 0.0.0.0 GET /login/loginform.html - 20105 - 192.168.1.119 HTTP/1.1 Mozilla/5.0+(Windows;+U;+Windows+NT+5.1;+en-GB;+rv:1.9.0.11)+Gecko/2009060215+Firefox/3.0.11+(.NET+CLR+3.5.30729) http://pc19:20105/ pc19:20105 200 2101 1138 31 }
+procedure TWebAppSrvForm.HttpAppSrv1AfterAnswer(Sender, Client: TObject);
+var
+    RemoteClient: TAppHttpConnection;
+    newparams, newuser, info: string ;
+    duration: longword ;
+    curread, curwrite: int64 ;
+
+    function SpaceToPlus (const S: String): String ;
+    begin
+        result := StringReplace (S, #32, '+', [rfReplaceAll]) ;
+    end;
+
+begin
+    RemoteClient := TAppHttpConnection(Client) ;
+    info := FormatDateTime (ISODateMask + #32 + ISOTimeMask, Now) ;
+    with RemoteClient do
+    begin
+        try
+            newparams := Params ;
+            if newparams = '' then newparams := '-' ;
+            newuser := SpaceToPlus (AuthUserName)  ;
+            if newuser = '' then newuser := '-' ;
+            curread := ReadCount - CLastRead ;
+            curwrite := WriteCount - CLastWrite ;
+            duration := IcsElapsedMSecs (CStartTick) ;
+// #Fields: date time s-sitename s-computername s-ip cs-method
+            info := info + #32 + 'WebAppDemo' + #32 + SrvCompName + #32 + Server.Addr + #32 + Method + #32 +
+// #Fields: cs-uri-stem cs-uri-query s-port
+                    SpaceToPlus (Path) + #32 + SpaceToPlus (newparams) + #32 + Server.Port + #32 +
+//  #Fields: cs-username c-ip cs-version
+                    newuser + #32 + GetPeerAddr + #32 + Version + #32 +
+// #Fields: cs(User-Agent) cs(Referer)
+                    SpaceToPlus (RequestUserAgent) + #32 + SpaceToPlus (RequestReferer) + #32 +
+// #Fields: cs-host sc-status
+                    RequestHost + #32 + IntToStr (FAnswerStatus) + #32 +
+// #Fields: sc-bytes cs-bytes time-taken
+                    IntToStr (curwrite) + #32 + IntToStr (curread) + #32 + IntToStr (duration);
+            SimpleLogging (SimpLogName, info) ;
+        except
+            Display ('AfterAnswer Error - ' + info) ;
+        end;
+    end;
+    RemoteClient.CLastRead := RemoteClient.ReadCount ;   // reset read ready for next request
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWebAppSrvForm.HttpAppSrv1BeforeProcessRequest(Sender, Client: TObject);
+var
+    RemoteClient: TAppHttpConnection;
+begin
+    RemoteClient := TAppHttpConnection(Client) ;
+    RemoteClient.CStartTick := IcsGetTickCountX ;
+    RemoteClient.CLastWrite := RemoteClient.WriteCount ;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.HttpAppSrv1ClientConnect(
@@ -302,6 +437,8 @@ begin
                               TUrlHandlerAjaxFetchCounter);
     HttpAppSrv1.AddGetHandler(UrlJavascriptErrorHtml,
                               TUrlHandlerJavascriptErrorHtml);
+    HttpAppSrv1.AddGetHandler('/mailer.html', TUrlHandlerMailer);
+    HttpAppSrv1.AddPostHandler('/mailer.html', TUrlHandlerMailer);
 
     // Just for demoing the simplest handler, let's add an "Helloworld" one
     HttpAppSrv1.AddGetHandler('/HelloWorld.html',
@@ -326,6 +463,12 @@ begin
     // Start the timer to do some housekeeping while running
     HousekeepingTimer.Interval := 5 * 60 * 1000;
     HousekeepingTimer.Enabled  := TRUE;
+
+    // start logging file
+    SrvCompName := GetCompName ;
+    SimpleLogging (SimpLogName, FormatDateTime ('"#Date: "' + ISODateMask + #32 + ISOTimeMask + '"', Now)) ;
+    SimpleLogging (SimpLogName, WebLogFields) ;
+
 
     // Start the HTTP server
     HttpAppSrv1.SessionTimeout := 5 * 60;  // Seconds, must be done after loading
