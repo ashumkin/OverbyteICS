@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.20
+Version:      7.21
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -275,7 +275,8 @@ Jun 15, 2009 V7.20 pdfe@sapo.pt and Angus added content encoding using zlib
                HttpContEncoded afterwards to save cached file or report compression
              Added XML and PNG MIME types
              Removed UseInt64ForHttpRange/Stream64 define, always use Int64
-
+Jul 3, 2009  V7.21 Angus commonised content encoding with CheckContentEncoding
+             and DoContentEncoding which are virtual to allow replacement
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -355,9 +356,9 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 720;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.20 ';
-    CompressMinSize = 5000;  { V7.20 only compress responses within a size range }
+    THttpServerVersion = 721;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.21 ';
+    CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
 
 type
@@ -636,6 +637,8 @@ type
         procedure TriggerContentEncode (out ContentEncoding: string;
                                         var Handled: Boolean); virtual;  { V7.20 }
         procedure TriggerContEncoded; virtual;    { V7.20 }
+        function  CheckContentEncoding(const ContType : String): Boolean; virtual; { V7.21 are we allowed to compress content }
+        function  DoContentEncoding: String; virtual; { V7.21 compress content returning Content-Encoding header }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         procedure TriggerAuthGetPassword(var PasswdBuf : String); virtual;
         procedure TriggerAuthResult(Authenticated : Boolean);
@@ -2500,6 +2503,56 @@ begin
         FOnGetRowData(Self, TableName, Row, TagData, More, UserData);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpConnection.CheckContentEncoding(const ContType : String): boolean;  { V7.21 are we allowed to compress content }
+begin
+    Result := False;
+    if NOT (hoContentEncoding in FServer.Options) then exit;  { V7.20 are we allowed to compress content }
+    if (ContType = '') or (Pos ('text/', ContType) > 0) or (Pos ('xml', ContType) > 0) then begin    { only compress textual stuff }
+       if (FDocStream.Size < FServer.SizeCompressMin) then exit;   { too small a waste of time }
+       if (FDocStream.Size > FServer.SizeCompressMax) then exit;   { too large will block server and use a lot of memory }
+       Result := True;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpConnection.DoContentEncoding: String; { V7.21 compress content returning Content-Encoding header }
+var
+  ContentEncoding: String;        { V7.20 }
+  CompressionHandled: Boolean;    { V7.20 }
+  ZDocStream: TMemoryStream;      { V7.20 }
+  ZStreamType: TZStreamType;      { V7.20 }
+begin
+    Result := '';
+    CompressionHandled := false;
+    TriggerContentEncode(ContentEncoding, CompressionHandled);    { let application do it, or find cached file }
+    if CompressionHandled then begin
+        Result := 'Content-Encoding: ' + ContentEncoding + #13#10;
+        TriggerContEncoded;  { let application cache compressed file or report what we did }
+    end
+    else begin
+        if Pos('deflate', FRequestAcceptEncoding) > 0 then begin
+            Result := 'Content-Encoding: deflate' + #13#10;
+            ZStreamType := zsRaw;
+        end
+        else if Pos('gzip', FRequestAcceptEncoding) > 0 then begin
+            Result := 'Content-Encoding: gzip' + #13#10;
+            ZStreamType := zSGZip;
+        end
+        else
+            ZStreamType := zsZLib;
+        if ZStreamType <> zsZLib then begin
+            ZDocStream := TMemoryStream.Create;
+            FDocStream.Seek (0, 0); { reset to start }
+            ZlibCompressStreamEx(FDocStream, ZDocStream, clDefault, ZStreamType, true);
+            FDocStream.free;
+            FDocStream := ZDocStream;
+            TriggerContEncoded;  { let application cache compressed file or report what we did }
+        end;
+    end;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.AnswerStream(
@@ -2508,12 +2561,10 @@ procedure THttpConnection.AnswerStream(
     const ContType : String;   { if emtpy, default to text/html          }
     const Header   : String);  { Do not use Content-Length               }
 var
-  ContentEncoding: String;        { V7.20 }
-  CompressionHandled: Boolean;    { V7.20 }
-  ZDocStream: TMemoryStream;      { V7.20 }
-  ZStreamType: TZStreamType;      { V7.20 }
+    ContEncoderHdr  : String ;      { V7.21 }
 begin
     Flags := hgWillSendMySelf;
+    ContEncoderHdr := '';
     if Status = '' then begin
         PutStringInSendBuffer(FVersion + ' 200 OK' + #13#10) ;
         FAnswerStatus := 200;   { V7.19 }
@@ -2529,40 +2580,14 @@ begin
     if not Assigned(FDocStream) then
         PutStringInSendBuffer('Content-Length: 0' + #13#10)
     else begin
-        if hoContentEncoding in FServer.Options then begin  { V7.20 are we allowed to compress content }
-            if ((ContType = '') or (Pos ('text/', ContType) > 0)) and         { only compress textual stuff }
-              ((FDocStream.Size >= FServer.SizeCompressMin) and               { too small a waste of time }
-                     (FDocStream.Size < FServer.SizeCompressMax)) then begin  { too large will block server and use a lot of memory }
-                CompressionHandled := false;
-                TriggerContentEncode(ContentEncoding, CompressionHandled);    { let application do it, or find cached file }
-                if CompressionHandled then
-                   PutStringInSendBuffer('Content-Encoding: ' + ContentEncoding + #13#10)
-                else begin
-                    if Pos('deflate', FRequestAcceptEncoding) > 0 then begin
-                        PutStringInSendBuffer('Content-Encoding: deflate' + #13#10);
-                        ZStreamType := zsRaw;
-                    end
-                    else if Pos('gzip', FRequestAcceptEncoding) > 0 then begin
-                        PutStringInSendBuffer('Content-Encoding: gzip' + #13#10);
-                        ZStreamType := zSGZip;
-                    end
-                    else
-                        ZStreamType := zsZLib;
-                    if ZStreamType <> zsZLib then begin
-                        ZDocStream := TMemoryStream.Create;
-                        FDocStream.Seek (0, 0); { reset to start }
-                        ZlibCompressStreamEx(FDocStream, ZDocStream, clDefault, ZStreamType, true);
-                        FDocStream.free;
-                        FDocStream := ZDocStream;
-                        TriggerContEncoded;  { let application cache compressed file or report what we did }
-                    end;
-                end;
-            end;
-        end;
+        if CheckContentEncoding(ContType) then           { V7.21 are we allowed to compress content }
+               ContEncoderHdr := DoContentEncoding;      { V7.21 do it, returning new header }
         PutStringInSendBuffer('Content-Length: ' + _IntToStr(FDocStream.Size) + #13#10);
     end;
     if Header <> '' then
         PutStringInSendBuffer(Header);
+    if ContEncoderHdr <> '' then
+        PutStringInSendBuffer (ContEncoderHdr);  { V7.21 }
     PutStringInSendBuffer(#13#10);
     SendStream;
 end;
@@ -3361,11 +3386,7 @@ var
     CompleteDocSize : THttpRangeInt;
     ErrorSend       : Boolean;
     SyntaxError     : Boolean;
-    ContentEncoding : String;       { V7.20 }
     ContEncoderHdr  : String ;      { V7.20 }
-    CompressionHandled: Boolean;    { V7.20 }
-    ZDocStream: TMemoryStream;      { V7.20 }
-    ZStreamType: TZStreamType;      { V7.20 }
 begin
     ErrorSend          := FALSE;
     ProtoNumber        := 200;
@@ -3412,36 +3433,10 @@ begin
     if SendType = httpSendHead then
         FDocStream.Seek(0, soFromEnd)
     else begin
-        if hoContentEncoding in FServer.Options then begin  { V7.20 are we allowed to compress content }
-            if (Pos ('text/', FAnswerContentType) > 0) and         { only compress textual stuff }
-              ((FDocSize >= FServer.SizeCompressMin) and               { too small a waste of time }
-                     (FDocSize < FServer.SizeCompressMax)) then begin  { too large will block server and use a lot of memory }
-                CompressionHandled := false;
-                TriggerContentEncode(ContentEncoding, CompressionHandled);    { let application do it, or find cached file }
-                if CompressionHandled then
-                   ContEncoderHdr := 'Content-Encoding: ' + ContentEncoding + #13#10
-                else begin
-                    if Pos('deflate', FRequestAcceptEncoding) > 0 then begin
-                        ContEncoderHdr := 'Content-Encoding: deflate' + #13#10;
-                        ZStreamType := zsRaw;
-                    end
-                    else if Pos('gzip', FRequestAcceptEncoding) > 0 then begin
-                        ContEncoderHdr := 'Content-Encoding: gzip' + #13#10;
-                        ZStreamType := zSGZip;
-                    end
-                    else
-                        ZStreamType := zsZLib;
-                    if ZStreamType <> zsZLib then begin
-                        ZDocStream := TMemoryStream.Create;
-                        FDocStream.Seek (0, 0); { reset to start }
-                        ZlibCompressStreamEx(FDocStream, ZDocStream, clDefault, ZStreamType, true);
-                        FDocStream.free;
-                        FDocStream := ZDocStream;
-                        FDocSize := FDocStream.Size;
-                        TriggerContEncoded;  { let application cache compressed file or report what we did }
-                    end;
-                end;
-            end;
+        { V7.21 are we allowed to compress content }
+        if CheckContentEncoding(FAnswerContentType) then begin
+            ContEncoderHdr := DoContentEncoding;   { V7.21 do it, returning new header }
+            FDocSize := FDocStream.Size;           { stream is now smaller, we hope }
         end;
     end;
 
