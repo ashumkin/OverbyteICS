@@ -70,6 +70,7 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   DELPHI10_UP      Delphi 10 or higher  (Delphi 2006)
   DELPHI11_UP      Delphi 11 or higher  (Delphi 2007 - Highlander)
   DELPHI12_UP      Delphi 12 or higher  (Tiburon)
+  DELPHI14_UP      Delphi 14 or higher  (..)
 
   BCB1             C++ Builder 1
   BCB3             C++ Builder 3
@@ -106,6 +107,7 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   COMPILER10_UP    Delphi 10 or C++ Builder 10 or higher
   COMPILER11_UP    Delphi or C++ Builder 2007 or higher (Highlander)
   COMPILER12_UP    Delphi or C++ Builder 12 or higher (Tiburon)
+  COMPILER14_UP    Delphi or C++ Builder 14 or higher (..)
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
@@ -144,6 +146,16 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   {$DEFINE COMPILER3_UP}
   {$DEFINE COMPILER2_UP}
   {$DEFINE COMPILER1_UP}
+{$ENDIF}
+
+{$IFDEF VER210}
+  {$DEFINE COMPILER14}
+  {$IFDEF BCB}
+    {$DEFINE BCB14}
+  {$ELSE}
+    {$DEFINE DELPHI14}
+    {$DEFINE DELPHI}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF VER200}
@@ -269,6 +281,21 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   {$DEFINE DELPHI}
 {$ENDIF}
 
+{$IFDEF DELPHI14}
+  {$DEFINE DELPHI14_UP} 
+  {$DEFINE DELPHI12_UP}
+  {$DEFINE DELPHI11_UP}
+  {$DEFINE DELPHI10_UP}
+  {$DEFINE DELPHI9_UP}
+  {$DEFINE DELPHI7_UP}
+  {$DEFINE DELPHI6_UP}
+  {$DEFINE DELPHI5_UP}
+  {$DEFINE DELPHI4_UP}
+  {$DEFINE DELPHI3_UP}
+  {$DEFINE DELPHI2_UP}
+  {$DEFINE DELPHI1_UP}
+{$ENDIF}
+
 {$IFDEF DELPHI12}
   {$DEFINE DELPHI12_UP}
   {$DEFINE DELPHI11_UP}
@@ -366,6 +393,22 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 
 {$IFDEF DELPHI1}
   {$DEFINE DELPHI1_UP}
+{$ENDIF}
+
+{$IFDEF COMPILER14}
+  {$DEFINE COMPILER14_UP}
+  {$DEFINE COMPILER12_UP}
+  {$DEFINE COMPILER11_UP}
+  {$DEFINE COMPILER10_UP}
+  {$DEFINE COMPILER9_UP}
+  {$DEFINE COMPILER7_UP}
+  {$DEFINE COMPILER6_UP}
+  {$DEFINE COMPILER5_UP}
+  {$DEFINE COMPILER4_UP}
+  {$DEFINE COMPILER35_UP}
+  {$DEFINE COMPILER3_UP}
+  {$DEFINE COMPILER2_UP}
+  {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
 {$IFDEF COMPILER12}
@@ -480,6 +523,19 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 
 {$IFDEF COMPILER1}
   {$DEFINE COMPILER1_UP}
+{$ENDIF}
+
+{$IFDEF BCB14}
+  {$DEFINE BCB14_UP}
+  {$DEFINE BCB12_UP}
+  {$DEFINE BCB11_UP}
+  {$DEFINE BCB10_UP}
+  {$DEFINE BCB7_UP}
+  {$DEFINE BCB6_UP}
+  {$DEFINE BCB5_UP}
+  {$DEFINE BCB4_UP}
+  {$DEFINE BCB3_UP}
+  {$DEFINE BCB1_UP}
 {$ENDIF}
 
 {$IFDEF BCB12}
