@@ -8,7 +8,7 @@ Description:  This is an email form demo, designed to send a email to a hard
               entered in the form.  This demo uses a test email account at
               Magenta Systems, but the sender gets an identical copy of the
               email so you see it worked.
-Version:      1.00
+Version:      1.01
 EMail:        angus@magsys.co.uk
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -42,7 +42,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
-
+Jul 10, 2009 V1.01 Arno fixed a bug in SmtpClient.OnGetData, we may not send
+                   Unicode.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebAppServerMailer;
@@ -349,7 +350,7 @@ begin
             if LineNum > EmailBody.Count then
                 More := false
             else
-                StrPCopy (MsgLine, EmailBody [Pred (LineNum)]) ;
+                StrPCopy (PAnsiChar(MsgLine), AnsiString(EmailBody [Pred (LineNum)])) ;
         end ;
     except
     end ;

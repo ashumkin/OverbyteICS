@@ -4,7 +4,7 @@ Author:       François PIETTE
 Creation:     April 11, 2009
 Description:  WebAppServer is a demo application showing the HTTP application
               server component (THttpAppSrv).
-Version:      1.01
+Version:      1.02
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -40,7 +40,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
 History:
 Jul 3, 2009 V1.01 Angus - added mailer send email form demo
                           added W3C format log file
-
+Jul 10, 2009 V1.02 Arno - Assigned correct ClientClass which fixed Access Violations
+                   whenever a connection was closed or established.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -383,6 +384,9 @@ procedure TWebAppSrvForm.WMAppStartup(var msg: TMessage);
 var
     BaseDir : String;
 begin
+    // ** Assign our derived client class ** //
+    HttpAppSrv1.ClientClass    := TAppHttpConnection;
+
     BaseDir                    := IncludeTrailingPathDelimiter(
                                       ExtractFilePath(Application.ExeName));
     FDataDir                   := BaseDir + 'WebAppServerData\Data';
