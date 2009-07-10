@@ -8,7 +8,7 @@ Description:  This is an email form demo, designed to send a email to a hard
               entered in the form.  This demo uses a test email account at
               Magenta Systems, but the sender gets an identical copy of the
               email so you see it worked.
-Version:      1.01
+Version:      1.02
 EMail:        angus@magsys.co.uk
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -44,6 +44,7 @@ Legal issues: Copyright (C) 2009 by François PIETTE
 History:
 Jul 10, 2009 V1.01 Arno fixed a bug in SmtpClient.OnGetData, we may not send
                    Unicode.
+Jul 10, 2009 V1.02 Arno Removed string cast warnings.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebAppServerMailer;
@@ -159,29 +160,35 @@ begin
     else if Pos ('[/url]', S2) > 0 then result := true ;
 end;
 
-function IsValidEmail(const Value: AnsiString): Boolean;
+function IsValidEmail(const Value: String): Boolean;
 var
-    i: Integer;
-    NamePart, ServerPart: AnsiString;
+    I : Integer;
+    NamePart, ServerPart: String;
 
-    function CheckAllowed(const s: AnsiString): Boolean;
+    function CheckAllowed(const S: String): Boolean;
     var i: Integer;
     begin
         Result:= false;
-        for i:= 1 to Length(s) do
-          if not (s[i] in ['a'..'z', 'A'..'Z', '0'..'9', '_', '-', '.']) then Exit;
+        for I := 1 to Length(S) do
+          case S[I] of
+              'a'..'z', 'A'..'Z', '0'..'9', '_', '-', '.' : {continue};
+            else
+                Exit;
+          end;
         Result:= true;
     end;
 
 begin
-    Result:= False;
-    i:=Pos('@', Value);
-    if i=0 then Exit;
-    NamePart:=Copy(Value, 1, i-1);
-    ServerPart:=Copy(Value, i+1, Length(Value));
-    if (Length(NamePart)=0) or ((Length(ServerPart)<5)) then Exit;
-    i:=Pos('.', ServerPart);
-    if (i=0) or (i>(Length(serverPart)-2)) then Exit;
+    Result := False;
+    I := Pos('@', Value);
+    if I = 0 then Exit;
+    NamePart := Copy(Value, 1, I - 1);
+    ServerPart := Copy(Value, I + 1, Length(Value));
+    if (Length(NamePart) = 0) or ((Length(ServerPart) < 5)) then
+        Exit;
+    I := Pos('.', ServerPart);
+    if (I = 0) or (I > (Length(ServerPart) - 2)) then
+        Exit;
     Result:= CheckAllowed(NamePart) and CheckAllowed(ServerPart);
 end;
 
@@ -260,7 +267,7 @@ begin
 // see if page is being POSTed by itself to send and email
     if Client.Method = 'POST' then
     begin
-        ExtractURLEncodedValue (Client.PostedData, 'MailZBody', sMailBody) ;
+        ExtractURLEncodedValue (String(Client.PostedData), 'MailZBody', sMailBody) ;
 	    if IsHtmlTags (sMailBody) then
         begin
             errorMsg := 'Please specify valid content' ; // spammers use HTML tags in the body
@@ -271,9 +278,9 @@ begin
             errorMsg := 'Please specify your full message' ;
             WebAppSrvForm.Display ('Email validation error: ' + errorMsg + ' - ' + sMailBody) ;
         end;
-        ExtractURLEncodedValue (Client.PostedData, 'MailZFrom', sMailFrom) ;
-        ExtractURLEncodedValue (Client.PostedData, 'MailZName', sMailName) ;
-        ExtractURLEncodedValue (Client.PostedData, 'MailZTo', sMailTo) ;
+        ExtractURLEncodedValue (String(Client.PostedData), 'MailZFrom', sMailFrom) ;
+        ExtractURLEncodedValue (String(Client.PostedData), 'MailZName', sMailName) ;
+        ExtractURLEncodedValue (String(Client.PostedData), 'MailZTo', sMailTo) ;
         if Length (sMailTo) < 4 then sMailTo := DefaultEmailAccount ;  // no account passed, use default
         if NOT IsValidEmail (sMailFrom) then
         begin
@@ -281,7 +288,7 @@ begin
             WebAppSrvForm.Display ('Email validation error: ' + errorMsg + ' - ' + sMailFrom) ;
         end;
      // the IP check is to stop spammers POSTing this page without having GET it first, they have to know the IP and host name
-        ExtractURLEncodedValue (Client.PostedData, 'MailZIp', sTemp) ;
+        ExtractURLEncodedValue (String(Client.PostedData), 'MailZIp', sTemp) ;
         if sUserIPHost <> sTemp then
         begin
             errorMsg := 'Please specify your message again, internal error' ;
