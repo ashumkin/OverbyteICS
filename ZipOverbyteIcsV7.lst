@@ -149,6 +149,7 @@ Delphi\vc32\OverbyteIcsFormDataDecoder.pas
 Delphi\vc32\OverbyteIcsHttpAppServer.pas
 Delphi\vc32\OverbyteIcsHttpAppServer.dcr
 Delphi\vc32\OverbyteIcsXpManifest.rc
+Delphi\vc32\OverbyteIcsXpManifest.res
 Delphi\vc32\OverbyteIcsXp.manifest
 Delphi\vc32\OverbyteIcsCharsetComboBox.pas
 Delphi\vc32\OverbyteIcsCharsetComboBox.dcr
@@ -413,6 +414,7 @@ Delphi\Internet\OverbyteIcsWebAppServerSessionData.pas
 Delphi\Internet\OverbyteIcsWebAppServerUrlDefs.pas
 Delphi\Internet\OverbyteIcsWebAppServerDataModule.pas
 Delphi\Internet\OverbyteIcsWebAppServerDataModule.dfm
+Delphi\Internet\OverbyteIcsWebAppServerMailer.pas
 Delphi\Internet\WebAppServerData\Templates\Config.html
 Delphi\Internet\WebAppServerData\Templates\ConfigConfirm.html
 Delphi\Internet\WebAppServerData\Templates\CounterView.html
@@ -421,6 +423,8 @@ Delphi\Internet\WebAppServerData\Templates\JavascriptError.html
 Delphi\Internet\WebAppServerData\Templates\LoginForm.html
 Delphi\Internet\WebAppServerData\Templates\Moved.html
 Delphi\Internet\WebAppServerData\Templates\NotLogged.html
+Delphi\Internet\WebAppServerData\Templates\maildone.html
+Delphi\Internet\WebAppServerData\Templates\mailer.html
 Delphi\Internet\WebAppServerData\wwwRoot\Images\Logo.png
 Delphi\Internet\WebAppServerData\wwwRoot\Js\md5.js
 
