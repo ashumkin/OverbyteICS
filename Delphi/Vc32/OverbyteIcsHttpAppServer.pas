@@ -1419,49 +1419,64 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.GetDocStream: TStream;
 begin
-    Result := Client.DocStream;
+    if Assigned(Client) then
+        Result := Client.DocStream
+    else
+        Result := nil;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.GetOnGetRowData: THttpGetRowDataEvent;
 begin
-    Result := Client.OnGetRowData;
+    if Assigned(Client) then
+        Result := Client.OnGetRowData
+    else
+        Result := nil;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TUrlHandler.SetOnGetRowData(const Value: THttpGetRowDataEvent);
 begin
-    Client.OnGetRowData := Value;
+    if Assigned(Client) then
+        Client.OnGetRowData := Value;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TUrlHandler.SetDocStream(const Value: TStream);
 begin
-    Client.DocStream := Value;
+    if Assigned(Client) then
+        Client.DocStream := Value;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.GetWSession: TWebSession;
 begin
-    Result := Client.WSession;
+    if Assigned(Client) then
+        Result := Client.WSession
+    else
+        Result := nil;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.GetParams: String;
 begin
-    Result := Client.Params;
+    if Assigned(Client) then
+        Result := Client.Params
+    else
+        Result := '';
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TUrlHandler.SetParams(const Value: String);
 begin
-    Client.Params := Value;
+    if Assigned(Client) then
+        Client.Params := Value;
 end;
 
 
@@ -1470,14 +1485,16 @@ procedure TUrlHandler.AnswerPage(
     const Status, Header, HtmlFile: String;
     UserData: TObject; Tags: array of const);
 begin
-    Client.AnswerPage(FFlags, Status, Header, HtmlFile, UserData, Tags);
+    if Assigned(Client) then
+        Client.AnswerPage(FFlags, Status, Header, HtmlFile, UserData, Tags);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TUrlHandler.AnswerStream(const Status, ContType, Header: String);
 begin
-    Client.AnswerStream(FFlags, Status, ContType, Header);
+    if Assigned(Client) then
+        Client.AnswerStream(FFlags, Status, ContType, Header);
 end;
 
 
@@ -1485,14 +1502,18 @@ end;
 procedure TUrlHandler.AnswerString(
     const Status, ContType, Header, Body: String);
 begin
-    Client.AnswerString(FFlags, Status, ContType, Header, Body);
+    if Assigned(Client) then
+        Client.AnswerString(FFlags, Status, ContType, Header, Body);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.CheckSession(const NegativeAnswerHtml: String): Boolean;
 begin
-    Result := Client.CheckSession(FFlags, NegativeAnswerHtml);
+    if Assigned(Client) then
+        Result := Client.CheckSession(FFlags, NegativeAnswerHtml)
+    else
+        Result := FALSE;
 end;
 
 
@@ -1501,8 +1522,11 @@ function TUrlHandler.CheckSession(
     const Status, Header, NegativeAnswerHtml: String;
     UserData: TObject; Tags: array of const): Boolean;
 begin
-    Result := Client.CheckSession(FFlags, Status, Header, NegativeAnswerHtml,
-                                  UserData, Tags);
+    if Assigned(Client) then
+        Result := Client.CheckSession(FFlags, Status, Header,
+                                      NegativeAnswerHtml, UserData, Tags)
+    else
+        Result := FALSE;
 end;
 
 
@@ -1511,21 +1535,28 @@ function TUrlHandler.CreateSession(
     const Params: String; Expiration: TDateTime;
     SessionData: TWebSessionData): String;
 begin
-    Result := Client.CreateSession(Params, Expiration, SessionData);
+    if Assigned(Client) then
+        Result := Client.CreateSession(Params, Expiration, SessionData)
+    else
+        Result := NO_CACHE;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TUrlHandler.DeleteSession;
 begin
-    Client.WSessions.DeleteSession(Client.WSessionID);
+    if Assigned(Client) then
+        Client.WSessions.DeleteSession(Client.WSessionID);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.ValidateSession: Boolean;
 begin
-    Result := Client.ValidateSession;
+    if Assigned(Client) then
+        Result := Client.ValidateSession
+    else
+        Result := FALSE;
 end;
 
 
