@@ -232,7 +232,7 @@ var
     sTemp, sTempFrom, sMagEmail: string ;
 begin
     AbortTimer.Enabled := false ;
-    AbortTimer.Interval := 10000 ;     // 10 second timeout for SMTP
+    AbortTimer.Interval := 60000 ;     // 60 second timeout for SMTP
     sTemp := '' ;
     AWSocket:= Sender as TWSocket ;
     if Error = 0 then
@@ -381,6 +381,13 @@ end;
 procedure TUrlHandlerMailer.SmtpClientRequestDone(Sender: TObject; RqType: TSmtpRequest;
       ErrorCode: Word);
 begin
+    if not Assigned(Client) then begin
+        // Client is gone, abort everything
+        SmtpClient.Abort;
+        Finish;
+        Exit;
+    end;
+
     AbortTimer.Enabled := false ;
     try
         if RqType = smtpOpen then

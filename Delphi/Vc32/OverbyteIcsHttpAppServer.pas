@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      7.03
+Version:      7.04
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -65,6 +65,8 @@ History:
                  Added overloaded CheckSession.
 Jun 12, 2009 V7.03 don't ignore event Flags in TriggerGetDocument otherwise
                     authentication fails
+Jul 14, 2009 V7.04 F. Piette added THttpAppSrvConnection.OnDestroying and
+                   related processing.
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -95,9 +97,10 @@ uses
 
 type
     TMyHttpHandler        = procedure (var Flags: THttpGetFlag) of object;
-    TUrlHandler          = class;
+    TUrlHandler           = class;
     THttpAppSrvConnection = class(THttpConnection)
     protected
+        FOnDestroying  : TNotifyEvent;
         function GetHostName: String;
     public
         PostedData     : PAnsiChar; // Will hold dynamically allocated buffer
@@ -130,6 +133,8 @@ type
                                         var OK : Boolean); virtual;
         procedure  NoGetHandler(var OK : Boolean); virtual;
         property HostName : String read GetHostName;
+        property OnDestroying  : TNotifyEvent read  FOnDestroying
+                                              write FOnDestroying;
     end;
 
     THttpAllowedFlag = (afBeginBy, afExactMatch, afDirList);
@@ -157,8 +162,9 @@ type
         function  GetWSession: TWebSession;
         function  GetDocStream: TStream;
         procedure setDocStream(const Value: TStream);
-        function GetOnGetRowData: THttpGetRowDataEvent;
+        function  GetOnGetRowData: THttpGetRowDataEvent;
         procedure SetOnGetRowData(const Value: THttpGetRowDataEvent);
+        procedure ClientDestroying(Sender : TObject); virtual;
     public
         procedure Execute; virtual;
         procedure Finish; virtual;
@@ -622,13 +628,14 @@ begin
                         TMyHttpHandler(Proc)(Flags);
                 end
                 else if Disp.SObjClass <> nil then begin
-                    SObj := Disp.SobjClass.Create(Self);
+                    SObj := Disp.SObjClass.Create(Self);
                     try
-                        SObj.FClient        := ClientCnx;
-                        SObj.FFlags         := Disp.FLags;
-                        SObj.FMsg_WM_FINISH := FMsg_WM_FINISH;
-                        SObj.FWndHandle     := FHandle;
-                        SObj.FMethod        := httpMethodPost;
+                        SObj.FClient           := ClientCnx;
+                        SObj.FFlags            := Disp.FLags;
+                        SObj.FMsg_WM_FINISH    := FMsg_WM_FINISH;
+                        SObj.FWndHandle        := FHandle;
+                        SObj.FMethod           := httpMethodPost;
+                        ClientCnx.OnDestroying := SObj.ClientDestroying;
                         ClientCnx.BeforeObjPostHandler(SObj, OK);
                         if OK then begin
                             SObj.Execute;
@@ -926,6 +933,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor THttpAppSrvConnection.Destroy;
 begin
+    if Assigned(FOnDestroying) then
+        FOnDestroying(Self);
+    
     if Assigned(PostedData) then begin
         FreeMem(PostedData);
         PostedData := nil;
@@ -1395,6 +1405,14 @@ begin
     // processed is better. This is why we use an intermediate message.
     if (FWndHandle <> 0) and (FMsg_WM_FINISH > 0) then
         PostMessage(FWndHandle, FMsg_WM_FINISH, 0, Cardinal(Self));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TUrlHandler.ClientDestroying(Sender : TObject);
+begin
+    if FClient = Sender then
+        FClient := nil;
 end;
 
 
