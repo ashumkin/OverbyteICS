@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.24
+Version:      7.25
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -707,6 +707,7 @@ Apr 24, 2009 V7.23 A. Garrels added *experimental* OpenSSL engine support which
 Jun 12, 2009 V7.24 Angus added WriteCount property, how many bytes sent since
                      connection opened
                    Only reset ReadCount when connection opened, not closed
+Jul 16, 2009 V7.25 Arno fixed and changed SetCounterClass()                   
 
 }
 
@@ -816,8 +817,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 722;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.22 ';
+  WSocketVersion            = 725;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.25 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -5344,12 +5345,23 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.SetCounterClass(const Value: TWSocketCounterClass);
+var
+    NewCounter : TWSocketCounter;
 begin
-    if Assigned(FCounter) then
-        raise ESocketException.Create('Property CounterClass can only be set ' +
-              'when property Counter is not assigned! Call DestroyCounter first.');
     if Value = nil then
         raise ESocketException.Create('Property CounterClass may not be nil!');
+    if Value <> FCounterClass then begin
+        FCounterClass := Value;
+        if Assigned(FCounter) then begin
+            NewCounter              := FCounterClass.Create;
+            NewCounter.ConnectDT    := FCounter.ConnectDT;
+            NewCounter.ConnectTick  := FCounter.ConnectTick;
+            NewCounter.LastRecvTick := FCounter.LastRecvTick;
+            NewCounter.LastSendTick := FCounter.LastSendTick;
+            FCounter.Free;
+            FCounter := NewCounter;
+        end;
+    end;
 end;
 
 
