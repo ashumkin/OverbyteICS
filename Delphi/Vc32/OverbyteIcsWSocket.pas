@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.25
+Version:      7.26
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -707,7 +707,10 @@ Apr 24, 2009 V7.23 A. Garrels added *experimental* OpenSSL engine support which
 Jun 12, 2009 V7.24 Angus added WriteCount property, how many bytes sent since
                      connection opened
                    Only reset ReadCount when connection opened, not closed
-Jul 16, 2009 V7.25 Arno fixed and changed SetCounterClass()                   
+Jul 16, 2009 V7.25 Arno fixed and changed SetCounterClass()
+Jul 19, 2009 V7.26 Arno - SSL code ignored FPaused flag, the change is in
+                   TCustomSslWSocket.TriggerEvent.
+
 
 }
 
@@ -817,8 +820,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 725;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.25 ';
+  WSocketVersion            = 726;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.26 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -13453,8 +13456,9 @@ var
 {$ENDIF}
 begin
     Result := FALSE;
-    if not FSslEnable then Exit;
-    { Returns TRUE if a message was posted successfully }
+    if (not FSslEnable) or FPaused then { AG V7.26 FPause condition added }
+        Exit;
+    { Returns TRUE if a message was posted successfully and the socket isn't paused }
     if not (Event in FPendingSslEvents) then begin
         case Event of
             sslFdRead  :  Result := _PostMessage(Handle, FMsg_WM_SSL_ASYNCSELECT,
