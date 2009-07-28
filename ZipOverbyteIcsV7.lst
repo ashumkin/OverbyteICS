@@ -153,6 +153,9 @@ Delphi\vc32\OverbyteIcsXpManifest.res
 Delphi\vc32\OverbyteIcsXp.manifest
 Delphi\vc32\OverbyteIcsCharsetComboBox.pas
 Delphi\vc32\OverbyteIcsCharsetComboBox.dcr
+Delphi\vc32\OverbyteIcsCommonVersion.rc
+Delphi\vc32\OverbyteIcsCommonVersion.res
+Delphi\vc32\OverbyteIcsThreadTimer.pas
 
 Delphi\vc32\ZOBJ123\adler32.obj
 Delphi\vc32\ZOBJ123\compress.obj
@@ -599,3 +602,10 @@ Delphi\MiscDemos\OverbyteIcsBufStrmTst.dproj
 Delphi\MiscDemos\OverbyteIcsBufStrmTst.res
 Delphi\MiscDemos\OverbyteIcsBufStrmTst1.dfm
 Delphi\MiscDemos\OverbyteIcsBufStrmTst1.pas
+
+Delphi\MiscDemos\OverbyteIcsThreadTimerDemo.bdsproj
+Delphi\MiscDemos\OverbyteIcsThreadTimerDemo.dpr
+Delphi\MiscDemos\OverbyteIcsThreadTimerDemo.dproj
+Delphi\MiscDemos\OverbyteIcsThreadTimerDemo.res
+Delphi\MiscDemos\OverbyteIcsThreadTimerDemo1.pas
+Delphi\MiscDemos\OverbyteIcsThreadTimerDemo1.dfm

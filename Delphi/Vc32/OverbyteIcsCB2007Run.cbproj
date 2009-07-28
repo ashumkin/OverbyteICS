@@ -19,19 +19,19 @@
     <CfgParent>Base</CfgParent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Base)'!=''">
-    <OutputExt>bpl</OutputExt>
     <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-    <Defines>NO_STRICT;USE_SSL</Defines>
+    <OutputExt>bpl</OutputExt>
     <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+    <Defines>NO_STRICT;USE_SSL</Defines>
     <DynamicRTL>true</DynamicRTL>
     <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-    <DCC_Define>USE_SSL</DCC_Define>
     <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
-    <ILINK_ObjectSearchPath>\\192.168.1.102\e\FPiette\CogswellIcs\Delphi\Vc32</ILINK_ObjectSearchPath>
+    <DCC_Define>USE_SSL</DCC_Define>
     <UsePackages>true</UsePackages>
+    <ILINK_ObjectSearchPath>\\192.168.1.102\e\FPiette\CogswellIcs\Delphi\Vc32</ILINK_ObjectSearchPath>
     <ProjectType>CppPackage</ProjectType>
-    <BCC_wpar>false</BCC_wpar>
     <ILINK_Description>OverByte ICS Run-Time Package C++ Builder 2007</ILINK_Description>
+    <BCC_wpar>false</BCC_wpar>
     <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl</IncludePath>
     <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk</ILINK_LibraryPath>
     <Multithreaded>true</Multithreaded>
@@ -39,24 +39,24 @@
     <ILINK_OSVersion>5.0</ILINK_OSVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1)'!=''">
-    <DCC_Optimize>false</DCC_Optimize>
     <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-    <Defines>_DEBUG;$(Defines)</Defines>
+    <DCC_Optimize>false</DCC_Optimize>
     <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+    <Defines>_DEBUG;$(Defines)</Defines>
     <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
     <DCC_UNIT_PLATFORM>false</DCC_UNIT_PLATFORM>
     <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
     <ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
-    <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
     <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+    <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
     <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
     <IntermediateOutputDir>Debug</IntermediateOutputDir>
     <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
     <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
     <BCC_StackFrames>true</BCC_StackFrames>
-    <ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
     <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+    <ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
     <BCC_Defines>NO_ADVANCED_HTTP_CLIENT_FEATURES;$(BCC_Defines)</BCC_Defines>
     <TASM_Debugging>Full</TASM_Debugging>
     <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
@@ -207,59 +207,62 @@
     <DelphiCompile Include="OverbyteIcsStreams.pas">
       <BuildOrder>61</BuildOrder>
     </DelphiCompile>
+    <DelphiCompile Include="OverbyteIcsThreadTimer.pas">
+      <BuildOrder>62</BuildOrder>
+    </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsTimeList.pas">
-      <BuildOrder>63</BuildOrder>
+      <BuildOrder>64</BuildOrder>
     </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsTnCnx.pas">
-      <BuildOrder>65</BuildOrder>
+      <BuildOrder>66</BuildOrder>
     </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsTnEmulVT.pas">
-      <BuildOrder>67</BuildOrder>
-    </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsTnOptFrm.pas">
       <BuildOrder>68</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsTnScript.pas">
-      <BuildOrder>70</BuildOrder>
+    <DelphiCompile Include="OverbyteIcsTnOptFrm.pas">
+      <BuildOrder>69</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsTypes.pas">
+    <DelphiCompile Include="OverbyteIcsTnScript.pas">
       <BuildOrder>71</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsUrl.pas">
+    <DelphiCompile Include="OverbyteIcsTypes.pas">
       <BuildOrder>72</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsUtils.pas">
+    <DelphiCompile Include="OverbyteIcsUrl.pas">
       <BuildOrder>73</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsWebSession.pas">
+    <DelphiCompile Include="OverbyteIcsUtils.pas">
       <BuildOrder>74</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsWinsock.pas">
+    <DelphiCompile Include="OverbyteIcsWebSession.pas">
       <BuildOrder>75</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsWinsock2.pas">
+    <DelphiCompile Include="OverbyteIcsWinsock.pas">
       <BuildOrder>76</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsWndControl.pas">
+    <DelphiCompile Include="OverbyteIcsWinsock2.pas">
       <BuildOrder>77</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsWSockBuf.pas">
+    <DelphiCompile Include="OverbyteIcsWndControl.pas">
       <BuildOrder>78</BuildOrder>
     </DelphiCompile>
+    <DelphiCompile Include="OverbyteIcsWSockBuf.pas">
+      <BuildOrder>79</BuildOrder>
+    </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsWSocket.pas">
-      <BuildOrder>80</BuildOrder>
+      <BuildOrder>81</BuildOrder>
     </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsWSocketS.pas">
-      <BuildOrder>82</BuildOrder>
-    </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsZLibDll.pas">
       <BuildOrder>83</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsZlibHigh.pas">
+    <DelphiCompile Include="OverbyteIcsZLibDll.pas">
       <BuildOrder>84</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsZLibObj.pas">
+    <DelphiCompile Include="OverbyteIcsZlibHigh.pas">
       <BuildOrder>85</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="OverbyteIcsZLibObj.pas">
+      <BuildOrder>86</BuildOrder>
     </DelphiCompile>
     <CppCompile Include="OverbyteIcsCB2007Run.cpp">
       <BuildOrder>3</BuildOrder>
@@ -267,9 +270,9 @@
     <ResFiles Include="OverbyteIcsCB2007Run.res">
       <BuildOrder>4</BuildOrder>
     </ResFiles>
-    <ResFiles Include="OverbyteIcsCharsetComboBox.dcr">
+    <None Include="OverbyteIcsCharsetComboBox.dcr">
       <BuildOrder>5</BuildOrder>
-    </ResFiles>
+    </None>
     <None Include="OverbyteIcsDnsQuery.dcr">
       <BuildOrder>11</BuildOrder>
     </None>
@@ -328,22 +331,22 @@
       <BuildOrder>59</BuildOrder>
     </None>
     <None Include="OverbyteIcsTimeList.dcr">
-      <BuildOrder>62</BuildOrder>
+      <BuildOrder>63</BuildOrder>
     </None>
     <None Include="OverbyteIcsTnCnx.dcr">
-      <BuildOrder>64</BuildOrder>
+      <BuildOrder>65</BuildOrder>
     </None>
     <None Include="OverbyteIcsTnEmulVT.dcr">
-      <BuildOrder>66</BuildOrder>
+      <BuildOrder>67</BuildOrder>
     </None>
     <None Include="OverbyteIcsTnScript.dcr">
-      <BuildOrder>69</BuildOrder>
+      <BuildOrder>70</BuildOrder>
     </None>
     <None Include="OverbyteIcsWSocket.dcr">
-      <BuildOrder>79</BuildOrder>
+      <BuildOrder>80</BuildOrder>
     </None>
     <None Include="OverbyteIcsWSocketS.dcr">
-      <BuildOrder>81</BuildOrder>
+      <BuildOrder>82</BuildOrder>
     </None>
     <BuildConfiguration Include="Debug">
       <Key>Cfg_1</Key>

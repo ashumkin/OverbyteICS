@@ -145,6 +145,7 @@
 			<DCCReference Include="OverbyteIcsTimeList.pas"/>
 			<DCCReference Include="OverbyteIcsWebSession.pas"/>
 			<DCCReference Include="OverbyteIcsCharsetComboBox.pas"/>
+			<DCCReference Include="OverbyteIcsThreadTimer.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>

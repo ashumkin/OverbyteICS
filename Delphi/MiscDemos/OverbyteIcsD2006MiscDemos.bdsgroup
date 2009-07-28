@@ -19,7 +19,8 @@
       <Projects Name="OverbyteIcsCacheTest.exe">OverbyteIcsCacheTest.bdsproj</Projects>
       <Projects Name="OverbyteIcsTimerDemo.exe">OverbyteIcsTimerDemo.bdsproj</Projects>
       <Projects Name="OverbyteIcsBufStrmTst.exe">OverbyteIcsBufStrmTst.bdsproj</Projects>
-      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverByteIcsWndControlTest.exe OverbyteIcsMD4Test.exe OverbyteIcsMD5Test.exe OverbyteIcsSHA1Test.exe OverbyteIcsOneTimePassword.exe OverbyteIcsCacheTest.exe OverbyteIcsTimerDemo.exe OverbyteIcsBufStrmTst.exe</Projects>
+      <Projects Name="OverbyteIcsThreadTimerDemo.exe">OverbyteIcsThreadTimerDemo.bdsproj</Projects>
+      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverByteIcsWndControlTest.exe OverbyteIcsMD4Test.exe OverbyteIcsMD5Test.exe OverbyteIcsSHA1Test.exe OverbyteIcsOneTimePassword.exe OverbyteIcsCacheTest.exe OverbyteIcsTimerDemo.exe OverbyteIcsBufStrmTst.exe OverbyteIcsThreadTimerDemo.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>

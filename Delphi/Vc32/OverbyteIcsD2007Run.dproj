@@ -39,7 +39,8 @@
     <DelphiCompile Include="OverbyteIcsD2007Run.dpk">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="OverbyteIcsAvlTrees.pas" />    
+    <DCCReference Include="OverbyteIcsAvlTrees.pas" />
+    <DCCReference Include="OverbyteIcsCharsetComboBox.dcr" />
     <DCCReference Include="OverbyteIcsCharsetComboBox.dcr" />
     <DCCReference Include="OverbyteIcsCharsetComboBox.pas" />
     <DCCReference Include="OverbyteIcsCharsetUtils.pas" />
@@ -118,6 +119,7 @@
     <DCCReference Include="OverbyteIcsSslThrdLock.pas" />
     <DCCReference Include="OverbyteIcsSspi.pas" />
     <DCCReference Include="OverbyteIcsStreams.pas" />
+    <DCCReference Include="OverbyteIcsThreadTimer.pas" />
     <DCCReference Include="OverbyteIcsTimeList.dcr" />
     <DCCReference Include="OverbyteIcsTimeList.dcr" />
     <DCCReference Include="OverbyteIcsTimeList.pas" />
