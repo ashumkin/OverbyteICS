@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.18
+Version:      7.19
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -94,7 +94,10 @@ May 10, 2009 V7.17  A. Garrels - Some AnsiString types changed to RawByteString.
                     var Syslocale.FarEast is always True.
 May 30, 2009 V7.18  A. Garrels fixed a bug in IcsWrapTextEx that could truncate
                     a line.
-                    
+Jul 31, 2009 V7.19  A. Garrels enlarged base64 encoded data chunks. Especially
+                    SSL benefits from this change, less CPU use and 6 times
+                    faster sends of base64 encoded file attachments.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -140,10 +143,12 @@ uses
     OverbyteIcsLibrary,
     OverbyteIcsCharsetUtils;
 const
-    TMimeUtilsVersion = 717;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.18 ';
+    TMimeUtilsVersion = 719;
+    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.19 ';
 
     SmtpDefaultLineLength = 76; // without CRLF
+    SMTP_SND_BUF_SIZE     = 2048;
+
     { Explicit type cast to Ansi works in .NET as well }
     SpecialsRFC822 : TSysCharSet = [AnsiChar('('), AnsiChar(')'), AnsiChar('<'),
                 AnsiChar('>'), AnsiChar('@'), AnsiChar(','), AnsiChar(';'),
@@ -343,7 +348,9 @@ const
   LeadBytes: set of Char = [];
 {$ENDIF}
   CP_ACP = 0; // Windows.pas
-  FILE_BASE64_LINE_LENGTH = 72; // without CRLF
+  FILE_BASE64_LINE_LENGTH = SmtpDefaultLineLength; // (76) Without CRLF
+  FILE_BASE64_BUF_SIZE    = (SMTP_SND_BUF_SIZE -1) div (FILE_BASE64_LINE_LENGTH + 2)
+                             * (FILE_BASE64_LINE_LENGTH + 2);
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { See also SplitQuotedPrintableString !                                     }
@@ -787,16 +794,17 @@ function DoFileEncBase64(
 var
     Count     : Integer;
     DataIn    : array [0..2]  of Byte;
-    DataOut   : array [0..FILE_BASE64_LINE_LENGTH + 8] of Byte;
+    DataOut   : array [0..FILE_BASE64_BUF_SIZE] of Byte;
     ByteCount : Integer;
+    LineLength : Integer;
     I         : Integer;
 {$IFDEF CLR}
     SB        : StringBuilder;
 {$ENDIF}
 begin
-    Count     := 0;
-    // ByteCount := 0;
-    while Count < FILE_BASE64_LINE_LENGTH do begin
+    Count      := 0;
+    LineLength := 0;
+    while TRUE do begin
         ByteCount := Stream.Read(DataIn, 3);
         if ByteCount = 0 then                            {<=MHU}
            Break;                                        {<=MHU}
@@ -824,15 +832,25 @@ begin
             DataOut[Count + I] := Byte(Base64Out[DataOut[Count + I]]);
 
         Count := Count + 4;
-        if (Count > FILE_BASE64_LINE_LENGTH) or (ByteCount < 3) then
+
+        if (Count + 6 > FILE_BASE64_BUF_SIZE) or (ByteCount < 3) then
             break;
+        // Do not append CRLF to the last chunk, SmtpCli will do
+        Inc(LineLength, 4);
+        if (LineLength >= FILE_BASE64_LINE_LENGTH) then
+        begin
+            DataOut[Count]     := $0D;
+            DataOut[Count + 1] := $0A;
+            Inc(Count, 2);
+            LineLength := 0;
+        end;
     end;
 
     DataOut[Count] := $0;
 
     { Next line commented since it led to an additional blank line in      }
     { the MIME part. Instead use Stream.Size, see below.                   }
-    
+
     //More           := (ByteCount = 3);
 
 {$IFDEF USE_BUFFERED_STREAM}

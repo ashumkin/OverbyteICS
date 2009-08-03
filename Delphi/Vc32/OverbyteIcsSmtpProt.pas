@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.27
+Version:      7.28
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -374,6 +374,8 @@ May 09, 2009 V7.26  Arno added code page support and charset conversion
 Jul 16, 2009 V7.27  Arno added property XMailer, the string may contain a place
                     holder "%VER%" that is replaced by current version number of
                     this unit. 
+Jul 31, 2009 V7.28  Arno enlarged send buffer size to 2048 byte see const
+                    SMTP_SND_BUF_SIZE declared in MimeUtils.pas.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -434,8 +436,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 727;
-  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.27 ';
+  SmtpCliVersion     = 728;
+  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.28 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -3040,7 +3042,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.DataNext;
 var
-    MsgLine  : array [0..1023] of AnsiChar;
+    MsgLine  : array [0..SMTP_SND_BUF_SIZE -1] of AnsiChar;
     BExit : Boolean;
 begin
     { If we have been disconnected, then do nothing.                      }
@@ -3079,7 +3081,7 @@ begin
                 MsgLine[0] := #0;
                 { Enough room for double a dot and a nul char }
                 TriggerGetData(FLineNum, @MsgLine,
-                              (SizeOf(MsgLine) - (SizeOf(Char) * 2)),
+                               SizeOf(MsgLine) - 2,
                                FMoreLines);
             except
                 FMoreLines := FALSE;
