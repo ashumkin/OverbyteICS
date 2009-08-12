@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.28
+Version:      7.29
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -376,6 +376,7 @@ Jul 16, 2009 V7.27  Arno added property XMailer, the string may contain a place
                     this unit. 
 Jul 31, 2009 V7.28  Arno enlarged send buffer size to 2048 byte see const
                     SMTP_SND_BUF_SIZE declared in MimeUtils.pas.
+Aug 12, 2009 V7.29  Bjørnar Nielsen found a bug with conditional define NO_ADV_MT.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -436,8 +437,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 728;
-  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.28 ';
+  SmtpCliVersion     = 729;
+  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.29 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -1662,7 +1663,11 @@ begin
     inherited Create(AOwner);
     AllocateHWnd;
     CreateSocket;                                                     {AG/SSL}
+{$IFDEF NO_ADV_MT}
+    FWSocket.Name            := ClassName + '_Socket' + IntToStr(WSocketGCount);
+{$ELSE}
     FWSocket.Name            := ClassName + '_Socket' + IntToStr(SafeWSocketGCount);
+{$ENDIF}
     FWSocket.OnSessionClosed := WSocketSessionClosed;
     FState                   := smtpReady;
     FRcptName                := TStringList.Create;
