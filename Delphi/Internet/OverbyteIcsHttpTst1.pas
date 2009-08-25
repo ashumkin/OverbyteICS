@@ -145,8 +145,9 @@ type
     procedure ClearButtonClick(Sender: TObject);
     procedure PutButtonClick(Sender: TObject);
   private
-    Initialized : Boolean;
-    DocFileName : String;
+    Initialized  : Boolean;
+    DocFileName  : String;
+    FIniFileName : String;
     procedure SetButtonState(State : Boolean);
     procedure Display(const Msg : String);
     procedure PostOrPut(Request: THttpRequest);
@@ -160,7 +161,6 @@ implementation
 {$R *.DFM}
 
 const
-    IniFileName     = 'httptest';
     SectionWindow   = 'WindowMain';
     KeyTop          = 'Top';
     KeyLeft         = 'Left';
@@ -195,7 +195,8 @@ begin
         ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
         {$ENDIF}
         {$ENDIF}
-        IniFile      := TIcsIniFile.Create(IniFileName);
+        FIniFileName := GetIcsIniFileName;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
@@ -253,7 +254,7 @@ procedure THttpTestForm.FormClose(Sender: TObject;
 var
     IniFile : TIcsIniFile;
 begin
-    IniFile := TIcsIniFile.Create(IniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     IniFile.WriteInteger(SectionWindow, KeyTop,       Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,      Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,     Width);
