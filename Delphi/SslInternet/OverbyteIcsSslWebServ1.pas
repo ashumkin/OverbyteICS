@@ -91,7 +91,7 @@ uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Controls, Forms,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls, WinSock, OverbyteIcsWSocket,
   OverbyteIcsWSocketS, OverbyteIcsHttpSrv, OverbyteIcsLIBEAY,
-  OverbyteIcsSslSessionCache, OverbyteIcsLogger;
+  OverbyteIcsSslSessionCache, OverbyteIcsLogger, OverbyteIcsWndControl;
 
 const
   CopyRight : String         = 'WebServ (c) 1999-2006 F. Piette V1.07 ';

@@ -51,7 +51,7 @@ program OverbyteIcsConHttp;
 
 {$I OVERBYTEICSDEFS.INC}
 {$IFDEF VER80}
-    Bomb('Sorry, Delphi 1 does not support console mode programs');
+Bomb('Sorry, Delphi 1 does not support console mode programs');
 {$ENDIF}
 {$APPTYPE CONSOLE}
 {$IFNDEF NOFORMS}
