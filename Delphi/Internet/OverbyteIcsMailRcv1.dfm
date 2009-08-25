@@ -1,9 +1,9 @@
 object POP3ExcercizerForm: TPOP3ExcercizerForm
   Left = 44
   Top = 643
+  Width = 526
+  Height = 375
   Caption = 'POP3 Excercizer'
-  ClientHeight = 341
-  ClientWidth = 518
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -35,8 +35,6 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
     ScrollBars = ssBoth
     ShowHint = True
     TabOrder = 1
-    ExplicitWidth = 526
-    ExplicitHeight = 110
   end
   object Panel1: TPanel
     Left = 0
@@ -45,7 +43,6 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
     Height = 233
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 526
     object InfoLabel: TLabel
       Left = 32
       Top = 156

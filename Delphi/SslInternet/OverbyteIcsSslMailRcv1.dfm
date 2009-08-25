@@ -521,17 +521,4 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
     Left = 158
     Top = 286
   end
-  object SslPop3Cli1: TSslPop3Cli
-    Tag = 0
-    LocalAddr = '0.0.0.0'
-    Port = 'pop3'
-    AuthType = popAuthNone
-    MsgLines = 0
-    MsgNum = 0
-    Timeout = 15
-    MultiThreaded = False
-    SslType = pop3TlsNone
-    Left = 80
-    Top = 300
-  end
 end

@@ -66,11 +66,11 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   DELPHI5_UP       Delphi 5  or higher
   DELPHI6_UP       Delphi 6  or higher
   DELPHI7_UP       Delphi 7  or higher  (Delphi 8 is .NET only. No way here)
-  DELPHI9_UP       Delphi 9  or higher  (Delphi 2005 has W32 compiler)
-  DELPHI10_UP      Delphi 10 or higher  (Delphi 2006)
+  DELPHI9_UP       Delphi 9  or higher  (Delphi 2005 - Diamondback, has W32 compiler)
+  DELPHI10_UP      Delphi 10 or higher  (Delphi 2006 - Dexter)
   DELPHI11_UP      Delphi 11 or higher  (Delphi 2007 - Highlander)
-  DELPHI12_UP      Delphi 12 or higher  (Tiburon)
-  DELPHI14_UP      Delphi 14 or higher  (..)
+  DELPHI12_UP      Delphi 12 or higher  (Delphi 2009 - Tiburon)
+  DELPHI14_UP      Delphi 14 or higher  (Delphi 2010 - Weaver)
 
   BCB1             C++ Builder 1
   BCB3             C++ Builder 3
@@ -107,7 +107,7 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   COMPILER10_UP    Delphi 10 or C++ Builder 10 or higher
   COMPILER11_UP    Delphi or C++ Builder 2007 or higher (Highlander)
   COMPILER12_UP    Delphi or C++ Builder 12 or higher (Tiburon)
-  COMPILER14_UP    Delphi or C++ Builder 14 or higher (..)
+  COMPILER14_UP    Delphi or C++ Builder 14 or higher (Weaver)
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 

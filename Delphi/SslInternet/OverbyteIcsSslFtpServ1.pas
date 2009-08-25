@@ -233,7 +233,7 @@ type
   private
     FInitialized              : Boolean;
     FIniFileName              : String;
-    FPort                     : AnsiString;
+    FPort                     : String;
     FXTop                     : Integer;
     FXLeft                    : Integer;
     FXWidth                   : Integer;
@@ -435,7 +435,7 @@ var
     IniFile : TIcsIniFile;
 begin
     IniFile := TIcsIniFile.Create(FIniFileName);
-    FPort   := AnsiString(IniFile.ReadString(SectionData,    KeyPort,   'ftp'));
+    FPort   := IniFile.ReadString(SectionData,    KeyPort,   'ftp');
     CertFileEdit.Text    := IniFile.ReadString(SectionData, KeyCertFile,
                                                '01cert.pem');
     PrivKeyFileEdit.Text := IniFile.ReadString(SectionData, KeyPrivKeyFile,
@@ -578,12 +578,12 @@ begin
     InfoMemo.Lines.Add('        Version ' +
             Format('%d.%d', [WinsockInfo.wHighVersion shr 8,
                              WinsockInfo.wHighVersion and 15]));
-    InfoMemo.Lines.Add('        ' + _StrPas(wsi.szDescription));
-    InfoMemo.Lines.Add('        ' + _StrPas(wsi.szSystemStatus));
+    InfoMemo.Lines.Add('        ' + String(_StrPas(wsi.szDescription)));
+    InfoMemo.Lines.Add('        ' + String(_StrPas(wsi.szSystemStatus)));
 {$IFNDEF VER100}
     { A bug in Delphi 3 makes lpVendorInfo invalid }
     if wsi.lpVendorInfo <> nil then
-        InfoMemo.Lines.Add('        ' + StrPas(wsi.lpVendorInfo));
+        InfoMemo.Lines.Add('        ' + String(StrPas(wsi.lpVendorInfo)));
 {$ENDIF}
     { Set SSL properties, internal session caching enabled }
     SslContext1.SslVersionMethod            := sslV23_SERVER;
@@ -613,7 +613,7 @@ begin
                             '220-' + #13#10 +
                             '220 ICS FTP Server ready.';
     SslFtpServer1.Port   := FPort;
-    SslFtpServer2.Port   := AnsiString(SslTypeConnPortEdit.Text);
+    SslFtpServer2.Port   := SslTypeConnPortEdit.Text;
     SslFtpServer1.Start;
     SslFtpServer2.Start;
 end;

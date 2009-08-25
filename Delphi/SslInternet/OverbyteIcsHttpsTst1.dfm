@@ -506,8 +506,9 @@ object HttpsTstForm: THttpsTstForm
     Top = 220
   end
   object IcsLogger1: TIcsLogger
-    LogFileOption = lfoOverwrite
-    LogFileEncoding = lfeUtf8
+    TimeStampFormatString = 'hh:nn:ss:zzz'
+    TimeStampSeparator = ' '
+    LogFileOption = lfoOverwrite    
     LogFileName = 'Debug_Out_HttpsTst.txt'
     LogOptions = [loDestFile, loProtSpecErr, loProtSpecInfo, loProtSpecDump]
     OnIcsLogEvent = IcsLogger1IcsLogEvent

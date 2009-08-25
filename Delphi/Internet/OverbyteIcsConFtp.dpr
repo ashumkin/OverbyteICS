@@ -46,8 +46,10 @@ Jul 19, 2008 F.Piette made some changes for Unicode
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 program OverbyteIcsConFtp;
 
+{$R '..\Vc32\OverbyteIcsCommonVersion.res' '..\Vc32\OverbyteIcsCommonVersion.rc'}
+
 {$IFDEF VER80}
-    Bomb('Sorry, Delphi 1 does not support console mode programs');
+Bomb('Sorry, Delphi 1 does not support console mode programs');
 {$ENDIF}
 {$APPTYPE CONSOLE}
 {$IFNDEF NOFORMS}

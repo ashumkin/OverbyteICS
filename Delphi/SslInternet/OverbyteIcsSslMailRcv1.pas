@@ -114,7 +114,6 @@ type
     Label9: TLabel;
     ToEdit: TEdit;
     AuthComboBox: TComboBox;
-    SslPop3Cli1: TSslPop3Cli;
     Label11: TLabel;
     AuthButton: TButton;
     SslPop3Client: TSslPop3Cli;

@@ -51,14 +51,20 @@ May 27, 2009 V1.03 A. Garrels Delphi 2009 support.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 program OverbyteIcsConSmtp;
 
+{$R '..\Vc32\OverbyteIcsCommonVersion.res' '..\Vc32\OverbyteIcsCommonVersion.rc'}
+
 {$I OVERBYTEICSDEFS.INC}
 {$APPTYPE CONSOLE}
 {$IFNDEF NOFORMS}
-    Bomb('Please add NOFORMS to your project defines');
+Bomb('Please add NOFORMS to your project defines');
 {$ENDIF}
 
 uses
-    Messages, Windows, Classes, SysUtils, OverbyteIcsSmtpProt;
+  Messages,
+  Windows,
+  Classes,
+  SysUtils,
+  OverbyteIcsSmtpProt;
 
 const
   ConSmtpVersion = 103;

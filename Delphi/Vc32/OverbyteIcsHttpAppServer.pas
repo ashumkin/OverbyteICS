@@ -628,7 +628,7 @@ begin
                         TMyHttpHandler(Proc)(Flags);
                 end
                 else if Disp.SObjClass <> nil then begin
-                    SObj := Disp.SObjClass.Create(Self);
+                    SObj := Disp.SobjClass.Create(Self);
                     try
                         SObj.FClient           := ClientCnx;
                         SObj.FFlags            := Disp.FLags;

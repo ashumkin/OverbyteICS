@@ -41,6 +41,12 @@
     <DelphiCompile Include="OverbyteIcsPemTool.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <RcCompile Include="..\Vc32\OverbyteIcsCommonVersion.rc">
+      <Form>..\Vc32\OverbyteIcsCommonVersion.res</Form>
+    </RcCompile>
+    <RcCompile Include="..\Vc32\OverbyteIcsXpManifest.rc">
+      <Form>..\Vc32\OverbyteIcsXpManifest.res</Form>
+    </RcCompile>
     <DCCReference Include="OverbyteIcsPemTool1.pas">
       <Form>frmPemTool1</Form>
     </DCCReference>

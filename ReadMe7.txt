@@ -1,12 +1,9 @@
-ICS - Internet Component Suite - V7 - RAD Studio 2009
-=====================================================
+ICS - Internet Component Suite - V7 - RAD Studio 2009 and 2010
+==============================================================
 (Aka FPIETTE's Components)
 
-Disclaimer: ICS-V7 has been adapted to Delphi 2009 using pre-release
-            software. Please check website for updated version.
 
-
-Revised: Aug 4, 2008
+Revised: Aug 11, 2009
 http://www.overbyte.be
 
 Table of content:
@@ -29,7 +26,7 @@ Table of content:
 
 Legal issues: 
 -------------
-              Copyright (C) 1997-2008 by François PIETTE 
+              Copyright (C) 1997-2009 by François PIETTE 
               Rue de Grady 24, 4053 Embourg, Belgium
               <francois.piette@overbyte.be>
 
@@ -106,7 +103,8 @@ contributors:
 Installation:
 -------------
 
-ICS-V7 has been designed for Delphi 2009 and up, and BCB 2009 and up.
+ICS-V7 has been designed for Delphi 2009 and up, and BCB 2009 and up, but 
+is fully compatible with Delphi 7, 2006 and 2007.  
 
 The zip file has subdirectories in it. You must use the WinZip "Use folder 
 names" option to restore this directory tree or you will have problems 
@@ -122,6 +120,7 @@ This is the subdirectory layout:
 .\cpp\internet\cb2006         C++Builder 2006 projects
 .\cpp\internet\cb2007         C++Builder 2007 projects
 .\cpp\internet\cb2009         C++Builder 2009 projects
+.\cpp\internet\cb2010         C++Builder 2010 projects
 .\delphi\vc32                 Delphi (7 and up) and C++Builder (2006 and up) components
 .\Install                     Component packages project groups for all versions
 
@@ -157,9 +156,11 @@ Delphi 7         :  D7Install.bpg
 Delphi 2006      :  D2006Install.bdsgroup
 Delphi 2007      :  D2007Install.groupproj
 Delphi 2009      :  D2009Install.groupproj
+Delphi 2010      :  D2010Install.groupproj
 C++ Builder 2006 :  CB2006Install.bdsgroup
 C++ Builder 2007 :  CB2007Install.groupproj
 C++ Builder 2009 :  CB2009Install.groupproj
+C++ Builder 2010 :  CB2010Install.groupproj
 
 1 - Do a File/Open Project, navigate to the Install directory, select the correct
 file and open it. The project manager view should now display two package 
@@ -184,9 +185,11 @@ Delphi 7         :  OverbyteIcsD7Run.dpk, OverbyteIcsD7Design.dpk
 Delphi 2006      :  OverbyteIcsD2006Run.bdsproj, OverbyteIcsD2006Design.bdsproj
 Delphi 2007      :  OverbyteIcsD2007Run.dproj, OverbyteIcsD2007Design.dproj
 Delphi 2009      :  OverbyteIcsD2009Run.dproj, OverbyteIcsD2009Design.dproj
+Delphi 2010      :  OverbyteIcsD2010Run.dproj, OverbyteIcsD2010Design.dproj
 C++ Builder 2006 :  OverbyteIcsCB2006Run.bdsproj, OverbyteIcsCB2006Design.bdsproj
 C++ Builder 2007 :  OverbyteIcsCB2007Run.cbproj, OverbyteIcsCB2007Design.cbproj 
 C++ Builder 2009 :  OverbyteIcsCB2009Run.cbproj, OverbyteIcsCB2009Design.cbproj
+C++ Builder 2009 :  OverbyteIcsCB2010Run.cbproj, OverbyteIcsCB2010Design.cbproj
 
 1 - Open and Build the run-time package project (do not install!).
 2 - Open and Install the design-time package project.
@@ -198,16 +201,7 @@ After a few seconds, you should have a dialog box telling you the package has
 been installed with a bunch of new components registered in the Tool Palette
 under "Overbyte ICS" and "Overbyte ICS SSL". Then do a "Save All" and a "Close All".
 
-[ToDo!! The following description of installation is no longer correct] 
-
-DELPHI 2009/WIN32:
-Directory VC32 contains OverbyteIcsDel120Package.dproj which is a package source for
-all components. Using Delphi, do a file/open project (Ctrl-F11, browse to the 
-VC32 directory. Select OverbyteIcsDel120Package.dproj and open it. Then in the project
-manager view, right-click on OverbyteIcsDel120Package, then click on Install button.
-After a few seconds, you should have a dialog box telling you the package 
-OverbyteIcsDel120Package.bpl has been installed with a bunch of new components registered.
-Then do a "Save All" (Shift-Ctrl-S) and a "Close All".
+DELPHI 2006/WIN32, 2007/WIN32, 2009/WIN32 and 2010/WIN32:
 Having installed the package, verify that the VC32 directory has been added to
 the Win32 Library Path (Tools / Options / Delphi Options / Library - Win32 / 
 Library Path). If not, add it manually. It is not mandatory to add vc32 to the global
@@ -215,13 +209,13 @@ Delphi path, but it will be much easier for you because otherwise you'll have to
 add it to each project.
 
 Once the package is installed, you may open the sample projects. There is a
-project group called OverByteIcsDel120Sam.groupproj which has all sample programs. Open it
-with file/open project (Ctrl-F11), browse to the Internet directory, select 
-and open OverByteIcsDel120Sam.groupproj. You will get some dialog box telling you that
-resource files are missing (they have not been included in the zip file to 
-save space) and are recreated by Delphi. It is OK. Any other error message 
+project group called OverByteIcsDel2009Sam.groupproj (or 2006, 2007 or 2010) which has 
+all sample programs. Open it with file/open project (Ctrl-F11), browse to the Internet 
+directory, select and open OverByteIcsDel2009Sam.groupproj. You will get some dialog 
+box telling you that resource files are missing (they have not been included in the 
+zip file to save space) and are recreated by Delphi. It is OK. Any other error message 
 is a problem you should fix. After all resource files have been recreated,
-you should see in the project manager a group of projects called OverByteIcsDel120Sam.
+you should see in the project manager a group of projects called OverByteIcsDel2009Sam.
 In this group, you'll find all sample programs.
 
 To compile all samples at once, do Project / Build all projects. This will 
@@ -230,52 +224,12 @@ memory if you don't have enough RAM installed in your computer.
 If this happend, just build the projects one by one.
 
 
-DELPHI 2007/WIN32:
-Same as Delphi 2009 except package and projectgroup has "110" in their names instead
-of "120".
-
-
-DELPHI 2006/WIN32:
-Directory VC32 contains OverbyteIcsDel100.bdsproj which is a package source for
-all components. Using Delphi, do a file/open project (Ctrl-F11, browse to the 
-VC32 directory. Select OverbyteIcsDel100.bdsproj and open it. Then in the project
-manager view, right-click on OverbyteIcsDel100.bpl, then click on Install button.
-After a few seconds, you should have a dialog box telling you the package 
-IcsDel100.bpl has been installed with a bunch of new components registered.
-Then do a "Save All" (Shift-Ctrl-S) and a "Close All".
-Having installed the package, verify that the VC32 directory has been added to
-the Win32 Library Path (Tools / Options / Delphi Options / Library - Win32 / 
-Library Path). If not, add it manually.
+DELPHI 7: Add VC32 directory path to your library path (Tools menu / Environment 
+Options / Library / Library Path. Add VC32 path at the end of the existing path).
 
 Once the package is installed, you may open the sample projects. There is a
-project group called OverbyteDel100Sam.bdsgroup which has all sample programs. Open it
-with file/open project (Ctrl-F11), browse to the Internet directory, select 
-and open OverbyteDel100Sam.bdsgroup. You will get some dialog box telling you that
-resource files are missing (they have not been included in the zip file to 
-save space) and are recreated by Delphi. It is OK. Any other error message 
-is a problem you should fix. After all resource files have been recreated,
-you should see in the project manager a group of projects called OverbyteDel100Sam.
-In this group, you'll find all sample programs.
-
-To compile all samples at once, do Project / Build all projects. This will 
-take some time to compile all sample programs. Delphi may run out of
-memory if you don't have large RAM installed. If this happend, just build
-the project one by one.
-
-DELPHI 2005/WIN32: 
-Follow Delphi 2006/Win32 installion. Replace "90" by "100" in all project group
-or packages.
-
-DELPHI 7: Directory VC32 contains OverbyteIcsDel70.dpk which is a package source for
-all components. Using Delphi, do a file/open, select *.dpk and browse to
-the VC32 directory. Select OverbyteIcsDel70.dpk and open it. Then click on the 
-Install button. You should see the FPiette tab on the component gallery.
-Add VC32 directory path to your library path (Tools menu / Environment Options
-/ Library / Library Path. Add VC32 path at the end of the existing path).
-
-Once the package is installed, you may open the sample projects. There is a
-project group called OverbyteDel70Sam.bpg which has all sample programs. Open it
-with file/open, browse to the Internet directory, select and open OverbyteDel70Sam.bpg.
+project group called OverbyteDel7Sam.bpg which has all sample programs. Open it
+with file/open, browse to the Internet directory, select and open OverbyteDel7Sam.bpg.
 Then Project/Build all projects. You'll get all sample programs compiled.
 It is likely that for each project, Delphi complains about a missing .res
 file. This is not a problem, Delphi will recreate it as needed. They have not
@@ -296,7 +250,7 @@ Once the components are all installed, you may open the sample projects
 each one after the other and compile them. For each project, do file/open
 and select the dpr file in the internet directory. Then Project/Build All.
 
-CBUILDER 2006:
+CBUILDER 2006, 2007, 2009, 2010:
 Follow the installation procedure described for Delphi 2006. Just change
 the project group and package name: replace "del" by "bcb" in their names.
 You can't have Delphi 2006 and CBuilder 2006 packages installed at the 
@@ -305,15 +259,6 @@ remove the one you don't need.
 If you need both BCB and Delphi personnalities ate the same time, then
 use Delphi 2006 package (OverbyteIcsDel100.bpl) and change his options to make it
 a dual mode Delphi/CPP package. See Borland documentation.
-
-BCB6: First you need to install all components. There is a package in
-Delphi\VC32 directory, called OverbyteIcsBcb60.bpk. You do File/Open project and
-browse to OverbyteIcsBcb60.bpk. Select and open it, then Project/Build OverbyteIcsBcb60.
-Once the package is compiled, you can install it into your component
-palette: Component/Install Packages, click the Add button and select 
-Delphi\VC32\OverbyteIcsBcb60.bpl (you just generated this file by compiling the 
-package). Click OK button. You must now see FPiette Tab on the component 
-gallery.
 
 Once the components are all installed, you may open the sample projects
 each one after the other and compile them. For each project, do file/open
@@ -394,7 +339,8 @@ As a rule, the components are the files which have a Register procedure.
 Version Control repository:
 ---------------------------
 svn://svn.overbyte.be/ics or http://svn.overbyte.be:8443/svn/ics
-(Usercode = ics, password = ics).
+(Usercode = ics, password = ics) and and an archive extracted dayly from the repository 
+at: http://wiki.overbyte.be/arch/icsv7w.zip 
 
 
 Sample applications:

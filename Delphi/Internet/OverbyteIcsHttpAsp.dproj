@@ -43,6 +43,14 @@
     <DelphiCompile Include="OverbyteIcsHttpAsp.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <RcCompile Include="..\Vc32\OverbyteIcsCommonVersion.rc">
+      <ModuleName>OverbyteIcsCommonVersion.rc</ModuleName>
+      <Form>..\Vc32\OverbyteIcsCommonVersion.res</Form>
+    </RcCompile>
+    <RcCompile Include="..\Vc32\OverbyteIcsXpManifest.rc">
+      <ModuleName>OverbyteIcsXpManifest.rc</ModuleName>
+      <Form>..\Vc32\OverbyteIcsXpManifest.res</Form>
+    </RcCompile>
     <DCCReference Include="OverbyteIcsHttpAsp1.pas">
       <Form>HttpTestForm</Form>
     </DCCReference>

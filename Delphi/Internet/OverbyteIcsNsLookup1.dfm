@@ -1,9 +1,9 @@
 object NsLookupForm: TNsLookupForm
   Left = 257
   Top = 327
+  Width = 526
+  Height = 231
   Caption = 'Name Server Lookup'
-  ClientHeight = 197
-  ClientWidth = 518
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -76,7 +76,8 @@ object NsLookupForm: TNsLookupForm
       Top = 6
       Width = 25
       Height = 25
-      DoubleBuffered = True
+      TabOrder = 3
+      OnClick = ClearDisplayBitBtnClick
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000000000000000000000000
@@ -86,9 +87,6 @@ object NsLookupForm: TNsLookupForm
         77770FFFFFFFF00777770F0F00FF0B0777770FFFFFF0BFB077770FFFFF0BFBFB
         07770F00F08FBFBFB0770FFFFFF8FBFBFB070FF00F0F8FBFBFB00FFFFFFFF8FB
         FBF80F00F0FF0F8FBF870FFFFFFFFF08F8770000000000078777}
-      ParentDoubleBuffered = False
-      TabOrder = 3
-      OnClick = ClearDisplayBitBtnClick
     end
     object ALookupButton: TButton
       Left = 160

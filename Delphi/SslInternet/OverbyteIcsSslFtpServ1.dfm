@@ -248,6 +248,7 @@ object SslFtpServerForm: TSslFtpServerForm
     ZlibMaxSize = 500000000
     CodePage = 0
     Language = 'EN*'
+    MaxAttempts = 12
     OnStart = SslFtpServer1Start
     OnStop = SslFtpServer1Stop
     OnAuthenticate = SslFtpServer1Authenticate
@@ -363,6 +364,7 @@ object SslFtpServerForm: TSslFtpServerForm
     ZlibMaxSize = 500000000
     CodePage = 0
     Language = 'EN*'
+    MaxAttempts = 12
     OnStart = SslFtpServer1Start
     OnStop = SslFtpServer1Stop
     OnAuthenticate = SslFtpServer1Authenticate
@@ -395,7 +397,9 @@ object SslFtpServerForm: TSslFtpServerForm
     Top = 205
   end
   object IcsLogger1: TIcsLogger
-    LogFileOption = lfoOverwrite
+    TimeStampFormatString = 'hh:nn:ss:zzz'
+    TimeStampSeparator = ' '
+    LogFileOption = lfoOverwrite    
     LogFileName = 'DEBUG_SSLFtpSrv.txt'
     LogOptions = []
     Left = 140

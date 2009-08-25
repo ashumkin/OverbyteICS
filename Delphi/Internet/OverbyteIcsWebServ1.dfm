@@ -1,9 +1,9 @@
 object WebServForm: TWebServForm
   Left = 250
   Top = 155
-  Width = 523
-  Height = 367
   Caption = 'ICS WebServer Demo - http://www.overbyte.be'
+  ClientHeight = 333
+  ClientWidth = 515
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -250,6 +250,8 @@ object WebServForm: TWebServForm
     Options = []
     KeepAliveTimeSec = 10
     MaxRequestsKeepAlive = 100
+    SizeCompressMin = 5000
+    SizeCompressMax = 5000000
     OnServerStarted = HttpServer1ServerStarted
     OnServerStopped = HttpServer1ServerStopped
     OnClientConnect = HttpServer1ClientConnect

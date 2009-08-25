@@ -1,0 +1,72 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{E250B7AB-8DB5-4298-A59B-B10618337888}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Run.cbproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Design.cbproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="OverbyteIcsHttpTst.cbproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="OverbyteIcsHttpsTst.cbproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="OverbyteIcsCB2010Run">
+			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Run.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsCB2010Run:Clean">
+			<MSBuild Targets="Clean" Projects="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Run.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsCB2010Run:Make">
+			<MSBuild Targets="Make" Projects="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Run.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsCB2010Design">
+			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Design.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsCB2010Design:Clean">
+			<MSBuild Targets="Clean" Projects="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Design.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsCB2010Design:Make">
+			<MSBuild Targets="Make" Projects="..\..\..\Delphi\Vc32\OverbyteIcsCB2010Design.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpTst">
+			<MSBuild Projects="OverbyteIcsHttpTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpTst:Clean">
+			<MSBuild Targets="Clean" Projects="OverbyteIcsHttpTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpTst:Make">
+			<MSBuild Targets="Make" Projects="OverbyteIcsHttpTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpsTst">
+			<MSBuild Projects="OverbyteIcsHttpsTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpsTst:Clean">
+			<MSBuild Targets="Clean" Projects="OverbyteIcsHttpsTst.cbproj"/>
+		</Target>
+		<Target Name="OverbyteIcsHttpsTst:Make">
+			<MSBuild Targets="Make" Projects="OverbyteIcsHttpsTst.cbproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="OverbyteIcsCB2010Run;OverbyteIcsCB2010Design;OverbyteIcsHttpTst;OverbyteIcsHttpsTst"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="OverbyteIcsCB2010Run:Clean;OverbyteIcsCB2010Design:Clean;OverbyteIcsHttpTst:Clean;OverbyteIcsHttpsTst:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="OverbyteIcsCB2010Run:Make;OverbyteIcsCB2010Design:Make;OverbyteIcsHttpTst:Make;OverbyteIcsHttpsTst:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>

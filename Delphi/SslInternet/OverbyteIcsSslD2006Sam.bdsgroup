@@ -16,10 +16,11 @@
       <Projects Name="OverbyteIcsSslFtpTst.exe">OverbyteIcsSslFtpTst.bdsproj</Projects>
       <Projects Name="OverbyteIcsSslFtpServ.exe">OverbyteIcsSslFtpServ.bdsproj</Projects>
       <Projects Name="OverbyteIcsSslMailSnd.exe">OverbyteIcsSslMailSnd.bdsproj</Projects>
+	  <Projects Name="OverbyteIcsSslMailRcv.exe">OverbyteIcsSslMailRcv.bdsproj</Projects>
       <Projects Name="OverbyteIcsSslNewsRdr.exe">OverbyteIcsSslNewsRdr.bdsproj</Projects>
       <Projects Name="OverbyteIcsSimpleSslCli.exe">OverbyteIcsSimpleSslCli.bdsproj</Projects>
       <Projects Name="OverbyteIcsSimpleSslServer.exe">OverbyteIcsSimpleSslServer.bdsproj</Projects>
-      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverbyteIcsHttpsTst.exe OverbyteIcsSslWebServ.exe OverbyteIcsSslFtpTst.exe OverbyteIcsSslFtpServ.exe OverbyteIcsSslMailSnd.exe OverbyteIcsSslNewsRdr.exe OverbyteIcsSimpleSslCli.exe OverbyteIcsSimpleSslServer.exe</Projects>
+      <Projects Name="Targets">OverbyteIcsD2006Run.bpl OverbyteIcsD2006Design.bpl OverbyteIcsHttpsTst.exe OverbyteIcsSslWebServ.exe OverbyteIcsSslFtpTst.exe OverbyteIcsSslFtpServ.exe OverbyteIcsSslMailSnd.exe OverbyteIcsSslMailRcv.exe OverbyteIcsSslNewsRdr.exe OverbyteIcsSimpleSslCli.exe OverbyteIcsSimpleSslServer.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>  <StarTeamAssociation></StarTeamAssociation>
