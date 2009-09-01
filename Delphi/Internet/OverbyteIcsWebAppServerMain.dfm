@@ -66,6 +66,7 @@ object WebAppSrvForm: TWebAppSrvForm
     AuthRealm = 'ics'
     SessionTimeout = 300
     OnDeleteSession = HttpAppSrv1DeleteSession
+    OnVirtualException = HttpAppSrv1VirtualException
     Left = 52
     Top = 88
   end

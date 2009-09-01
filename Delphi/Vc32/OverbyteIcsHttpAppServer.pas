@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      7.04
+Version:      7.05
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -67,6 +67,11 @@ Jun 12, 2009 V7.03 don't ignore event Flags in TriggerGetDocument otherwise
                     authentication fails
 Jul 14, 2009 V7.04 F. Piette added THttpAppSrvConnection.OnDestroying and
                    related processing.
+Sept 1, 2009 V7.05 Angus added TriggerHeadDocument, can not ignore HEAD
+                     command for virtual pages else 404 returned
+                   Added OnVirtualException event to report exceptions
+                     creating virtual pages
+
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -96,6 +101,10 @@ uses
     OverbyteIcsUtils;
 
 type
+    TVirtualExceptionEvent = procedure (Sender : TObject;
+                                  E          : Exception;
+                                  Method     : THttpMethod;
+                                  const Path : string) of object;  { V7.05 }
     TMyHttpHandler        = procedure (var Flags: THttpGetFlag) of object;
     TUrlHandler           = class;
     THttpAppSrvConnection = class(THttpConnection)
@@ -252,6 +261,7 @@ type
         FMsg_WM_FINISH   : UINT;
         FHasAllocateHWnd : Boolean;
         FOnDeleteSession : TDeleteSessionEvent;
+        FOnVirtualExceptionEvent : TVirtualExceptionEvent;      { V7.05 }
         procedure AllocateMsgHandlers; override;
         procedure FreeMsgHandlers; override;
         function  MsgHandlersCount: Integer; override;
@@ -268,6 +278,9 @@ type
                                       var Flags : THttpGetFlag); override;
         procedure TriggerGetDocument(Sender    : TObject;
                                      var Flags : THttpGetFlag); override;
+        procedure TriggerHeadDocument(       { V7.05 can not ignore HEAD command }
+                                     Sender     : TObject;
+                                     var Flags  : THttpGetFlag); override;
         procedure TriggerPostedData(Sender: TObject; ErrCode: WORD); override;
         procedure TriggerClientConnect(Client : TObject; ErrCode : WORD); override;
         function  GetSessions(nIndex: Integer): TWebSession;
@@ -310,6 +323,8 @@ type
                                                           write SetSessionTimeout;
         property OnDeleteSession : TDeleteSessionEvent    read  FOnDeleteSession
                                                           write FOnDeleteSession;
+        property OnVirtualException : TVirtualExceptionEvent read  FOnVirtualExceptionEvent
+                                                             write FOnVirtualExceptionEvent;      { V7.05 }
     end;
 
 function ReverseTextFileToHtmlToString(
@@ -628,7 +643,7 @@ begin
                         TMyHttpHandler(Proc)(Flags);
                 end
                 else if Disp.SObjClass <> nil then begin
-                    SObj := Disp.SobjClass.Create(Self);
+                    SObj := Disp.SObjClass.Create(Self);
                     try
                         SObj.FClient           := ClientCnx;
                         SObj.FFlags            := Disp.FLags;
@@ -646,7 +661,12 @@ begin
                             FreeAndNil(SObj);
                         end;
                     except
-                        FreeAndNil(SObj);
+                        on E:Exception do
+                        begin
+                            FreeAndNil(SObj);
+                            if Assigned (FOnVirtualExceptionEvent) then  { V7.05 }
+                                FOnVirtualExceptionEvent (Self, E, httpMethodPost, ClientCnx.Path);
+                        end;
                     end;
                 end;
             end
@@ -718,7 +738,12 @@ begin
                         FreeAndNil(SObj);
                     end;
                 except
-                    FreeAndNil(SObj);
+                    on E:Exception do
+                    begin
+                        FreeAndNil(SObj);
+                        if Assigned (FOnVirtualExceptionEvent) then  { V7.05 }
+                            FOnVirtualExceptionEvent (Self, E, httpMethodGet, ClientCnx.Path);
+                    end;
                 end;
             end;
             Exit;
@@ -793,6 +818,29 @@ begin
     Flags := hg404;
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpAppSrv.TriggerHeadDocument(       { V7.05 can not ignore HEAD command }
+     Sender     : TObject;
+     var Flags  : THttpGetFlag);
+begin
+//OutputDebugString(PChar('HTTP_HEAD  ' + (Sender as THttpAppSrvConnection).Path));
+    inherited TriggerHeadDocument(Sender, Flags);
+    if Flags in [hgWillSendMySelf, hg404, hg403, hg401, hgAcceptData,
+                                                        hgSendDirList] then
+        Exit ;
+
+    // Handle all virtual documents. Returns TRUE if document handled.
+    if GetDispatchVirtualDocument(Sender as THttpAppSrvConnection, Flags) then
+        Exit;
+
+    // Handle all normal (static) documents. Returns TRUE if document handled.
+    if GetDispatchNormalDocument(Sender as THttpConnection, Flags) then
+        Exit;
+
+    // Reject anything else
+    Flags := hg404;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpAppSrv.TriggerPostDocument(

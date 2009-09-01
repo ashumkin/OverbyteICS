@@ -8,7 +8,7 @@ Description:  This is an email form demo, designed to send a email to a hard
               entered in the form.  This demo uses a test email account at
               Magenta Systems, but the sender gets an identical copy of the
               email so you see it worked.
-Version:      1.02
+Version:      1.03
 EMail:        angus@magsys.co.uk
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -45,6 +45,7 @@ History:
 Jul 10, 2009 V1.01 Arno fixed a bug in SmtpClient.OnGetData, we may not send
                    Unicode.
 Jul 10, 2009 V1.02 Arno Removed string cast warnings.
+Sept 1, 2009 V1.03 Angus - report exceptions creating virtual pages
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebAppServerMailer;
@@ -197,9 +198,11 @@ procedure TUrlHandlerMailer.Execute;
 begin
     WSocket := TWSocket.Create (self) ;
     WSocket.OnDnsLookupDone := DoneDnsLookup ;
+    WSocket.OnBgException := WebAppSrvForm.AppSrvBgException;
     AbortTimer := TTimer.Create (self) ;
     AbortTimer.OnTimer := TimerAbortTimer ;
     AbortTimer.Interval := 5000 ;     // five second timeout for DNS
+// SmtpClient.RcptName.Clear ; // deliberate exception
     try
 //  get user IP address and lookup host name
         sIPAddr := Client.GetPeerAddr ;
@@ -262,6 +265,7 @@ begin
     begin
   //      ExtractURLEncodedValue (Params, 'EmailTo', sMailTo) ;
     	sMailTo := Params ;
+//  SmtpClient.RcptName.Clear ; // deliberate exception
     end ;
 
 // see if page is being POSTed by itself to send and email
@@ -307,6 +311,7 @@ begin
                 sTempFrom := '"' + sMailName + '" <' + sMailFrom + '>' ;
                 if NOT Assigned (EmailBody) then EmailBody := TStringList.Create ;
                 if NOT Assigned (SmtpClient) then SmtpClient := TSmtpCli.Create (self) ;
+                SmtpClient.OnBgException := WebAppSrvForm.AppSrvBgException;
                 SmtpClient.OnDisplay := SmtpClientDisplay ;
                 SmtpClient.OnGetData := SmtpClientGetData ;
                 SmtpClient.OnRequestDone := SmtpClientRequestDone ;
