@@ -3,6 +3,7 @@ program OverbyteIcsThreadTimerDemo;
 {$R '..\Vc32\OverbyteIcsCommonVersion.res' '..\Vc32\OverbyteIcsCommonVersion.rc'}
 
 uses
+  FastAppProcessMessagePatch in 'FastAppProcessMessagePatch.pas',
   Forms,
   OverbyteIcsThreadTimerDemo1 in 'OverbyteIcsThreadTimerDemo1.pas' {IcsTimerDemoForm};
 

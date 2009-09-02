@@ -651,3 +651,4 @@ Delphi\MiscDemos\OverbyteIcsThreadTimerDemo.dproj
 Delphi\MiscDemos\OverbyteIcsThreadTimerDemo.res
 Delphi\MiscDemos\OverbyteIcsThreadTimerDemo1.pas
 Delphi\MiscDemos\OverbyteIcsThreadTimerDemo1.dfm
+Delphi\MiscDemos\FastAppProcessMessagePatch.pas
