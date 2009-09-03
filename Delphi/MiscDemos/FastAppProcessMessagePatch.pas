@@ -51,6 +51,7 @@ implementation
 {$IFDEF CONDITIONALEXPRESSIONS}
 {$IF CompilerVersion >= 18.50} // 2007 and later
 
+{ Uncomment next line to include checks for UNICODE windows (VCL default) }
 {.$DEFINE APP_CHECK_UNICODE_HWND}
 
 uses Windows, Messages, SysUtils, Forms;
@@ -181,15 +182,11 @@ begin
   begin
     Unicode := (Msg.hwnd <> 0) and IsWindowUnicode(Msg.hwnd);
     if Unicode then
-{$ENDIF}
-    {$IFNDEF APP_CHECK_UNICODE_HWND}
-      MsgExists := PeekMessage(Msg, 0, 0, 0, PM_REMOVE) {$IFNDEF APP_CHECK_UNICODE_HWND} ; {$ENDIF}
-    {$ELSE}
-      MsgExists := PeekMessageW(Msg, 0, 0, 0, PM_REMOVE) {$IFNDEF APP_CHECK_UNICODE_HWND} ; {$ENDIF}
-    {$ENDIF}
-{$IFDEF APP_CHECK_UNICODE_HWND}
+      MsgExists := PeekMessageW(Msg, 0, 0, 0, PM_REMOVE)
     else
       MsgExists := PeekMessageA(Msg, 0, 0, 0, PM_REMOVE);
+{$ELSE}
+    MsgExists := PeekMessage(Msg, 0, 0, 0, PM_REMOVE);
 {$ENDIF}
     if not MsgExists then
       Exit;
@@ -208,15 +205,11 @@ begin
         TranslateMessage(Msg);
       {$IFDEF APP_CHECK_UNICODE_HWND}
         if Unicode then
-      {$ENDIF}
-        {$IFNDEF APP_CHECK_UNICODE_HWND}
-          DispatchMessage(Msg){$IFNDEF APP_CHECK_UNICODE_HWND} ; {$ENDIF}
-        {$ELSE}
-          DispatchMessageW(Msg){$IFNDEF APP_CHECK_UNICODE_HWND} ; {$ENDIF}
-        {$ENDIF}
-      {$IFDEF APP_CHECK_UNICODE_HWND}
+          DispatchMessageW(Msg)
         else
           DispatchMessageA(Msg);
+      {$ELSE}
+        DispatchMessage(Msg);
       {$ENDIF}
       end;
     end
@@ -230,7 +223,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 (*
 Forms.pas.9681: begin
 004694C0 53               push ebx
@@ -433,16 +425,34 @@ var
   ProcessMessageBak: TJump;
   ProcAddrProcessMessage: Pointer;
 
-initialization
+procedure Init;
+begin
   ProcAddrProcessMessage := GetProcAddrProcessMessage;
   PTerminateOffs := GetFTerminateOffs(ProcAddrProcessMessage);
   if PTerminateOffs <> nil then
     Patch(ProcAddrProcessMessage, @THackApplication.FastProcessMessage,
-         ProcessMessageBak);
+          ProcessMessageBak);
+end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+initialization
+{$IF CompilerVersion = 18.50}
+  {$IFNDEF APP_CHECK_UNICODE_HWND}
+    Init;
+  {$ENDIF}
+{$ELSEIF True}
+    Init;
+{$IFEND}
 
 finalization
-  UnPatch(ProcAddrProcessMessage, ProcessMessageBak);
+{$IF CompilerVersion = 18.50}
+  {$IFNDEF APP_CHECK_UNICODE_HWND}
+    UnPatch(ProcAddrProcessMessage, ProcessMessageBak);
+  {$ENDIF}
+{$ELSEIF True}
+    UnPatch(ProcAddrProcessMessage, ProcessMessageBak);
+{$IFEND}
 
 {$IFEND}
 {$ENDIF}
