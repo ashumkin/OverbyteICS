@@ -7,7 +7,7 @@ Description:  A very fast external SSL-session-cache component.
               Uses OpenSSL (http://www.openssl.org).
               Uses freeware TSslWSocket component  from ICS
               (Internet Component Suite).
-Version:      1.03
+Version:      1.04
 EMail:        <arno.garrels@gmx.de>
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -44,6 +44,7 @@ History:
 06/28/2007 v1.01 A. Garrels fixed a bug with multiple instances.
 Jul 03, 2008 V1.02 A. Garrels made a few changes to prepare code for Unicode.
 Mar 20, 2009 v1.03 A. Garrels exchanged 4 * PChar by PAnsiChar (was no bug!)
+Sep 03, 2009 V1.04 Arno exchanged TThread.Resume by TThread.Start for D2010 and later
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -356,9 +357,12 @@ begin
                                    + SysErrorMessage(GetLastError));
         FWorkerThread := TSslCacheWorkerThread.Create(True);
         FWorkerThread.FSessionCache := Self;
-        FWorkerThread.FreeOnTerminate := False;
         FThreadID := FWorkerThread.ThreadID;
+    {$IFDEF COMPILER14_UP}
+        FWorkerThread.Start;
+    {$ELSE}
         FWorkerThread.Resume;
+    {$ENDIF}
         Sleep(0);
     end;
 
@@ -372,15 +376,13 @@ end;
 destructor TSslAvlSessionCache.Destroy;
 begin
     if (FStopEv <> 0) then
-    begin
         SetEvent(FStopEv);
+
+    FreeAndNil(FWorkerThread);
+
+    if (FStopEv <> 0) then begin
         CloseHandle(FStopEv);
         FStopEv := 0;
-    end;
-    if Assigned(FWorkerThread) then begin
-        FWorkerThread.WaitFor;
-        FWorkerThread.Free;
-        FWorkerThread := nil;
     end;
     if (FSetFlushEv <> 0) then begin
         CloseHandle(FSetFlushEv);

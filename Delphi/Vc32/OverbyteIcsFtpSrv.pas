@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.09
+Version:      7.10
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -383,7 +383,7 @@ June 04, 2009 V7.09 Angus called TriggerMd5Calculated when changing file date/ti
              default for TimeoutSecsXfer reduced from 900 to 60 secs and only aborts
                  data channel not control channel, it must be shorter than TimeoutSecsIdle
              SessIdInfo add client numeric id to identify separate sessions from same IP
-
+Sept 03, 2009 V7.10 Arno exchanged TThread.Resume by TThread.Start for D2010 and later
 
 
 
@@ -469,8 +469,8 @@ uses
 
 
 const
-    FtpServerVersion         = 709;
-    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.09 ';
+    FtpServerVersion         = 710;
+    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.10 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -3677,7 +3677,11 @@ begin
             Client.ProcessingThread.Keyword := 'DECOMPRESS';
             Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
             Client.ProcessingThread.FreeOnTerminate := TRUE;
+        {$IFDEF COMPILER14_UP}
+            Client.ProcessingThread.Start;
+        {$ELSE}
             Client.ProcessingThread.Resume;
+        {$ENDIF}
             Client.AnswerDelayed := TRUE;
             exit;
         except
@@ -4138,7 +4142,11 @@ begin
                 Client.ProcessingThread.Keyword := 'COMPRESS';
                 Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
                 Client.ProcessingThread.FreeOnTerminate := TRUE;
+            {$IFDEF COMPILER14_UP}
+                Client.ProcessingThread.Start;
+            {$ELSE}
                 Client.ProcessingThread.Resume;
+            {$ENDIF}
                 { Since answer is sent later when the thread returns we need }
                 { to set this flag!                                          }
                 Client.AnswerDelayed := TRUE;
@@ -4652,7 +4660,11 @@ begin
         Client.ProcessingThread.Keyword := 'DIRECTORY';
         Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
         Client.ProcessingThread.FreeOnTerminate := TRUE;
+    {$IFDEF COMPILER14_UP}
+        Client.ProcessingThread.Start;
+    {$ELSE}
         Client.ProcessingThread.Resume;
+    {$ENDIF}
         { Since answer is sent later when the thread returns we need }
         { to set this flag!                                          }
         Client.AnswerDelayed := TRUE;
@@ -5882,7 +5894,11 @@ begin
                 Client.ProcessingThread.Keyword := Keyword;
                 Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
                 Client.ProcessingThread.FreeOnTerminate := TRUE;
+            {$IFDEF COMPILER14_UP}
+                Client.ProcessingThread.Start;
+            {$ELSE}
                 Client.ProcessingThread.Resume;
+            {$ENDIF}
                 { Since answer is sent later when the thread returns we need }
                 { to set this flag!                                          }
                 Client.AnswerDelayed := TRUE;
@@ -5975,7 +5991,11 @@ begin
                 Client.ProcessingThread.Keyword := Keyword;
                 Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
                 Client.ProcessingThread.FreeOnTerminate := TRUE;
+            {$IFDEF COMPILER14_UP}
+                Client.ProcessingThread.Start;
+            {$ELSE}
                 Client.ProcessingThread.Resume;
+            {$ENDIF}
                 { Since answer is sent later when the thread returns we need }
                 { to set this flag!                                          }
                 Client.AnswerDelayed := TRUE;
