@@ -1,9 +1,9 @@
 object SmtpTestForm: TSmtpTestForm
-  Left = 336
-  Top = 151
-  Width = 584
-  Height = 518
-  Caption = 'SmtpTestForm'
+  Left = 197
+  Top = 144
+  Caption = 'SmtpTestForm - http://www.overbyte.be'
+  ClientHeight = 491
+  ClientWidth = 576
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -41,7 +41,7 @@ object SmtpTestForm: TSmtpTestForm
     Left = 0
     Top = 441
     Width = 576
-    Height = 43
+    Height = 50
     Hint = 'This memo shows info messages'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -57,6 +57,7 @@ object SmtpTestForm: TSmtpTestForm
     ScrollBars = ssBoth
     ShowHint = True
     TabOrder = 1
+    ExplicitHeight = 43
   end
   object ToolsPanel: TPanel
     Left = 0
@@ -273,6 +274,10 @@ object SmtpTestForm: TSmtpTestForm
       TabOrder = 16
       object BasicSettingsTabSheet: TTabSheet
         Caption = 'Basic Settings'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object Label1: TLabel
           Left = 25
           Top = 11
@@ -465,7 +470,6 @@ object SmtpTestForm: TSmtpTestForm
           Width = 121
           Height = 21
           Style = csDropDownList
-          ItemHeight = 13
           TabOrder = 10
           Items.Strings = (
             'None'
@@ -482,7 +486,6 @@ object SmtpTestForm: TSmtpTestForm
           Width = 121
           Height = 21
           Style = csDropDownList
-          ItemHeight = 13
           TabOrder = 11
           Items.Strings = (
             'Not specified'
@@ -508,6 +511,10 @@ object SmtpTestForm: TSmtpTestForm
       object CharsetSettingsTabSheet: TTabSheet
         Caption = 'Charset && MIME Settings'
         ImageIndex = 1
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object UseMailMessageCheckBox: TCheckBox
           Left = 19
           Top = 6
@@ -603,7 +610,6 @@ object SmtpTestForm: TSmtpTestForm
               'to 7bit or 8bit'#13#10'and Allow8BitChars is disabled. If set to QP or' +
               ' Base64 this encoding is forced.'
             Style = csDropDownList
-            ItemHeight = 13
             TabOrder = 5
             Items.Strings = (
               'smtpEnc7bit'
@@ -660,7 +666,6 @@ object SmtpTestForm: TSmtpTestForm
               'e for example, '#13#10'"latin1" and press button Test Charset '
             CharSet = 'utf-7'
             DropDownCount = 32
-            ItemHeight = 13
             TabOrder = 0
             OnChange = IcsCharsetComboBox1Change
           end
@@ -764,6 +769,7 @@ object SmtpTestForm: TSmtpTestForm
     OnGetData = SmtpClientGetData
     OnHeaderLine = SmtpClientHeaderLine
     OnRequestDone = SmtpClientRequestDone
+    XMailer = 'ICS SMTP Component V%VER%'
     OnAttachContentTypeEh = SmtpClientAttachContentTypeEh
     Left = 32
     Top = 258
