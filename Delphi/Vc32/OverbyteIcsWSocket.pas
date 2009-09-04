@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.26
+Version:      7.27
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -710,7 +710,9 @@ Jun 12, 2009 V7.24 Angus added WriteCount property, how many bytes sent since
 Jul 16, 2009 V7.25 Arno fixed and changed SetCounterClass()
 Jul 19, 2009 V7.26 Arno - SSL code ignored FPaused flag, the change is in
                    TCustomSslWSocket.TriggerEvent.
-
+Sep 04, 2009 V7.27 Set option TCP_NODELAY in Dup as well as provide a public
+                   method to set this option, similar as suggested by
+                   Samuel Soldat.
 
 }
 
@@ -820,8 +822,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 726;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.26 ';
+  WSocketVersion            = 727;
+  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.27 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1161,6 +1163,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function    GetSockName(var saddr : TSockAddrIn; var saddrlen : Integer) : Integer; virtual;
     procedure   SetLingerOption;
     procedure   SetKeepAliveOption;
+    function    SetTcpNoDelayOption: Boolean; { V7.27 }
     procedure   Dup(NewHSocket : TSocket); virtual;
     procedure   Shutdown(How : Integer); virtual;
     procedure   Pause; virtual;
@@ -5466,6 +5469,9 @@ begin
         Exit;
     end;
 
+    if HasOption(FComponentOptions, wsoTcpNoDelay) and { V7.27 }
+                (not SetTcpNoDelayOption) then
+        Exit;
     SetLingerOption;
     SetKeepAliveOption;  // AG { 05/23/07)
 
@@ -7142,6 +7148,7 @@ var
 begin
     if FKeepAliveOnOff = wsKeepAliveOff then
         Exit;
+    Assert(FHSocket <> INVALID_SOCKET); { V7.27 }
     if FKeepAliveOnOff = wsKeepAliveOnSystem then begin
         OptVal := 1;
         Status := WSocket_Synchronized_setsockopt(FHSocket, SOL_SOCKET,
@@ -7196,6 +7203,24 @@ begin
         SocketError('setsockopt(SO_LINGER)');
         Exit;
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocket.SetTcpNoDelayOption: Boolean; { V7.27 }
+var
+    optval  : Integer;
+begin
+    Assert(FHSocket <> INVALID_SOCKET);
+    if HasOption(FComponentOptions, wsoTcpNoDelay) then
+        optval := -1 { true }
+    else
+        optval := 0; { false }
+    Result := WSocket_Synchronized_setsockopt(FHSocket, IPPROTO_TCP,
+                                              TCP_NODELAY,
+                                              optval, SizeOf(optval)) = 0;
+    if not Result then
+        SocketError('setsockopt(IPPROTO_TCP, TCP_NODELAY)');
 end;
 
 
@@ -7363,16 +7388,9 @@ begin
             Exit;
         end;
 
-        if HasOption(FComponentOptions, wsoTcpNoDelay) then begin
-            optval := -1; { true, 0=false }
-            iStatus := WSocket_Synchronized_setsockopt(FHsocket, IPPROTO_TCP,
-                                                       TCP_NODELAY, optval, SizeOf(optval));
-            if iStatus <> 0 then begin
-                SocketError('setsockopt(IPPROTO_TCP, TCP_NODELAY)');
-                Exit;
-            end;
-        end;
-
+        if HasOption(FComponentOptions, wsoTcpNoDelay) and { V7.27 }
+                    (not SetTcpNoDelayOption) then
+            Exit;
         SetLingerOption;
         SetKeepAliveOption;
 
