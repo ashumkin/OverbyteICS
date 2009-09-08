@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.27
+Version:      7.28
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2008 by François PIETTE
+Legal issues: Copyright (C) 1996-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -713,6 +713,8 @@ Jul 19, 2009 V7.26 Arno - SSL code ignored FPaused flag, the change is in
 Sep 04, 2009 V7.27 Set option TCP_NODELAY in Dup as well as provide a public
                    method to set this option, similar as suggested by
                    Samuel Soldat.
+Sep 08, 2009 V7.28 Arno - Minor Unicode bugfix in TX509Base.GetExtension().
+
 
 }
 
@@ -822,8 +824,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 727;
-  CopyRight    : String     = ' TWSocket (c) 1996-2008 Francois Piette V7.27 ';
+  WSocketVersion            = 728;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.28 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -12500,6 +12502,7 @@ var
     ext_str  : Pointer;
     B        : PBIO;
     Nid      : Integer;
+    ABuf     : AnsiString;
 begin
     Result.Critical  := FALSE;
     Result.ShortName := '';
@@ -12528,10 +12531,11 @@ begin
             try
                 f_i2a_ASN1_OBJECT(B, f_X509_EXTENSION_get_object(Ext));
                 J := f_BIO_ctrl(B, BIO_CTRL_PENDING, 0, nil);
-                SetLength(Result.ShortName, J);
+                SetLength(ABuf, J);
                 if J > 0 then begin
-                    f_Bio_read(B, PChar(Result.ShortName), J);
-                    SetLength(Result.ShortName, _StrLen(PChar(Result.ShortName)));
+                    f_Bio_read(B, PAnsiChar(ABuf), J);
+                    SetLength(ABuf, _StrLen(PAnsiChar(ABuf)));
+                    Result.ShortName := String(ABuf);
                 end;
             finally
                 f_bio_free(B);
