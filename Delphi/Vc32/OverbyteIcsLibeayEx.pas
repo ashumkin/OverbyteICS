@@ -5,7 +5,7 @@ Description:  Some more function headers of LIBEAY32.DLL which are not
               declared/used in OverbyteIcsLibeay.pas (OpenSSL)
               This is only the subset and may grow.
 Creation:     Jan 12, 2005
-Version:      1.01
+Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -41,6 +41,9 @@ Legal issues: Copyright (C) 2005-2008 by François PIETTE
 
 History:
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
+Sep 09, 2009 Arno - Don't define PEngine if it's already defined in
+             OverbyteIcsLibeay.pas.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -48,6 +51,7 @@ Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 {$X+}                                 { Enable extended syntax              }
 {$H+}                                 { Use long strings                    }
 {$J+}                                 { Allow typed constant to be modified }
+{$I OverbyteIcsSslDefs.inc}
 
 unit OverbyteIcsLibeayEx;
 
@@ -92,11 +96,13 @@ type
         *)
     end;
     PEVP_CIPHER_CTX = ^TEVP_CIPHER_CTX_st;
-    
+
+{$IFDEF OPENSSL_NO_ENGINE}
     TEngine_st = packed record
         Dummy : array [0..0] of Byte;
     end;
     PEngine = ^TEngine_st;
+{$ENDIF}
 
     TASN1_BIT_STRING   = TASN1_STRING_st;
     PASN1_BIT_STRING   = ^TASN1_BIT_STRING;
