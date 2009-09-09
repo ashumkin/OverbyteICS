@@ -105,8 +105,12 @@ interface
 {$H+}           { Use long strings                    }
 {$J+}           { Allow typed constant to be modified }
 {$R-}           { no range checking, otherwise DWORD=Integer fails with some Windows APIs }
-
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF COMPILER12_UP}
     {$WARN IMPLICIT_STRING_CAST       OFF}
     {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}

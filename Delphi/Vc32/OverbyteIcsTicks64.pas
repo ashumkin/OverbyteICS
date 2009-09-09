@@ -108,6 +108,12 @@ interface
 uses
     Windows, SysUtils;
 
+{$IFDEF ConditionalExpressions}
+  {$IF CompilerVersion >= 18.00}
+    {$DEFINE USE_INLINE}
+  {$IFEND}
+{$ENDIF}
+
 { Q-}
 { R-}
 
@@ -133,8 +139,8 @@ type
     procedure IcsAlignNowPC;
     function IcsLastBootDT: TDateTime;
     function IcsGetPerfCountsPerSec: int64;
-    function IcsPerfCountCurrent: int64;
-    function IcsPerfCountCurrMilli: int64;
+    function IcsPerfCountCurrent: int64; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsPerfCountCurrMilli: int64; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function IcsPerfCountToMilli (LI: int64): int64;
     function IcsPerfCountGetMilli (startLI: int64): int64;
     function IcsPerfCountGetMillStr (startLI: int64): string;

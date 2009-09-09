@@ -73,7 +73,6 @@ Apr 10, 2009 A.Garrels checked against OpenSSL v0.9.8k and made it the maximum
 {$WARN SYMBOL_DEPRECATED OFF}
 {$I OverbyteIcsDefs.inc}
 {$I OverbyteIcsSslDefs.inc}
-
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
     {$WARN IMPLICIT_STRING_CAST       OFF}

@@ -422,7 +422,11 @@ unit OverbyteIcsHttpProt;
 interface
 
 {$I OverbyteIcsDefs.inc}
-
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFNDEF COMPILER7_UP}
     'Sorry, we do not want to support ancient compilers any longer'
 {$ENDIF}

@@ -109,16 +109,30 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   COMPILER12_UP    Delphi or C++ Builder 12 or higher (Tiburon)
   COMPILER14_UP    Delphi or C++ Builder 14 or higher (Weaver)
 
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }
 
-{ User defines : enable or disable these defines depending on how you want your 
-  ICS Packages to be compiled }
-  
-{#$DEFINE USE_SSL}
+{ User defines: Enable or disable these defines depending on how you want    }
+{ your ICS Packages to be compiled.                                          }
+
+{ If NO_ADV_MT is defined, then there is less multithread code compiled.     }
+{.$DEFINE NO_ADV_MT}
+
+{ Uncomment next line to always include SSL code into the binary.            }
+{ In most cases leave it commented and define USE_SSL in the project options }
+{ if required.                                                               }
+{.$DEFINE USE_SSL}
+
+{ Next line specifies to link the ZLIB .obj files.                           }
 {$DEFINE ZLIB_OBJ}
 
-{ Dont not change anything below this line ! }
+{ Next symbol affects D2010 and later only. If defined adds RTTI directive   }
+{ "$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])" to all units which  }
+{ disables all the inherited RTTI options and sets the new ones to not emit  }
+{ any extended RTTI information.                                             }
+{$DEFINE NO_EXTENDED_RTTI}
 
+{ Do not change anything below this line !                                   }
+{----------------------------------------------------------------------------}
 {$IFDEF FPC}
   {$MODE Delphi}                           { delphi mode            }
   {$H+}                                    { Use long strings       }

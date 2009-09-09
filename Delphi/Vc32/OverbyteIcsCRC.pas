@@ -49,6 +49,11 @@ Oct 31, 2006 V1.02 Angus - added a progress callback to FileCRC().
 unit OverbyteIcsCRC;
 
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$DEFINE USE_ASM} //Remove this line to use pascal instead of assembler
 
 interface

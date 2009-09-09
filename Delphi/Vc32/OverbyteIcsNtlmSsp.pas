@@ -44,12 +44,16 @@ Apr 30, 2008 V1.03 A. Garrels moved the call to LoadSecPackage from
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsNtlmSsp;
-
-{$I OverbyteIcsDefs.inc}
 {$B-}                                 { Enable partial Boolean evaluation   }
 {$T-}                                 { Untyped Pointers                    }
 {$X+}                                 { Enable extended syntax              }
 {$H+}                                 { Use long Strings                    }
+{$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF COMPILER12_UP}
     {$WARN IMPLICIT_STRING_CAST       OFF}
     {$WARN IMPLICIT_STRING_CAST_LOSS  ON}

@@ -86,6 +86,11 @@ interface
 {$T-}             { Untyped pointers                    }
 {$X+}             { Enable extended syntax              }
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 { The following define works only for compiler versions < v120.               }
 { Comment next line if you want to use the original RTL including FastCode    }
 { patches. Otherwise ICS routines are called when they are faster either      }

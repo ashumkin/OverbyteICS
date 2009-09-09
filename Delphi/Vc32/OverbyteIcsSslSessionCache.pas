@@ -50,6 +50,11 @@ Sep 03, 2009 V1.04 Arno exchanged TThread.Resume by TThread.Start for D2010 and 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslSessionCache;
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF USE_SSL}
 {$IFNDEF COMPILER5_UP}
     Bomb('This unit require Delphi 5  or C++ Builder 5 or higher!');

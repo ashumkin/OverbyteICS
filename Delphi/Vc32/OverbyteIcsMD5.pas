@@ -73,6 +73,11 @@ Apr 22, 2009 V7.00 Angus assume STREAM64
 unit OverbyteIcsMD5;
 
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF CLR}
     {$DEFINE SAFE}
 {$ENDIF}

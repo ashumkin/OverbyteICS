@@ -59,6 +59,11 @@ Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
 unit OverbyteIcsMD4;
 
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 
 interface
 

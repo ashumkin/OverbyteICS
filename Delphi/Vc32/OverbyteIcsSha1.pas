@@ -44,6 +44,11 @@ unit OverbyteIcsSha1; // "US Secure Hash Algorithm 1 (SHA1)" (RFC3174)
 
 interface
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$R-}
 {$Q-}
 

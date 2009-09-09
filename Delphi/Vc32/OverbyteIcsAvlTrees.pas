@@ -39,6 +39,13 @@ Mar  16, 2009  CompareStr ignored the first char (Unicode only), uses
 
 interface
 
+{$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
+
 uses
     Windows,
     SysUtils,

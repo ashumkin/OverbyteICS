@@ -390,6 +390,11 @@ interface
 {$H+}           { Use long strings                    }
 {$J+}           { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFNDEF COMPILER7_UP}
     Bomb = 'No support for ancient compiler';
 {$ENDIF}

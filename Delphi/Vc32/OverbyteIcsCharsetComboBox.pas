@@ -46,7 +46,11 @@ June 27, 2009 V1.01 Added the CodeGear-fix of QC #41940 for compilers below
 unit OverbyteIcsCharsetComboBox;
 
 {$I OverbyteIcsDefs.inc}
-
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF DELPHI6_UP}
     {$WARN SYMBOL_PLATFORM   OFF}
     {$WARN SYMBOL_LIBRARY    OFF}

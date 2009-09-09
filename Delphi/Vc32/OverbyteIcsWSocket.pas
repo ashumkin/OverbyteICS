@@ -775,6 +775,11 @@ unit OverbyteIcsWSocket;
 {$IFDEF USE_SSL}
     {$I OverbyteIcsSslDefs.inc}
 {$ENDIF}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF COMPILER12_UP}
     { These are usefull for debugging !}
     {$WARN IMPLICIT_STRING_CAST       ON}

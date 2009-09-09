@@ -54,6 +54,11 @@ interface
 {$H+}           { Use long strings                    }
 
 {$I OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
 
 {$IFDEF BCB}
     {$ObjExportAll On}
@@ -356,8 +361,7 @@ class procedure TIcsClockPool.Release(AClock: TIcsClock);
 begin
     EnterCriticalSection(GCritSecClockPool);
     try
-        if Assigned(GIcsClockPool) then
-        begin
+        if Assigned(GIcsClockPool) then begin
             GIcsClockPool.InternalRelease(AClock);
             if GIcsClockPool.FClockList.Count = 0 then
                 FreeAndNil(GIcsClockPool);
