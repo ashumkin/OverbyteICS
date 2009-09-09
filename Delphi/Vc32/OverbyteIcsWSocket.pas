@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.28
+Version:      7.29
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -714,7 +714,10 @@ Sep 04, 2009 V7.27 Set option TCP_NODELAY in Dup as well as provide a public
                    method to set this option, similar as suggested by
                    Samuel Soldat.
 Sep 08, 2009 V7.28 Arno - Minor Unicode bugfix in TX509Base.GetExtension().
-
+Sep 09, 2009 V7.29 Arno - Added new public methods TX509Base.WriteToBio() and
+                   TX509Base.ReadFromBio(). Method SafeToPemFile got an arg.
+                   that adds human readable certificate text to the output.
+                   InitializeSsl inlined. Removed a Delphi 1 conditional.
 
 }
 
@@ -765,6 +768,8 @@ unit OverbyteIcsWSocket;
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
+{$H+}           { Use long strings                    }
+{$J+}           { Allow typed constant to be modified }
 {$ALIGN 8}
 {$I OverbyteIcsDefs.inc}
 {$IFDEF USE_SSL}
@@ -782,17 +787,8 @@ unit OverbyteIcsWSocket;
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
-{$IFDEF COMPILER2_UP}{ Not for Delphi 1                    }
-    {$H+}            { Use long strings                    }
-    {$J+}            { Allow typed constant to be modified }
-{$ENDIF}
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
-{$ENDIF}
-
-{ If NO_ADV_MT is defined, then there is less multithread code compiled.    }
-{$IFDEF DELPHI1}
-    {$DEFINE NO_ADV_MT}
 {$ENDIF}
 
 {$IFDEF WIN32}
@@ -824,8 +820,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 728;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.28 ';
+  WSocketVersion            = 729;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.29 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1539,7 +1535,7 @@ type
         procedure   RaiseLastOpenSslError(EClass          : ExceptClass;
                                           Dump            : Boolean = FALSE;
                                           const CustomMsg : String  = ''); virtual;
-        procedure   InitializeSsl;
+        procedure   InitializeSsl; {$IFDEF USE_INLINE} inline; {$ENDIF}
         procedure   FinalizeSsl;
     public
         constructor Create(AOwner: TComponent); override;
@@ -1583,13 +1579,14 @@ const                                                             {AG 02/06/06}
 {$ENDIF}
 type
     EX509Exception = class(Exception);
+
     TExtension = record
         Critical  : Boolean;
         ShortName : String;
         Value     : String; // may be also one or multiple Name=value pairs,
     end;                    // separated by a CRLF
-
     PExtension = ^TExtension;
+
     TBioOpenMethode = (bomRead, bomWrite);
     TX509Base = class(TSslBaseComponent)
     private
@@ -1632,10 +1629,15 @@ type
                                     IncludePrivateKey: Boolean = False;
                                     const Password: String = '');
         procedure   SaveToPemFile(const FileName: String;
-                                  IncludePrivateKey: Boolean = False);
+                                  IncludePrivateKey: Boolean = FALSE;
+                                  AddRawText: Boolean = FALSE);
         procedure   PrivateKeyLoadFromPemFile(const FileName: String;
                                               const Password: String = '');
         procedure   PrivateKeySaveToPemFile(const FileName: String);
+        procedure   ReadFromBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
+                                const Password: String = '');
+        procedure   WriteToBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
+                               AddRawText: Boolean = FALSE);
         property    IssuerOneLine       : String        read  GetIssuerOneLine;
         property    SubjectOneLine      : String        read  GetSubjectOneLine;
         property    SerialNum           : Integer       read  GetSerialNum;
@@ -10495,7 +10497,7 @@ begin
         Len := 20;
         SetLength(Hash, Len);
         f_X509_digest(X509, f_EVP_sha1, PAnsiChar(Hash), @Len);
-        SetLength(Hash, _StrLen(PAnsiChar(@Hash[1])));
+        SetLength(Hash, _StrLen(PAnsiChar(Hash)));
         Result := GetByHash(Hash);
     end
     else
@@ -12901,45 +12903,11 @@ procedure TX509Base.LoadFromPemFile(const FileName: String;
     IncludePrivateKey: Boolean = FALSE; const Password: String = '');
 var
     FileBio : PBIO;
-    X       : PX509;
-    PKey    : PEVP_PKEY;
 begin
     InitializeSsl;
-    FileBio   := OpenFileBio(FileName, bomRead);
+    FileBio := OpenFileBio(FileName, bomRead);
     try
-        X := f_PEM_read_bio_X509(FileBio, nil, nil,
-                                      PAnsiChar(AnsiString(Password)));
-        if not Assigned(X) then
-            RaiseLastOpenSslError(EX509Exception, TRUE,
-                                  'Error reading certificate file "' +
-                                  Filename + '"');
-        try
-            if (not IncludePrivateKey) and Assigned(FPrivateKey) then
-                if f_X509_check_private_key(X, FPrivateKey) < 1 then
-                    raise EX509Exception.Create('Certificate and private key ' +
-                                                'do not match');
-            if IncludePrivateKey then begin
-                f_BIO_ctrl(FileBio, BIO_CTRL_RESET, 0, nil);
-                PKey := f_PEM_read_bio_PrivateKey(FileBio, nil, nil,
-                                              PAnsiChar(AnsiString(Password)));
-                if not Assigned(PKey) then
-                    RaiseLastOpenSslError(EX509Exception, TRUE,
-                                          'Error reading private key file "' +
-                                           Filename + '"');
-                try
-                    if f_X509_check_private_key(X, PKey) < 1 then
-                        raise EX509Exception.Create('Certificate and private key ' +
-                                                    'do not match');
-                     X509       := X;
-                     PrivateKey := PKey;
-                finally
-                    f_EVP_PKEY_free(PKey);
-                end;
-            end else
-                X509 := X;
-        finally
-            f_X509_free(X);
-        end;
+        ReadFromBio(FileBio, IncludePrivateKey, Password);
     finally
         f_bio_free(FileBio);
     end;
@@ -12947,30 +12915,89 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ todo: Actually the private key is written unprotected }
+{ todo: Currently private key is written unprotected }
 procedure TX509Base.SaveToPemFile(const FileName: String;
-    IncludePrivateKey: Boolean = FALSE);
+    IncludePrivateKey: Boolean = FALSE; AddRawText: Boolean = FALSE);
 var
     FileBio : PBIO;
 begin
     InitializeSsl;
-    if not Assigned(FX509) then
-        raise EX509Exception.Create('X509 not assigned');
-    if IncludePrivateKey and (not Assigned(FPrivateKey)) then
-        raise EX509Exception.Create('Private key not assigned');
     FileBio := OpenFileBio(FileName, bomWrite);
     try
-        if IncludePrivateKey and
-           (f_PEM_write_bio_PrivateKey(FileBio, FPrivateKey, nil, nil, 0,
-                                       nil, nil) = 0) then
-            RaiseLastOpenSslError(EX509Exception, TRUE,
-                                  'Error writing private key to file');
-        if f_PEM_write_bio_X509(FileBio, FX509) = 0 then
-            RaiseLastOpenSslError(EX509Exception, TRUE,
-                                  'Error writing certificate to file');
+        WriteToBio(FileBio, IncludePrivateKey, AddRawText);
     finally
         f_bio_free(FileBio);
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TX509Base.ReadFromBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
+  const Password: String = '');
+var
+    X     : PX509;
+    PKey  : PEVP_PKEY;
+begin
+    InitializeSsl;
+    if not Assigned(ABio) then
+        raise EX509Exception.Create('BIO not assigned');
+    X := f_PEM_read_bio_X509(ABio, nil, nil, PAnsiChar(AnsiString(Password)));
+    if not Assigned(X) then
+        RaiseLastOpenSslError(EX509Exception, TRUE,
+                              'Error reading certificate from BIO');
+    try
+        if (not IncludePrivateKey) and Assigned(FPrivateKey) then
+            if f_X509_check_private_key(X, FPrivateKey) < 1 then
+                raise EX509Exception.Create('Certificate and private key ' +
+                                            'do not match');
+        if IncludePrivateKey then begin
+            f_BIO_ctrl(ABio, BIO_CTRL_RESET, 0, nil);
+            PKey := f_PEM_read_bio_PrivateKey(ABio, nil, nil,
+                                              PAnsiChar(AnsiString(Password)));
+            if not Assigned(PKey) then
+                RaiseLastOpenSslError(EX509Exception, TRUE,
+                                      'Error reading private key from BIO');
+            try
+                if f_X509_check_private_key(X, PKey) < 1 then
+                    raise EX509Exception.Create('Certificate and private key ' +
+                                                'do not match');
+                 X509       := X;
+                 PrivateKey := PKey;
+            finally
+                f_EVP_PKEY_free(PKey);
+            end;
+        end else
+            X509 := X;
+    finally
+        f_X509_free(X);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ todo: Currently private key is written unprotected }
+procedure TX509Base.WriteToBio(ABio: PBIO;
+  IncludePrivateKey: Boolean = FALSE; AddRawText: Boolean = FALSE);
+begin
+    InitializeSsl;
+    if not Assigned(ABio) then
+        raise EX509Exception.Create('BIO not assigned');
+    if not Assigned(FX509) then
+        raise EX509Exception.Create('X509 not assigned');
+    if IncludePrivateKey and not Assigned(FPrivateKey) then
+        raise EX509Exception.Create('Private key not assigned');
+    if AddRawText and
+       (f_X509_print(ABio, FX509) = 0) then
+        RaiseLastOpenSslError(EX509Exception, TRUE,
+                              'Error writing raw text to BIO');
+    if IncludePrivateKey and
+       (f_PEM_write_bio_PrivateKey(ABio, FPrivateKey, nil, nil, 0,
+                                   nil, nil) = 0) then
+        RaiseLastOpenSslError(EX509Exception, TRUE,
+                              'Error writing private key to BIO');
+    if f_PEM_write_bio_X509(ABio, FX509) = 0 then
+        RaiseLastOpenSslError(EX509Exception, TRUE,
+                              'Error writing certificate to BIO');
 end;
 
 
