@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.30
+Version:      7.31
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -719,6 +719,9 @@ Sep 09, 2009 V7.29 Arno - Added new public methods TX509Base.WriteToBio() and
                    that adds human readable certificate text to the output.
                    InitializeSsl inlined. Removed a Delphi 1 conditional.
 Sep 17, 2009 V7.30 Anton Sviridov optimized setting of SSL options.
+Sep 17, 2009 V7.31 Arno fixed a Unicode bug in TX509Base.GetExtension and
+                   a general bug in TX509Base.GetSha1Hash (AnsiString as
+                   digest buffer should really be avoided)
 
 }
 
@@ -826,8 +829,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 730;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.30 ';
+  WSocketVersion            = 731;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.31 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -12389,15 +12392,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TX509Base.GetSha1Hash: AnsiString;
+function TX509Base.GetSha1Hash: AnsiString; { V7.31 }
 var
     Len : Integer;
 begin
     if Assigned(FX509) then begin
-        Len := 20;
-        SetLength(Result, Len);
-        f_X509_digest(FX509, f_EVP_sha1, PAnsiChar(Result), @Len);
-        SetLength(Result, _StrLen(PAnsiChar(@Result[1])));
+        SetLength(Result, 20);
+        if f_X509_digest(FX509, f_EVP_sha1, PAnsiChar(Result), @Len) = 0 then
+            Result := '';    
     end
     else
         Result := '';
@@ -12533,10 +12535,11 @@ begin
                 try
                     Meth.i2r(Meth, ext_str, B, 0);
                     J := f_BIO_ctrl(B, BIO_CTRL_PENDING, 0, nil);
-                    SetLength(Result.Value, J);
+                    SetLength(ABuf, J);                          { V7.31 }
                     if J > 0 then begin
-                        f_Bio_read(B, PChar(Result.Value), J);
-                        SetLength(Result.Value, _StrLen(PChar(Result.Value)));
+                        f_Bio_read(B, PAnsiChar(ABuf), J);
+                        SetLength(ABuf, _StrLen(PAnsiChar(ABuf)));
+                        Result.Value := String(ABuf);
                         { This method separates multiple values by LF } // should I remove this stuff?
                         while (Length(Result.Value) > 0) and
                               (Result.Value[Length(Result.Value)] = #10) do
