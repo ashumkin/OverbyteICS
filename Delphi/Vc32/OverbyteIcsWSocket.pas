@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.29
+Version:      7.30
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -718,6 +718,7 @@ Sep 09, 2009 V7.29 Arno - Added new public methods TX509Base.WriteToBio() and
                    TX509Base.ReadFromBio(). Method SafeToPemFile got an arg.
                    that adds human readable certificate text to the output.
                    InitializeSsl inlined. Removed a Delphi 1 conditional.
+Sep 17, 2009 V7.30 Anton Sviridov optimized setting of SSL options.
 
 }
 
@@ -825,8 +826,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 729;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.29 ';
+  WSocketVersion            = 730;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.30 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -10090,6 +10091,7 @@ end;
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
 {$IFDEF USE_SSL}
+
 var
     //GSslInitialized     : Integer = 0;
     SslRefCount               : Integer = 0;
@@ -10647,6 +10649,38 @@ end;
 {$ENDIF OPENSSL_NO_ENGINE}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+const
+    SslIntOptions: array[TSslOption] of Integer =                   { V7.30 }
+           (SSL_OP_CIPHER_SERVER_PREFERENCE,
+            SSL_OP_MICROSOFT_SESS_ID_BUG,
+            SSL_OP_NETSCAPE_CHALLENGE_BUG,
+            SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG,
+            SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG,
+            SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER,
+            SSL_OP_MSIE_SSLV2_RSA_PADDING,
+            SSL_OP_SSLEAY_080_CLIENT_DH_BUG,
+            SSL_OP_TLS_D5_BUG,
+            SSL_OP_TLS_BLOCK_PADDING_BUG,
+            SSL_OP_TLS_ROLLBACK_BUG,
+            SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS,
+            SSL_OP_SINGLE_DH_USE,
+            SSL_OP_EPHEMERAL_RSA,
+            SSL_OP_NO_SSLv2,
+            SSL_OP_NO_SSLv3,
+            SSL_OP_NO_TLSv1,
+            SSL_OP_PKCS1_CHECK_1,
+            SSL_OP_PKCS1_CHECK_2,
+            SSL_OP_NETSCAPE_CA_DN_BUG,
+            SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION,
+            SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
+
+  SslIntSessCacheModes: array[TSslSessCacheMode] of Integer =     { V7.30 }
+            (SSL_SESS_CACHE_CLIENT,
+             SSL_SESS_CACHE_SERVER,
+             SSL_SESS_CACHE_NO_AUTO_CLEAR,
+             SSL_SESS_CACHE_NO_INTERNAL_LOOKUP,
+             SSL_SESS_CACHE_NO_INTERNAL_STORE);
+
 constructor TSslContext.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
@@ -11852,58 +11886,19 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslContext.GetSslOptions: TSslOptions;
+function TSslContext.GetSslOptions: TSslOptions; { V7.30 }
+var 
+    Opt: TSslOption;
 begin
 {$IFNDEF NO_ADV_MT}
     Lock;
     try
 {$ENDIF}
         Result := [];
-        if (FSslOptionsValue and SSL_OP_CIPHER_SERVER_PREFERENCE) <> 0 then
-            Result := Result + [sslOpt_CIPHER_SERVER_PREFERENCE];
-        if (FSslOptionsValue and SSL_OP_MICROSOFT_SESS_ID_BUG) <> 0 then
-            Result := Result + [sslOpt_MICROSOFT_SESS_ID_BUG];
-        if (FSslOptionsValue and SSL_OP_NETSCAPE_CHALLENGE_BUG) <> 0 then
-            Result := Result + [sslOpt_NETSCAPE_CHALLENGE_BUG];
-        if (FSslOptionsValue and SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG) <> 0 then
-            Result := Result + [sslOpt_NETSCAPE_REUSE_CIPHER_CHANGE_BUG];
-        if (FSslOptionsValue and SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG) <> 0 then
-            Result := Result + [sslOpt_SSLREF2_REUSE_CERT_TYPE_BUG];
-        if (FSslOptionsValue and SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER) <> 0 then
-            Result := Result + [sslOpt_MICROSOFT_BIG_SSLV3_BUFFER];
-        if (FSslOptionsValue and SSL_OP_MSIE_SSLV2_RSA_PADDING) <> 0 then
-            Result := Result + [sslOpt_MSIE_SSLV2_RSA_PADDING];
-        if (FSslOptionsValue and SSL_OP_SSLEAY_080_CLIENT_DH_BUG) <> 0 then
-            Result := Result + [sslOpt_SSLEAY_080_CLIENT_DH_BUG];
-        if (FSslOptionsValue and SSL_OP_TLS_D5_BUG) <> 0 then
-            Result := Result + [sslOpt_TLS_D5_BUG];
-        if (FSslOptionsValue and SSL_OP_TLS_BLOCK_PADDING_BUG) <> 0 then
-            Result := Result + [sslOpt_TLS_BLOCK_PADDING_BUG];
-        if (FSslOptionsValue and SSL_OP_TLS_ROLLBACK_BUG) <> 0 then
-            Result := Result + [sslOpt_TLS_ROLLBACK_BUG];
-        if (FSslOptionsValue and SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) <> 0 then
-            Result := Result + [sslOpt_DONT_INSERT_EMPTY_FRAGMENTS];
-        if (FSslOptionsValue and SSL_OP_SINGLE_DH_USE) <> 0 then
-            Result := Result + [sslOpt_SINGLE_DH_USE];
-        if (FSslOptionsValue and SSL_OP_EPHEMERAL_RSA) <> 0 then
-            Result := Result + [sslOpt_EPHEMERAL_RSA];
-        if (FSslOptionsValue and SSL_OP_NO_SSLv2) <> 0 then
-            Result := Result + [sslOpt_NO_SSLv2];
-        if (FSslOptionsValue and SSL_OP_NO_SSLv3) <> 0 then
-            Result := Result + [sslOpt_NO_SSLv3];
-        if (FSslOptionsValue and SSL_OP_NO_TLSv1) <> 0 then
-            Result := Result + [sslOpt_NO_TLSv1];
-        if (FSslOptionsValue and SSL_OP_PKCS1_CHECK_1) <> 0 then
-            Result := Result + [sslOpt_PKCS1_CHECK_1];
-        if (FSslOptionsValue and SSL_OP_PKCS1_CHECK_2) <> 0 then
-            Result := Result + [sslOpt_PKCS1_CHECK_2];
-        if (FSslOptionsValue and SSL_OP_NETSCAPE_CA_DN_BUG) <> 0 then
-            Result := Result + [sslOpt_NETSCAPE_CA_DN_BUG];
-        if (FSslOptionsValue and SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION) <> 0 then
-            Result := Result + [sslOpt_NO_SESSION_RESUMPTION_ON_RENEGOTIATION];
-        if (FSslOptionsValue and SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG) <> 0 then
-            Result := Result + [sslOpt_NETSCAPE_DEMO_CIPHER_CHANGE_BUG];
-{$IFNDEF NO_ADV_MT}            
+        for Opt := Low(TSslOption) to High(TSslOption) do
+            if (FSslOptionsValue and SslIntOptions[Opt]) <> 0 then
+                Include(Result, Opt);
+{$IFNDEF NO_ADV_MT}
     finally
         Unlock
     end;
@@ -11912,58 +11907,19 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslContext.SetSslOptions(Value: TSslOptions);
+procedure TSslContext.SetSslOptions(Value: TSslOptions); { V7.30 }
+var 
+    Opt: TSslOption;
 begin
 {$IFNDEF NO_ADV_MT}
     Lock;
     try
 {$ENDIF}
         FSslOptionsValue := 0;
-        if sslOpt_CIPHER_SERVER_PREFERENCE in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_CIPHER_SERVER_PREFERENCE;
-        if sslOpt_MICROSOFT_SESS_ID_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_MICROSOFT_SESS_ID_BUG;
-        if sslOpt_NETSCAPE_CHALLENGE_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NETSCAPE_CHALLENGE_BUG;
-        if sslOpt_NETSCAPE_REUSE_CIPHER_CHANGE_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG;
-        if sslOpt_SSLREF2_REUSE_CERT_TYPE_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG;
-        if sslOpt_MICROSOFT_BIG_SSLV3_BUFFER in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER;
-        if sslOpt_MSIE_SSLV2_RSA_PADDING in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_MSIE_SSLV2_RSA_PADDING;
-        if sslOpt_SSLEAY_080_CLIENT_DH_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_SSLEAY_080_CLIENT_DH_BUG;
-        if sslOpt_TLS_D5_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_TLS_D5_BUG;
-        if sslOpt_TLS_BLOCK_PADDING_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_TLS_BLOCK_PADDING_BUG;
-        if sslOpt_TLS_ROLLBACK_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_TLS_ROLLBACK_BUG;
-        if sslOpt_DONT_INSERT_EMPTY_FRAGMENTS in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
-        if sslOpt_SINGLE_DH_USE in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_SINGLE_DH_USE;
-        if sslOpt_EPHEMERAL_RSA in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_EPHEMERAL_RSA;
-        if sslOpt_NO_SSLv2 in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NO_SSLv2;
-        if sslOpt_NO_SSLv3 in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NO_SSLv3;
-        if sslOpt_NO_TLSv1 in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NO_TLSv1;
-        if sslOpt_PKCS1_CHECK_1 in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_PKCS1_CHECK_1;
-        if sslOpt_PKCS1_CHECK_2 in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_PKCS1_CHECK_2;
-        if sslOpt_NETSCAPE_CA_DN_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NETSCAPE_CA_DN_BUG;
-        if sslOpt_NO_SESSION_RESUMPTION_ON_RENEGOTIATION in Value then
-            FSslOptionsValue := FSslOptionsValue + SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION;
-        if sslOpt_NETSCAPE_DEMO_CIPHER_CHANGE_BUG in Value then
-            FSslOptionsValue := FSslOptionsValue + LongInt(SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
-{$IFNDEF NO_ADV_MT}            
+        for Opt := Low(TSslOption) to High(TSslOption) do
+            if Opt in Value then
+                FSslOptionsValue := FSslOptionsValue or SslIntOptions[Opt];
+{$IFNDEF NO_ADV_MT}
     finally
         Unlock;
     end;
@@ -11972,61 +11928,40 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslContext.SetSslSessCacheModes(Value: TSslSessCacheModes);
+procedure TSslContext.SetSslSessCacheModes(Value: TSslSessCacheModes); { V7.30 }
+var 
+    SessMode: TSslSessCacheMode;
 begin
 {$IFNDEF NO_ADV_MT}
     Lock;
     try
 {$ENDIF}
         FSslSessCacheModeValue := SSL_SESS_CACHE_OFF;
-        {if sslCm_SSL_SESS_CACHE_OFF in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_OFF;}
-        if sslSESS_CACHE_CLIENT in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_CLIENT;
-        if sslSESS_CACHE_SERVER in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_SERVER;
-        {if sslSESS_CACHE_BOTH in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_BOTH;}
-        if sslSESS_CACHE_NO_AUTO_CLEAR in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_NO_AUTO_CLEAR;
-        if sslSESS_CACHE_NO_INTERNAL_LOOKUP in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_NO_INTERNAL_LOOKUP;
-        if sslSESS_CACHE_NO_INTERNAL_STORE in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_NO_INTERNAL_STORE;
-        {if sslSESS_CACHE_NO_INTERNAL in Value then
-            FSslSessCacheModeValue := FSslSessCacheModeValue or SSL_SESS_CACHE_NO_INTERNAL;}
-{$IFNDEF NO_ADV_MT}            
+        for SessMode := Low(TSslSessCacheMode) to High(TSslSessCacheMode) do
+            if SessMode in Value then
+                FSslSessCacheModeValue := FSslSessCacheModeValue or SslIntSessCacheModes[SessMode];
+{$IFNDEF NO_ADV_MT}
     finally
         Unlock;
     end;
-{$ENDIF}    
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslContext.GetSslSessCacheModes: TSslSessCacheModes;
+function TSslContext.GetSslSessCacheModes: TSslSessCacheModes; { V7.30 }
+var 
+    SessMode: TSslSessCacheMode;
 begin
 {$IFNDEF NO_ADV_MT}
     Lock;
     try
 {$ENDIF}
         Result := [];
-        {if (FSslSessCacheModeValue and SSL_SESS_CACHE_OFF) <> 0 then
-            Result := [sslSESS_CACHE_OFF];}
-        if (FSslSessCacheModeValue and SSL_SESS_CACHE_CLIENT) <> 0 then
-            Result := Result + [sslSESS_CACHE_CLIENT];
-        if (FSslSessCacheModeValue and SSL_SESS_CACHE_SERVER) <> 0 then
-            Result := Result + [sslSESS_CACHE_SERVER];
-        {if (FSslSessCacheModeValue and SSL_SESS_CACHE_BOTH) <> 0 then
-            Result := Result + [sslSESS_CACHE_BOTH];}
-        if (FSslSessCacheModeValue and SSL_SESS_CACHE_NO_AUTO_CLEAR) <> 0 then
-            Result := Result + [sslSESS_CACHE_NO_AUTO_CLEAR];
-        if (FSslSessCacheModeValue and SSL_SESS_CACHE_NO_INTERNAL_LOOKUP) <> 0 then
-            Result := Result + [sslSESS_CACHE_NO_INTERNAL_LOOKUP];
-        if (FSslSessCacheModeValue and SSL_SESS_CACHE_NO_INTERNAL_STORE) <> 0 then
-            Result := Result + [sslSESS_CACHE_NO_INTERNAL_STORE];
-        {if (FSslSessCacheModeValue and SSL_SESS_CACHE_NO_INTERNAL) <> 0 then
-            Result := Result + [sslSESS_CACHE_NO_INTERNAL]; }
+        for SessMode := Low(TSslSessCacheMode) to High(TSslSessCacheMode) do
+            if FSslSessCacheModeValue and SslIntSessCacheModes[SessMode] <> 0 then
+                Include(Result, SessMode);
+
 {$IFNDEF NO_ADV_MT}            
     finally
         Unlock;
