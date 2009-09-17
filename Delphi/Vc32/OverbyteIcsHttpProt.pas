@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.03
+Version:      7.04
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -414,6 +414,8 @@ Jan 22, 2009 V7.02b Sorry guys! Re-added property OnBeforeHeaderSend again
 Jan 22, 2009 V7.02c Arno - Conditional define UseDigestAuthentication was not
              set properly in THttpCli.StateChange.
 Apr 25, 2009 V7.03 Steve Endicott fixed a relocation bug with HTTPS.
+Sep 17, 2009 V7.04 Arno added property Timeout, works only with synchronous
+             methods!
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -491,8 +493,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 703;
-    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.03 ';
+    HttpCliVersion       = 704;
+    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.04 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -505,6 +507,7 @@ const
     httperrVersion                  = 5;
     httperrInvalidAuthState         = 6;
     httperrSslHandShake             = 7;
+    httperrCustomTimeOut            = 8;  { V7.04 }
 
 type
     THttpBigInt = Int64;
@@ -568,6 +571,7 @@ type
     TLocationChangeExceeded = procedure (Sender              : TObject;
                                   const RelocationCount      : Integer;
                                   var   AllowMoreRelocations : Boolean) of object;  {  V1.90 }
+
 
     THttpCli = class(TIcsWndControl)
     protected
@@ -727,6 +731,7 @@ type
         FOnSocketError        : TNotifyEvent;
         FOnBeforeHeaderSend   : TBeforeHeaderSendEvent;     { Wilfried 9 sep 02}
         FCloseReq             : Boolean;                    { SAE 01/06/04 }
+        FTimeout              : UINT;  { V7.04 }            { Sync Timeout Seconds }
         procedure AllocateMsgHandlers; override;
         procedure FreeMsgHandlers; override;
         function  MsgHandlersCount: Integer; override;
@@ -971,6 +976,8 @@ type
         property IcsLogger          : TIcsLogger     read  GetIcsLogger   { V1.91 }
                                                      write SetIcsLogger;
 {$ENDIF}
+        property Timeout            : UINT           read  FTimeout { V7.04 sync only! }
+                                                     write FTimeout;
         property OnTrace            : TNotifyEvent   read  FOnTrace
                                                      write FOnTrace;
         property OnSessionConnected : TNotifyEvent   read  FOnSessionConnected
@@ -1334,6 +1341,7 @@ begin
 {$ENDIF}
     FLocationChangeMaxCount        := 5;  {  V1.90 }
     FLocationChangeCurCount        := 0;  {  V1.90 }
+    FTimeOut                       := 30;
 end;
 
 
@@ -3328,44 +3336,53 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THttpCli.DoRequestSync(Rq : THttpRequest);
+procedure THttpCli.DoRequestSync(Rq : THttpRequest);  { V7.04 Timeout added }
 var
-    DummyHandle     : array [0..0] of
-                      {$IFDEF CLR}Borland.Vcl.Windows.THandle;
-                      {$ELSE}THandle;{$ENDIF}
+    DummyHandle     : {$IFDEF CLR}Borland.Vcl.Windows.THandle;
+                      {$ELSE} THandle;{$ENDIF}
+    TimeOutMsec     : UINT;
+    bFlag           : Boolean;
 begin
     DoRequestAsync(Rq);
+    if not Assigned(FCtrlSocket.Counter) then
+        FCtrlSocket.CreateCounter;
+    FCtrlSocket.Counter.SetConnected; // Reset counter
+    DummyHandle := INVALID_HANDLE_VALUE;
+    TimeOutMsec := FTimeOut * 1000;
+    while FState <> httpReady do begin
+        if MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000,
+                                     QS_ALLINPUT) = WAIT_OBJECT_0 then
+            FCtrlSocket.MessagePump;
+        if (FState <> httpReady) and (
+           {$IFNDEF NOFORMS} Application.Terminated or {$ENDIF} FTerminated or
+           (IcsCalcTickDiff(FCtrlSocket.Counter.LastAliveTick,
+                            GetTickCount) >= TimeOutMsec)) then begin
+            bFlag := (FState = httpDnsLookup);
+            StateChange(httpAborting);
 
-{$IFDEF DELPHI1}
-    { Delphi 1 has no support for multi-threading }
-    while FState <> httpReady do
-        Application.ProcessMessages;
-{$ELSE}
-    if FMultiThreaded then begin
-        while FState <> httpReady do begin
-            FCtrlSocket.ProcessMessages;
-            Sleep(0);
-        end;
-    end
-    else begin
-        while FState <> httpReady do begin
-            { Do not use 100% CPU }
-            DummyHandle[0] := INVALID_HANDLE_VALUE; 
-            MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000,
-                                      QS_ALLINPUT + QS_ALLEVENTS +
-                                      QS_KEY + QS_MOUSE);
-{$IFNDEF NOFORMS}
-            Application.ProcessMessages;
-            if Application.Terminated then begin
-                Abort;
-                break;
+            if bFlag then
+            try
+                FCtrlSocket.CancelDnsLookup;
+            except
+                { Ignore any exception }
             end;
-{$ELSE}
-            FCtrlSocket.ProcessMessages;
-{$ENDIF}
+            FStatusCode := 404;
+            if {$IFNDEF NOFORMS} Application.Terminated or {$ENDIF}
+               FTerminated then begin
+                FReasonPhrase     := 'Request aborted';
+                FRequestDoneError := httperrAborted;
+            end
+            else begin
+                FReasonPhrase     := 'Request aborted on timeout';
+                FRequestDoneError := httperrCustomTimeOut;
+            end;
+            if bFlag then
+                SocketSessionClosed(Self, 0)
+            else
+                FCtrlSocket.Close;
+            StateChange(httpReady);
         end;
     end;
-{$ENDIF}
 
 {* Jul 12, 2004
    WARNING: The component now doesn't consider 401 status
