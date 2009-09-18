@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.31
+Version:      7.32
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -722,6 +722,8 @@ Sep 17, 2009 V7.30 Anton Sviridov optimized setting of SSL options.
 Sep 17, 2009 V7.31 Arno fixed a Unicode bug in TX509Base.GetExtension and
                    a general bug in TX509Base.GetSha1Hash (AnsiString as
                    digest buffer should really be avoided)
+Sep 18, 2009 V7.32 Arno changed visibility of TX509Base.WriteToBio() and
+                   TX509Base.ReadFromBio() to protected.
 
 }
 
@@ -829,8 +831,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 731;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.31 ';
+  WSocketVersion            = 732;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.32 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1628,6 +1630,10 @@ type
         function    GetSha1Hash: AnsiString;
         function    OpenFileBio(const FileName  : String;
                                 Methode         : TBioOpenMethode): PBIO;
+        procedure   ReadFromBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
+                                const Password: String = ''); virtual;
+        procedure   WriteToBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
+                               AddRawText: Boolean = FALSE); virtual;
     public
         constructor Create(AOwner: TComponent; X509: Pointer = nil); reintroduce;
         destructor  Destroy; override;
@@ -1643,10 +1649,6 @@ type
         procedure   PrivateKeyLoadFromPemFile(const FileName: String;
                                               const Password: String = '');
         procedure   PrivateKeySaveToPemFile(const FileName: String);
-        procedure   ReadFromBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
-                                const Password: String = '');
-        procedure   WriteToBio(ABio: PBIO; IncludePrivateKey: Boolean = FALSE;
-                               AddRawText: Boolean = FALSE);
         property    IssuerOneLine       : String        read  GetIssuerOneLine;
         property    SubjectOneLine      : String        read  GetSubjectOneLine;
         property    SerialNum           : Integer       read  GetSerialNum;
