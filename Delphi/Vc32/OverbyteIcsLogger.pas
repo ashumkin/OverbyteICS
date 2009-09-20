@@ -57,6 +57,7 @@ unit OverbyteIcsLogger;
 {$X+}              { Enable extended syntax              }
 {$H+}              { Use long Strings                    }
 {$J+}              { Allow typed constant to be modified }
+{$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
     {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
