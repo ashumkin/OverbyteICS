@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.22
+Version:      7.23
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -278,6 +278,10 @@ Jun 15, 2009 V7.20 pdfe@sapo.pt and Angus added content encoding using zlib
 Jul 3, 2009  V7.21 Angus commonised content encoding with CheckContentEncoding
              and DoContentEncoding which are virtual to allow replacement
 Aug 12, 2009 V7.22 Bjørnar Nielsen found a bug with conditional define NO_ADV_MT.
+Oct 03, 2009 V7.23 Arno - Initialize client's counter in WSocketServerClientCreate 
+             otherwise the client might be disconnected before a single byte is
+             sent/received. Happened rather frequently with SSL which led to SSL 
+             handshake errors.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -362,8 +366,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 722;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.22 ';
+    THttpServerVersion = 723;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.23 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
 
@@ -1712,6 +1716,7 @@ begin
     (Client as THttpConnection).Options        := FOptions;
     THttpConnection(Client).KeepAliveTimeSec   := FKeepAliveTimeSec ;
     Client.CreateCounter;
+    Client.Counter.SetConnected;               { V7.23 }
     {$IFDEF USE_SSL}
     if not (Client.Owner is TSslWSocketServer) then
         (Client as THttpConnection).SslEnable := FALSE;
