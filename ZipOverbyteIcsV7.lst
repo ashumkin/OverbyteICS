@@ -170,6 +170,11 @@ Delphi\vc32\OverbyteIcsCharsetComboBox.dcr
 Delphi\vc32\OverbyteIcsCommonVersion.rc
 Delphi\vc32\OverbyteIcsCommonVersion.res
 Delphi\vc32\OverbyteIcsThreadTimer.pas
+Delphi\vc32\OverbyteIcsSysLogDefs.pas
+Delphi\vc32\OverbyteIcsSysLogClient.pas
+Delphi\vc32\OverbyteIcsSysLogClient.dcr
+Delphi\vc32\OverbyteIcsSysLogServer.pas
+Delphi\vc32\OverbyteIcsSysLogServer.dcr
 
 Delphi\vc32\ZOBJ123\adler32.obj
 Delphi\vc32\ZOBJ123\compress.obj
@@ -362,6 +367,17 @@ Delphi\Internet\OverbyteIcsMailSnd.dproj
 Delphi\Internet\OverbyteIcsMailSnd.res
 Delphi\Internet\OverbyteIcsMailSnd1.dfm
 Delphi\Internet\OverbyteIcsMailSnd1.pas
+
+Delphi\Internet\OverbyteIcsSysLogClientDemo.dproj
+Delphi\Internet\OverbyteIcsSysLogClientDemo.dpr
+Delphi\Internet\OverbyteIcsSysLogClientDemo.res
+Delphi\Internet\OverbyteIcsSysLogClientDemo1.pas
+Delphi\Internet\OverbyteIcsSysLogClientDemo1.dfm
+Delphi\Internet\OverbyteIcsSysLogServerDemo.dproj
+Delphi\Internet\OverbyteIcsSysLogServerDemo.dpr
+Delphi\Internet\OverbyteIcsSysLogServerDemo.res
+Delphi\Internet\OverbyteIcsSysLogServerDemo1.pas
+Delphi\Internet\OverbyteIcsSysLogServerDemo1.dfm
 
 Delphi\Internet\OverbyteIcsMimeDemo.bdsproj
 Delphi\Internet\OverbyteIcsMimeDemo.dpr
