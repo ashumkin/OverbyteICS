@@ -1,9 +1,9 @@
 object WebServForm: TWebServForm
-  Left = 250
-  Top = 155
+  Left = 253
+  Top = 158
+  Width = 531
+  Height = 369
   Caption = 'ICS WebServer Demo - http://www.overbyte.be'
-  ClientHeight = 333
-  ClientWidth = 515
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

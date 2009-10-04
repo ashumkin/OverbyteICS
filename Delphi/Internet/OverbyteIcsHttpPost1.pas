@@ -3,10 +3,10 @@
 Author:       François PIETTE
 Creation:     Jan 15, 2005
 Description:
-Version:      1.00
+Version:      7.01
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Unsupported code.
-Legal issues: Copyright (C) 2005-2007 by François PIETTE
+Legal issues: Copyright (C) 2005-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -36,6 +36,8 @@ Legal issues: Copyright (C) 2005-2007 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Oct 03, 2009 V7.01 F.Piette added file upload demo. Fixed Unicode issue with
+                   answer display.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -61,12 +63,19 @@ type
     PostButton: TButton;
     Label4: TLabel;
     HttpCli1: THttpCli;
+    Label5: TLabel;
+    FileNameEdit: TEdit;
+    UploadButton: TButton;
+    Shape1: TShape;
+    Label6: TLabel;
+    UploadURLEdit: TEdit;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure PostButtonClick(Sender: TObject);
     procedure HttpCli1RequestDone(Sender: TObject; RqType: THttpRequest;
                                   ErrCode: Word);
+    procedure UploadButtonClick(Sender: TObject);
   private
     FIniFileName : String;
     FInitialized : Boolean;
@@ -92,6 +101,8 @@ const
     KeyFirstName       = 'FirstName';
     KeyLastName        = 'LastName';
     KeyActionURL       = 'ActionURL';
+    KeyUploadURL       = 'UploadURL';
+    KeyFilePath        = 'UploadFilePath';
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -122,6 +133,10 @@ begin
                                                  'Doe');
         ActionURLEdit.Text := IniFile.ReadString(SectionData, KeyActionURL,
                                   'http://localhost/cgi-bin/FormHandler');
+        UploadURLEdit.Text := IniFile.ReadString(SectionData, KeyUploadURL,
+                                  'http://localhost/cgi-bin/FileUpload');
+        FileNameEdit.Text := IniFile.ReadString(SectionData, KeyFilePath,
+                                  'c:\temp\unit1.pas');
         IniFile.Free;
         DisplayMemo.Clear;
     end;
@@ -141,6 +156,8 @@ begin
     IniFile.WriteString(SectionData, KeyFirstName, FirstNameEdit.Text);
     IniFile.WriteString(SectionData, KeyLastName,  LastNameEdit.Text);
     IniFile.WriteString(SectionData, KeyActionURL, ActionURLEdit.Text);
+    IniFile.WriteString(SectionData, KeyUploadURL, UploadURLEdit.Text);
+    IniFile.WriteString(SectionData, KeyFilePath,  FileNameEdit.Text);
     IniFile.UpdateFile;
     IniFile.Free;
 end;
@@ -174,8 +191,23 @@ begin
     HttpCli1.SendStream := TMemoryStream.Create;
     HttpCli1.SendStream.Write(Data[1], Length(Data));
     HttpCli1.SendStream.Seek(0, 0);
-    HttpCli1.RcvdStream := TMemoryStream.Create;
-    HttpCli1.URL := Trim(ActionURLEdit.Text);
+    HttpCli1.RcvdStream      := TMemoryStream.Create;
+    HttpCli1.URL             := Trim(ActionURLEdit.Text);
+    HttpCli1.ContentTypePost := 'application/x-www-form-urlencoded';
+    HttpCli1.PostAsync;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpPostForm.UploadButtonClick(Sender: TObject);
+var
+    FileName : String;
+begin
+    FileName                 := Trim(FilenameEdit.Text);
+    HttpCli1.SendStream      := TFileStream.Create(FileName, fmOpenRead);
+    HttpCli1.RcvdStream      := TMemoryStream.Create;
+    HttpCli1.URL             := Trim(UploadURLEdit.Text);
+    HttpCli1.ContentTypePost := 'application/binary';
     HttpCli1.PostAsync;
 end;
 
@@ -197,7 +229,7 @@ procedure THttpPostForm.HttpCli1RequestDone(
     RqType  : THttpRequest;
     ErrCode : Word);
 var
-    Data : String;
+    Data : AnsiString;  // WebServ demo send AnsiString replies
 begin
     HttpCli1.SendStream.Free;
     HttpCli1.SendStream := nil;
@@ -210,7 +242,7 @@ begin
     end;
     if HttpCli1.StatusCode <> 200 then begin
         Display('Post failed with error: ' + IntToStr(HttpCli1.StatusCode) +
-                HttpCli1.ReasonPhrase);
+                ' ' + HttpCli1.ReasonPhrase);
         HttpCli1.RcvdStream.Free;
         HttpCli1.RcvdStream := nil;
         Exit;
@@ -219,7 +251,10 @@ begin
     HttpCli1.RcvdStream.Seek(0, 0);
     SetLength(Data, HttpCli1.RcvdStream.Size);
     HttpCli1.RcvdStream.Read(Data[1], Length(Data));
-    Display(Data);
+    Display(String(Data));
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 end.
