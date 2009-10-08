@@ -4,11 +4,11 @@ Author:       François PIETTE
 Object:       TPop3Cli class implements the POP3 protocol
               (RFC-1225, RFC-1939)
 Creation:     03 october 1997
-Version:      6.05
+Version:      6.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2008 by François PIETTE
+Legal issues: Copyright (C) 1997-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -132,6 +132,7 @@ Jun 28, 2008  V6.04 **Breaking Change** enum items "pop3TlsImplicite", "pop3TlsE
               renamed to "pop3TlsImplicit", "pop3TlsExplicit"
 Dec 21, 2008  V6.05 F.Piette added two string cast in WSocketDataAvailable to
               avoid warning with Delphi 2009.
+Oct 08, 2009  V6.06 Faust added NTLM support (untested by the team).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPop3Prot;
@@ -175,11 +176,12 @@ uses
 {$IFDEF DELPHI5_UP}
     OverbyteIcsSha1,          { SHA1 code require Delphi 5 and up  }
 {$ENDIF}
-    OverbyteIcsMD5;
+    OverbyteIcsMD5,
+    OverbyteIcsNtlmMsgs;      {V6.06}
 
 const
-    Pop3CliVersion     = 605;
-    CopyRight : String = ' POP3 component (c) 1997-2008 F. Piette V6.05 ';
+    Pop3CliVersion     = 606;
+    CopyRight : String = ' POP3 component (c) 1997-2009 F. Piette V6.06 ';
 {$IFDEF VER80}
     { Delphi 1 has a 255 characters string limitation }
     POP3_RCV_BUF_SIZE = 255;
@@ -212,7 +214,7 @@ type
                  {$ENDIF}
                      );
     TPop3AuthType = (popAuthNone,    popAuthLogin,
-                     popAuthCramMD5, popAuthCramSHA1); {HLX}
+                     popAuthCramMD5, popAuthCramSHA1, popAuthNTLM); {V6.06}
 
     TPop3FctSet   = set of TPop3Fct;
     TPop3NextProc = procedure of object;
@@ -353,6 +355,8 @@ type
         procedure   AuthCramSha1;
 {$ENDIF}
         procedure   AuthCramMd5;
+        procedure   AuthNextNtlm;        {V6.06}
+        procedure   AuthNextNtlmNext;    {V6.06}
     public
         constructor Create(AOwner : TComponent); override;
         destructor  Destroy; override;
@@ -1612,6 +1616,47 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.AuthNextNtlm; {V6.06}
+begin
+    if FRequestResult <> 0 then begin
+        TriggerRequestDone(FRequestResult);
+        Exit;
+    end;
+
+    FState := pop3InternalReady;
+    ExecAsync(pop3Auth, NtlmGetMessage1('', ''), pop3Transaction, AuthNextNtlmNext);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.AuthNextNtlmNext; {V6.06}
+var
+    NtlmMsg2Info : TNTLM_Msg2_Info;
+    NtlmMsg3     : String;
+begin
+    if FRequestResult <> 0 then begin
+        TriggerRequestDone(FRequestResult);
+        Exit;
+    end;
+
+    if (Length(FLastResponse) < 3) then begin
+        FLastResponse := '-ERR Malformed NtlmMsg2: ' + FLastResponse;
+        SetErrorMessage;
+        TriggerRequestDone(500);
+        Exit;
+    end;
+
+    NtlmMsg2Info := NtlmGetMessage2(Copy(FLastResponse, 3, Length(FLastResponse) - 2));
+    NtlmMsg3 := NtlmGetMessage3('',
+                                '',  // the Host param seems to be ignored
+                                FUsername, FPassword,
+                                NtlmMsg2Info.Challenge);
+    FState := pop3InternalReady;
+    ExecAsync(pop3Auth, NtlmMsg3, pop3Transaction, nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomPop3Cli.Auth; {HLX}
 begin
     if FProtocolState > pop3WaitingUser then begin
@@ -1632,6 +1677,8 @@ begin
 {$ENDIF}
     popAuthCramMD5  : ExecAsync(pop3Auth, 'AUTH CRAM-MD5',
                                 pop3WaitingUser, AuthCramMD5);
+    popAuthNTLM     : ExecAsync(pop3Auth, 'AUTH NTLM',
+                                pop3WaitingUser, AuthNextNtlm);    {V6.06}
     else
         User;
     end;
@@ -2664,5 +2711,6 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$ENDIF} // USE_SSL
+
 end.
 

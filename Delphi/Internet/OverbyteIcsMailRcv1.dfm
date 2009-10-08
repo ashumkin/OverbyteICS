@@ -394,7 +394,8 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
         'None'
         'Login'
         'CramMD5'
-        'CarmSHA1')
+        'CramSHA1'
+        'NTLM')
     end
     object AuthButton: TButton
       Left = 200
