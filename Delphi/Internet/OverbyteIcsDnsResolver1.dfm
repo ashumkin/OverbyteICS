@@ -28,7 +28,7 @@ object DnsResolverForm: TDnsResolverForm
     ItemHeight = 13
     Items.Strings = (
       'overbyte.be'
-      'borland.com'
+      'embarcadero.com'
       'unknown.test'
       'microsoft.com'
       'e-naxos.com')

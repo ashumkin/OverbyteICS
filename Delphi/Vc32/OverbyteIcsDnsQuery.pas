@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  Component to query DNS records.
               Implement a subset of RFC 1035 (A and MX records).
 Creation:     January 29, 1999
-Version:      6.02
+Version:      6.03
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2008 by François PIETTE
+Legal issues: Copyright (C) 1999-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -58,6 +58,8 @@ May 29, 2005 V1.08 Jack <jlist9@gmail.com> added TCP support
 Mar 26, 2006 V6.00 New version 6 started
 Jun 05, 2008 A. Garrels made some changes to prepare code for Unicode
 Aug 11, 2008 V6.02 A. Garrels - Type AnsiString rolled back to String.
+Oct 09, 2009 V6.03 Yaroslav Chernykh fixed a bug in WSocketSessionConnected()
+                   when using UDP.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -97,8 +99,8 @@ uses
     SysUtils, Classes, OverbyteIcsWinsock, OverbyteIcsWSocket;
 
 const
-  DnsQueryVersion    = 602;
-  CopyRight : String = ' TDnsQuery  (c) 1999-2008 F. Piette V6.02 ';
+  DnsQueryVersion    = 603;
+  CopyRight : String = ' TDnsQuery  (c) 1999-2009 F. Piette V6.03 ';
 
   { Maximum answers (responses) count }
   MAX_ANCOUNT     = 50;
@@ -815,10 +817,12 @@ var
     Buf: array [0..1] of BYTE;
 begin
     if Error = 0 then begin
-        Buf[0] := FQueryLen div 256;
-        Buf[1] := FQueryLen mod 256;
-        { Send 2 byte length for tcp packets, see RFC 1035 }
-        FWSocket.Send(@Buf[0], 2);
+        if FProto = 'tcp' then begin { V6.03 }
+            Buf[0] := FQueryLen div 256;
+            Buf[1] := FQueryLen mod 256;
+            { Send 2 byte length for tcp packets, see RFC 1035 - 4.2.2. TCP usage }
+            FWSocket.Send(@Buf[0], 2);
+        end;
         FWSocket.Send(@FQueryBuf, FQueryLen);
     end;
 end;
