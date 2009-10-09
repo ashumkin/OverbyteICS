@@ -7,7 +7,7 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.20
+Version:      7.21
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -61,6 +61,7 @@ Dec 21, 2008  V7.19 Arno reassigned MimeDecode1InlineDecodeBegin and
 Dec 22, 2008  V7.20 Arno - Added workaround for error "incompatible parameter list"
               in D2009. Added explicit string conversion in
               MimeDecode1InlineDecodeBegin to remove warning.
+Oct 9, 2009   V7.21 Angus - more content headers shown
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -90,8 +91,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-  MimeDemoVersion    = 720;
-  CopyRight : String = ' MimeDemo (c) 1998-2008 F. Piette V7.20 ';
+  MimeDemoVersion    = 721;
+  CopyRight : String = ' MimeDemo (c) 1998-2009 F. Piette V7.21 ';
 
 type
 {$IFDEF USE_TNT}
@@ -588,11 +589,13 @@ begin
                 Display('Part '      + IntToStr (I) +
                       ', Content: '  + String(PContentType) +
                       ', Size: '     + IntToStr(PSize) +
+                      ', Subject: '  + PSubject +
                       ', Name: '     + PName +
                       ', FileName: ' + PFileName +
                       ', Encoding: ' + String(PEncoding) +
                       ', Charset: '  + String(PCharset) +
-                      ', ApplType: ' + String(PApplType));
+                      ', ApplType: ' + String(PApplType) +
+                      ', Content Id: ' + String(PContentId));
                  // the content of each part is in PartStream
                  // but we don't attempt to display it here, only the size
             end;

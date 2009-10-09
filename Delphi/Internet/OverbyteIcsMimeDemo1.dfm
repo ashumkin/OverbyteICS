@@ -1,9 +1,9 @@
 object MimeDecodeForm: TMimeDecodeForm
   Left = 69
   Top = 44
-  Width = 727
-  Height = 489
   Caption = 'MimeDecodeForm'
+  ClientHeight = 462
+  ClientWidth = 719
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
