@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.32
+Version:      7.33
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -724,6 +724,9 @@ Sep 17, 2009 V7.31 Arno fixed a Unicode bug in TX509Base.GetExtension and
                    digest buffer should really be avoided)
 Sep 18, 2009 V7.32 Arno changed visibility of TX509Base.WriteToBio() and
                    TX509Base.ReadFromBio() to protected.
+Nov 01, 2009 V7.33 Arno fixed a memory overwrite bug in
+                   TCustomSocksWSocket.DoRecv().
+				   
 
 }
 
@@ -831,8 +834,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 732;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.32 ';
+  WSocketVersion            = 733;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.33 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -9238,7 +9241,7 @@ begin
             Buffer[I] := FRcvBuf[FSocksRcvdPtr + I];
         {$ENDIF}
         {$IFDEF WIN32}
-        Move(FRcvBuf[FSocksRcvdPtr], Buffer, FSocksRcvdCnt);
+        Move(FRcvBuf[FSocksRcvdPtr], Buffer^, FSocksRcvdCnt); { V7.33 }
         {$ENDIF}
         Result        := FSocksRcvdCnt;
         FSocksRcvdCnt := 0;
@@ -9250,7 +9253,7 @@ begin
         Buffer[I] := FRcvBuf[FSocksRcvdPtr + I];
     {$ENDIF}
     {$IFDEF WIN32}
-    Move(FRcvBuf[FSocksRcvdPtr], Buffer, BufferSize);
+    Move(FRcvBuf[FSocksRcvdPtr], Buffer^, BufferSize); { V7.33 }
     {$ENDIF}
     Result        := BufferSize;
     FSocksRcvdPtr := FSocksRcvdPtr + BufferSize;
