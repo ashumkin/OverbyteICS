@@ -129,7 +129,7 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 { "$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])" to all units which  }
 { disables all the inherited RTTI options and sets the new ones to not emit  }
 { any extended RTTI information.                                             }
-{$DEFINE NO_EXTENDED_RTTI}
+{.$DEFINE NO_EXTENDED_RTTI}
 
 { Do not change anything below this line !                                   }
 {----------------------------------------------------------------------------}
