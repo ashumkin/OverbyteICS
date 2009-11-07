@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.05
+Version:      1.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -62,6 +62,9 @@ Nov 17, 2008 A.Garrels checked against OpenSSL v0.9.8i and added that version
              as maximum version.
 Apr 10, 2009 A.Garrels checked against OpenSSL v0.9.8k and made it the maximum
              supported version.
+Nov 05, 2009 A.Garrels checked against OpenSSL v0.9.8L and made it the maximum
+             supported version. OpenSSL V0.9.8L disables session renegotiation
+             due to TLS renegotiation vulnerability.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -91,8 +94,8 @@ uses
     Windows, SysUtils, OverbyteIcsSSLEAY, OverbyteIcsUtils;
 
 const
-    IcsLIBEAYVersion   = 105;
-    CopyRight : String = ' IcsLIBEAY (c) 2003-2009 F. Piette V1.05 ';
+    IcsLIBEAYVersion   = 106;
+    CopyRight : String = ' IcsLIBEAY (c) 2003-2009 F. Piette V1.06 ';
 
 type
     EIcsLibeayException = class(Exception);
@@ -564,6 +567,7 @@ const
     f_CRYPTO_set_dynlock_create_callback :     procedure(CB : TDynLockCreateCallBack); cdecl = nil;
     f_CRYPTO_set_dynlock_lock_callback :       procedure(CB : TDynLockLockCallBack); cdecl = nil;
     f_CRYPTO_set_dynlock_destroy_callback :    procedure(CB : TDynLockDestroyCallBack); cdecl = nil;
+    f_CRYPTO_cleanup_all_ex_data :             procedure; cdecl = nil;
     f_X509_dup :                               function(X: PX509): PX509; cdecl = nil;//AG;
     f_X509_STORE_add_cert :                    function(Store: PX509_STORE; Cert: PX509): Integer; cdecl = nil;//AG;
     f_X509_STORE_CTX_get_ex_data :             function(C509: PX509_STORE_CTX; Idx: Integer): Pointer; cdecl = nil;
@@ -659,13 +663,15 @@ const
     f_i2d_ASN1_bytes :                         function(A : PASN1_STRING; var p: PAnsiChar; tag: Integer; xclass: Integer): Integer; cdecl = nil;//AG
     f_X509_get_pubkey :                        function(Cert: PX509): PEVP_PKEY; cdecl = nil; //AG;
     f_X509_PUBKEY_free :                       procedure(Key: PEVP_PKEY); cdecl = nil; //AG;
+    f_CONF_modules_unload :                    procedure(all: Integer); cdecl = nil;//AG;
     {
     f_OPENSSL_add_all_algorithms_noconf :      procedure; cdecl = nil;
     f_OPENSSL_add_all_algorithms_conf :        procedure; cdecl = nil;
     f_OpenSSL_add_all_ciphers :                procedure; cdecl = nil;
     f_OpenSSL_add_all_digests :                procedure; cdecl = nil;
-    f_EVP_cleanup :                            procedure; cdecl = nil;
     }
+    f_EVP_cleanup :                            procedure; cdecl = nil;
+
 {$IFNDEF OPENSSL_NO_ENGINE}
     f_ENGINE_load_builtin_engines :            procedure; cdecl = nil; //AG;
     f_ENGINE_register_all_complete :           procedure; cdecl = nil; //AG;
@@ -751,7 +757,8 @@ const
 
     { Version stuff added 07/12/05                                            }
     ICS_OPENSSL_VERSION_NUMBER  : Longword  = 0;
-
+    ICS_SSL_NO_RENEGOTIATION    : Boolean = FALSE;
+	
     { MMNNFFPPS: major minor fix patch status                                 }
     { The status nibble has one of the values 0 for development, 1 to e for   }
     { betas 1 to 14, and f for release.                                       }
@@ -782,14 +789,15 @@ const
     OSSL_VER_0908H = $0090808f;
     OSSL_VER_0908I = $0090809f;
     OSSL_VER_0908K = $009080bf;
+    OSSL_VER_0908L = $009080cf;
     // Or should we also create an dynamic array of Longword we would add only
     // tested/wanted versions?
 {$IFDEF BEFORE_OSSL_098E}
     MIN_OSSL_VER   = OSSL_VER_0907G;
-    MAX_OSSL_VER   = OSSL_VER_0908K;
+    MAX_OSSL_VER   = OSSL_VER_0908L;
 {$ELSE}
     MIN_OSSL_VER   = OSSL_VER_0908E;
-    MAX_OSSL_VER   = OSSL_VER_0908K;
+    MAX_OSSL_VER   = OSSL_VER_0908L;
 {$ENDIF}
 {$ENDIF} // USE_SSL
 implementation
@@ -813,7 +821,8 @@ begin
         GLIBEAY_DLL_Handle := 0;
         raise EIcsLIBEAYException.Create('Unable to load ' +
                                          GLIBEAY_DLL_Name +
-                                         '. Error #' + IntToStr(ErrCode));
+                                         '. Error #' + IntToStr(ErrCode) +
+                                         #13#10 + SysErrorMessage(GetLastError));
     end;
     SetLength(GLIBEAY_DLL_FileName, 256);
     SetLength(GLIBEAY_DLL_FileName, GetModuleFileName(GLIBEAY_DLL_Handle,
@@ -826,6 +835,7 @@ begin
         Exit;
     end;
     ICS_OPENSSL_VERSION_NUMBER := f_SSLeay;
+    ICS_SSL_NO_RENEGOTIATION   := ICS_OPENSSL_VERSION_NUMBER >= OSSL_VER_0908L;
 
     { Version Check }
 {$IFNDEF NO_OSSL_VERSION_CHECK}
@@ -898,6 +908,7 @@ begin
     f_CRYPTO_set_dynlock_create_callback     := GetProcAddress(GLIBEAY_DLL_Handle, 'CRYPTO_set_dynlock_create_callback');
     f_CRYPTO_set_dynlock_lock_callback       := GetProcAddress(GLIBEAY_DLL_Handle, 'CRYPTO_set_dynlock_lock_callback');
     f_CRYPTO_set_dynlock_destroy_callback    := GetProcAddress(GLIBEAY_DLL_Handle, 'CRYPTO_set_dynlock_destroy_callback');
+    f_CRYPTO_cleanup_all_ex_data             := GetProcAddress(GLIBEAY_DLL_Handle, 'CRYPTO_cleanup_all_ex_data');
     f_X509_dup                               := GetProcAddress(GLIBEAY_DLL_Handle, 'X509_dup'); //AG
     f_X509_STORE_add_cert                    := GetProcAddress(GLIBEAY_DLL_Handle, 'X509_STORE_add_cert'); //AG
     f_X509_STORE_CTX_get_ex_data             := GetProcAddress(GLIBEAY_DLL_Handle, 'X509_STORE_CTX_get_ex_data');
@@ -989,13 +1000,15 @@ begin
     f_i2d_ASN1_bytes                         := GetProcAddress(GLIBEAY_DLL_Handle, 'i2d_ASN1_bytes'); //AG
     f_X509_get_pubkey                        := GetProcAddress(GLIBEAY_DLL_Handle, 'X509_get_pubkey');//AG
     f_X509_PUBKEY_free                       := GetProcAddress(GLIBEAY_DLL_Handle, 'X509_PUBKEY_free'); //AG
+    f_CONF_modules_unload                    := GetProcAddress(GLIBEAY_DLL_Handle, 'CONF_modules_unload'); //AG
     {
     f_OPENSSL_add_all_algorithms_noconf      := GetProcAddress(GLIBEAY_DLL_Handle, 'OPENSSL_add_all_algorithms_noconf');
     f_OPENSSL_add_all_algorithms_conf        := GetProcAddress(GLIBEAY_DLL_Handle, 'OPENSSL_add_all_algorithms_conf');
     f_OpenSSL_add_all_ciphers                := GetProcAddress(GLIBEAY_DLL_Handle, 'OpenSSL_add_all_ciphers');
     f_OpenSSL_add_all_digests                := GetProcAddress(GLIBEAY_DLL_Handle, 'OpenSSL_add_all_digests');
-    f_EVP_cleanup                            := GetProcAddress(GLIBEAY_DLL_Handle, 'EVP_cleanup');
     }
+    f_EVP_cleanup                            := GetProcAddress(GLIBEAY_DLL_Handle, 'EVP_cleanup');
+
 {$IFNDEF OPENSSL_NO_ENGINE}
     f_ENGINE_load_builtin_engines            := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_load_builtin_engines'); //AG
     f_ENGINE_register_all_complete           := GetProcAddress(GLIBEAY_DLL_Handle, 'ENGINE_register_all_complete'); //AG
@@ -1063,6 +1076,7 @@ begin
                    (@f_CRYPTO_set_dynlock_create_callback     = nil) or
                    (@f_CRYPTO_set_dynlock_lock_callback       = nil) or
                    (@f_CRYPTO_set_dynlock_destroy_callback    = nil) or
+                   (@f_CRYPTO_cleanup_all_ex_data             = nil) or
                    (@f_X509_dup                               = nil) or
                    (@f_X509_STORE_add_cert                    = nil) or
                    (@f_X509_STORE_CTX_get_ex_data             = nil) or
@@ -1151,12 +1165,15 @@ begin
                    (@f_PEM_write_bio_PrivateKey               = nil) or
                    (@f_i2d_ASN1_bytes                         = nil) or
                    (@f_X509_get_pubkey                        = nil) or
-                   (@f_X509_PUBKEY_free                       = nil){ or
+                   (@f_X509_PUBKEY_free                       = nil) or
+                   (@f_CONF_modules_unload                    = nil) or
+                   {
                    (@f_OPENSSL_add_all_algorithms_noconf      = nil) or
                    (@f_OPENSSL_add_all_algorithms_conf        = nil) or
                    (@f_OpenSSL_add_all_ciphers                = nil) or
                    (@f_OpenSSL_add_all_digests                = nil) or
-                   (@f_EVP_cleanup                            = nil)}
+                   }
+                   (@f_EVP_cleanup                            = nil)
                 {$IFNDEF OPENSSL_NO_ENGINE}
                                                                      or
                    (@f_ENGINE_load_builtin_engines            = nil) or
@@ -1228,6 +1245,7 @@ begin
     if @f_CRYPTO_set_dynlock_create_callback     = nil then Result := Result + ' CRYPTO_set_dynlock_create_callback';
     if @f_CRYPTO_set_dynlock_lock_callback       = nil then Result := Result + ' CRYPTO_set_dynlock_lock_callback';
     if @f_CRYPTO_set_dynlock_destroy_callback    = nil then Result := Result + ' CRYPTO_set_dynlock_destroy_callback';
+    if @f_CRYPTO_cleanup_all_ex_data             = nil then Result := Result + ' CRYPTO_cleanup_all_ex_data';
     if @f_X509_dup                               = nil then Result := Result + ' X509_dup';//AG
     if @f_X509_STORE_add_cert                    = nil then Result := Result + ' X509_STORE_add_cert';//AG
     if @f_X509_STORE_CTX_get_ex_data             = nil then Result := Result + ' X509_STORE_CTX_get_ex_data';
@@ -1316,13 +1334,15 @@ begin
     if @f_i2d_ASN1_bytes                         = nil then Result := Result + ' i2d_ASN1_bytes';//AG
     if @f_X509_get_pubkey                        = nil then Result := Result + ' X509_get_pubkey';//AG
     if @f_X509_PUBKEY_free                       = nil then Result := Result + ' X509_PUBKEY_free';//AG
+    if @f_CONF_modules_unload                    = nil then Result := Result + ' CONF_modules_unload';//AG
     {
     if @f_OPENSSL_add_all_algorithms_noconf      = nil then Result := Result + ' OPENSSL_add_all_algorithms_noconf';
     if @f_OPENSSL_add_all_algorithms_conf        = nil then Result := Result + ' OPENSSL_add_all_algorithms_conf';
     if @f_OpenSSL_add_all_ciphers                = nil then Result := Result + ' OpenSSL_add_all_ciphers';
     if @f_OpenSSL_add_all_digests                = nil then Result := Result + ' OpenSSL_add_all_ciphers';
-    if @f_EVP_cleanup                            = nil then Result := Result + ' EVP_cleanup';
     }
+    if @f_EVP_cleanup                            = nil then Result := Result + ' EVP_cleanup';
+    
 {$IFNDEF OPENSSL_NO_ENGINE}
     if @f_ENGINE_load_builtin_engines            = nil then Result := Result + ' ENGINE_load_builtin_engines';//AG
     if @f_ENGINE_register_all_complete           = nil then Result := Result + ' ENGINE_register_all_complete';//AG

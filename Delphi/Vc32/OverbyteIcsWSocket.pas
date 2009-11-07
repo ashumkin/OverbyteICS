@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.33
+Version:      7.34
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -726,7 +726,9 @@ Sep 18, 2009 V7.32 Arno changed visibility of TX509Base.WriteToBio() and
                    TX509Base.ReadFromBio() to protected.
 Nov 01, 2009 V7.33 Arno fixed a memory overwrite bug in
                    TCustomSocksWSocket.DoRecv().
-				   
+Nov 07, 2009 V7.34 OpenSSL V0.9.8L disables session renegotiation due to
+                   TLS renegotiation vulnerability.
+ 
 
 }
 
@@ -834,8 +836,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 733;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.33 ';
+  WSocketVersion            = 734;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.34 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -2078,6 +2080,7 @@ type
         FMsg_WM_TRIGGER_SSL_SHUTDOWN_COMPLETED : UINT;
         FOnSslVerifyPeer            : TSslVerifyPeerEvent;
         FOnSslHandshakeDone         : TSslHandshakeDoneEvent;
+        FHandShakeCount             : Integer;
         //procedure   SetSslEnable(const Value: Boolean); virtual;
         procedure   RaiseLastOpenSslError(EClass          : ExceptClass;
                                           Dump            : Boolean = FALSE;
@@ -10224,9 +10227,21 @@ begin
         if SslRefCount > 0 then        {AG 12/30/07}
             Dec(SslRefCount);
         if SslRefCount = 0 then begin  {AG 12/30/07}
+
+            //* thread-local cleanup */
+            f_ERR_remove_state(0);
+
+            //* thread-safe cleanup */
+            f_CONF_modules_unload(1);
         {$IFNDEF OPENSSL_NO_ENGINE}
             f_ENGINE_cleanup;
         {$ENDIF}
+
+            //* global application exit cleanup (after all SSL activity is shutdown) */
+            f_ERR_free_strings;
+            f_EVP_cleanup;
+            f_CRYPTO_cleanup_all_ex_data;
+            
             if OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle <> 0 then begin
                 _FreeLibrary(OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle);
                 OverbyteIcsSSLEAY.GSSLEAY_DLL_Handle := 0;
@@ -14362,7 +14377,10 @@ begin
 {$ENDIF}
             if (Where and SSL_CB_HANDSHAKE_START) <> 0 then begin
                 Obj.FInHandshake   := TRUE;
-                if Obj.SslState >= sslEstablished then
+                Inc(Obj.FHandShakeCount);
+                if ICS_SSL_NO_RENEGOTIATION and (Obj.FHandShakeCount > 1) then
+                    Obj.CloseDelayed;
+                if Obj.FHandShakeCount > 1 then
                     Obj.FSslInRenegotiation := TRUE;
 {$IFNDEF NO_DEBUG_LOG}
                 if Obj.CheckLogOptions(loSslInfo) then
@@ -14446,17 +14464,19 @@ begin
         TmpInt := f_SSL_state(FSsl);
         Ver    := f_SSL_version(FSsl);
         Pen    := f_SSL_renegotiate_pending(FSsl);
-        if not ((TmpInt = SSL_ST_OK) and
-                (Ver >= SSL3_VERSION) and
-                (Pen = 0)) then begin
+        if ICS_SSL_NO_RENEGOTIATION or
+            not ((TmpInt = SSL_ST_OK) and
+                 (Ver >= SSL3_VERSION) and
+                 (Pen = 0)) then begin
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslErr) then begin
                 DebugLog(loSslErr,
                          _Format('%s ! Cannot start re-negotiation  State ' +
                                 '%d Version (0x%x) RenegotiatePending %d ' +
-                                '%d',
+                                'NO_RENEGOTIATION %d %d',
                                 [_IntToHex(Integer(Self), 8),
-                                TmpInt, Ver, Pen, FHSocket]));
+                                TmpInt, Ver, Pen, Ord(ICS_SSL_NO_RENEGOTIATION),
+                                FHSocket]));
             end;
 {$ENDIF}
             Exit;
@@ -14910,6 +14930,7 @@ begin
     FSslInRenegotiation      := FALSE;
     FNetworkError            := 0;
     FSslState                := sslNone;
+    FHandShakeCount          := 0;
 
     if Assigned(FSsl) then // Avoids sending a shutdown notify on freeing the SSL
         f_SSL_set_shutdown(FSsl, SSL_SENT_SHUTDOWN);
