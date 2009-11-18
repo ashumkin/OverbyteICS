@@ -2248,28 +2248,28 @@ begin
         begin
             if FSkipBlankParts and (Pos (AnsiString('multipart'), _LowerCase (FDecodeW.ContentType)) = 1) then exit ;
             PContentType := FDecodeW.ContentType ;
-            PCharset := FDecodeW.Charset ;
-            PCodePage := FDecodeW.CodePage;
-            PApplType := FDecodeW.ApplicationType ;
-            PName := DecodeMimeInlineValue (FDecodeW.HeaderName) ;
-            PEncoding := FDecodeW.Encoding ;
+            PCharset     := FDecodeW.Charset ;
+            PCodePage    := FDecodeW.CodePage;
+            PApplType    := FDecodeW.ApplicationType ;
+            PName        := DecodeMimeInlineValue (FDecodeW.HeaderName) ;
+            PEncoding    := FDecodeW.Encoding ;
             PDisposition := FDecodeW.Disposition ;
-            PFileName := DecodeMimeInlineValue (FDecodeW.FileName) ;
-            PSubject := FDecodeW.Subject;           {V7.18 Bjørnar}
-            PContentId := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
+            PFileName    := DecodeMimeInlineValue (FDecodeW.FileName) ;
+            PSubject     := String(FDecodeW.Subject); {V7.18 Bjørnar}
+            PContentId   := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
         end
         else
         begin           // real part
             PContentType := FDecodeW.PartContentType ;
-            PCharset := FDecodeW.PartCharset ;
-            PCodePage := FDecodeW.PartCodePage;
-            PApplType := FDecodeW.ApplicationType ;
-            PName := DecodeMimeInlineValue (FDecodeW.PartName) ;
-            PEncoding := FDecodeW.PartEncoding ;
+            PCharset     := FDecodeW.PartCharset ;
+            PCodePage    := FDecodeW.PartCodePage;
+            PApplType    := FDecodeW.ApplicationType ;
+            PName        := DecodeMimeInlineValue (FDecodeW.PartName) ;
+            PEncoding    := FDecodeW.PartEncoding ;
             PDisposition := FDecodeW.PartDisposition ;
-            PFileName := DecodeMimeInlineValue (FDecodeW.PartFileName) ;
-            PSubject := FDecodeW.Subject;           {V7.18 Bjørnar}
-            PContentId := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
+            PFileName    := DecodeMimeInlineValue (FDecodeW.PartFileName) ;
+            PSubject     := String(FDecodeW.Subject); {V7.18 Bjørnar}
+            PContentId   := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
         end ;
         if FSkipBlankParts then
         begin
