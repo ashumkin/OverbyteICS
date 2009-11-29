@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.23
+Version:      7.24
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -282,6 +282,7 @@ Oct 03, 2009 V7.23 Arno - Initialize client's counter in WSocketServerClientCrea
              otherwise the client might be disconnected before a single byte is
              sent/received. Happened rather frequently with SSL which led to SSL 
              handshake errors.
+Nov 29, 2009 7.24 Bjørnar Nielsen found a bug UrlDecode.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -366,8 +367,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 723;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.23 ';
+    THttpServerVersion = 724;
+    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.24 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
 
@@ -4334,7 +4335,7 @@ begin
         Inc(I);
     end;
     SetLength(U8Str, J);
-    if (SrcCodePage = CP_UTF8) or IsUtf8Valid(U8Str) then
+    if (SrcCodePage = CP_UTF8) or (DetectUtf8 and IsUtf8Valid(U8Str)) then { V7.24 }
 {$IFDEF COMPILER12_UP}
         Result := Utf8ToStringW(U8Str)
     else
