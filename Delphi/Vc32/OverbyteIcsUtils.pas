@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.30
+Version:      7.31
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -91,7 +91,13 @@ May 17, 2009 V7.28 Arno prefixed argument names of various UTF-8 overloads
              AnsiStrings are expected.
 June 4, 2009 V7.29 Angus added IcsExtractLastDir
 Jun 22, 2009 V7.30 Angus avoid D2009 error with IcsExtractLastDir
-
+Sep 24, 2009 V7.31 Arno added TIcsIntegerList and IcsBufferToHex.
+             Small fix in ConvertCodepage(). Added check for nil in
+             IcsCharNextUtf8(). Added global consts CP_UTF16, CP_UTF16Be,
+             CP_UTF32 and CP_UTF32Be. New functions IcsBufferToUnicode,
+             IcsGetWideCharCount and IcsGetWideChars see comments in interface
+             section. Added fast functions to swap byte order: IcsSwap16,
+             IcsSwap16Buf, IcsSwap32, IcsSwap32Buf and IcsSwap64Buf.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -140,7 +146,7 @@ type
     UnicodeString = WideString;
     RawByteString = AnsiString;
 {$ENDIF}
-
+    EIcsStringConvertError = class(Exception);
     TCharsetDetectResult = (cdrAscii, cdrUtf8, cdrUnknown);
 
     TIcsSearchRecW = record
@@ -184,6 +190,18 @@ type
     function  AnsiToUnicode(const Str: PAnsiChar; ACodePage: Cardinal): UnicodeString; overload;
     function  AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString; overload;
     function  AnsiToUnicode(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    { Returns a UnicodeString and the number of not translated bytes at the end of the source buffer }
+    { BufferCodePage includes Ansi as well as Unicode code page IDs }
+    function  IcsBufferToUnicode(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; out FailedByteCount: Integer): UnicodeString; overload;
+    { Returns a UnicodeString and optionally raises an exception if there are any number of not translated bytes at the end of the source buffer }
+    { BufferCodePage includes Ansi as well as Unicode code page IDs }
+    function  IcsBufferToUnicode(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; RaiseFailedBytes: Boolean = FALSE): UnicodeString; overload;
+    { Returns the number of WideChars, and the number of not translated bytes at the end of the source buffer }
+    { BufferCodePage includes Ansi as well as Unicode code page IDs }
+    function  IcsGetWideCharCount(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; out FailedByteCount: Integer): Integer;
+    { Returns a Unicode string, ByteCount and CharCount must match, no length checks are done }
+    { BufferCodePage includes Ansi as well as Unicode code page IDs }
+    function  IcsGetWideChars(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; Chars: PWideChar; CharCount: Integer): Integer;
     function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
     function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -220,6 +238,8 @@ type
     function  htoin(Value : PAnsiChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  htoi2(value : PWideChar): Integer; overload;
     function  htoi2(value : PAnsiChar): Integer; overload;
+    function  IcsBufferToHex(const Buf; Size: Integer): String; overload;
+    function  IcsBufferToHex(const Buf; Size: Integer; Separator: Char): String; overload;
     function  IsXDigit(Ch : WideChar): Boolean; overload;
     function  IsXDigit(Ch : AnsiChar): Boolean; overload;
     function  XDigit(Ch : WideChar): Integer; overload;
@@ -251,7 +271,13 @@ type
     function  IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
     function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: Cardinal = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-
+    function  IcsGetBomBytes(ACodePage: LongWord): TBytes;
+    function  IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord;
+    function  IcsSwap16(Value: Word): Word;
+    procedure IcsSwap16Buf(Src, Dst: PWord; WordCount: Integer);
+    function  IcsSwap32(Value: LongWord): LongWord;
+    procedure IcsSwap32Buf(Src, Dst: PLongWord; LongWordCount: Integer);
+    procedure IcsSwap64Buf(Src, Dst: PInt64; QuadWordCount: Integer);
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
     function IcsFileCreateW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -308,15 +334,43 @@ type
     function  RtlCompareUnicodeString(String1 : PUNICODE_STRING;
         String2 : PUNICODE_STRING; CaseInsensitive : BOOLEAN): LongInt; stdcall;
 
+type
+    TIcsIntegerList = class(TObject)
+    private
+        FList     : TList;
+        function  GetCount: Integer;
+        function  GetFirst: Integer;
+        function  GetLast: Integer;
+        function  GetItem(Index: Integer): Integer;
+        procedure SetItem(Index: Integer; const Value: Integer);
+    public
+        constructor Create; virtual;
+        destructor  Destroy; override;
+        function    IndexOf(Item: Integer): Integer;
+        function    Add(Item: Integer): Integer; virtual;
+        procedure   Assign(Source: TIcsIntegerList); virtual;
+        procedure   Clear; virtual;
+        procedure   Delete(Index: Integer); virtual;
+        property    Count: Integer read GetCount;
+        property    First: Integer read GetFirst;
+        property    Last : Integer read GetLast;
+        property    Items[Index: Integer] : Integer   read  GetItem
+                                                      write SetItem; default;
+    end;
+    
+const
+    { Unicode code page ID }
+    CP_UTF16      = 1200;
+    CP_UTF16Be    = 1201;
+    CP_UTF32      = 12000;
+    CP_UTF32Be    = 12001;
+
 implementation
 
 const
-    NTDLL                       = 'ntdll.dll';
     DefaultFailChar : AnsiChar  = '?';
-    CP_UTF16Le                  = 1200;
-    CP_UTF16Be                  = 1201;
     {$EXTERNALSYM CP_UTF8}
-    CP_UTF8                     = Windows.CP_UTF8;
+    CP_UTF8             = Windows.CP_UTF8;
     IcsPathDelimW       : WideChar  = '\';
     IcsDriveDelimW      : WideChar  = ':';
     IcsPathDriveDelimW  : PWideChar = '\:';
@@ -515,6 +569,334 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsSwap16(Value: Word): Word;
+{$IFDEF PUREPASCAL}
+begin
+    Result := (Value shr 8) or (Value shl 8);
+{$ELSE}
+asm
+    XCHG  AL, AH
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsSwap16Buf(Src, Dst: PWord; WordCount: Integer);
+{$IFDEF PUREPASCAL}
+var
+    I : Integer;
+begin
+    for I := 1 to WordCount do
+    begin
+        Dst^ := (Src^ shr 8) or (Src^ shl 8);
+        Inc(Src);
+        Inc(Dst);
+    end;
+{$ELSE}
+{ Thanks to Jens Dierks for this code }
+asm
+       PUSH   ESI
+       PUSH   EBX
+       SUB    EAX,EDX
+       SUB    ECX,4
+       JS     @@2
+@@1:
+       MOV    EBX,[EAX + EDX]
+       MOV    ESI,[EAX + EDX + 4]
+       BSWAP  EBX
+       BSWAP  ESI
+       MOV    [EDX + 2],BX
+       MOV    [EDX + 6],SI
+       SHR    EBX, 16
+       SHR    ESI, 16
+       MOV    [EDX],BX
+       MOV    [EDX + 4],SI
+       ADD    EDX, 8
+       SUB    ECX, 4
+       JNS    @@1
+@@2:
+       ADD    ECX, 2
+       JS     @@3
+       MOV    EBX,[EAX + EDX]
+       BSWAP  EBX
+       MOV    [EDX + 2],BX
+       SHR    EBX, 16
+       MOV    [EDX],BX
+       ADD    EDX, 4
+       SUB    ECX, 2
+@@3:
+       INC    ECX
+       JNZ    @@4
+       MOV    BX,[EAX + EDX]
+       XCHG   BL,BH
+       MOV    [EDX],BX
+@@4:
+       POP    EBX
+       POP    ESI
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsSwap32(Value: LongWord): LongWord;
+{$IFDEF PUREPASCAL}
+begin
+    Result := Word(((Value shr 16) shr 8) or ((Value shr 16) shl 8)) or
+              Word((Word(Value) shr 8) or (Word(Value) shl 8)) shl 16;
+{$ELSE}
+asm
+    BSWAP  EAX
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsSwap32Buf(Src, Dst: PLongWord; LongWordCount: Integer);
+{$IFDEF PUREPASCAL}
+var
+    I : Integer;
+begin
+    for I := 1 to LongWordCount do
+    begin
+        Dst^ := Word(((Src^ shr 16) shr 8) or ((Src^ shr 16) shl 8)) or
+                Word((Word(Src^) shr 8) or (Word(Src^) shl 8)) shl 16;
+        Inc(Src);
+        Inc(Dst);
+    end;
+{$ELSE}
+asm
+       PUSH   ESI
+       PUSH   EBX
+       SUB    EAX, EDX
+       SUB    ECX, 2
+       JS     @@2
+@@1:
+       MOV    EBX,[EAX + EDX]
+       MOV    ESI,[EAX + EDX + 4]
+       BSWAP  EBX
+       BSWAP  ESI
+       MOV    [EDX], EBX
+       MOV    [EDX + 4], ESI
+       ADD    EDX, 8
+       SUB    ECX, 2
+       JNS    @@1
+@@2:
+       INC    ECX
+       JS     @Exit
+       MOV    EBX,[EAX + EDX]
+       BSWAP  EBX
+       MOV    [EDX], EBX
+@Exit:
+       POP    EBX
+       POP    ESI
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsSwap64Buf(Src, Dst: PInt64; QuadWordCount: Integer);
+{$IFDEF PUREPASCAL}
+var
+    H, L: LongWord;
+    I : Integer;
+begin
+    for I := 1 to QuadWordCount do
+    begin
+        H := LongWord(Src^ shr 32);
+        L := LongWord(Src^);
+        H := Word(((H shr 16) shr 8) or ((H shr 16) shl 8)) or
+             Word((Word(H) shr 8) or (Word(H) shl 8)) shl 16;
+        L := Word(((L shr 16) shr 8) or ((L shr 16) shl 8)) or
+             Word((Word(L) shr 8) or (Word(L) shl 8)) shl 16;
+        Dst^ := Int64(H) or Int64(L) shl 32;
+        Inc(Src);
+        Inc(Dst);
+    end;
+{$ELSE}
+asm
+       PUSH   ESI
+       PUSH   EBX
+       SUB    EAX, EDX
+       DEC    ECX
+       JS     @Exit
+@@1:
+       MOV    EBX,[EAX + EDX]
+       MOV    ESI,[EAX + EDX + 4]
+       BSWAP  EBX
+       BSWAP  ESI
+       MOV    [EDX], ESI
+       MOV    [EDX + 4], EBX
+       ADD    EDX, 8
+       DEC    ECX
+       JNS    @@1
+@Exit:
+       POP    EBX
+       POP    ESI
+{$ENDIF}       
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Result is the number of WideChars, FailedByteCount returns the number       }
+{ of not translated bytes at the end of the buffer                            }
+{ BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be    }
+function IcsGetWideCharCount(const Buffer; BufferSize: Integer;
+  BufferCodePage: LongWord; out FailedByteCount: Integer): Integer;
+const
+    MB_ERR_INVALID_CHARS  = $00000008;  // Missing in Window.pas (D7)
+var
+    I     : Integer;
+    Bytes : PByte;
+begin
+    Bytes := @Buffer;
+    case BufferCodePage of
+        CP_UTF16,
+        CP_UTF16Be  :
+            begin
+                Result := BufferSize div SizeOf(WideChar);
+                FailedByteCount := BufferSize mod SizeOf(WideChar);
+            end;
+        CP_UTF32    :
+            begin
+                Result := BufferSize div SizeOf(UCS4Char);
+                FailedByteCount := BufferSize mod SizeOf(UCS4Char);
+                for I := 1 to Result do
+                begin
+                    if PLongWord(Bytes)^ > $10000 then
+                        Inc(Result); // Surrogate pair
+                    Inc(Bytes, SizeOf(UCS4Char));
+                end;
+            end;
+        CP_UTF32Be  :
+            begin
+                Result := BufferSize div SizeOf(UCS4Char);
+                FailedByteCount := BufferSize mod SizeOf(UCS4Char);
+                for I := 1 to Result do
+                begin
+                    if IcsSwap32(PLongWord(Bytes)^) > $10000 then
+                        Inc(Result); // Surrogate pair
+                    Inc(Bytes, SizeOf(UCS4Char));
+                end;
+            end;
+        else
+            FailedByteCount := 0;
+            Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+                                          PAnsiChar(Bytes), BufferSize, nil, 0);
+            while (Result = 0) and
+                  (GetLastError = ERROR_NO_UNICODE_TRANSLATION) and
+                  (FailedByteCount < BufferSize) do
+            begin
+                Inc(FailedByteCount);
+                Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+                        PAnsiChar(Bytes), BufferSize - FailedByteCount, nil, 0);
+            end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be }
+function IcsGetWideChars(const Buffer; BufferSize: Integer;
+   BufferCodePage: LongWord; Chars: PWideChar; CharCount: Integer): Integer;
+var
+    PUCS4 : PUCS4Char;
+    I     : Integer;
+    
+    procedure UCS4ToU16;
+    begin
+        I := 0;
+        while I < CharCount do begin
+            if PUCS4^ > $10000 then
+            begin
+                { Encode Surrogate pair }
+                Inc(I);
+                Chars^ := WideChar((((PUCS4^ - $00010000) shr 10) and
+                                   $000003FF) or $D800);
+                Inc(I);
+                Inc(Chars);
+                Chars^ := WideChar(((PUCS4^ - $00010000) and $000003FF) or
+                                   $DC00);
+            end
+            else begin
+                Inc(I);
+                Chars^ := WideChar(PUCS4^);
+            end;
+            Inc(PUCS4);
+            Inc(Chars);
+        end;
+    end;
+
+begin
+    case BufferCodePage of
+        CP_UTF16    :
+            begin
+                Move(Buffer, Chars^, BufferSize);
+                Result := CharCount;
+            end;
+        CP_UTF16Be  :
+            begin
+                IcsSwap16Buf(@Buffer, Pointer(Chars), CharCount);
+                Result := CharCount;
+            end;
+        CP_UTF32    :
+            begin
+                PUCS4 := @Buffer;
+                UCS4ToU16;
+                Result := CharCount;
+            end;
+        CP_UTF32Be  :
+            begin
+                IcsSwap32Buf(@Buffer, @Buffer, BufferSize div SizeOf(UCS4Char));
+                PUCS4 := @Buffer;
+                UCS4ToU16;
+                Result := CharCount;
+            end;
+
+        else
+           Result := MultiByteToWideChar(BufferCodePage, 0, @Buffer,
+                                         BufferSize, Chars, CharCount);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be }
+function IcsBufferToUnicode(const Buffer; BufferSize: Integer;
+  BufferCodePage: LongWord; out FailedByteCount: Integer): UnicodeString;
+var
+    WCharCnt: Integer;
+begin
+    FailedByteCount := 0;
+    if (@Buffer = nil) or (BufferSize <= 0) then
+        Result := ''
+    else begin
+        WCharCnt := IcsGetWideCharCount(Buffer, BufferSize, BufferCodePage,
+                                        FailedByteCount);
+        SetLength(Result, WCharCnt);
+        if WCharCnt > 0 then
+            IcsGetWideChars(Buffer, BufferSize - FailedByteCount,
+                            BufferCodePage, PWideChar(Result), WCharCnt);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be }
+function IcsBufferToUnicode(const Buffer; BufferSize: Integer;
+  BufferCodePage: LongWord; RaiseFailedBytes: Boolean = FALSE): UnicodeString;
+var
+    FailedBytes : Integer;
+begin
+    FailedBytes := 0;
+    Result := IcsBufferToUnicode(Buffer, BufferSize, BufferCodePage, FailedBytes);
+    if RaiseFailedBytes and (FailedBytes > 0) then
+        raise EIcsStringConvertError.CreateFmt(
+                        'Invalid bytes in source buffer. %d bytes untranslated',
+                                                 [FailedBytes]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure IcsAppendStr(var Dest: RawByteString; const Src: RawByteString);
 begin
 {$IFDEF COMPILER12_UP}
@@ -527,11 +909,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-(*
-function GetBomBytes(ACodePage: Word) : TBytes;
+function IcsGetBomBytes(ACodePage: LongWord): TBytes;
 begin
     case ACodePage of
-        CP_UTF16Le :
+        CP_UTF16 :
         begin
             SetLength(Result, 2);
             Result[0] := $FF;
@@ -550,11 +931,49 @@ begin
             Result[1] := $BB;
             Result[2] := $BF;
         end;
+        CP_UTF32   :
+        begin
+            SetLength(Result, 4);
+            Result[0] := $FF;
+            Result[1] := $FE;
+            Result[2] := $00;
+            Result[3] := $00;
+        end;
+        CP_UTF32Be :
+        begin
+            SetLength(Result, 4);
+            Result[0] := $00;
+            Result[1] := $00;
+            Result[2] := $FE;
+            Result[3] := $FF;
+        end;
         else
             SetLength(Result, 0);
     end;
 end;
-*)
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord;
+begin
+    Result := CP_ACP;
+    if (Buf = nil) then
+        Exit;
+    if (ByteCount > 3) and (Buf[0] = #$FF) and (Buf[1] = #$FE) and
+       (Buf[2] = #0) and (Buf[3] = #0) then
+        Result := CP_UTF32
+    else if (ByteCount > 3) and (Buf[0] = #0) and (Buf[1] = #0) and
+            (Buf[2] = #$FE) and (Buf[3] = #$FF) then
+        Result := CP_UTF32Be
+    else if (ByteCount > 2) and (Buf[0] = #$EF) and (Buf[1] = #$BB) and
+            (Buf[2] = #$BF)  then
+        Result := CP_UTF8
+    else if (ByteCount > 1) and (Buf[0] = #$FF) and (Buf[1] = #$FE) then
+        Result := CP_UTF16
+    else if (ByteCount > 1) and (Buf[0] = #$FE) and (Buf[1] = #$FF) then
+        Result := CP_UTF16Be;
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -567,16 +986,15 @@ var
     HBuf  : PAnsiChar;
     Bom   : TBytes;
     CurCP : Word;
-    J     : Integer;
     Swap  : Boolean;
     Dump  : Boolean;
 begin
     Result := 0;
     if (Str = nil) or (cLen <= 0) then
         Exit;
-    CurCP := CP_UTF16Le; //PWord(Integer(Str) - 12)^;
+    CurCP := CP_UTF16; //PWord(Integer(Str) - 12)^;
     case ACodePage of
-        CP_UTF16Le :
+        CP_UTF16  :
             begin
                 if WriteBOM then begin
                     SetLength(BOM, 2);
@@ -593,7 +1011,7 @@ begin
                     BOM[0] := $FE;
                     BOM[1] := $FF;
                 end;
-                Swap := CurCP = CP_UTF16Le;
+                Swap := CurCP = CP_UTF16;
                 Dump := (CurCP = ACodePage) or Swap;
             end;
         CP_UTF8 :
@@ -624,21 +1042,8 @@ begin
         begin // We need to swap bytes and write them to the stream
             if Bom <> nil then
                 AStream.Write(Bom[0], Length(Bom));
-            J := -1;
-            for Len := 1 to cLen do
-            begin
-                Inc(J);
-                SBuf[J] := Hi(Word(Str^));
-                Inc(J);
-                SBuf[J] := Lo(Word(Str^));
-                Inc(Str);
-                if J = 2047 then begin
-                    Result := Result + AStream.Write(SBuf[0], Length(SBuf));
-                    J := -1;
-                end;
-            end;
-            if J >= 0 then
-                Result := Result + AStream.Write(SBuf[0], J + 1);
+            IcsSwap16Buf(Pointer(Str), Pointer(Str), cLen);
+            Result := Result + AStream.Write(Str^, cLen * 2);
         end
         else begin // Charset conversion
             Len := WideCharToMultibyte(ACodePage, 0, Pointer(Str), cLen,
@@ -896,7 +1301,11 @@ begin
         Exit;
     end;
     dLen := MultibyteToWideChar(SrcCodePage, 0, Pointer(Str), sLen, nil, 0);
-    if dLen = 0 then Exit;
+    if dLen = 0 then
+    begin
+        Result := '';
+        Exit;
+    end;
     if dLen > Length(SBuf) then
     begin
         GetMem(P, dLen * 2);
@@ -907,17 +1316,21 @@ begin
         P := SBuf;
     end;
     dLen := MultibyteToWideChar(SrcCodePage, 0, Pointer(Str), sLen, P, dLen);
-    if dLen = 0 then Exit;
-    sLen := WideCharToMultiByte(DstCodePage, 0, P, dLen, nil, 0, nil, nil);
-    SetLength(Result, sLen);
-    if sLen > 0 then
+    if dLen > 0 then
     begin
-        WideCharToMultiByte(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
-      {$IFDEF COMPILER12_UP}
-        if DstCodePage <> CP_ACP then
-            PWord(Integer(Result) - 12)^ := DstCodePage;
-      {$ENDIF}
-    end;
+        sLen := WideCharToMultiByte(DstCodePage, 0, P, dLen, nil, 0, nil, nil);
+        SetLength(Result, sLen);
+        if sLen > 0 then
+        begin
+            WideCharToMultiByte(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
+        {$IFDEF COMPILER12_UP}
+            if DstCodePage <> CP_ACP then
+                PWord(Integer(Result) - 12)^ := DstCodePage;
+        {$ENDIF}
+        end;
+    end
+    else
+        Result := '';
     if FreeFlag then FreeMem(P);
 end;
 
@@ -1200,7 +1613,7 @@ end;
 function IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar;
 begin
     Result := Str;
-    if Result^ = #0 then
+    if (Result = nil) or (Result^ = #0) then
         Exit;
     if (Byte(Result^) and $C0) = $C0 then       // UTF-8 start byte
     begin
@@ -1347,6 +1760,58 @@ end;
 function htoi2(Value : PAnsiChar) : Integer;
 begin
     Result := htoin(Value, 2);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+const
+    HexTable : array[0..15] of Char =
+    ('0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F');
+
+function IcsBufferToHex(const Buf; Size: Integer; Separator: Char): String;
+const
+    Fact = 3;
+var
+    I : Integer;
+    P : PChar;
+    B : PAnsiChar;
+begin
+    if Size <= 0 then
+        Result := ''
+    else begin
+        SetLength(Result, (Fact * Size) - 1);
+        P := PChar(Result);
+        B := @Buf;
+        for I := 0 to Size -1 do begin
+            P[I * Fact]     := HexTable[(Ord(B[I]) shr 4) and 15];
+            P[I * Fact + 1] := HexTable[Ord(B[I]) and 15];
+            if (I < Size -1) then
+                P[I * Fact + 2] := Separator;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsBufferToHex(const Buf; Size: Integer): String;
+const
+    Fact = 2;
+var
+    I : Integer;
+    P : PChar;
+    B : PAnsiChar;
+begin
+    if Size <= 0 then
+        Result := ''
+    else begin
+        SetLength(Result, (Fact * Size));
+        P := PChar(Result);
+        B := @Buf;
+        for I := 0 to Size -1 do begin
+            P[I * Fact]     := HexTable[(Ord(B[I]) shr 4) and 15];
+            P[I * Fact + 1] := HexTable[Ord(B[I]) and 15];
+        end;
+    end;    
 end;
 
 
@@ -1551,7 +2016,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsDirExistsW(const FileName: PWideChar): Boolean;
 var
-    Res : Cardinal;
+    Res : DWord;
 begin
     Res := GetFileAttributesW(FileName);
     Result := (Res <> INVALID_HANDLE_VALUE) and
@@ -1582,7 +2047,7 @@ begin
     begin
         if hNtDll = 0 then
         begin
-            hNtDll := GetModuleHandle(NTDLL);
+            hNtDll := GetModuleHandle('ntdll.dll');
             if hNtDll = 0 then
                 RaiseLastOsError;
         end;
@@ -2163,6 +2628,108 @@ begin
     if Integer(FHandle) >= 0 then
         FileClose(FHandle);
     inherited Destroy;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TIcsIntegerList }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsIntegerList.Add(Item: Integer): Integer;
+begin
+    Result := FList.Add(Pointer(Item));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsIntegerList.Clear;
+begin
+    FList.Clear;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsIntegerList.Create;
+begin
+    FList := TList.Create;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsIntegerList.Delete(Index: Integer);
+begin
+    FList.Delete(Index);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TIcsIntegerList.Destroy;
+begin
+    FreeAndNil(FList);
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsIntegerList.GetCount: Integer;
+begin
+    Result := FList.Count;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsIntegerList.GetFirst: Integer;
+begin
+    Result := Integer(FList.First);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsIntegerList.GetLast: Integer;
+begin
+    Result := Integer(FList.Last);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsIntegerList.GetItem(Index: Integer): Integer;
+begin
+    Result := Integer(FList[Index]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsIntegerList.SetItem(Index: Integer; const Value: Integer);
+begin
+    FList[Index] := Pointer(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsIntegerList.IndexOf(Item: Integer): Integer;
+var
+    I : Integer;
+begin
+    for I := 0 to FList.Count -1 do
+    begin
+        if Integer(FList[I]) = Item then
+        begin
+            Result := I;
+            Exit;
+        end;
+    end;
+    Result := -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsIntegerList.Assign(Source: TIcsIntegerList);
+var
+    I: Integer;
+begin
+    Clear;
+    if Assigned(Source) then
+        for I := 0 to Source.Count -1 do
+            Add(Source[I]);
 end;
 
 

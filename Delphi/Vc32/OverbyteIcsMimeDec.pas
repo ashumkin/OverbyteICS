@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.18
+Version:      7.19
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -288,7 +288,10 @@ Oct 24, 2008  V7.17 Arno - TMimeDecode: Added property CodePage.
               TMimeDecodeEX: MimeDecodePartEnd adjusted to use FCodePage and
               FPartCodePage.
 Oct 9, 2009   V7.18 Bjørnar added PContentId and PSubject to PartInfos array
-
+Nov 17, 2009  V7.19 Arno added UTF-16 and UTF-32 support in TMimeDecodeW and
+              TMimeDecodeEx. Made property PartCodePage writable.
+              TMimeDecodeEx.PSubject is MIME inline decoded now (I wonder why
+              PSubject was added to the parts at all).
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -341,8 +344,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 718;
-    CopyRight : String = ' TMimeDecode (c) 1998-2009 Francois Piette V7.18';
+    MimeDecodeVersion  = 719;
+    CopyRight : String = ' TMimeDecode (c) 1998-2009 Francois Piette V7.19';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -485,7 +488,8 @@ type
         property PartFileName     : AnsiString       read  FPartFileName;
         property PartFormat       : AnsiString       read  FPartFormat;
         property PartCharset      : AnsiString       read  FPartCharset;
-        property PartCodePage     : Cardinal         read  FPartCodePage;
+        property PartCodePage     : Cardinal         read  FPartCodePage
+                                                     write FPartCodePage;
         property ApplicationType  : AnsiString       read  FApplicationType;
         property PartNumber       : Integer          read  FPartNumber;
         property CurrentData      : PAnsiChar        read  FCurrentData
@@ -1791,8 +1795,8 @@ begin
                     FPartName := UnfoldHdrValue(Value)
                 else if Token = 'charset' then begin
                     FPartCharset := Value;
-                    if not MimeCharsetToCodePage(CsuString(FPartCharset),
-                                                 FPartCodePage) then
+                    if not MimeCharsetToCodePageEx(CsuString(FPartCharset),
+                                                   FPartCodePage) then
                         FPartCodePage := FDefaultCodePage;
                 end
                 else if Token = 'format' then
@@ -2255,7 +2259,7 @@ begin
             PEncoding    := FDecodeW.Encoding ;
             PDisposition := FDecodeW.Disposition ;
             PFileName    := DecodeMimeInlineValue (FDecodeW.FileName) ;
-            PSubject     := String(FDecodeW.Subject); {V7.18 Bjørnar}
+            PSubject     := FDecodeW.SubjectW; {V7.18 Bjørnar}
             PContentId   := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
         end
         else
@@ -2268,7 +2272,7 @@ begin
             PEncoding    := FDecodeW.PartEncoding ;
             PDisposition := FDecodeW.PartDisposition ;
             PFileName    := DecodeMimeInlineValue (FDecodeW.PartFileName) ;
-            PSubject     := String(FDecodeW.Subject); {V7.18 Bjørnar}
+            PSubject     := FDecodeW.SubjectW; {V7.18 Bjørnar}
             PContentId   := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
         end ;
         if FSkipBlankParts then
@@ -2403,7 +2407,8 @@ begin
                 BeginEnc := I;
                 if I > J then begin
                     S := Copy(Value, J, I - J);
-                    Result := Result + AnsiToUnicode(S, CP);
+                    //Result := Result + AnsiToUnicode(S, CP);
+                    Result := Result + IcsBufferToUnicode(Pointer(S)^, Length(S), CP);
                     J := I + 1;
                 end;
                 Inc(I);
@@ -2414,7 +2419,8 @@ begin
                (Value[I + 2] = '?') then begin
                 BeginType := I;
                 CharSet := Copy(Value, BeginEnc + 2, BeginType - (BeginEnc + 2));
-                CP := MimeCharsetToCodePageDef(CsuString(CharSet));
+                //CP := MimeCharsetToCodePageDef(CsuString(CharSet));
+                CP := MimeCharsetToCodePageExDef(CsuString(CharSet));
                 EncType := Value[I + 1];
                 CharLowerA(@EncType);
                 Inc(I, 2);
@@ -2437,7 +2443,8 @@ begin
                 else
                     S := Copy(Value, BeginEnc, I - BeginEnc);
                 end;
-                Result := Result + AnsiToUnicode(S, CP);
+                //Result := Result + AnsiToUnicode(S, CP);
+                Result := Result + IcsBufferToUnicode(Pointer(S)^, Length(S), CP);
                 EncType   := #0;
                 BeginEnc  := 0;
                 BeginType := 0;
@@ -2450,7 +2457,8 @@ begin
     end;
     if (L >= J) then begin  { AG 7.16 }
         S := Copy(Value, J, MaxInt);
-        Result := Result + AnsiToUnicode(S, CP);
+        //Result := Result + AnsiToUnicode(S, CP);
+        Result := Result + IcsBufferToUnicode(Pointer(S)^, Length(S), CP);
     end;
 end;
 
@@ -2483,7 +2491,8 @@ begin
                 BeginEnc := I;
                 if I > J then begin
                     S := Copy(Value, J, I - J);
-                    Result := Result + AnsiToUnicode(S, CP);
+                    //Result := Result + AnsiToUnicode(S, CP);
+                    Result := Result + IcsBufferToUnicode(Pointer(S)^, Length(S), CP);
                     J := I + 1;
                 end;
                 Inc(I);
@@ -2494,7 +2503,8 @@ begin
                (Value[I + 2] = '?') then begin
                 BeginType := I;
                 CharSet := Copy(Value, BeginEnc + 2, BeginType - (BeginEnc + 2));
-                CP := MimeCharsetToCodePageDef(CsuString(CharSet));
+                //CP := MimeCharsetToCodePageDef(CsuString(CharSet));
+                CP := MimeCharsetToCodePageExDef(CsuString(CharSet));
                 EncType := Value[I + 1];
                 CharLowerA(@EncType);
                 Inc(I, 2);
@@ -2517,7 +2527,8 @@ begin
                 else
                     S := Copy(Value, BeginEnc, I - BeginEnc);
                 end;
-                Result := Result + AnsiToUnicode(S, CP);
+                //Result := Result + AnsiToUnicode(S, CP);
+                Result := Result + IcsBufferToUnicode(Pointer(S)^, Length(S), CP);
                 EncType   := #0;
                 BeginEnc  := 0;
                 BeginType := 0;
@@ -2530,7 +2541,8 @@ begin
     end;
     if (L >= J) then begin  { AG 7.16 }
         S := Copy(Value, J, MaxInt);
-        Result := Result + AnsiToUnicode(S, CP);
+        //Result := Result + AnsiToUnicode(S, CP);
+        Result := Result + IcsBufferToUnicode(Pointer(S)^, Length(S), CP);
     end;
 end;
 

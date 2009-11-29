@@ -82,6 +82,10 @@ Dec 12, 2008 V7.09 Arno, C++ Builder fix, spelling of record _cpinfoexA/W correc
 Apr 23, 2009 V7.10 Arno corrected a few mappings and changed InitializeCharsetInfos
                    internally (the order of initializing CharsetItems there does no
                    longer matter).
+Nov 18, 2009 V7.11 Added MimeCharsetToCodePageEx(), MimeCharsetToCodePageExDef()
+                   and IcsIsValidCodePageID(). All take new Unicode code page IDs
+                   into account. Such as CP_UTF16, CP_UTF16Be, CP_UTF32 and
+                   CP_UTF32Be.
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try
@@ -357,6 +361,8 @@ type
       IBM_01148,
       IBM_01149,
       MACINTOSH,
+      UTF_32LE,  //   Unicode UTF-32, little endian byte order; available only to managed applications
+      UTF_32BE,
       US_ASCII,
       T_61,
       CS_LAST_ITEM // Dummy, must be the last item!
@@ -461,7 +467,7 @@ function  MimeCharsetToCharsetString(AMimeCharSet: TMimeCharset): CsuString;
 
 function ExtractMimeName(PInfo : PCharSetInfo): CsuString;
 
-{ Returns the code page idenfier mapped to a TMimeCharset item.           }
+{ Returns the code page identifier mapped to a TMimeCharset item.           }
 function  MimeCharsetToCodePage(AMimeCharSet: TMimeCharset): Cardinal; overload;
 
 { If the function succeeds parameter ACodePage contains a valid ANSI code }
@@ -477,12 +483,26 @@ function  MimeCharsetToCodePage(const AMimeCharSetString: CsuString;
 { code page.                                                              }
 function  MimeCharsetToCodePageDef(const AMimeCharSetString: CsuString): Cardinal;
 
+{ If the function succeeds parameter ACodePage contains a valid code page }
+{ identifier that is installed and available in the system, this may be   }
+{ a Unicode code pages as well. If the function fails ACodePage           }
+{ contains either ERR_CP_NOTAVAILABLE or ERR_CP_NOTMAPPED.                }
+function  MimeCharsetToCodePageEx(const AMimeCharSetString: CsuString;
+  out ACodePage: Cardinal): Boolean; overload;
+
+{ Returns either the code page identifier mapped to a MIME name or        }
+{ IcsSystemCodePage (default system code page) if no mapping exists.      }
+{ May return Unicode code page IDs as well.                                  }
+function  MimeCharsetToCodePageExDef(const AMimeCharSetString: CsuString): Cardinal;
+
 { Returns TRUE if the code page identifier is a valid ANSI CP that may be }
 { passed as parameter to MultiByteToWideChar and WideCharToMultiByte      }
 { (includes UTF-8 and UTF-7) otherwise FALSE.                             }
 { The function also returns FALSE if the code page is not installed or    }
 { unavailable in the system.                                              }
 function  IsValidAnsiCodePage(ACodePage: Cardinal): Boolean;
+{ Same as IsValidAnsiCodePage except it takes Unicode code page IDs into account }
+function  IcsIsValidCodePageID(ACodePage: Cardinal): Boolean;
 function  IsSingleByteCodePage(ACodePage: Cardinal): Boolean;
 procedure GetSystemCodePageList(AOwnsObjectList : TObjectList);
 function  AnsiCodePageFromLocale(ALcid: LCID): Cardinal;
@@ -542,7 +562,7 @@ resourcestring
     sUnicodeUTF8                = 'Unicode (UTF-8)'; //65000
     sVietnameseWindows          = 'Vietnamese (Windows)'; //1258
     sWesternEuropeanISO         = 'Western European (ISO)'; //28591
-    sWesternEuropeanWindows     = 'Western European (Windows)'; //1252
+    sWesternEuropeanWindows     = 'Western European (Windows)'; //1252 
 
 var
     CharsetInfos : TCharsetInfos;
@@ -599,6 +619,15 @@ var
     Info : _CpInfo;
 begin
     Result := GetCPInfo(ACodePage, Info);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIsValidCodePageID(ACodePage: Cardinal): Boolean;
+begin
+    Result := (ACodePage = 1200) or (ACodePage = 1201) or
+              (ACodePage = 12000) or (ACodePage = 12001) or 
+               IsValidAnsiCodePage(ACodePage);
 end;
 
 
@@ -759,6 +788,9 @@ begin
 
         10000 :  Result := MACINTOSH;
 
+        12000 :  Result := UTF_32LE;  //   Unicode UTF-32, little endian byte order; available only to managed applications
+        12001 :  Result := UTF_32BE;  //   Unicode UTF-32, big endian byte order; available only to managed applications
+
         20866 :  Result := KOI8_R;
 
         20127 :  Result := US_ASCII;
@@ -914,6 +946,33 @@ end;
 function MimeCharsetToCodePageDef(const AMimeCharSetString: CsuString): Cardinal;
 begin
     if not MimeCharsetToCodePage(AMimeCharSetString, Result) then
+        Result := IcsSystemCodePage;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function MimeCharsetToCodePageEx(const AMimeCharSetString: CsuString;
+  out ACodePage: Cardinal): Boolean;
+var
+    P : PCharsetInfo;
+begin
+    P := GetMimeInfo(AMimeCharSetString);
+    if Assigned(P) then
+    begin
+        ACodePage := P^.CodePage;
+        if (not IcsIsValidCodePageID(ACodePage)) then
+            ACodePage := ERR_CP_NOTAVAILABLE;
+    end
+    else
+        ACodePage := ERR_CP_NOTMAPPED;
+    Result := ACodePage <= MAX_CODEPAGE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function MimeCharsetToCodePageExDef(const AMimeCharSetString: CsuString): Cardinal;
+begin
+    if not MimeCharsetToCodePageEx(AMimeCharSetString, Result) then
         Result := IcsSystemCodePage;
 end;
 
@@ -1437,6 +1496,18 @@ begin
     CharsetInfos[I].MimeCharset   := MACINTOSH;
     CharsetInfos[I].CodePage      := 10000;
     CharsetInfos[I].MimeName      := CsuString('macintosh mac csmacintosh');
+    CharsetInfos[I].FriendlyName  := '';
+
+    I := Ord(UTF_32LE);
+    CharsetInfos[I].MimeCharset   := UTF_32LE;
+    CharsetInfos[I].CodePage      := 12000;
+    CharsetInfos[I].MimeName      := CsuString('utf-32 utf-32le');
+    CharsetInfos[I].FriendlyName  := '';
+
+    I := Ord(UTF_32BE);
+    CharsetInfos[I].MimeCharset   := UTF_32BE;
+    CharsetInfos[I].CodePage      := 12001;
+    CharsetInfos[I].MimeName      := CsuString('utf-32be');
     CharsetInfos[I].FriendlyName  := '';
 
     I := Ord(US_ASCII);
