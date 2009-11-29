@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.19
+Version:      7.20
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -292,6 +292,8 @@ Nov 17, 2009  V7.19 Arno added UTF-16 and UTF-32 support in TMimeDecodeW and
               TMimeDecodeEx. Made property PartCodePage writable.
               TMimeDecodeEx.PSubject is MIME inline decoded now (I wonder why
               PSubject was added to the parts at all).
+Nov 19, 2009  V7.20 Angus added PIsTextpart to PartInfos and removed PSubject
+              which is the same for all parts
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -344,8 +346,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 719;
-    CopyRight : String = ' TMimeDecode (c) 1998-2009 Francois Piette V7.19';
+    MimeDecodeVersion  = 720;
+    CopyRight : String = ' TMimeDecode (c) 1998-2009 Francois Piette V7.20';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -425,7 +427,7 @@ type
         FLengthHeader             : Integer;
         FPartFirstLine            : Boolean;
         FDefaultCodePage          : Cardinal;
-        procedure SetDefaultCodePage(const Value: Cardinal); 
+        procedure SetDefaultCodePage(const Value: Cardinal);
         procedure TriggerHeaderBegin; virtual;
         procedure TriggerHeaderLine; virtual;
         procedure TriggerHeaderEnd; virtual;
@@ -565,10 +567,11 @@ type
         PDisposition: AnsiString ;
         PContentId: AnsiString ;  {V7.18 Bjørnar}
         PFileName: UnicodeString ;
-        PSubject: UnicodeString ; {V7.18 Bjørnar}
+//      PSubject: UnicodeString ; {V7.18 Bjørnar, gone V7.20}
         PartStream: TMemoryStream ;
         PSize: integer ;
         PCodePage: integer ;
+        PIsTextpart: Boolean ;   { V7.20 Angus }
     end ;
 
 { V7.11 Decode file or stream into MIME Part Information records }
@@ -2259,8 +2262,8 @@ begin
             PEncoding    := FDecodeW.Encoding ;
             PDisposition := FDecodeW.Disposition ;
             PFileName    := DecodeMimeInlineValue (FDecodeW.FileName) ;
-            PSubject     := FDecodeW.SubjectW; {V7.18 Bjørnar}
             PContentId   := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
+            PIsTextpart  := FDecodeW.FIsTextpart ;    {V7.20 Angus }
         end
         else
         begin           // real part
@@ -2272,8 +2275,8 @@ begin
             PEncoding    := FDecodeW.PartEncoding ;
             PDisposition := FDecodeW.PartDisposition ;
             PFileName    := DecodeMimeInlineValue (FDecodeW.PartFileName) ;
-            PSubject     := FDecodeW.SubjectW; {V7.18 Bjørnar}
             PContentId   := FDecodeW.FPartContentID ; {V7.18 Bjørnar}
+            PIsTextpart  := FDecodeW.FIsTextpart ;    {V7.20 Angus }
         end ;
         if FSkipBlankParts then
         begin
