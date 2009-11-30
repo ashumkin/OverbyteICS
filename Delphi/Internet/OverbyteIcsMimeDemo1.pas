@@ -589,7 +589,6 @@ begin
                 Display('Part '      + IntToStr (I) +
                       ', Content: '  + String(PContentType) +
                       ', Size: '     + IntToStr(PSize) +
-                      ', Subject: '  + PSubject +
                       ', Name: '     + PName +
                       ', FileName: ' + PFileName +
                       ', Encoding: ' + String(PEncoding) +
