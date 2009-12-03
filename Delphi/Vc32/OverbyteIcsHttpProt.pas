@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.04
+Version:      7.05
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -416,6 +416,8 @@ Jan 22, 2009 V7.02c Arno - Conditional define UseDigestAuthentication was not
 Apr 25, 2009 V7.03 Steve Endicott fixed a relocation bug with HTTPS.
 Sep 17, 2009 V7.04 Arno added property Timeout, works only with synchronous
              methods!
+Dec 02, 2009 V7.05 Bjornar found a HTTPS POST bug with proxy basic
+             authentication that added two Content-Length header lines.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -493,8 +495,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 704;
-    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.04 ';
+    HttpCliVersion       = 705;
+    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.05 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -2314,22 +2316,18 @@ begin
             Headers.Add('Proxy-Connection: ' + FCurrProxyConnection);
         if (Method = 'CONNECT') then                                   // <= 12/29/05 AG
             Headers.Add('Content-Length: 0')                           // <= 12/29/05 AG}
-    {$IFDEF UseNTLMAuthentication}
-        else begin                                                     // <= 12/29/05 AG
+        else begin  { V7.05 begin }
             if (FRequestType = httpPOST) or (FRequestType = httpPUT) then begin
+            {$IFDEF UseNTLMAuthentication}
                 if (FAuthNTLMState = ntlmMsg1) or
                    (FProxyAuthNTLMState = ntlmMsg1) then
                     Headers.Add('Content-Length: 0')
                 else
-                    Headers.Add('Content-Length: ' +
-                                IntToStr(SendStream.Size - SendStream.Position));
+            {$ENDIF}
+                Headers.Add('Content-Length: ' +
+                            IntToStr(SendStream.Size - SendStream.Position));
             end;
-        end;                                                          // <= 12/29/05 AG
-    {$ELSE};                                                          // <= 12/29/05 AG
-        if (FRequestType = httpPOST) or (FRequestType = httpPUT) then
-            Headers.Add('Content-Length: ' +
-                        IntToStr(SendStream.Size - SendStream.Position));
-    {$ENDIF}
+        end; { V7.05 end }
         { if (method = 'PUT') or (method = 'POST') then
             Headers.Add('Content-Length: ' + IntToStr(SendStream.Size));}
         if FModifiedSince <> 0 then
