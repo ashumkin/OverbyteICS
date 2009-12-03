@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Nov 10, 2008
 Description:  Classes and little helpers for use with the ICS demo applications.
-Version:      7.00
+Version:      7.01
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -41,6 +41,7 @@ Legal issues: Copyright (C) 2008 by François PIETTE
         format.
 
 History:
+Dec 03, 2009 V7.01 Uses TIcsStreamReader and TIcsStreamWriter.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -67,8 +68,7 @@ interface
 uses
   Windows, SysUtils, Classes, IniFiles,
   OverbyteIcsStreams,
-  OverbyteIcsUtils,
-  OverbyteIcsTypes;  // for TBytes
+  OverbyteIcsUtils;
 
 type
   EIcsIniFile = class(Exception);
@@ -81,7 +81,6 @@ type
     function  AddSection(const Section: String): TStrings;
     function  GetCaseSensitive: Boolean;
     procedure SetCaseSensitive(Value: Boolean);
-    function  GetEncoding(Stream: TStream): Cardinal;
   protected
     procedure LoadValues; virtual;  
   public
@@ -213,67 +212,28 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-const
-    CP_UTF16Le  = 1200;
-    CP_UTF16Be  = 1201;
-
-function TIcsUtf8IniFile.GetEncoding(Stream: TStream): Cardinal;
-var
-    Len : Integer;
-    Bom : array [0..2] of Byte;
-begin
-    Stream.Seek(0, soBeginning);
-    Len := Stream.Read(Bom[0], SizeOf(BOM));
-    if (Len = 3) and (Bom[0] = $EF) and (Bom[1] = $BB) and (Bom[2] = $BF) then
-        Result := CP_UTF8
-    else if (Len >= 2) and (Bom[0] = $FF) and (Bom[1] = $FE) then
-        Result := CP_UTF16Le
-    else if (Len >= 2) and (Bom[0] = $FE) and (Bom[1] = $FF) then
-        Result := CP_UTF16Be
-    else begin
-        Stream.Seek(0, soBeginning);
-        Result := CP_ACP;
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsUtf8IniFile.LoadValues;
 var
-    List: TStringList;
-    Stream : TFileStream;
-    TxtStream : TTextStream;
-    S : AnsiString;
-    Enc : Cardinal;
+    List   : TStringList;
+    Reader : TIcsStreamReader;
+    S      : String;
 begin
     if (FileName <> '') and FileExists(FileName) then
     begin
         List := TStringList.Create;
         try
-            Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+            Reader := TIcsStreamReader.Create(FileName);
             try
-                Enc := GetEncoding(Stream);
-                if Enc = CP_UTF16Le then
-                    raise EIcsIniFile.Create('UTF-16 LE is unsupported')
-                else if Enc = CP_UTF16Be then
-                    raise EIcsIniFile.Create('UTF-16 BE is unsupported');
-                TxtStream := TTextStream.Create(Stream, 512);
-                try
-                    while TxtStream.ReadLn(S) do begin
-                        if (Enc = CP_UTF8) then
-                        {$IFDEF UNICODE}
-                            List.Add(Utf8ToStringW(S))
-                        {$ELSE}
-                            List.Add(Utf8ToStringA(S))
-                        {$ENDIF}
-                        else
-                            List.Add(String(S)); // Assume ANSI, current CP
-                    end;
-                finally
-                    TxtStream.Free;
+                while Reader.ReadLine(S) do begin
+                {$IFNDEF UNICODE}
+                    if (Reader.CurrentCodePage = CP_UTF8) then
+                        List.Add(Utf8ToStringA(S))
+                    else
+                {$ENDIF}
+                    List.Add(S);
                 end;
             finally
-                Stream.Free;
+                Reader.Free;
             end;
             SetStrings(List);
         finally
@@ -410,30 +370,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsUtf8IniFile.UpdateFile;
 var
-    List: TStringList;
-    Stream : TFileStream;
-    TxtStream : TTextStream;
-    I : Integer;
-    IsUtf8 : Boolean;
-    Bom : TBytes;
-    procedure SetBom;
-    begin
-        SetLength(Bom, 3);
-        Bom[0] := $EF;
-        Bom[1] := $BB;
-        Bom[2] := $BF;
-    end;
+    List   : TStringList;
+    Writer : TIcsStreamWriter;
+    I      : Integer;
 begin
     List := TStringList.Create;
     try
         GetStrings(List);
-        Stream := TFileStream.Create(FileName, fmCreate);
+        Writer := TIcsStreamWriter.Create(FileName, FALSE, FALSE);
         try
             if not FPreserveAnsi then begin
                 { If plain ASCII text (<= #127) do not convert to UTF-8 }
                 for I := 0 to List.Count - 1 do
                     if not IsUsAscii(List[I]) then begin
-                        SetBom;
+                        Writer.CurrentCodePage := CP_UTF8;
                         Break;
                     end;
             end
@@ -443,29 +393,17 @@ begin
                 { code page do not convert to UTF-8.                       }
                 for I := 0 to List.Count - 1 do
                     if not CheckUnicodeToAnsi(List[I]) then begin
-                        SetBom;
+                        Writer.CurrentCodePage := CP_UTF8;
                         Break;
                     end;
             {$ENDIF}
             end;
-            if Length(Bom) > 0 then begin
-                Stream.Write(Bom[0], Length(Bom));
-                IsUtf8 := TRUE;
-            end
-            else
-                IsUtf8 := FALSE;
-            TxtStream := TTextStream.Create(Stream, 512);
-            try
-                for I := 0 to List.Count -1 do
-                    if IsUtf8 then
-                        TxtStream.WriteLn(StringToUtf8(List[I]))
-                    else
-                        TxtStream.WriteLn(AnsiString(List[I]));
-            finally
-                TxtStream.Free;
-            end;
+            if Writer.CurrentCodePage = CP_UTF8 then
+                Writer.WriteBOM;
+            for I := 0 to List.Count - 1 do
+                Writer.WriteLine(List[I]);
         finally
-            Stream.Free;
+            Writer.Free;
         end;
     finally
         List.Free;
