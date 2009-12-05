@@ -372,11 +372,11 @@ type
     PCharsetInfo = ^TCharsetInfo;
     TCharsetInfo = record
         MimeCharset       : TMimeCharset;
-        CodePage          : Cardinal;    // mapped (windows) codepage
+        CodePage          : LongWord;    // mapped (windows) codepage
         MimeName          : CsuString;   // preferred MIME name and alias list, space separated list.
         FriendlyName      : String;      // Windows like user-friendly display name.
         { .NET class Encoding provides the following properties as well }
-        {WindowsCodePage   : Cardinal;    // gets the Windows operating system code page that most closely corresponds to the current encoding.
+        {WindowsCodePage   : LongWord;   // gets the Windows operating system code page that most closely corresponds to the current encoding.
         IsBrowserDisplay  : Boolean;     // indicating whether the current encoding can be used by browser clients for displaying content.
         IsBrowserSave     : Boolean;     // indicating whether the current encoding can be used by browser clients for saving content.
         IsMailNewsDisplay : Boolean;     // indicating whether the current encoding can be used by mail and news clients for displaying content.
@@ -389,11 +389,11 @@ type
     LPCPINFOEXA = ^CPINFOEXA;
     {$EXTERNALSYM _cpinfoexA}
     _cpinfoexA = record
-        MaxCharSize         : Cardinal;                                 { max length (bytes) of a char }
+        MaxCharSize         : UINT;                                     { max length (bytes) of a char }
         DefaultChar         : array[0..MAX_DEFAULTCHAR - 1] of Byte;    { default character }
         LeadByte            : array[0..MAX_LEADBYTES - 1] of Byte;      { lead byte ranges }
         UnicodeDefaultChar  : WideChar;
-        CodePage            : Cardinal;
+        CodePage            : UINT;
         CodePageName        : array[0..MAX_PATH] of AnsiChar;
     end;
     {$EXTERNALSYM CPINFOEXA}
@@ -405,11 +405,11 @@ type
     LPCPINFOEXW = ^CPINFOEXW;
     {$EXTERNALSYM _cpinfoexW}
     _cpinfoexW = record
-        MaxCharSize         : Cardinal;                                 { max length (bytes) of a char }
+        MaxCharSize         : UINT;                                     { max length (bytes) of a char }
         DefaultChar         : array[0..MAX_DEFAULTCHAR - 1] of Byte;    { default character }
         LeadByte            : array[0..MAX_LEADBYTES - 1] of Byte;      { lead byte ranges }
         UnicodeDefaultChar  : WideChar;
-        CodePage            : Cardinal;
+        CodePage            : UINT;
         CodePageName        : array[0..MAX_PATH] of WideChar;
     end;
     {$EXTERNALSYM CPINFOEXW}
@@ -435,20 +435,20 @@ type
 {$ENDIF}
     TCodePageObj = class
     private
-        FCodePage     : Cardinal;
+        FCodePage     : LongWord;
         FCodePageName : String;
     public
-        property CodePage: Cardinal read FCodePage;
+        property CodePage: LongWord read FCodePage;
         property CodePageName: String read FCodePageName;
     end;
 
 { Returns a TMimeCharset item mapped to a Windows code page identifier.   }
 { Returns CP_NOTMAPPED if the code page identifier is not mapped.         }
-function  CodePageToMimeCharset(ACodePage: Cardinal): TMimeCharset;
+function  CodePageToMimeCharset(ACodePage: LongWord): TMimeCharset;
 
 { Returns the MIME name of a Windows code page identifier or an empty     }
 { string if the code page identifier is not mapped.                       }
-function  CodePageToMimeCharsetString(ACodePage: Cardinal): CsuString;
+function  CodePageToMimeCharsetString(ACodePage: LongWord): CsuString;
 
 { Returns a pointer to a TCharSetInfo record. If the function fails the   }
 { return value is nil.                                                    }
@@ -460,7 +460,7 @@ function  GetMimeInfo(const AMimeCharSetString: CsuString): PCharSetInfo; overlo
 
 { Returns a pointer to a TCharSetInfo record. If ACodePage                }
 { is not mapped the return value is nil.                                  }
-function GetMimeInfo(ACodePage: Cardinal): PCharSetInfo; overload;
+function GetMimeInfo(ACodePage: LongWord): PCharSetInfo; overload;
 
 { Returns the MIME name mapped to a TMimeCharset item.                    }
 function  MimeCharsetToCharsetString(AMimeCharSet: TMimeCharset): CsuString;
@@ -468,49 +468,49 @@ function  MimeCharsetToCharsetString(AMimeCharSet: TMimeCharset): CsuString;
 function ExtractMimeName(PInfo : PCharSetInfo): CsuString;
 
 { Returns the code page identifier mapped to a TMimeCharset item.           }
-function  MimeCharsetToCodePage(AMimeCharSet: TMimeCharset): Cardinal; overload;
+function  MimeCharsetToCodePage(AMimeCharSet: TMimeCharset): LongWord; overload;
 
 { If the function succeeds parameter ACodePage contains a valid ANSI code }
 { page identifier that is installed and available in the system. If the   }
 { function fails parameter ACodePage contains either ERR_CP_NOTAVAILABLE  }
 { or ERR_CP_NOTMAPPED.                                                    }
 function  MimeCharsetToCodePage(const AMimeCharSetString: CsuString;
-  out ACodePage: Cardinal): Boolean; overload;
+  out ACodePage: LongWord): Boolean; overload;
 
 { Returns either the code page identifier mapped to a MIME name or        }
 { IcsSystemCodePage (default system code page) if no mapping exists or    }
 { a mapped code page identifier is not an installed and available ANSI    }
 { code page.                                                              }
-function  MimeCharsetToCodePageDef(const AMimeCharSetString: CsuString): Cardinal;
+function  MimeCharsetToCodePageDef(const AMimeCharSetString: CsuString): LongWord;
 
 { If the function succeeds parameter ACodePage contains a valid code page }
 { identifier that is installed and available in the system, this may be   }
 { a Unicode code pages as well. If the function fails ACodePage           }
 { contains either ERR_CP_NOTAVAILABLE or ERR_CP_NOTMAPPED.                }
 function  MimeCharsetToCodePageEx(const AMimeCharSetString: CsuString;
-  out ACodePage: Cardinal): Boolean; overload;
+  out ACodePage: LongWord): Boolean; overload;
 
 { Returns either the code page identifier mapped to a MIME name or        }
 { IcsSystemCodePage (default system code page) if no mapping exists.      }
 { May return Unicode code page IDs as well.                                  }
-function  MimeCharsetToCodePageExDef(const AMimeCharSetString: CsuString): Cardinal;
+function  MimeCharsetToCodePageExDef(const AMimeCharSetString: CsuString): LongWord;
 
 { Returns TRUE if the code page identifier is a valid ANSI CP that may be }
 { passed as parameter to MultiByteToWideChar and WideCharToMultiByte      }
 { (includes UTF-8 and UTF-7) otherwise FALSE.                             }
 { The function also returns FALSE if the code page is not installed or    }
 { unavailable in the system.                                              }
-function  IsValidAnsiCodePage(ACodePage: Cardinal): Boolean;
+function  IsValidAnsiCodePage(ACodePage: LongWord): Boolean;
 { Same as IsValidAnsiCodePage except it takes Unicode code page IDs into account }
-function  IcsIsValidCodePageID(ACodePage: Cardinal): Boolean;
-function  IsSingleByteCodePage(ACodePage: Cardinal): Boolean;
+function  IcsIsValidCodePageID(ACodePage: LongWord): Boolean;
+function  IsSingleByteCodePage(ACodePage: LongWord): Boolean;
 procedure GetSystemCodePageList(AOwnsObjectList : TObjectList);
-function  AnsiCodePageFromLocale(ALcid: LCID): Cardinal;
-function  OemCodePageFromLocale(ALcid: LCID): Cardinal;
-function  GetThreadAnsiCodePage: Cardinal; {$IFDEF USE_INLINE} inline; {$ENDIF}
-function  GetThreadOemCodePage: Cardinal; {$IFDEF USE_INLINE} inline; {$ENDIF}
-function  GetUserDefaultAnsiCodePage: Cardinal; {$IFDEF USE_INLINE} inline; {$ENDIF}
-function  GetUserDefaultOemCodePage: Cardinal;  {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  AnsiCodePageFromLocale(ALcid: LCID): LongWord;
+function  OemCodePageFromLocale(ALcid: LCID): LongWord;
+function  GetThreadAnsiCodePage: LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  GetThreadOemCodePage: LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  GetUserDefaultAnsiCodePage: LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  GetUserDefaultOemCodePage: LongWord;  {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$IFNDEF COMPILER12_UP}
 {$EXTERNALSYM GetCPInfoExA}
 function  GetCPInfoExA(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEXA): BOOL; stdcall;
@@ -523,7 +523,7 @@ procedure GetFriendlyCharsetList(Items: TStrings; IncludeList: TMimeCharsets; Cl
 procedure GetMimeCharsetList(Items: TStrings; IncludeList: TMimeCharsets; ClearItems: Boolean = True);
 
 var
-    IcsSystemCodePage     : Cardinal;
+    IcsSystemCodePage     : LongWord;
     IcsSystemMaxCharSize  : Integer;
     IcsSystemIsSingleByte : Boolean;
 
@@ -614,7 +614,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsValidAnsiCodePage(ACodePage: Cardinal): Boolean;
+function IsValidAnsiCodePage(ACodePage: LongWord): Boolean;
 var
     Info : _CpInfo;
 begin
@@ -623,7 +623,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsIsValidCodePageID(ACodePage: Cardinal): Boolean;
+function IcsIsValidCodePageID(ACodePage: LongWord): Boolean;
 begin
     Result := (ACodePage = 1200) or (ACodePage = 1201) or
               (ACodePage = 12000) or (ACodePage = 12001) or 
@@ -632,7 +632,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSingleByteCodePage(ACodePage: Cardinal): Boolean;
+function IsSingleByteCodePage(ACodePage: LongWord): Boolean;
 var
     Info : _CpInfo;
 begin
@@ -644,7 +644,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function AnsiCodePageFromLocale(ALcid: LCID): Cardinal;
+function AnsiCodePageFromLocale(ALcid: LCID): LongWord;
 var
     Buf : array [0..5] of Char;
 begin
@@ -654,7 +654,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function OemCodePageFromLocale(ALcid: LCID): Cardinal;
+function OemCodePageFromLocale(ALcid: LCID): LongWord;
 var
     Buf : array [0..5] of Char;
 begin
@@ -664,35 +664,35 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetUserDefaultAnsiCodePage: Cardinal;
+function GetUserDefaultAnsiCodePage: LongWord;
 begin
     Result := AnsiCodePageFromLocale(GetUserDefaultLCID);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetThreadAnsiCodePage: Cardinal;
+function GetThreadAnsiCodePage: LongWord;
 begin
     Result := AnsiCodePageFromLocale(GetThreadLocale);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetUserDefaultOemCodePage: Cardinal;
+function GetUserDefaultOemCodePage: LongWord;
 begin
     Result := OemCodePageFromLocale(GetUserDefaultLCID);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetThreadOemCodePage: Cardinal;
+function GetThreadOemCodePage: LongWord;
 begin
     Result := OemCodePageFromLocale(GetThreadLocale);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function CpEnumNameProc(ACodePage : PChar) : Cardinal ; stdcall;
+function CpEnumNameProc(ACodePage : PChar) : LongWord ; stdcall;
 var
     Info : TCpInfoEx;
     CP   : TCodePageObj;
@@ -731,7 +731,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { http://www.iana.org/assignments/character-sets }
-function CodePageToMimeCharset(ACodePage: Cardinal): TMimeCharset;
+function CodePageToMimeCharset(ACodePage: LongWord): TMimeCharset;
 begin
     case ACodePage of
         0     :  Result := CS_DEFAULT;
@@ -835,7 +835,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function CodePageToMimeCharsetString(ACodePage: Cardinal): CsuString;
+function CodePageToMimeCharsetString(ACodePage: LongWord): CsuString;
 var
     CS : TMimeCharset;
 begin
@@ -854,7 +854,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetMimeInfo(ACodePage: Cardinal): PCharSetInfo;
+function GetMimeInfo(ACodePage: LongWord): PCharSetInfo;
 begin
     Result := @CharsetInfos[Ord(CodePageToMimeCharset(ACodePage))];
     if Result^.MimeCharset = CS_NOTMAPPED then
@@ -911,7 +911,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function MimeCharsetToCodePage(AMimeCharSet: TMimeCharset): Cardinal;
+function MimeCharsetToCodePage(AMimeCharSet: TMimeCharset): LongWord;
 var
     P : PCharsetInfo;
 begin
@@ -925,7 +925,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function MimeCharsetToCodePage(const AMimeCharSetString: CsuString;
-  out ACodePage: Cardinal): Boolean;
+  out ACodePage: LongWord): Boolean;
 var
     P : PCharsetInfo;
 begin
@@ -943,7 +943,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function MimeCharsetToCodePageDef(const AMimeCharSetString: CsuString): Cardinal;
+function MimeCharsetToCodePageDef(const AMimeCharSetString: CsuString): LongWord;
 begin
     if not MimeCharsetToCodePage(AMimeCharSetString, Result) then
         Result := IcsSystemCodePage;
@@ -952,7 +952,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function MimeCharsetToCodePageEx(const AMimeCharSetString: CsuString;
-  out ACodePage: Cardinal): Boolean;
+  out ACodePage: LongWord): Boolean;
 var
     P : PCharsetInfo;
 begin
@@ -970,7 +970,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function MimeCharsetToCodePageExDef(const AMimeCharSetString: CsuString): Cardinal;
+function MimeCharsetToCodePageExDef(const AMimeCharSetString: CsuString): LongWord;
 begin
     if not MimeCharsetToCodePageEx(AMimeCharSetString, Result) then
         Result := IcsSystemCodePage;

@@ -459,13 +459,13 @@ type
         FAllow8Bit          : Boolean;
         FDefaultEncoding    : TSmtpDefaultEncoding;
         FCharset            : String;
-        FCodePage           : Cardinal;
+        FCodePage           : LongWord;
         FIsMultiByteCP      : Boolean;
         FFoldLines          : Boolean;
         FConvertToCharset   : Boolean; // Ignored in 2009 and better!
         FEncType            : Char;
 
-        procedure SetCodePage(const Value: Cardinal);
+        procedure SetCodePage(const Value: LongWord);
         procedure SetCharSet(const Value: String);
         procedure SetConvertToCharset(const Value: Boolean);
         procedure SetDefaultEncoding(const Value: TSmtpDefaultEncoding);
@@ -477,7 +477,7 @@ type
                          HdrBody       : String);
         property  Allow8Bit : Boolean   read  FAllow8Bit  write FAllow8Bit;
         property  Charset   : String    read  FCharset    write SetCharset;
-        property  CodePage  : Cardinal  read  FCodePage   write SetCodePage;
+        property  CodePage  : LongWord read  FCodePage   write SetCodePage;
         property  ConvertToCharset : Boolean        read  FConvertToCharset
                                                     write SetConvertToCharset;
         property  FoldLines : Boolean read FFoldLines  write FFoldLines;
@@ -492,7 +492,7 @@ type
         FTransferEncoding : TSmtpDefaultEncoding;
         FWrapText         : Boolean;
         FMaxLineLength    : Integer;
-        FCodePage         : Cardinal;
+        FCodePage         : LongWord;
         FIsMultiByteCP    : Boolean;
         FText             : AnsiString;
         FCurrentIdx       : Integer;
@@ -504,7 +504,7 @@ type
                         {$ELSE}
                             const AText       : AnsiString;
                         {$ENDIF}
-                            DstCodePage       : Cardinal;
+                            DstCodePage       : LongWord;
                             IsMultiByteCP     : Boolean;
                             ConvertToCharset  : Boolean;
                             DefaultEncoding   : TSmtpDefaultEncoding;
@@ -648,7 +648,7 @@ type
         FCharSet             : String;       { Charset of the e-mail        }
         { Convert from system charset to FCharSet with ANSI compilers only  }
         FConvertToCharset    : Boolean;      { Ignored in 2009 and better!  }
-        FCodePage            : Cardinal;     { Calculated from FCharset     }
+        FCodePage            : LongWord;     { Calculated from FCharset     }
         FIsMultiByteCP       : Boolean;      { Calculated from FCodePage    }
         { Default Transfer-Encoding of FMailMessage. Actual value used      }
         { by the component may change if set to smtpEnc7Bit or smtpEnc8Bit. }
@@ -874,7 +874,7 @@ type
                                                      write SetCharset;
         property ConvertToCharset : Boolean          read  FConvertToCharset
                                                      write SetConvertToCharset;
-        property CodePage     : Cardinal             read  FCodePage       {AG}
+        property CodePage     : LongWord             read  FCodePage       {AG}
                                                      write FCodePage;
         property DefaultEncoding : TSmtpDefaultEncoding  read  FDefaultEncoding {AG}
                                                      write FDefaultEncoding;
@@ -1197,7 +1197,7 @@ type
         FInnerBoundary          : AnsiString;
         FMimeState              : TSmtpMimeState;
         FHtmlCharSet            : String;
-        FHtmlCodePage           : Cardinal;
+        FHtmlCodePage           : LongWord;
         FHtmlConvertToCharset   : Boolean;
         FHtmlIsMultiByteCP      : Boolean;
         FLineOffset             : Integer;
@@ -1231,7 +1231,7 @@ type
                                        read  GetImageStream
                                        write SetImageStream;
         property ImageStreamCount : Integer   read  GetImageStreamCount;
-        property HtmlCodePage : Cardinal      read  FHtmlCodePage
+        property HtmlCodePage : LongWord      read  FHtmlCodePage
                                               write FHtmlCodePage;
     published
         property EmailImages : TStrings       read  FEmailImages
@@ -1317,7 +1317,7 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSmtpHeaderLines.SetCodePage(const Value: Cardinal);
+procedure TSmtpHeaderLines.SetCodePage(const Value: LongWord);
 begin
     { Currently we do not support UTF-7 header lines!! } 
     if Value = CP_UTF7 then begin
@@ -1477,7 +1477,7 @@ function TSmtpMessageText.SetText(
 {$ELSE}
     const AText       : AnsiString;
 {$ENDIF}
-    DstCodePage       : Cardinal;
+    DstCodePage       : LongWord;
     IsMultiByteCP     : Boolean;
     ConvertToCharset  : Boolean;
     DefaultEncoding   : TSmtpDefaultEncoding;

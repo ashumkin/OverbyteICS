@@ -1299,14 +1299,14 @@ function ExtractURLEncodedValue(
     Msg         : PChar;            { URL Encoded stream                    }
     Name        : String;           { Variable name to look for             }
     var Value   : String;           { Where to put variable value           }
-    SrcCodePage : Cardinal = CP_ACP;{ D2006 and older CP_UTF8 only          }
+    SrcCodePage : LongWord = CP_ACP;{ D2006 and older CP_UTF8 only          }
     DetectUtf8  : Boolean  = TRUE)
     : Boolean; overload;
 function ExtractURLEncodedValue(
     const Msg   : String;           { URL Encoded stream                     }
     Name        : String;           { Variable name to look for              }
     var Value   : String;           { Where to put variable value            }
-    SrcCodePage : Cardinal = CP_ACP;{ D2006 and older CP_UTF8 only          }
+    SrcCodePage : LongWord = CP_ACP;{ D2006 and older CP_UTF8 only          }
     DetectUtf8  : Boolean  = TRUE)
     : Boolean; overload;
 function ExtractURLEncodedParamList(
@@ -1317,9 +1317,9 @@ function ExtractURLEncodedParamList(
     const Msg : String;            { URL Encoded stream                     }
     Params    : TStrings)          { Where to put the list of parameters    }
     : Integer; overload;           { Number of parameters found             }
-function UrlEncode(const S : String; DstCodePage : Cardinal = CP_UTF8) : String;
+function UrlEncode(const S : String; DstCodePage : LongWord = CP_UTF8) : String;
 function UrlDecode(const Url   : String;
-                   SrcCodePage : Cardinal = CP_ACP;
+                   SrcCodePage : LongWord = CP_ACP;
                    DetectUtf8  : Boolean = TRUE) : String;
 function FileDate(FileName : String) : TDateTime;
 function RFC1123_Date(aDate : TDateTime) : String;
@@ -3802,7 +3802,7 @@ function ExtractURLEncodedValue(
     Msg         : PChar;    { URL Encoded stream                     }
     Name        : String;   { Variable name to look for              }
     var Value   : String;   { Where to put variable value            }
-    SrcCodePage : Cardinal; { D2006 and older CP_UTF8 only           }
+    SrcCodePage : LongWord; { D2006 and older CP_UTF8 only           }
     DetectUtf8  : Boolean)
     : Boolean;              { Found or not found that's the question }
 var
@@ -3866,7 +3866,7 @@ function ExtractURLEncodedValue(
     const Msg   : String;           { URL Encoded stream                    }
     Name        : String;           { Variable name to look for             }
     var Value   : String;           { Where to put variable value           }
-    SrcCodePage : Cardinal = CP_ACP;{ D2006 and older CP_UTF8 only          }
+    SrcCodePage : LongWord = CP_ACP;{ D2006 and older CP_UTF8 only          }
     DetectUtf8  : Boolean  = TRUE)
     : Boolean; overload;
 begin
@@ -4271,7 +4271,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlEncode(const S : String; DstCodePage: Cardinal = CP_UTF8) : String;
+function UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
 var
     I, J   : Integer;
     AStr   : AnsiString;
@@ -4311,7 +4311,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  UrlDecode(const Url : String; SrcCodePage: Cardinal = CP_ACP;
+function  UrlDecode(const Url : String; SrcCodePage: LongWord = CP_ACP;
   DetectUtf8: Boolean = TRUE) : String;
 var
     I, J, L : Integer;

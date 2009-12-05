@@ -1011,7 +1011,7 @@ begin
         DelayedRequestDone(0)
     else begin
         FNext            := GetArticleLineNext;
-        FLastCmdResponse := FLastResponse;;
+        FLastCmdResponse := FLastResponse;
         StateChange(nntpWaitingResponse);
 
         if Assigned(FOnMessageBegin) then
@@ -1463,7 +1463,7 @@ begin
     end;
 
     FNext            := XHdrLineNext;
-    FLastCmdResponse := FLastResponse;;
+    FLastCmdResponse := FLastResponse;
     StateChange(nntpWaitingResponse);
 
     if Assigned(FOnXHdrBegin) then

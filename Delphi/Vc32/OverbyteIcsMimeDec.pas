@@ -368,7 +368,7 @@ type
         FReturnPath               : AnsiString;
         FEncoding                 : AnsiString;
         FCharSet                  : AnsiString;
-        FCodePage                 : Cardinal;
+        FCodePage                 : LongWord;
         FContentType              : AnsiString;
         FMimeVersion              : AnsiString;
         FHeaderName               : AnsiString;
@@ -389,7 +389,7 @@ type
         FPartFileName             : AnsiString;
         FPartFormat               : AnsiString;
         FPartCharset              : AnsiString;
-        FPartCodePage             : Cardinal;
+        FPartCodePage             : LongWord;
         FApplicationType          : AnsiString;
         FPartOpened               : Boolean;
         FHeaderFlag               : Boolean;
@@ -426,8 +426,8 @@ type
         FInlineDecodeLine         : Boolean;
         FLengthHeader             : Integer;
         FPartFirstLine            : Boolean;
-        FDefaultCodePage          : Cardinal;
-        procedure SetDefaultCodePage(const Value: Cardinal);
+        FDefaultCodePage          : LongWord;
+        procedure SetDefaultCodePage(const Value: LongWord);
         procedure TriggerHeaderBegin; virtual;
         procedure TriggerHeaderLine; virtual;
         procedure TriggerHeaderEnd; virtual;
@@ -472,7 +472,7 @@ type
         property ContentType      : AnsiString       read  FContentType;
         property Encoding         : AnsiString       read  FEncoding;
         property Charset          : AnsiString       read  FCharset;
-        property CodePage         : Cardinal         read  FCodePage;
+        property CodePage         : LongWord         read  FCodePage;
         property MimeVersion      : AnsiString       read  FMimeVersion;
         property HeaderName       : AnsiString       read  FHeaderName;
         property Disposition      : AnsiString       read  FDisposition;
@@ -490,7 +490,7 @@ type
         property PartFileName     : AnsiString       read  FPartFileName;
         property PartFormat       : AnsiString       read  FPartFormat;
         property PartCharset      : AnsiString       read  FPartCharset;
-        property PartCodePage     : Cardinal         read  FPartCodePage
+        property PartCodePage     : LongWord         read  FPartCodePage
                                                      write FPartCodePage;
         property ApplicationType  : AnsiString       read  FApplicationType;
         property PartNumber       : Integer          read  FPartNumber;
@@ -502,7 +502,7 @@ type
                                                      write FInlineDecodeLine
                                                      default FALSE;
         property LengthHeader     : Integer          read  FLengthHeader;
-        property DefaultCodePage  : Cardinal         read  FDefaultCodePage
+        property DefaultCodePage  : LongWord         read  FDefaultCodePage
                                                      write SetDefaultCodePage; 
     published
         property OnHeaderBegin : TNotifyEvent        read  FOnHeaderBegin
@@ -570,7 +570,7 @@ type
 //      PSubject: UnicodeString ; {V7.18 Bjørnar, gone V7.20}
         PartStream: TMemoryStream ;
         PSize: integer ;
-        PCodePage: integer ;
+        PCodePage: LongWord ;
         PIsTextpart: Boolean ;   { V7.20 Angus }
     end ;
 
@@ -1626,7 +1626,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMimeDecode.SetDefaultCodePage(const Value: Cardinal);
+procedure TMimeDecode.SetDefaultCodePage(const Value: LongWord);
 begin
     if not IsValidCodePage(Value) then
         raise Exception.Create('Code page "' + _IntToStr(Value) + '"' +
@@ -2391,7 +2391,7 @@ var
     BeginEnc, BeginType, L, I, J: Integer;
     EncType : AnsiChar;
     CharSet, S: AnsiString;
-    CP : Cardinal;
+    CP : LongWord;
 begin
     L := Length(Value);
     EncType   := #0;
@@ -2475,7 +2475,7 @@ var
     BeginEnc, BeginType, L, I, J: Integer;
     EncType : AnsiChar;
     S: AnsiString;
-    CP : Cardinal;
+    CP : LongWord;
 begin
     L := Length(Value);
     EncType   := #0;

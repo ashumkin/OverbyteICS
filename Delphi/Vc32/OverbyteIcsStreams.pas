@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.13
+Version:      6.14
 Legal issues: Copyright (C) 2005-2009 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
@@ -74,7 +74,8 @@ May 07, 2009 V6.13 TIcsStreamWriter did not convert from ANSI to UTF-7.
              used only in the context of 7 bit transports, such as e-mail where
              line length restrictions exist, so setting property MaxLineLength
              to >= 1024 should work around this issue.
-             
+Dec 05, 2009 V6.14 Use IcsSwap16Buf() and global code page ID constants.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsStreams;
@@ -268,7 +269,7 @@ type
     private
         FReadBuffer     : TBytes;
         FReadBufSize    : Integer;
-        FCodePage       : Cardinal;
+        FCodePage       : LongWord;
         FLeadBytes      : set of AnsiChar;
         FDetectBOM      : Boolean;
         { Max. number of chars (elements) forcing a new line even though     }
@@ -281,9 +282,9 @@ type
         function    InternalReadLnWBe: Boolean;
         procedure   EnsureReadBuffer(Size: Integer); {$IFDEF USE_INLINE} inline;{$ENDIF}
         procedure   SetMaxLineLength(const Value: Integer);
-        procedure   SetCodePage(const Value : Cardinal);
+        procedure   SetCodePage(const Value : LongWord);
     protected
-        function    GetCodePageFromBOM: Cardinal; virtual;
+        function    GetCodePageFromBOM: LongWord; virtual;
         procedure   Init; override;
     public
         constructor Create(Stream     : TStream;
@@ -291,7 +292,7 @@ type
                            OwnsStream : Boolean = FALSE); override;
         constructor Create(Stream     : TStream;
                            DetectBOM  : Boolean = FALSE;
-                           CodePage   : Cardinal = CP_ACP;
+                           CodePage   : LongWord = CP_ACP;
                            OwnsStream : Boolean = FALSE;
                            BufferSize : Integer = DEFAULT_BUFSIZE); overload;
 
@@ -300,7 +301,7 @@ type
                            BufferSize     : Integer = DEFAULT_BUFSIZE); override;
         constructor Create(const FileName : String;
                            DetectBOM      : Boolean = TRUE;
-                           CodePage       : Cardinal = CP_ACP;
+                           CodePage       : LongWord = CP_ACP;
                            BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
 
         constructor Create(const FileName : WideString;
@@ -308,7 +309,7 @@ type
                            BufferSize     : Integer = DEFAULT_BUFSIZE); override;
         constructor Create(const FileName : WideString;
                            DetectBOM      : Boolean = TRUE;
-                           CodePage       : Cardinal = CP_ACP;
+                           CodePage       : LongWord = CP_ACP;
                            BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
 
         function    DetectLineBreakStyle: TIcsLineBreakStyle;
@@ -317,7 +318,7 @@ type
         procedure   ReadToEnd(var S: RawByteString); overload; virtual;
         procedure   ReadToEnd(var S: UnicodeString); overload; virtual;
 
-        property    CurrentCodePage: Cardinal read FCodePage write SetCodePage;
+        property    CurrentCodePage: LongWord read FCodePage write SetCodePage;
         property    MaxLineLength: Integer read FMaxLineLength write SetMaxLineLength;
     end;
 
@@ -328,14 +329,14 @@ type
         FReadBuffer     : TBytes;  // For charset conversion
         FReadBufSize    : Integer;
         FLineBreakStyle : TIcsLineBreakStyle;
-        FCodePage       : Cardinal;
+        FCodePage       : LongWord;
         FLineBreak      : AnsiString;
         procedure   SetLineBreakStyle(Value: TIcsLineBreakStyle);
         procedure   EnsureWriteBuffer(Size: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
         procedure   EnsureReadBuffer(Size: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
     protected
-        function    GetBomFromCodePage(ACodePage: Cardinal) : TBytes; virtual;
-        function    GetCodePageFromBOM: Cardinal; virtual;
+        function    GetBomFromCodePage(ACodePage: LongWord) : TBytes; virtual;
+        function    GetCodePageFromBOM: LongWord; virtual;
         procedure   Init; override;
     public
         constructor Create(Stream     : TStream;
@@ -344,7 +345,7 @@ type
         constructor Create(Stream     : TStream;
                            Append     : Boolean = TRUE;
                            DetectBOM  : Boolean = FALSE;
-                           CodePage   : Cardinal = CP_ACP;
+                           CodePage   : LongWord = CP_ACP;
                            OwnsStream : Boolean = FALSE;
                            BufferSize : Longint = DEFAULT_BUFSIZE); overload;
 
@@ -354,7 +355,7 @@ type
         constructor Create(const FileName : String;
                            Append         : Boolean = TRUE;
                            DetectBOM      : Boolean = TRUE;
-                           CodePage       : Cardinal = CP_ACP;
+                           CodePage       : LongWord = CP_ACP;
                            BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
 
         constructor Create(const FileName : WideString;
@@ -363,13 +364,13 @@ type
         constructor Create(const FileName : WideString;
                            Append         : Boolean = TRUE;
                            DetectBOM      : Boolean = TRUE;
-                           CodePage       : Cardinal = CP_ACP;
+                           CodePage       : LongWord = CP_ACP;
                            BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
 
         function    DetectLineBreakStyle: TIcsLineBreakStyle;
         procedure   Write(const S     : UnicodeString); reintroduce; overload; virtual;
         procedure   Write(const S     : RawByteString;
-                          SrcCodePage : Cardinal = CP_ACP); reintroduce; overload; virtual;
+                          SrcCodePage : LongWord = CP_ACP); reintroduce; overload; virtual;
         {
         procedure   Write(Value: Boolean); reintroduce; overload;
         procedure   Write(Value: WideChar); reintroduce; overload;
@@ -378,9 +379,9 @@ type
         }
         procedure   WriteLine(const S     : UnicodeString); overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
         procedure   WriteLine(const S     : RawByteString;
-                              SrcCodePage : Cardinal = CP_ACP); overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
+                              SrcCodePage : LongWord = CP_ACP); overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
         procedure   WriteBOM;
-        property    CurrentCodePage : Cardinal read FCodePage write FCodePage;
+        property    CurrentCodePage : LongWord read FCodePage write FCodePage;
         property    LineBreakStyle  : TIcsLineBreakStyle read  FLineBreakStyle
                                                          write SetLineBreakStyle;
     end;
@@ -394,9 +395,6 @@ implementation
 type
     TDummyByteArray = array [0..0] of Byte; { Casts require range checks OFF }{ V6.11 }
 
-const
-    CP_UTF16Le        = 1200;
-    CP_UTF16Be        = 1201;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF USE_OLD_BUFFERED_FILESTREAM}
@@ -1429,7 +1427,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamReader.Create(Stream: TStream; DetectBOM: Boolean = FALSE;
-  CodePage: Cardinal = CP_ACP; OwnsStream: Boolean = FALSE;
+  CodePage: LongWord = CP_ACP; OwnsStream: Boolean = FALSE;
   BufferSize: Integer = DEFAULT_BUFSIZE);
 begin
     FDetectBOM := DetectBOM;
@@ -1448,7 +1446,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamReader.Create(const FileName: String;
-  DetectBOM: Boolean = TRUE; CodePage: Cardinal = CP_ACP;
+  DetectBOM: Boolean = TRUE; CodePage: LongWord = CP_ACP;
   BufferSize: Integer = DEFAULT_BUFSIZE);
 begin
     FDetectBOM := DetectBOM;
@@ -1467,7 +1465,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamReader.Create(const FileName: WideString;
-  DetectBOM: Boolean = TRUE; CodePage: Cardinal = CP_ACP;
+  DetectBOM: Boolean = TRUE; CodePage: LongWord = CP_ACP;
   BufferSize: Integer = DEFAULT_BUFSIZE);
 begin
     FDetectBOM := DetectBOM;
@@ -1501,7 +1499,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsStreamReader.SetCodePage(const Value: Cardinal);
+procedure TIcsStreamReader.SetCodePage(const Value: LongWord);
 var
     CPInfo : TCPInfo;
     I      : Integer;
@@ -1514,7 +1512,7 @@ begin
                 FCodePage  := Value;
             end;
         CP_UTF8,
-        CP_UTF16Le,
+        CP_UTF16,
         CP_UTF16Be  :
             begin
                 FLeadBytes := [];
@@ -1542,7 +1540,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsStreamReader.GetCodePageFromBOM: Cardinal;
+function TIcsStreamReader.GetCodePageFromBOM: LongWord;
 var
     OldPos : Int64;
     A : array [0..2] of Byte;
@@ -1553,7 +1551,7 @@ begin
     Seek(0, soBeginning);
     Read(A, 3);
     if (A[0] = $FF) and (A[1] = $FE) then begin
-        Result := CP_UTF16Le;
+        Result := CP_UTF16;
         BomLen := 2;
     end
     else if (A[0] = $FE) and (A[1] = $FF) then begin
@@ -1581,21 +1579,20 @@ var
     OldPos    : Int64;
     ChA       : AnsiChar;
     ChW       : WideChar;
-    CodePage  : Cardinal;
+    CodePage  : LongWord;
 begin
     Result := ilbsCRLF;
     OldPos := Position;
     CodePage := GetCodePageFromBOM;
     try
     case CodePage of
-        CP_UTF16Le, CP_UTF16Be :
+        CP_UTF16, CP_UTF16Be :
         begin
             Seek(2, soBeginning);
             while Read(ChW, SizeOf(ChW)) = SizeOf(ChW) do
             begin
                 if CodePage = CP_UTF16Be then
-                    ChW := WideChar(((Word(ChW) and $FF) shl 8) or
-                                    ((Word(ChW) shr 8) and $FF));
+                    ChW := WideChar((Word(ChW) shl 8) or (Word(ChW) shr 8));
                 case ChW of
                     #10 :
                         begin
@@ -1785,7 +1782,7 @@ begin
     P := PWideChar(FReadBuffer);
     while Read(Wrd, SizeOf(Word)) = SizeOf(Word) do begin
         Inc(Idx);
-        Ch := WideChar(((Wrd and $FF) shl 8) or ((Wrd shr 8) and $FF));
+        Ch := WideChar((Wrd shr 8) or (Wrd shl 8));
         if (Idx >= FMaxLineLength) and (not IsLeadChar(Ch)) then begin
             Seek(-2, soCurrent);
             Result := TRUE;
@@ -1833,7 +1830,7 @@ end;
 function TIcsStreamReader.ReadLine(var S: UnicodeString): Boolean;
 begin
     case FCodePage of
-        CP_UTF16Le :
+        CP_UTF16 :
             begin
                 Result := InternalReadLnWLe;
                 S := PWideChar(FReadBuffer);
@@ -1854,7 +1851,7 @@ end;
 function TIcsStreamReader.ReadLine(var S: RawByteString): Boolean;
 begin
     case FCodePage of
-        CP_UTF16Le :
+        CP_UTF16 :
             begin
                 Result := InternalReadLnWLe;
                 S := UnicodeToAnsi(PWideChar(FReadBuffer), CP_ACP, TRUE);
@@ -1869,26 +1866,8 @@ begin
             S := RawByteString(PAnsiChar(FReadBuffer));
         {$IFDEF COMPILER12_UP}
             if (S <> '') and (FCodePage <> CP_ACP) then
-                PWord(Integer(S) - 12)^ := FCodePage;
+                PWord(INT_PTR(S) - 12)^ := FCodePage;
         {$ENDIF}
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure SwapByteOrder(Str: PWideChar); {$IFDEF USE_INLINE} inline; {$ENDIF}
-var
-    P  : PAnsiChar;
-    Ch : Word;
-begin
-    P := Pointer(Str);
-    while Str^ <> #0 do begin
-        Ch := Word(Str^);
-        P^ := AnsiChar(Hi(Ch));
-        Inc(P);
-        P^ := AnsiChar(Lo(Ch));
-        Inc(P);
-        Inc(Str);
     end;
 end;
 
@@ -1899,7 +1878,7 @@ var
     Buf : TBytes;
 begin
     case FCodePage of
-        CP_UTF16Le :
+        CP_UTF16 :
             begin
                 SetLength(Buf, (Size - Position) + 2);
                 Read(Buf[0], Length(Buf) - 2);
@@ -1913,7 +1892,7 @@ begin
                 Read(Buf[0], Length(Buf) - 2);
                 Buf[Length(Buf) - 1] := 0;
                 Buf[Length(Buf) - 2] := 0;
-                SwapByteOrder(PWideChar(Buf));
+                IcsSwap16Buf(@Buf[0], @Buf[0], (Length(Buf) - 2) div 2);
                 S := UnicodeToAnsi(PWideChar(Buf), CP_ACP, TRUE);
             end;
         else
@@ -1921,7 +1900,7 @@ begin
             Read(PAnsiChar(S)^, Length(S));
         {$IFDEF COMPILER12_UP}
             if (S <> '') and (FCodePage <> CP_ACP) then
-                PWord(Integer(S) - 12)^ := FCodePage;
+                PWord(INT_PTR(S) - 12)^ := FCodePage;
         {$ENDIF}
     end;
 end;
@@ -1933,7 +1912,7 @@ var
     Buf : TBytes;
 begin
     case FCodePage of
-        CP_UTF16Le :
+        CP_UTF16 :
             begin
                 SetLength(S, (Size - Position) div 2);
                 Read(PWideChar(S)^, Length(S) * 2);
@@ -1942,7 +1921,7 @@ begin
             begin
                 SetLength(S, (Size - Position) div 2);
                 Read(PWideChar(S)^, Length(S) * 2);
-                SwapByteOrder(PWideChar(S));
+                IcsSwap16Buf(Pointer(S), Pointer(S), Length(S));
             end;
         else
             SetLength(Buf, (Size - Position) + 1);
@@ -1979,7 +1958,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamWriter.Create(Stream: TStream; Append: Boolean = TRUE;
-  DetectBOM: Boolean = FALSE; CodePage: Cardinal = CP_ACP;
+  DetectBOM: Boolean = FALSE; CodePage: LongWord = CP_ACP;
   OwnsStream: Boolean = FALSE; BufferSize: Integer = DEFAULT_BUFSIZE);
 begin
     FCodePage  := CodePage;
@@ -2002,7 +1981,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamWriter.Create(const FileName: String;
   Append: Boolean = TRUE; DetectBOM: Boolean = TRUE;
-  CodePage: Cardinal = CP_ACP; BufferSize: Integer = DEFAULT_BUFSIZE);
+  CodePage: LongWord = CP_ACP; BufferSize: Integer = DEFAULT_BUFSIZE);
 var
     Mode : Word;
 begin
@@ -2033,7 +2012,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamWriter.Create(const FileName: WideString;
   Append: Boolean = TRUE; DetectBOM: Boolean = TRUE;
-  CodePage: Cardinal = CP_ACP; BufferSize: Integer = DEFAULT_BUFSIZE);
+  CodePage: LongWord = CP_ACP; BufferSize: Integer = DEFAULT_BUFSIZE);
 var
     Mode : Word;
 begin
@@ -2065,7 +2044,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsStreamWriter.GetCodePageFromBOM: Cardinal;
+function TIcsStreamWriter.GetCodePageFromBOM: LongWord;
 var
     OldPos: Int64;
     A : array [0..2] of Byte;
@@ -2076,7 +2055,7 @@ begin
     Seek(0, sofromBeginning);
     Read(A, 3);
     if (A[0] = $FF) and (A[1] = $FE) then begin
-        Result := CP_UTF16Le;
+        Result := CP_UTF16;
         BomLen := 2;
     end
     else if (A[0] = $FE) and (A[1] = $FF) then begin
@@ -2099,10 +2078,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsStreamWriter.GetBomFromCodePage(ACodePage: Cardinal) : TBytes;
+function TIcsStreamWriter.GetBomFromCodePage(ACodePage: LongWord) : TBytes;
 begin
     case ACodePage of
-        CP_UTF16Le :
+        CP_UTF16 :
             begin
                 SetLength(Result, 2);
                 Result[0] := $FF;
@@ -2133,21 +2112,20 @@ var
     OldPos    : Int64;
     ChA       : AnsiChar;
     ChW       : WideChar;
-    CodePage  : Cardinal;
+    CodePage  : LongWord;
 begin
     Result := ilbsCRLF;
     OldPos := Position;
     CodePage := GetCodePageFromBOM;
     try
     case CodePage of
-        CP_UTF16Le, CP_UTF16Be :
+        CP_UTF16, CP_UTF16Be :
         begin
             Seek(2, soBeginning);
             while Read(ChW, SizeOf(ChW)) = SizeOf(ChW) do
             begin
                 if CodePage = CP_UTF16Be then
-                    ChW := WideChar(((Word(ChW) and $FF) shl 8) or
-                                    ((Word(ChW) shr 8) and $FF));
+                    ChW := WideChar((Word(ChW) shl 8) or (Word(ChW) shr 8));
                 case ChW of
                     #10 :
                         begin
@@ -2272,7 +2250,7 @@ begin
     SLen := Length(S);
     if SLen = 0 then Exit;
     case FCodePage of
-        CP_UTF16Le :
+        CP_UTF16   :
             begin
                 WriteBuffer(Pointer(S)^, SLen * 2);
             end;
@@ -2281,7 +2259,7 @@ begin
                 EnsureWriteBuffer((SLen + 1) * 2);
                 Move(Pointer(S)^, FWriteBuffer[0], SLen * 2);
                 PWideChar(FWriteBuffer)[SLen] := #0;
-                SwapByteOrder(PWideChar(FWriteBuffer));
+                IcsSwap16Buf(@FWriteBuffer[0], @FWriteBuffer[0], SLen);
                 WriteBuffer(FWriteBuffer[0], SLen * 2);
             end;
         else
@@ -2297,7 +2275,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsStreamWriter.Write(const S: RawByteString;
-  SrcCodePage: Cardinal = CP_ACP);
+  SrcCodePage: LongWord = CP_ACP);
 var
     Len   : Integer;
     Len1  : Integer;
@@ -2328,7 +2306,7 @@ begin
                 else
                     WriteBuffer(Pointer(S)^, SLen);
             end;
-        CP_UTF16Le :
+        CP_UTF16   :
             begin
                 Len := MultibyteToWideChar(SrcCodePage, 0, Pointer(S), SLen,
                                            nil, 0);
@@ -2345,7 +2323,7 @@ begin
                 Len := MultibyteToWideChar(SrcCodePage, 0, Pointer(S), SLen,
                                            @FWriteBuffer[0], Len);
                 PWideChar(FWriteBuffer)[Len] := #0;
-                SwapByteOrder(PWideChar(FWriteBuffer));
+                IcsSwap16Buf(@FWriteBuffer[0], @FWriteBuffer[0], Len);
                 WriteBuffer(FWriteBuffer[0], Len * 2);
             end;
         else
@@ -2356,7 +2334,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsStreamWriter.WriteLine(const S: RawByteString;
-  SrcCodePage: Cardinal = CP_ACP);
+  SrcCodePage: LongWord = CP_ACP);
 begin
     Write(S, SrcCodePage);
     Write(FLineBreak, SrcCodePage);

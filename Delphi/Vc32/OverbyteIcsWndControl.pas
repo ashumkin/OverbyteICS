@@ -128,7 +128,7 @@ type
   EIcsTimerException   = class(Exception);
   TIcsTimer = class(TComponent)                             {AG 03/25/07}
   protected
-    FUID: Integer;
+    FUID: INT_PTR;
     FInterval: Cardinal;
     FEnabled: Boolean;
     FOnTimer: TNotifyEvent;
@@ -886,7 +886,8 @@ begin
         // We have a window. In the associated data, we record a reference
         // to our object. Thjis will later allow to call the WndProc method to
         // handle messages sent to the window.
-        SetWindowLong(FHandle, 0, Integer(Self));
+        SetWindowLong(FHandle, 0, Longint(Self));
+        // Guess this will change to SetWindowLongPtr() in Win64 
 
         Inc(GWndHandleCount);
     finally
@@ -1041,8 +1042,8 @@ begin
                 {$ELSE}
                     Obj := TObject(WParam);
                 {$ENDIF}
-                if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(Integer))) and
-                   (PInteger(WParam + GUIDOffSet)^ = WPARAM) and
+                if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(INT_PTR))) and
+                   (PINT_PTR(WParam + GUIDOffSet)^ = WParam) and
                    (Obj is TIcsTimer) then
                     TIcsTimer(Obj).WmTimer(MsgRec);
                 end
@@ -1053,8 +1054,8 @@ begin
                 {$ELSE}
                     Obj := TObject(WParam);
                 {$ENDIF}
-                    if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(Integer))) and
-                       (PInteger(WParam + GUIDOffSet)^ = LParam) and
+                    if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(INT_PTR))) and
+                       (PINT_PTR(WParam + GUIDOffSet)^ = LParam) and
                        (Obj is TIcsThreadTimer) then
                         TIcsThreadTimer(Obj).WmTimer(MsgRec)
                 end
@@ -1232,9 +1233,9 @@ begin
 {$IFDEF CLR}
     FHandleGC := GCHandle.Alloc(Self);
 {$ENDIF}
-    FUID := Integer(Self);
+    FUID := INT_PTR(Self);
     if GUIDOffSet = 0 then
-        GUIDOffSet := Integer(@FUID) - Integer(Self);
+        GUIDOffSet := INT_PTR(@FUID) - INT_PTR(Self);
 end;
 
 

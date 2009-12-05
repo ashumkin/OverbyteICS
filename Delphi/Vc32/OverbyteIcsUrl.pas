@@ -82,9 +82,9 @@ const
 procedure ParseURL(const URL : String;
                    var Proto, User, Pass, Host, Port, Path : String);
 function  Posn(const s, t : String; count : Integer) : Integer;
-function  UrlEncode(const S : String; DstCodePage: Cardinal = CP_UTF8) : String;
+function  UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
 function  UrlDecode(const S     : String;
-                    SrcCodePage : Cardinal = CP_ACP;
+                    SrcCodePage : LongWord = CP_ACP;
                     DetectUtf8  : Boolean = TRUE) : String;
 
 implementation
@@ -291,7 +291,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlEncode(const S : String; DstCodePage: Cardinal = CP_UTF8) : String;
+function UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
 var
     I, J   : Integer;
     AStr   : AnsiString;
@@ -357,7 +357,7 @@ begin
 end;
 *)
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlDecode(const S : String; SrcCodePage: Cardinal = CP_ACP;
+function UrlDecode(const S : String; SrcCodePage: LongWord = CP_ACP;
   DetectUtf8: Boolean = TRUE) : String;
 var
     I, J, L : Integer;

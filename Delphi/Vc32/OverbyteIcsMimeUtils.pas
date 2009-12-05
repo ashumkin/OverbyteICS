@@ -173,12 +173,12 @@ const
 { Functions to encode/decode string as a "quoted-printable" string RFC2045}
 function  EncodeQuotedPrintable(const S: RawByteString) : String; overload;
 {$IFDEF COMPILER12_UP}
-function  EncodeQuotedPrintable(const S: UnicodeString; ACodePage: Cardinal) : UnicodeString;  overload;
+function  EncodeQuotedPrintable(const S: UnicodeString; ACodePage: LongWord) : UnicodeString;  overload;
 function  EncodeQuotedPrintable(const S: UnicodeString) : UnicodeString; overload;
 {$ENDIF}
 function  DecodeQuotedPrintable(const S: RawByteString) : RawByteString; overload;
 {$IFDEF COMPILER12_UP}
-function  DecodeQuotedPrintable(const S: UnicodeString; ACodePage: Cardinal) : UnicodeString; overload;
+function  DecodeQuotedPrintable(const S: UnicodeString; ACodePage: LongWord) : UnicodeString; overload;
 function  DecodeQuotedPrintable(const S: UnicodeString) : UnicodeString; overload;
 {$ENDIF}
 function  SplitQuotedPrintableString(const S : String) : String;
@@ -191,7 +191,7 @@ function  Base64Encode(const Input : AnsiString) : AnsiString; overload;
 function  Base64Encode(const Input : PAnsiChar; Len : Integer) : AnsiString; overload;
 {$ENDIF}
 {$IFDEF COMPILER12_UP}
-function  Base64Encode(const Input : UnicodeString; ACodePage: Cardinal) : UnicodeString; overload;
+function  Base64Encode(const Input : UnicodeString; ACodePage: LongWord) : UnicodeString; overload;
 function  Base64Encode(const Input : UnicodeString) : UnicodeString; overload;
 {$ENDIF}
 {$IFDEF CLR}
@@ -200,7 +200,7 @@ function  Base64Encode(Input : StringBuilder) : StringBuilder; overload;
 
 function  Base64Decode(const Input : AnsiString) : AnsiString; overload;
 {$IFDEF COMPILER12_UP}
-function  Base64Decode(const Input : UnicodeString; ACodePage: Cardinal) : UnicodeString; overload;
+function  Base64Decode(const Input : UnicodeString; ACodePage: LongWord) : UnicodeString; overload;
 function  Base64Decode(const Input : UnicodeString) : UnicodeString; overload;
 {$ENDIF}
 {$IFDEF CLR}
@@ -221,7 +221,7 @@ function  DoFileLoadNoEncoding(var Stream     : TStream;               {Bjørnar}
 function  Base64EncodeEx(const Input    : RawByteString;
                          MaxCol         : Integer;
                          var cPos       : Integer;
-                         CodePage       : Cardinal = CP_ACP;
+                         CodePage       : LongWord = CP_ACP;
                          IsMultiByteCP  : Boolean = FALSE) : RawByteString; overload;
 {$IFDEF COMPILER12_UP}
 function  Base64EncodeEx(const Input : UnicodeString;
@@ -230,7 +230,7 @@ function  Base64EncodeEx(const Input : UnicodeString;
 function  Base64EncodeEx(const Input : UnicodeString;
                          MaxCol      : Integer;
                          var cPos    : Integer;
-                         ACodePage   : Cardinal) : UnicodeString; overload;
+                         ACodePage   : LongWord) : UnicodeString; overload;
 {$ENDIF}
 procedure EndFileEncBase64(var Stream : TStream);
 { Dot at start of line escaping for SMTP and NNTP (double the dot)        }
@@ -243,7 +243,7 @@ function IcsWrapTextEx(const Line : RawByteString;
                        QuoteChars     : TSysCharSet;
                        var cPos       : Integer;
                        ForceBreak     : Boolean = False;
-                       ACodePage      : Cardinal = CP_ACP;
+                       ACodePage      : LongWord = CP_ACP;
                        IsMultiByteCP  : Boolean  = FALSE): RawByteString; {$IFDEF COMPILER12_UP} overload;
 
 function IcsWrapTextEx(const Line : String;
@@ -270,7 +270,7 @@ function HdrEncodeInLine(const Input   : RawByteString;         { V7.13 was Ansi
                          const CharSet : AnsiString;  { e.g. 'iso-8859-1' existing Input charset }
                          MaxCol        : Integer;
                          DoFold        : Boolean;
-                         CodePage      : Cardinal = CP_ACP;
+                         CodePage      : LongWord = CP_ACP;
                          IsMultiByteCP : Boolean = FALSE): RawByteString; {$IFDEF COMPILER12_UP} overload;
 
 function HdrEncodeInLine(const Input   : UnicodeString;
@@ -279,13 +279,13 @@ function HdrEncodeInLine(const Input   : UnicodeString;
                          const CharSet : UnicodeString;  { e.g. 'iso-8859-1'     }
                          MaxCol        : Integer;
                          DoFold        : Boolean;
-                         Codepage       : Cardinal = CP_ACP;
+                         Codepage       : LongWord = CP_ACP;
                          IsMultiByteCP  : Boolean = FALSE): UnicodeString; overload;
 {$ENDIF}
 function HdrEncodeInLineEx(const Input : UnicodeString;    { V7.13 }
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
                          EncType       : WideChar;    { Either 'Q' or 'B'        }
-                         CodePage      : Integer;     { Input will be encoded into this CharSet }
+                         CodePage      : LongWord;    { Input will be encoded into this CharSet }
                          MaxCol        : Integer;
                          DoFold        : Boolean;
                          IsMultiByteCP : Boolean = FALSE): RawByteString;
@@ -294,13 +294,13 @@ function HdrEncodeInLineEx(const Input : UnicodeString;    { V7.13 }
 function StrEncodeQP(const Input   : RawByteString;                    {HLX, AG}
                      MaxCol        : Integer;
                      Specials      : TSysCharSet;
-                     CodePage      : Cardinal = CP_ACP;
+                     CodePage      : LongWord = CP_ACP;
                      IsMultibyteCP : Boolean = FALSE): String; overload;
 {$IFDEF COMPILER12_UP}
 function StrEncodeQP(const Input   : UnicodeString;                    {HLX, AG}
                      MaxCol        : Integer;
                      Specials      : TSysCharSet;
-                     ACodePage     : Cardinal;
+                     ACodePage     : LongWord;
                      IsMultibyteCP : Boolean = FALSE): UnicodeString; overload;
 {$ENDIF}
 { Similar to StrEncodeQP, returns just a single line                      } {AG}
@@ -310,7 +310,7 @@ function StrEncodeQPEx(const Buf     : RawByteString;
                        ShortSpace    : Boolean; {'_' e.g. for in-line}
                        var cPos      : Integer;
                        DoFold        : Boolean;
-                       CodePage      : Cardinal = CP_ACP;
+                       CodePage      : LongWord = CP_ACP;
                        IsMultibyteCP : Boolean = FALSE) : RawByteString; overload;
 {$IFDEF COMPILER12_UP}
 function StrEncodeQPEx(const Buf   : UnicodeString;
@@ -326,13 +326,13 @@ procedure FoldHdrLine(HdrLines      : TStrings;                             {AG}
 {$ENDIF}
 procedure FoldHdrLine(HdrLines      : TStrings;                             {AG}
                       const HdrLine : RawByteString;
-                      ACodePage     : Cardinal = CP_ACP;
+                      ACodePage     : LongWord = CP_ACP;
                       IsMultiByteCP : Boolean = FALSE); overload;
 
 function FoldString(const Input   : RawByteString;                          {AG}
                     BreakCharsSet : TSysCharSet;
                     MaxCol        : Integer;
-                    ACodePage     : Cardinal = CP_ACP;
+                    ACodePage     : LongWord = CP_ACP;
                     IsMultiByteCP : Boolean = False): RawByteString; overload;
 {$IFDEF COMPILER12_UP}
 function FoldString(const Input   : UnicodeString;
@@ -399,7 +399,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}
-function EncodeQuotedPrintable(const S: UnicodeString; ACodePage: Cardinal) : UnicodeString;
+function EncodeQuotedPrintable(const S: UnicodeString; ACodePage: LongWord) : UnicodeString;
 begin
     Result := EncodeQuotedPrintable(UnicodeToAnsi(S, ACodePage));
 end;
@@ -445,7 +445,7 @@ end;
 {$IFDEF COMPILER12_UP}
 { Input must not be converted since it is plain US-ASCII, assumes one input }
 { char can safely be casted to one byte.                                    }
-function DecodeQuotedPrintable(const S: UnicodeString; ACodePage: Cardinal) : UnicodeString;
+function DecodeQuotedPrintable(const S: UnicodeString; ACodePage: LongWord) : UnicodeString;
 var
     I, J : Integer;
     Buf : AnsiString;
@@ -991,7 +991,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Converts the UnicodeString to AnsiString using the code page specified,   }
 { converts the Base64 AnsiString result to Unicode using default code page. }
-function Base64Encode(const Input : UnicodeString; ACodePage: Cardinal) : UnicodeString;
+function Base64Encode(const Input : UnicodeString; ACodePage: LongWord) : UnicodeString;
 begin
     Result := String(Base64Encode(UnicodeToAnsi(Input, ACodePage)));
 end;
@@ -1090,7 +1090,7 @@ end;
 { Input must not be converted since it is plain US-ASCII, assumes one input }
 { char can safely be casted to one byte.                                    }
 {$IFDEF COMPILER12_UP}
-function Base64Decode(const Input : UnicodeString; ACodePage: Cardinal) : UnicodeString;
+function Base64Decode(const Input : UnicodeString; ACodePage: LongWord) : UnicodeString;
 var
     Count   : Integer;
     Len     : Integer;
@@ -1183,7 +1183,7 @@ function Base64EncodeEx(
     const Input   : RawByteString;
     MaxCol        : Integer;
     var cPos      : Integer;
-    CodePage      : Cardinal = CP_ACP;
+    CodePage      : LongWord = CP_ACP;
     IsMultiByteCP : Boolean = FALSE) : RawByteString;
 var
     Len : Integer;
@@ -1248,7 +1248,7 @@ end;
 function Base64EncodeEx(const Input : UnicodeString;
                         MaxCol      : Integer;
                         var cPos    : Integer;
-                        ACodePage   : Cardinal) : UnicodeString;
+                        ACodePage   : LongWord) : UnicodeString;
 begin
     Result := Base64EncodeEx(UnicodeToAnsi(Input, ACodePage), MaxCol, cPos);
 end;
@@ -1277,7 +1277,7 @@ function IcsWrapTextEx(
     QuoteChars           : TSysCharSet;
     var cPos             : Integer;
     ForceBreak           : Boolean = FALSE;
-    ACodePage            : Cardinal = CP_ACP;
+    ACodePage            : LongWord = CP_ACP;
     IsMultiByteCP        : Boolean = False): RawByteString;
 var
     Col                : Integer;
@@ -1574,7 +1574,7 @@ function HdrEncodeInLine(const Input    : RawByteString;     { V7.13 was Ansi }
                          const CharSet  : AnsiString;  { e.g. 'iso-8859-1' input is already in this }
                          MaxCol         : Integer;
                          DoFold         : Boolean;
-                         CodePage       : Cardinal = CP_ACP;
+                         CodePage       : LongWord = CP_ACP;
                          IsMultiByteCP  : Boolean = FALSE): RawByteString;
 const
     Suffix    = '?=';
@@ -1693,7 +1693,7 @@ function HdrEncodeInLine(const Input    : UnicodeString;
                          const CharSet  : UnicodeString;  { e.g. 'iso-8859-1' }
                          MaxCol         : Integer;
                          DoFold         : Boolean;
-                         Codepage       : Cardinal = CP_ACP;
+                         Codepage       : LongWord = CP_ACP;
                          IsMultiByteCP  : Boolean = FALSE): UnicodeString;
 begin
     Result := HdrEncodeInLine(AnsiString(Input), Specials, AnsiChar(EncType),
@@ -1707,7 +1707,7 @@ end;
 function HdrEncodeInLineEx(const Input : UnicodeString;
                          Specials      : TSysCharSet; { Try const SpecialsRFC822 }
                          EncType       : WideChar;    { Either 'Q' or 'B'        }
-                         CodePage      : Integer;     { Input will be encoded into this CharSet }
+                         CodePage      : LongWord;    { Input will be encoded into this CharSet }
                          MaxCol        : Integer;
                          DoFold        : Boolean;
                          IsMultiByteCP : Boolean = FALSE): RawByteString;
@@ -1729,7 +1729,7 @@ function StrEncodeQP(
     const Input   : RawByteString;
     MaxCol        : Integer;
     Specials      : TSysCharSet;
-    CodePage      : Cardinal = CP_ACP;
+    CodePage      : LongWord = CP_ACP;
     IsMultiByteCP : Boolean = FALSE) : String;
 var
     cPos, rPos, lPos, ResLen, NextCharIdx : Integer;
@@ -1805,7 +1805,7 @@ end;
 function StrEncodeQP(const Input    : UnicodeString;
                      MaxCol         : Integer;
                      Specials       : TSysCharSet;
-                     ACodePage      : Cardinal;
+                     ACodePage      : LongWord;
                      IsMultiByteCP  : Boolean = FALSE) : UnicodeString;
 begin;
     Result := StrEncodeQP(UnicodeToAnsi(Input, ACodePage), MaxCol, Specials,
@@ -1822,7 +1822,7 @@ function StrEncodeQPEx(
     ShortSpace    : Boolean;
     var cPos      : Integer;
     DoFold        : Boolean;
-    CodePage      : Cardinal = CP_ACP;
+    CodePage      : LongWord = CP_ACP;
     IsMultibyteCP : Boolean = FALSE) : RawByteString;
 var
     lPosRes : Integer;
@@ -1933,7 +1933,7 @@ end;
 procedure FoldHdrLine(
     HdrLines      : TStrings;
     const HdrLine : RawByteString;
-    ACodePage     : Cardinal = CP_ACP;
+    ACodePage     : LongWord = CP_ACP;
     IsMultiByteCP : Boolean = FALSE);
 var
     rPos : Integer;
@@ -1953,7 +1953,7 @@ end;
 function FoldString(const Input : RawByteString;
     BreakCharsSet : TSysCharSet;
     MaxCol        : Integer;
-    ACodePage     : Cardinal = CP_ACP;
+    ACodePage     : LongWord = CP_ACP;
     IsMultiByteCP : Boolean = FALSE): RawByteString;
 var
     rPos : Integer;

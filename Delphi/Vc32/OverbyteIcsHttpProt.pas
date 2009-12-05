@@ -1152,7 +1152,7 @@ function EncodeStr(
 function EncodeStr(
     Encoding    : THttpEncoding;
     const Value : UnicodeString;
-    ACodePage   : Cardinal = CP_ACP ) : UnicodeString; overload;
+    ACodePage   : LongWord = CP_ACP ) : UnicodeString; overload;
 {$ENDIF}
 
 implementation
@@ -4555,7 +4555,7 @@ end;
 function EncodeStr(
     Encoding    : THttpEncoding;
     const Value : UnicodeString;
-    ACodePage   : Cardinal = CP_ACP ) : UnicodeString;
+    ACodePage   : LongWord = CP_ACP ) : UnicodeString;
 var
     AStr : AnsiString;
 begin

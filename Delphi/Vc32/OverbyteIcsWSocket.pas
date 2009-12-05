@@ -1082,7 +1082,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   BindSocket; virtual;
     procedure   SendText(const Str : RawByteString); {$IFDEF COMPILER12_UP} overload;
     procedure   SendText(const Str : UnicodeString); overload;
-    procedure   SendText(const Str : UnicodeString; ACodePage : Cardinal); overload;
+    procedure   SendText(const Str : UnicodeString; ACodePage : LongWord); overload;
     {$ENDIF}
     function    RealSend(var Data : TWSocketData; Len : Integer) : Integer; virtual;
 //  procedure   RaiseExceptionFmt(const Fmt : String; args : array of const); virtual;
@@ -1143,7 +1143,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function    ReceiveStr : String; virtual;
     function    ReceiveStrA : AnsiString; virtual;
 {$IFDEF COMPILER12_UP}
-    function    ReceiveStrW(ACodePage: Cardinal) : UnicodeString; overload; virtual;
+    function    ReceiveStrW(ACodePage: LongWord) : UnicodeString; overload; virtual;
     function    ReceiveStrW : UnicodeString; overload; virtual;
 {$ENDIF}
     function    ReceiveFrom(Buffer      : TWSocketData;
@@ -1159,7 +1159,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                        Len        : Integer) : Integer; virtual;
     function    SendStr(const Str : RawByteString) : Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF} virtual;
 {$IFDEF COMPILER12_UP}
-    function    SendStr(const Str : UnicodeString; ACodePage: Cardinal) : Integer; overload; virtual;
+    function    SendStr(const Str : UnicodeString; ACodePage: LongWord) : Integer; overload; virtual;
     function    SendStr(const Str : UnicodeString) : Integer; overload; virtual;
 {$ENDIF}
     procedure   DnsLookup(const AHostName : String); virtual;
@@ -1185,7 +1185,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   PutDataInSendBuffer(Data : TWSocketData; Len : Integer); virtual;
     procedure   PutStringInSendBuffer(const Str : RawByteString); {$IFDEF COMPILER12_UP} overload; {$ENDIF}
 {$IFDEF COMPILER12_UP}
-    procedure   PutStringInSendBuffer(const Str : UnicodeString; ACodePage: Cardinal); overload;
+    procedure   PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord); overload;
     procedure   PutStringInSendBuffer(const Str : UnicodeString); overload;
 {$ENDIF}    
     procedure   DeleteBufferedData;
@@ -5607,7 +5607,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}
-function TCustomWSocket.ReceiveStrW(ACodePage : Cardinal) : UnicodeString;
+function TCustomWSocket.ReceiveStrW(ACodePage : LongWord) : UnicodeString;
 begin
     Result :=  AnsiToUniCode(ReceiveStrA, ACodePage);
 end;
@@ -5863,7 +5863,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}                                              
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage: Cardinal);
+procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord);
 begin
     if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
         PutDataInSendBuffer(Pointer(Str), Length(Str) * 2)
@@ -5962,7 +5962,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Return -1 if error, else return number of bytes written }
 {$IFDEF COMPILER12_UP}
-function TCustomWSocket.SendStr(const Str : UnicodeString; ACodePage : Cardinal) : Integer;
+function TCustomWSocket.SendStr(const Str : UnicodeString; ACodePage : LongWord) : Integer;
 begin
     if Length(Str) > 0 then
     begin
@@ -6018,7 +6018,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SendText(const Str : UnicodeString; ACodePage : Cardinal);
+procedure TCustomWSocket.SendText(const Str : UnicodeString; ACodePage : LongWord);
 begin
     SendStr(Str, ACodePage);
 end;
@@ -6368,7 +6368,7 @@ begin
         FDnsLookupCheckMsg := TRUE;
         Exit;
     end
-    else if msg.wParam <> LongInt(FDnsLookupHandle) then
+    else if msg.wParam <> WPARAM(FDnsLookupHandle) then
         Exit;
 
     FDnsLookupHandle := 0;
@@ -6385,10 +6385,10 @@ begin
 {$IFDEF WIN32}
     if ErrCode = 0 then begin
         Phe := PHostent(@FDnsLookupBuffer);
-        if phe <> nil then begin
+        //if phe <> nil then begin
             GetIpList(Phe, FDnsResultList);
             FDnsResult := FDnsResultList.Strings[0];
-        end;
+        //end;
     end;
 {$ENDIF}
     TriggerDnsLookupDone(ErrCode);
@@ -6406,7 +6406,7 @@ var
 {$ENDIF}
     ErrCode : Word;
 begin
-    if msg.wParam <> LongInt(FDnsLookupHandle) then
+    if msg.wParam <> WPARAM(FDnsLookupHandle) then
         Exit;
     FDnsLookupHandle := 0;
     ErrCode          := HiWord(Msg.LParam);
@@ -7700,8 +7700,8 @@ procedure TCustomWSocket.Shutdown(How : Integer);
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loWsockInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-      DebugLog(loWsockInfo, {$IFNDEF CLR}_IntToHex(Integer(Self), 8) + ' ' +{$ENDIF}
-                      'TCustomWSocket.Shutdown ' + _IntToStr(How) + ' ' + _IntToStr(FHSocket));
+      DebugLog(loWsockInfo, {$IFNDEF CLR}_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) + ' ' +{$ENDIF}
+               'TCustomWSocket.Shutdown ' + _IntToStr(How) + ' ' + _IntToStr(FHSocket));
 {$ENDIF}
     if FHSocket <> INVALID_SOCKET then
         WSocket_Synchronized_shutdown(FHSocket, How);
@@ -8153,8 +8153,11 @@ procedure TCustomWSocket.TriggerDataSent(Error : Word);
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loWsockDump) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loWsockDump, {$IFNDEF CLR}_IntToHex(Integer(Self), 8) + ' ' +{$ENDIF}
-                      'TriggerDataSent ' + _IntToStr(FHSocket));
+        DebugLog(loWsockDump,
+                {$IFNDEF CLR}
+                _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) + ' ' +
+                {$ENDIF}
+                'TriggerDataSent ' + _IntToStr(FHSocket));
 {$ENDIF}
     if Assigned(FOnDataSent) then
         FOnDataSent(Self, Error);
@@ -13014,8 +13017,8 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
     Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s BIO_ctrl_pending(%s) = %d   [%d]',
-                       [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                        Result, TraceCount]));
+                 [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                 GetMyBioName(b), Result, TraceCount]));
     end;
 {$ENDIF}
 end;
@@ -13052,16 +13055,15 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
     Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s BIO_read(%s, 0x%x, %d) = %d   [%d]',
-                       [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                       Integer(Buf), Len, Result,
-                              TraceCount]));
+                       [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                       GetMyBioName(b), INT_PTR(Buf), Len, Result, TraceCount]));
     end
     else if CheckLogOptions(loSslDump) then begin
         Inc(TraceCount);
         DebugLog(loSslDump, _Format('%s BIO_read(%s, 0x%x, %d) = %d   [%d] Data:%s',
-                       [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                       Integer(Buf), Len, Result,
-                              TraceCount, DataToString(Buf, Result)]));
+                       [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                       GetMyBioName(b), INT_PTR(Buf), Len, Result,
+                       TraceCount, DataToString(Buf, Result)]));
     end;
 {$ENDIF}
 end;
@@ -13104,9 +13106,9 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
     Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s BIO_ctrl(%s, %s, %s, 0x%x) = %d   [%d]',
-                             [_IntToHex(Integer(Self), 8), GetMyBioName(bp),
-                              CmdName, LArgName, Integer(PArg), Result,
-                              TraceCount]));
+                             [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                             GetMyBioName(bp), CmdName, LArgName, INT_PTR(PArg),
+                             Result, TraceCount]));
     end;
 {$ENDIF}
 end;
@@ -13124,9 +13126,10 @@ begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then begin  { V5.21 }
     Inc(TraceCount);
-        DebugLog(loSslInfo, _Format('%s BIO_ctrl_get_write_guarantee(%s) = %d   [%d]',
-                       [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                        Result, TraceCount]));
+        DebugLog(loSslInfo,
+                 _Format('%s BIO_ctrl_get_write_guarantee(%s) = %d   [%d]',
+                 [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2), GetMyBioName(b),
+                 Result, TraceCount]));
     end;
 {$ENDIF}
 end;
@@ -13146,8 +13149,8 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 }
         Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s BIO_ctrl_get_read_request(%s) = %d   [%d]',
-                                   [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                                   Result, TraceCount]));
+                                   [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                                   GetMyBioName(b), Result, TraceCount]));
     end;
 {$ENDIF}    
 end;
@@ -13166,14 +13169,16 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 }
         Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s BIO_write(%s, 0x%x, %d) = %d   [%d]',
-                                   [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                                   Integer(Buf),  Len, Result, TraceCount]));
+                                   [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                                   GetMyBioName(b),
+                                   INT_PTR(Buf),  Len, Result, TraceCount]));
     end
     else if CheckLogOptions(loSslDump) then begin
         Inc(TraceCount);
         DebugLog(loSslDump, _Format('%s BIO_write(%s, 0x%x, %d) = %d   [%d] Data:%s',
-                                   [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                                   Integer(Buf), Len, Result,
+                                   [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                                   GetMyBioName(b),
+                                   INT_PTR(Buf), Len, Result,
                                    TraceCount, DataToString(Buf, Result)]));
     end;
 {$ENDIF}
@@ -13190,7 +13195,7 @@ begin
     if CheckLogOptions(loSslErr) then begin
         Inc(TraceCount);
         DebugLog(loSslErr, _Format('%s  %d  [%d] %s',
-                                  [_IntToHex(Integer(Self), 8),
+                                  [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
                                    FHSocket, TraceCount,
                                    LastOpenSslErrMsg(TRUE)]));
     end
@@ -13211,8 +13216,8 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 }
         Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s Winsock recv( %d, 0x%x, %d, %d) = %d   [%d]',
-                                   [_IntToHex(Integer(Self), 8), s, Integer(Buf),
-                                   Len, Flags, Result, TraceCount]));
+                                   [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                                   s, INT_PTR(Buf), Len, Flags, Result, TraceCount]));
     end;
 {$ENDIF}
 end;
@@ -13226,8 +13231,9 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 }
         Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s my_RealSend (0x%x, %d, %d) = %d   [%d]',
-                                   [_IntToHex(Integer(Self), 8), FHSocket,
-                                   Integer(Buf), Len, Result, TraceCount]));
+                                   [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                                   FHSocket,
+                                   INT_PTR(Buf), Len, Result, TraceCount]));
     end;
 {$ENDIF}
 end;
@@ -13245,8 +13251,8 @@ begin
     if CheckLogOptions(loSslInfo) then begin  { V5.21 }
         Inc(TraceCount);
         DebugLog(loSslInfo, _Format('%s BIO_should_retry(%s) = %d   [%d]',
-                       [_IntToHex(Integer(Self), 8), GetMyBioName(b),
-                       Ord(Result), TraceCount]))
+                               [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                               GetMyBioName(b), Ord(Result), TraceCount]))
     end;
 {$ENDIF}
 end;
@@ -13334,7 +13340,7 @@ procedure TCustomSslWSocket.Do_FD_ACCEPT(var Msg: TMessage);
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' Do_FD_ACCEPT ' + _IntToStr(FHSocket));
 {$ENDIF}
     inherited Do_FD_ACCEPT(msg);  
@@ -13357,7 +13363,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                  ' Socket data pending: ' + _IntToStr(Count) + ' Err: ' +
                  _IntToStr(FLastError) + ' ' + _IntToStr(FHSocket));
 {$ENDIF}
@@ -13376,7 +13382,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' TCustomSslWSocket.Do_FD_CLOSE error #' +
                       _IntToStr(msg.LParamHi) + ' ' + _IntToStr(FHSocket));
 {$ENDIF}
@@ -13389,7 +13395,7 @@ begin
         FCloseCalled := TRUE;
 {$IFNDEF NO_DEBUG_LOG}        
         if CheckLogOptions(loSslInfo) then
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                      ' *CloseCalled ' + _IntToStr(FHSocket));
 {$ENDIF}
     end;
@@ -13429,7 +13435,7 @@ begin
 
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                  ' FCloseInvoked=' + _IntToStr(Ord(FCloseInvoked)) + ' ' +
                  _IntToStr(FHSocket));
 {$ENDIF}
@@ -13492,7 +13498,7 @@ begin
             else
                 S := 'Unknown';
         end;
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                  ' TriggerEvent ' + S + _IntToStr(FHSocket));
     end;
 {$ENDIF}
@@ -13555,7 +13561,7 @@ begin
 
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' TCustomSslWSocket.Do_FD_READ ' + _IntToStr(FHSocket));
 {$ENDIF}
 
@@ -13566,7 +13572,7 @@ begin
        (my_BIO_ctrl_pending(FSslbio) > 0) then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                ' TriggerDataAvailable (Do_FD_READ_1) ' + _IntToStr(FHSocket));
 {$ENDIF}
         TriggerDataAvailable(0);
@@ -13620,7 +13626,8 @@ begin
                     end;
 {$IFNDEF NO_DEBUG_LOG}
                     if CheckLogOptions(loSslInfo) then  { V5.21 }
-                        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                        DebugLog(loSslInfo,
+                                _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                                  ' NetworkError #' + _IntToStr(FNetworkError));
 {$ENDIF}
                     Exit;
@@ -13669,18 +13676,19 @@ begin
             TriggerEvent(sslFdClose, 0);
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslErr) then  { V5.21 }
-                DebugLog(loSslErr, _IntToHex(Integer(Self), 8) +
+                DebugLog(loSslErr, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                          ' NetworkError #' + _IntToStr(FNetworkError));
 {$ENDIF}
             Exit;
         end;
     end;
 
-    if (f_SSL_state(FSsl) = SSL_ST_OK) {(FSslState >= sslEstablished)} and (FSslBioWritePendingBytes < 0) and // <= 12/08/05
+    if (f_SSL_state(FSsl) = SSL_ST_OK) {(FSslState >= sslEstablished)} and
+       (FSslBioWritePendingBytes < 0) and // <= 12/08/05
        (my_BIO_ctrl_pending(FSslbio) > 0) then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                      ' TriggerDataAvailable (Do_FD_READ_2) ' +
                      _IntToStr(FHSocket));
 {$ENDIF}
@@ -13713,7 +13721,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' TCustomSslWSocket.Do_FD_WRITE ' + _IntToStr(FHSocket));
 {$ENDIF}
     if (FNetworkError > 0) then
@@ -13727,14 +13735,16 @@ begin
     if (FHSocket = INVALID_SOCKET) then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +  ' INVALID_SOCKET');
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
+                                          ' INVALID_SOCKET');
 {$ENDIF}
         Exit;
     end
     else if not bAllSent then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) + ' * Not bAllSent ' + _IntToStr(FHSocket));
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
+                               ' * Not bAllSent ' + _IntToStr(FHSocket));
 {$ENDIF}
         FMayTriggerFD_Write := TRUE;
         { AG 01/10/07 - Outcommented next line in order to avoid too many  }
@@ -13768,7 +13778,8 @@ begin
                     TriggerEvent(sslFdClose, 0);    
 {$IFNDEF NO_DEBUG_LOG}
                     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-                        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                        DebugLog(loSslInfo,
+                            _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                             ' Winsock Error ' + WSocketErrorDesc(FNetworkError) +
                             ' ' + _IntToStr(FHSocket));
 {$ENDIF}
@@ -13831,7 +13842,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' TCustomSslWSocket.DoRecv ' + _IntToStr(FHSocket));
 {$ENDIF}
     if FNetworkError > 0 then begin
@@ -13917,7 +13928,7 @@ begin
             end;
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-                DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                                  ' NetworkError #' + _IntToStr(FNetworkError));
 {$ENDIF}
             Exit;
@@ -13985,7 +13996,7 @@ begin
         FSslBiShutDownFlag := FALSE;
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                      ' *CloseCalled ' + _IntToStr(FHSocket));
 {$ENDIF}
     end;
@@ -14009,7 +14020,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                  ' TCustomSslWSocket.ShutDown ' + _IntToStr(How) + ' ' +
                  _IntToStr(FHSocket));
 {$ENDIF}
@@ -14088,7 +14099,7 @@ begin
     finally
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                      ' SslShutdownCompleted *'+ _IntToStr(Ord(Result)) + '* ' +
                      _IntToStr(FHSocket));
 {$ENDIF}
@@ -14114,7 +14125,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                  ' SslInternalShutdown ' + _IntToStr(FHSocket));
 {$ENDIF}
 
@@ -14182,7 +14193,8 @@ begin
     if CheckLogOptions(loSslInfo) then
         DebugLog(loSslInfo,
                  _Format('%s TriggerSslShutDownComplete(%d) %d',
-                        [_IntToHex(Integer(Self), 8), ErrCode, FHSocket]));
+                        [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                        ErrCode, FHSocket]));
 {$ENDIF}
     if Assigned(FOnSslShutdownComplete) then
         FOnSslShutdownComplete(Self, FSslBiShutDownFlag, ErrCode);
@@ -14286,7 +14298,7 @@ procedure TCustomSslWSocket.Dup(NewHSocket: Integer);
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' Dup accepting accepted socket = ' +
                       _IntToStr(NewHSocket));
 {$ENDIF}
@@ -14474,7 +14486,7 @@ begin
                          _Format('%s ! Cannot start re-negotiation  State ' +
                                 '%d Version (0x%x) RenegotiatePending %d ' +
                                 'NO_RENEGOTIATION %d %d',
-                                [_IntToHex(Integer(Self), 8),
+                                [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
                                 TmpInt, Ver, Pen, Ord(ICS_SSL_NO_RENEGOTIATION),
                                 FHSocket]));
             end;
@@ -14485,7 +14497,7 @@ begin
             HandleSslError;
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslErr) then begin  { V5.21 }
-                DebugLog(loSslErr, _IntToHex(Integer(Self), 8) +
+                DebugLog(loSslErr, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                          ' ! SSL_renegotiate() failed');
             end
 {$ENDIF}
@@ -14498,7 +14510,8 @@ begin
                     HandleSslError;
 {$IFNDEF NO_DEBUG_LOG}
                     if CheckLogOptions(loSslErr) then
-                        DebugLog(loSslErr, _IntToHex(Integer(Self), 8) +
+                        DebugLog(loSslErr,
+                                 _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                                  ' ! Re-negotiation failed');
 {$ENDIF}
                     FNetworkError := WSAECONNABORTED;
@@ -14509,7 +14522,7 @@ begin
             end;
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslInfo) then  { V5.21 }
-                DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                          ' ! Re-negotiation started ' +  _IntToStr(FHSocket));
 {$ENDIF}
             Result := TRUE;
@@ -14527,7 +14540,7 @@ procedure TCustomSslWSocket.StartSslHandshake;
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' StartSslHandshake ' + _IntToStr(FHSocket));
 {$ENDIF}
     if not FSslEnable then
@@ -14547,7 +14560,7 @@ begin
             FSslState := sslNone;
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslInfo) then  { V5.21 }
-                DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                           ' Fatal error SSL handshake ' + _IntToStr(FHSocket) +
                           ' ' + E.Classname + ' ' + E.Message);
 {$ENDIF}
@@ -14563,7 +14576,7 @@ procedure TCustomSslWSocket.AcceptSslHandshake;
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' AcceptSslHandshake ' + _IntToStr(FHSocket));
 {$ENDIF}
     if not FSslEnable then
@@ -14583,7 +14596,7 @@ begin
             FSslState  := sslNone; 
 {$IFNDEF NO_DEBUG_LOG}
             if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-                DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                           ' Fatal error SSL handshake ' + _IntToStr(FHSocket) +
                           ' ' + E.Classname + ': ' + E.Message);
 {$ENDIF}
@@ -14599,7 +14612,7 @@ procedure TCustomSslWSocket.DupConnected;
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' DupConnected');
 {$ENDIF}
 end;
@@ -14631,7 +14644,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' SslInternalClose ' + _IntToStr(FHSocket));
 {$ENDIF}
     if FHSocket = INVALID_SOCKET then begin
@@ -14665,7 +14678,7 @@ begin
     inherited Listen;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' Listening');
 {$ENDIF}                      
 end;
@@ -14701,7 +14714,7 @@ begin
     //Inc(FCount); // Test
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' InitSSLConnection ' + _IntToStr(FHSocket));
 {$ENDIF}
     FSslCertChain.Clear;
@@ -14768,9 +14781,11 @@ begin
                    (f_SSL_set_session(FSsl, SslCachedSession) = 1) then begin  // 01/14/06 AG
 {$IFNDEF NO_DEBUG_LOG}
                     if CheckLogOptions(loSslInfo) then  { V5.21 }
-                        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                        DebugLog(loSslInfo,
+                                 _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                                  ' Reuse session [' +
-                                 _IntToHex(Integer(SslCachedSession), 8) +']');
+                                 _IntToHex(INT_PTR(SslCachedSession),
+                                 SizeOf(SslCachedSession) * 2) +']');
 {$ENDIF}
                     if FreeSession then
                         f_SSL_SESSION_Free(SslCachedSession);
@@ -14793,14 +14808,16 @@ begin
                                Length(SessionIDContext)) = 0 then begin
 {$IFNDEF NO_DEBUG_LOG}
                             if CheckLogOptions(loSslErr) then { V5.21 }
-                                DebugLog(loSslErr, _IntToHex(Integer(Self), 8) +
+                                DebugLog(loSslErr,
+                                _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                                     ' ssl_set_session_id_context failed' +
                                     _IntToStr(FHSocket));
 
                         end
                         else begin
                             if CheckLogOptions(loSslInfo) then
-                                DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+                                DebugLog(loSslInfo,
+                                _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                                 ' SessionIDContext: ' + SessionIDContext + ' ' +
                                 _IntToStr(FHSocket));
 {$ENDIF}
@@ -14876,14 +14893,15 @@ begin
         Inc(TraceCount);
         DebugLog(loSslInfo,
                  _Format('%s PutDataInSslBuffer %s len %d  [%d] ',
-                       [_IntToHex(Integer(Self), 8), _IntToStr(FHSocket),
-                        Len, TraceCount]));
+                       [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                       _IntToStr(FHSocket), Len, TraceCount]));
     end
     else if CheckLogOptions(loSslDump) then begin  { V5.21 }
         Inc(TraceCount);
         DebugLog(loSslDump,
                  _Format('%s PutDataInSslBuffer %s [%d] Data:%s',
-                        [_IntToHex(Integer(Self), 8), _IntToStr(FHSocket),
+                        [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                        _IntToStr(FHSocket),
                         TraceCount, DataToString(Data, Len)]));
     end;
 {$ENDIF}
@@ -14914,7 +14932,7 @@ begin
         Exit;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) and Assigned(FSsl) then  { V5.21 }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                  ' ResetSslSession ' + _IntToStr(FHSocket));
 {$ENDIF}
     DeleteBufferedSslData;
@@ -15131,7 +15149,7 @@ begin
     if (not FSslEnable) or (FSocksState <> socksData) then begin
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' TryToSend ' + _IntToStr(FHSocket));
 {$ENDIF}
         inherited TryToSend;
@@ -15139,7 +15157,7 @@ begin
     end;
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) +
+        DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
                       ' SslTryToSend ' + _IntToStr(FHSocket));
 {$ENDIF}
     FSslBufList.Lock;
@@ -15363,8 +15381,8 @@ begin
     State := f_SSL_state(FSsl);
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loSslInfo) then begin { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-        Str := _IntToHex(Integer(Self), 8) +  ' TriggerEvents ' +
-                   _IntToStr(FHSocket) + ' SslState: ';
+        Str := _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
+               ' TriggerEvents ' + _IntToStr(FHSocket) + ' SslState: ';
         if State and SSL_ST_INIT <> 0  then
             Str := Str + 'SSL_ST_INIT '
         else if State = SSL_ST_OK then
@@ -15506,9 +15524,10 @@ begin
         IncRefCount := FALSE;
 {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loSslInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            DebugLog(loSslInfo, _IntToHex(Integer(Self), 8) + ' CliNewSession [' +
-                          _IntToHex(Integer(CurrentSession), 8) + '] ' +
-                              'Reused: ' + _BoolToStr(SslSessionReused, TRUE));
+            DebugLog(loSslInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) +
+                     ' CliNewSession [' +
+                     _IntToHex(INT_PTR(CurrentSession), SizeOf(CurrentSession) * 2) + '] ' +
+                     'Reused: ' + _BoolToStr(SslSessionReused, TRUE));
 {$ENDIF}
         _EnterCriticalSection(SslCritSect);
         try
@@ -15572,8 +15591,8 @@ begin
         DebugLog(loSslInfo, _Format('%s SslHandshakeDone(%d) %d. Secure connection ' +
                              'with %s, cipher %s, %d secret bits (%d total), ' +
                              'session reused=%s',
-                             [_IntToHex(Integer(Self), 8), ErrCode, FHSocket,
-                             SslVersion, SslCipher, SslSecretBits,
+                             [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                             ErrCode, FHSocket, SslVersion, SslCipher, SslSecretBits,
                              SslTotalBits, _BoolToStr(SslSessionReused, TRUE)]));
 {$ENDIF}
     { No peer certificate in the chain, let's create a dummy }
@@ -15605,14 +15624,15 @@ begin
         if CheckLogOptions(loSslInfo) then begin { V5.21 }
             Inc(TraceCount);
             DebugLog(loSslDump, _Format('%s PutDataInSendBuffer %s  len %d [%d]',
-                             [_IntToHex(Integer(Self), 8), _IntToStr(FHSocket),
-                             Len, TraceCount]));
+                             [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                             _IntToStr(FHSocket), Len, TraceCount]));
         end
         else if CheckLogOptions(loSslDump) then begin { V5.21 }
             Inc(TraceCount);
             DebugLog(loSslDump, _Format('%s PutDataInSendBuffer %s [%d] Data:%s',
-                             [_IntToHex(Integer(Self), 8), _IntToStr(FHSocket),
-                             TraceCount, DataToString(Data, Len)]));
+                             [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
+                             _IntToStr(FHSocket), TraceCount,
+                             DataToString(Data, Len)]));
         end;
 {$ENDIF}
         inherited PutDataInSendBuffer(Data, Len);

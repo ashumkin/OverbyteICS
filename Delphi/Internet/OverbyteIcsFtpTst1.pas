@@ -559,7 +559,7 @@ procedure TFtpReceiveForm.DisplayFile(FileName : String);
 var
     Strm : TFileStream;
     S : AnsiString;
-    ACodePage: Cardinal;
+    ACodePage: LongWord;
 begin
     { When display on the fly, no file is generated }
     if DisplayCheckBox.Checked then

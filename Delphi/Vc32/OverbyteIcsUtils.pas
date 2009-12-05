@@ -184,11 +184,11 @@ type
     function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString): UnicodeString; overload;
-    function  UnicodeToAnsi(const Str: PWideChar; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
-    function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString; overload;
+    function  UnicodeToAnsi(const Str: PWideChar; ACodePage: LongWord; SetCodePage: Boolean = False): RawByteString; overload;
+    function  UnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord; SetCodePage: Boolean = False): RawByteString; overload;
     function  UnicodeToAnsi(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function  AnsiToUnicode(const Str: PAnsiChar; ACodePage: Cardinal): UnicodeString; overload;
-    function  AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString; overload;
+    function  AnsiToUnicode(const Str: PAnsiChar; ACodePage: LongWord): UnicodeString; overload;
+    function  AnsiToUnicode(const Str: RawByteString; ACodePage: LongWord): UnicodeString; overload;
     function  AnsiToUnicode(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     { Returns a UnicodeString and the number of not translated bytes at the end of the source buffer }
     { BufferCodePage includes Ansi as well as Unicode code page IDs }
@@ -202,10 +202,10 @@ type
     { Returns a Unicode string, ByteCount and CharCount must match, no length checks are done }
     { BufferCodePage includes Ansi as well as Unicode code page IDs }
     function  IcsGetWideChars(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; Chars: PWideChar; CharCount: Integer): Integer;
-    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal; WriteBOM: Boolean): Integer; overload;
-    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: Cardinal): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal; WriteBOM: Boolean): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: Cardinal): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: LongWord; WriteBOM: Boolean): Integer; overload;
+    function  StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer; ACodePage: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: LongWord; WriteBOM: Boolean): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StreamWriteString(AStream: TStream; const Str: UnicodeString; ACodePage: LongWord): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  StreamWriteString(AStream: TStream; const Str: UnicodeString): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  IsUsAscii(const Str: RawByteString): Boolean; overload;
     function  IsUsAscii(const Str: UnicodeString): Boolean; overload;
@@ -218,10 +218,10 @@ type
 {$ENDIF}
     function  IcsCalcTickDiff(const StartTick, EndTick: LongWord): LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  StringToUtf8(const Str: UnicodeString): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function  StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  StringToUtf8(const Str: RawByteString; ACodePage: LongWord = CP_ACP): RawByteString; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  Utf8ToStringW(const Str: RawByteString): UnicodeString; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    function  Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
+    function  Utf8ToStringA(const Str: RawByteString; ACodePage: LongWord = CP_ACP): AnsiString; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord = CP_ACP): Boolean;
     { This is a weak check, it does not detect whether it's a valid UTF-8 byte }  
     function  IsUtf8TrailByte(const B: Byte): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$IFNDEF COMPILER12_UP}
@@ -233,7 +233,7 @@ type
     function  CharsetDetect(const Str: RawByteString): TCharsetDetectResult; overload; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    function  ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal; DstCodePage: Cardinal = CP_ACP): RawByteString;
+    function  ConvertCodepage(const Str: RawByteString; SrcCodePage: LongWord; DstCodePage: LongWord = CP_ACP): RawByteString;
     function  htoin(Value : PWideChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  htoin(Value : PAnsiChar; Len : Integer) : Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  htoi2(value : PWideChar): Integer; overload;
@@ -262,15 +262,15 @@ type
     { characters. including UTF-8. The return value is a pointer to the next }
     { character in the string, or to the terminating null character if at    }
     { the end of the string.                                                 }
-    function  IcsStrNextChar(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+    function  IcsStrNextChar(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): PAnsiChar;
     { Retrieves the pointer to the preceding character in a string. This     }
     { function can handle strings consisting of either single- or multi-byte }
     { characters including UTF-8. The return value is a pointer to the       }
     { preceding character in the string, or to the first character in the    }
     { string if the Current parameter equals the Start parameter.            }
-    function  IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
-    function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function  IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: Cardinal = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: LongWord = CP_ACP): PAnsiChar;
+    function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function  IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: LongWord = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  IcsGetBomBytes(ACodePage: LongWord): TBytes;
     function  IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord;
     function  IcsSwap16(Value: Word): Word;
@@ -437,7 +437,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Converts an UnicodeString to an AnsiString.                                 }
-function UnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal; SetCodePage: Boolean = False): RawByteString;
+function UnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord; SetCodePage: Boolean = False): RawByteString;
 var
     Len : Integer;
 begin
@@ -450,7 +450,7 @@ begin
                                 Pointer(Result), Len, nil, nil);
         {$IFDEF COMPILER12_UP}
             if SetCodePage and (ACodePage <> CP_ACP) then
-                PWord(Integer(Result) - 12)^ := ACodePage;
+                PWord(INT_PTR(Result) - 12)^ := ACodePage;
         {$ENDIF}
         end;
     end
@@ -468,7 +468,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function AnsiToUnicode(const Str: PAnsiChar; ACodePage: Cardinal): UnicodeString;
+function AnsiToUnicode(const Str: PAnsiChar; ACodePage: LongWord): UnicodeString;
 var
     Len : Integer;
 begin
@@ -489,7 +489,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UnicodeToAnsi(const Str: PWideChar; ACodePage: Cardinal;
+function UnicodeToAnsi(const Str: PWideChar; ACodePage: LongWord;
   SetCodePage: Boolean = False): RawByteString;
 var
     Len : Integer;
@@ -504,7 +504,7 @@ begin
                                 nil, nil);
         {$IFDEF COMPILER12_UP}
             if SetCodePage and (ACodePage <> CP_ACP) then
-                PWord(Integer(Result) - 12)^ := ACodePage;
+                PWord(INT_PTR(Result) - 12)^ := ACodePage;
         {$ENDIF}
         end
         else
@@ -516,7 +516,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function AnsiToUnicode(const Str: RawByteString; ACodePage: Cardinal): UnicodeString;
+function AnsiToUnicode(const Str: RawByteString; ACodePage: LongWord): UnicodeString;
 var
     Len : Integer;
 begin
@@ -979,7 +979,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Assumes that the string is a Windows, UTF-16 little endian wide string      }
 function StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer;
-  ACodePage: Cardinal; WriteBOM: Boolean): Integer;
+  ACodePage: LongWord; WriteBOM: Boolean): Integer;
 var
     SBuf  : array [0..2047] of Byte;
     Len   : Integer;
@@ -1078,7 +1078,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StreamWriteString(AStream: TStream; Str: PWideChar; cLen: Integer;
-  ACodePage: Cardinal): Integer;
+  ACodePage: LongWord): Integer;
 begin
     Result := StreamWriteString(AStream, Str, cLen, ACodePage, FALSE);
 end;
@@ -1086,7 +1086,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StreamWriteString(AStream: TStream; const Str: UnicodeString;
- ACodePage: Cardinal; WriteBOM: Boolean): Integer;
+ ACodePage: LongWord; WriteBOM: Boolean): Integer;
 begin
     Result := StreamWriteString(AStream, Pointer(Str), Length(Str),
                                 ACodePage, WriteBom);
@@ -1103,7 +1103,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StreamWriteString(AStream: TStream; const Str: UnicodeString;
-  ACodePage: Cardinal): Integer;
+  ACodePage: LongWord): Integer;
 begin
     Result:= StreamWriteString(AStream, Pointer(Str), Length(Str),
                                ACodePage, FALSE);
@@ -1285,8 +1285,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ConvertCodepage(const Str: RawByteString; SrcCodePage: Cardinal;
-  DstCodePage: Cardinal = CP_ACP): RawByteString;
+function ConvertCodepage(const Str: RawByteString; SrcCodePage: LongWord;
+  DstCodePage: LongWord = CP_ACP): RawByteString;
 var
     SBuf : array[0..2047] of WideChar;
     P    : PWideChar;
@@ -1325,7 +1325,7 @@ begin
             WideCharToMultiByte(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
         {$IFDEF COMPILER12_UP}
             if DstCodePage <> CP_ACP then
-                PWord(Integer(Result) - 12)^ := DstCodePage;
+                PWord(INT_PTR(Result) - 12)^ := DstCodePage;
         {$ENDIF}
         end;
     end
@@ -1336,7 +1336,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StringToUtf8(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): RawByteString;
+function StringToUtf8(const Str: RawByteString; ACodePage: LongWord = CP_ACP): RawByteString;
 begin
     Result := ConvertCodepage(Str, ACodePage, CP_UTF8);
 end;
@@ -1350,14 +1350,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Utf8ToStringA(const Str: RawByteString; ACodePage: Cardinal = CP_ACP): AnsiString;
+function Utf8ToStringA(const Str: RawByteString; ACodePage: LongWord = CP_ACP): AnsiString;
 begin
     Result := ConvertCodepage(Str, CP_UTF8, ACodePage);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: Cardinal = CP_ACP): Boolean;
+function CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord = CP_ACP): Boolean;
 var
     Len : Integer;
     B   : Bool;
@@ -1399,14 +1399,14 @@ var
     Trailing  : Integer; // trailing (continuation) bytes to follow
 begin
     PBuf        := Buf;
-    PEndBuf     := Pointer(Integer(Buf) + Len);
+    PEndBuf     := Pointer(INT_PTR(Buf) + Len);
     Byte2Mask   := $00;
     Trailing    := 0;
     Result      := cdrAscii;
     while (PBuf <> PEndBuf) do
     begin
         Ch := PBuf^;
-        Inc(Integer(PBuf));
+        Inc(INT_PTR(PBuf));
         if Trailing <> 0 then
         begin
             if Ch and $C0 = $80 then // Does trailing byte follow UTF-8 format?
@@ -1502,13 +1502,13 @@ function IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean;
 begin
     Result := CharSetDetect(Buf, Len) <> cdrUnknown;
    (* PBuf        := Buf;
-    PEndBuf     := Pointer(Integer(Buf) + Len);
+    PEndBuf     := Pointer(INT_PTR(Buf) + Len);
     Byte2Mask   := $00;
     Trailing    := 0;
     while (PBuf <> PEndBuf) do
     begin
         Ch := PBuf^;
-        Inc(Integer(PBuf));
+        Inc(INT_PTR(PBuf));
         if Trailing <> 0 then
         begin
             if Ch and $C0 = $80 then // Does trailing byte follow UTF-8 format?
@@ -1586,7 +1586,7 @@ var
 begin
     Result := Current;
     Cnt    := 0;
-    while (Integer(Result) > Integer(Start)) do
+    while (INT_PTR(Result) > INT_PTR(Start)) do
     begin
         Dec(Result);
         Inc(Cnt);
@@ -1633,7 +1633,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsStrNextChar(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+function IcsStrNextChar(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): PAnsiChar;
 begin
     if ACodePage = CP_UTF8 then
         Result := IcsCharNextUtf8(Str)
@@ -1643,7 +1643,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: Cardinal = CP_ACP): PAnsiChar;
+function IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: LongWord = CP_ACP): PAnsiChar;
 begin
     if ACodePage = CP_UTF8 then
         Result := IcsCharPrevUtf8(Start, Current)
@@ -1653,14 +1653,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsStrCharLength(const Str: PAnsiChar; ACodePage: Cardinal = CP_ACP): Integer;
+function IcsStrCharLength(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): Integer;
 begin
-    Result := Integer(IcsStrNextChar(Str, ACodePage)) - Integer(Str);
+    Result := INT_PTR(IcsStrNextChar(Str, ACodePage)) - INT_PTR(Str);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: Cardinal = CP_ACP): Integer;
+function IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: LongWord = CP_ACP): Integer;
 begin
     Assert((Index > 0) and (Index <= Length(S)));
     Result := Index + 1;
@@ -2285,7 +2285,7 @@ begin
         BeginP := Str;
         while Str^ <> #0 do
             Inc(Str);
-        Result := (Integer(Str) - Integer(BeginP)) div 2;
+        Result := (INT_PTR(Str) - INT_PTR(BeginP)) div 2;
     end;
 end;
 

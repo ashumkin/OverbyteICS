@@ -286,7 +286,8 @@ begin
     { if successfull, the ask windows to store the object reference         }
     { into the reserved byte (see RegisterClass)                            }
     if (Result <> 0) and Assigned(Obj) then
-        SetWindowLong(Result, 0, Integer(Obj));
+        SetWindowLong(Result, 0, Longint(Obj));
+    // Guess this will change to SetWindowLongPtr() in Win64    
 end;
 
 
@@ -372,7 +373,7 @@ var
     IPAddr  : TInAddr;
     Error   : Word;
 begin
-    if msg.wParam <> LongInt(FDnsLookupHandle) then
+    if msg.wParam <> WPARAM(FDnsLookupHandle) then
         Exit;
     FDnsLookupHandle := 0;
     Error := Msg.LParamHi;

@@ -217,8 +217,8 @@ begin
                                       CurTick) >= CurTimer.Interval) then begin
                             if PostMessage(CurTimer.FCurHandle,
                                            WM_ICS_THREAD_TIMER,
-                                           Integer(CurTimer),
-                                           CurTimer.FUID) then begin
+                                           WPARAM(CurTimer),
+                                           LPARAM(CurTimer.FUID)) then begin
                                 CurTimer.FQueuedTicks := CurTick;
                                 CurTimer.FMsgQueued   := TRUE;
                             end

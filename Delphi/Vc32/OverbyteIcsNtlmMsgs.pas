@@ -46,7 +46,7 @@ Legal issues: Copyright (C) 2004-2007 by François PIETTE
 Updates:
 Mar 26, 2006 V6.00 New version 6 started
 Apr 25, 2008 V6.01 A. Garrels - Fixed function Unicode. NtlmGetMessage3() got a
-                   new parameter ACodepage : Cardinal that defaults to the
+                   new parameter ACodepage : LongWord that defaults to the
                    currently active codepage. Some changes to prepare code for
                    Unicode.
 
@@ -186,7 +186,7 @@ type
 function NtlmGetMessage1(const AHost, ADomain: String): String;
 function NtlmGetMessage2(const AServerReply: String): TNTLM_Msg2_Info;
 function NtlmGetMessage3(const ADomain, AHost, AUser, APassword: String;
-    AChallenge: TArrayOf8Bytes; ACodePage: Cardinal = CP_ACP): String;
+    AChallenge: TArrayOf8Bytes; ACodePage: LongWord = CP_ACP): String;
 
 implementation
 
@@ -213,7 +213,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Convert a text to an unicode text stored.  A.Garrels                      }
 { Min.: Windows 95, Windows NT 4.0, Windows CE 4.0. Internet Explorer 5.5.  }
-function INetMultiByteToUnicode(const Src: AnsiString; ACodePage: Cardinal) : AnsiString;
+function INetMultiByteToUnicode(const Src: AnsiString; ACodePage: LongWord) : AnsiString;
 var
     hLib   : THandle;
     Mode   : Cardinal;
@@ -268,7 +268,7 @@ end;
 { "Windows 95/98/Me: A version of MultiByteToWideChar is included in these  }
 { operating systems, but a more extensive version of the function is        }
 { supported by the Microsoft Layer for Unicode."                            }
-function Unicode(const AData: AnsiString; ACodePage: Cardinal): AnsiString;
+function Unicode(const AData: AnsiString; ACodePage: LongWord): AnsiString;
 var
     Len : Integer;
 begin
@@ -572,7 +572,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function NtlmGetMessage3(const ADomain, AHost, AUser,
-  APassword: String; AChallenge: TArrayOf8Bytes; ACodePage: Cardinal): String;
+  APassword: String; AChallenge: TArrayOf8Bytes; ACodePage: LongWord): String;
 var
     Msg        : TNTLM_Message3;
     MessageAux : AnsiString;

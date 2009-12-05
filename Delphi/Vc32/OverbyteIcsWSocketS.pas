@@ -618,7 +618,7 @@ begin
     PIdRec^.PClient := Client;
     PIdRec^.CliId   := Client.CliId;
     Msg.WParam      := WSAECONNABORTED;
-    Msg.LParam      := Longint(PIdRec);
+    Msg.LParam      := LPARAM(PIdRec);
     WMClientClosed(Msg);
 end;
 
@@ -661,7 +661,7 @@ begin
                         Integer(IntPtr(Self.HandleGc)));
                         {$ENDIF}
                         {$IFDEF WIN32}
-                        LongInt(PIdRec))
+                        LPARAM(PIdRec))
                         {$ENDIF}
             then
                 System.Dispose(PIdRec);

@@ -1457,7 +1457,7 @@ begin
     // one of his methods. Delaying the detroy until all queued events are
     // processed is better. This is why we use an intermediate message.
     if (FWndHandle <> 0) and (FMsg_WM_FINISH > 0) then
-        PostMessage(FWndHandle, FMsg_WM_FINISH, 0, Cardinal(Self));
+        PostMessage(FWndHandle, FMsg_WM_FINISH, 0, LPARAM(Self));
 end;
 
 

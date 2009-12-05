@@ -1131,8 +1131,8 @@ type
   protected
     FHostName           : String;
     FPort               : String;
-    FCodePage           : Cardinal;
-    FSystemCodepage     : Cardinal; { AG 7.02 }
+    FCodePage           : LongWord;
+    FSystemCodepage     : LongWord; { AG 7.02 }
     FDataPortRangeStart : DWORD;  {JT}
     FDataPortRangeEnd   : DWORD;  {JT}
     FLastDataPort       : DWORD;  {JT}
@@ -1252,7 +1252,7 @@ type
 {$ENDIF}
     procedure SetSslType(const Value: TFtpCliSslType); virtual; { V2.106 }
     procedure SetKeepAliveSecs (secs: integer);
-    procedure SetCodePage(const Value: Cardinal); { AG 7.02 }
+    procedure SetCodePage(const Value: LongWord); { AG 7.02 }
 {$IFNDEF NO_DEBUG_LOG}
     function  GetIcsLogger: TIcsLogger;   { 2.104 }
     procedure SetIcsLogger(const Value: TIcsLogger);
@@ -1262,7 +1262,7 @@ type
     procedure   SetErrorMessage;
     procedure   LocalStreamWrite(const Buffer; Count : Integer); virtual;
     procedure   LocalStreamWriteString(Str: PAnsiChar; Count: Integer); {$IFDEF COMPILER12_UP} overload;
-    procedure   LocalStreamWriteString(Str: PWideChar; Count: Integer; ACodePage: Cardinal); overload;
+    procedure   LocalStreamWriteString(Str: PWideChar; Count: Integer; ACodePage: LongWord); overload;
     procedure   LocalStreamWriteString(Str: PWideChar; Count: Integer); overload;
   {$ENDIF}
     procedure   DataSocketGetDataAvailable(Sender: TObject; ErrCode : word);
@@ -1436,7 +1436,7 @@ type
     procedure   XCmlsdAsync;     virtual;    { V7.01   extended MLSD using control channel }
     procedure   XDmlsdAsync;     virtual;    { V7.01   extended MLSD using data channel }
 
-    property    CodePage          : Cardinal             read  FCodePage
+    property    CodePage          : LongWord             read  FCodePage
                                                          write SetCodePage;
     property    LastResponse      : String               read  FLastResponse;
     property    LastMultiResponse : String               read  FLastMultiResponse;  { V2.90  multiple lines }
@@ -2341,7 +2341,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}
 procedure TCustomFtpCli.LocalStreamWriteString(Str: PWideChar; Count: Integer;
-    ACodePage: Cardinal);
+    ACodePage: LongWord);
 begin
     StreamWriteString(FLocalStream, Str, Count, ACodePage);
 end;
@@ -2389,7 +2389,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SetCodePage(const Value: Cardinal); { AG 7.02 }
+procedure TCustomFtpCli.SetCodePage(const Value: LongWord); { AG 7.02 }
 begin
     if Value = FSystemCodePage then
         FCodePage := CP_ACP
@@ -3945,7 +3945,7 @@ var
     aSocket : TWSocket;
     I, J    : Integer;
     Line    : AnsiString; { AG V7.02 RawByteString is not required }
-    ACodePage : Cardinal;
+    ACodePage : LongWord;
 begin
     if not Progress then
         Exit;
@@ -5479,7 +5479,7 @@ var
     I, J : Integer;
     p    : PChar;
     Feat : String;
-    ACodePage : Cardinal;
+    ACodePage : LongWord;
     RawResponse: AnsiString;  { V7.01 }{ AG V7.02 we no not need RawByteString here }
 const
     NewLine =  #13#10 ;
