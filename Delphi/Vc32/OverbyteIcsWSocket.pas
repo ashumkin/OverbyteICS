@@ -10150,7 +10150,7 @@ begin
             // Must be loaded before SSlEAY for the versioncheck to work!
             if not OverbyteIcsLIBEAY.Load then begin
             {$IFDEF LOADSSL_ERROR_FILE}
-                AssignFile(F, ExtractFilePath(ParamStr(0)) + 'FailedIcsLIBEAY.txt');
+                AssignFile(F, _ExtractFilePath(ParamStr(0)) + 'FailedIcsLIBEAY.txt');
                 Rewrite(F);
                 S := OverbyteIcsLIBEAY.WhichFailedToLoad;
                 I := 1;
@@ -10172,7 +10172,7 @@ begin
             // Load SSlEAY DLL
             if not OverbyteIcsSSLEAY.Load then begin
             {$IFDEF LOADSSL_ERROR_FILE}
-                AssignFile(F, ExtractFilePath(ParamStr(0)) + 'FailedIcsSSLEAY.txt');
+                AssignFile(F, _ExtractFilePath(ParamStr(0)) + 'FailedIcsSSLEAY.txt');
                 Rewrite(F);
                 S := OverbyteIcsSSLEAY.WhichFailedToLoad;
                 I := 1;
