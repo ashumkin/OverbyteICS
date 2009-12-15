@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.31
+Version:      7.32
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -98,6 +98,7 @@ Sep 24, 2009 V7.31 Arno added TIcsIntegerList and IcsBufferToHex.
              IcsGetWideCharCount and IcsGetWideChars see comments in interface
              section. Added fast functions to swap byte order: IcsSwap16,
              IcsSwap16Buf, IcsSwap32, IcsSwap32Buf and IcsSwap64Buf.
+Dec 15, 2009 V7.32 Arno added typedef PInt64 for CB 2006 and CB2007.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -145,7 +146,14 @@ type
    { Should move to OverbyteIcsTypes.pas }
     UnicodeString = WideString;
     RawByteString = AnsiString;
+
+  (*$HPPEMIT 'namespace System' *)
+  (*$HPPEMIT '{' *)
+  (*$HPPEMIT '  typedef __int64* PInt64;' *)
+  (*$HPPEMIT '}' *)
+
 {$ENDIF}
+
     EIcsStringConvertError = class(Exception);
     TCharsetDetectResult = (cdrAscii, cdrUtf8, cdrUnknown);
 
@@ -732,7 +740,7 @@ asm
 @Exit:
        POP    EBX
        POP    ESI
-{$ENDIF}       
+{$ENDIF}
 end;
 
 
