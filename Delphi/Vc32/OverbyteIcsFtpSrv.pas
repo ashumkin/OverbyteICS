@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.10
+Version:      7.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -384,6 +384,7 @@ June 04, 2009 V7.09 Angus called TriggerMd5Calculated when changing file date/ti
                  data channel not control channel, it must be shorter than TimeoutSecsIdle
              SessIdInfo add client numeric id to identify separate sessions from same IP
 Sept 03, 2009 V7.10 Arno exchanged TThread.Resume by TThread.Start for D2010 and later
+Dec  15, 2009 V7.11 Arno added type TFtpSrvCommandTable to make C++Builder happy.
 
 
 
@@ -475,8 +476,8 @@ uses
 
 
 const
-    FtpServerVersion         = 710;
-    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.10 ';
+    FtpServerVersion         = 711;
+    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.11 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -899,6 +900,8 @@ type
                                     KeyWord : String;
                                     Proc    : TFtpSrvCommandProc;
                                 end;
+    TFtpSrvCommandTable = array of TFtpSrvCommandTableItem; { AG V7.11 }
+
     TFtpSecurityContextEvent  = procedure (Sender : TObject;     { AG V1.52 }
                                            Client : TFtpCtrlSocket) of object;
     TFtpSrvGeneralEvent = procedure (Sender        : TObject;      { angus V1.54 }
@@ -944,7 +947,7 @@ type
         FSocketServer           : TWSocketServer ;    { new  angus V7.00 }
         FClientClass            : TFtpCtrlSocketClass;
         FMaxClients             : LongInt;
-        FCmdTable               : array of TFtpSrvCommandTableItem;  { AG V1.51 }
+        FCmdTable               : TFtpSrvCommandTable; { AG V7.11 }
         FLastCmd                : Integer;
         FUserData               : LongInt;      { Reserved for component user }
         FPasvPortRangeStart     : Integer;
