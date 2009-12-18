@@ -122,8 +122,8 @@ var
     Buf : String;
 {$ENDIF}
 begin
-    SetLength(Buf, 20);
 {$IFDEF Debug}
+    SetLength(Buf, 20);
     Cnt := Cnt + 1;
     Buf := IntToHex(Cnt, 4) + ' ' + #0;
     OutputDebugString(PChar(Buf));
