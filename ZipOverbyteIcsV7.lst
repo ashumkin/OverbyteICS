@@ -794,8 +794,8 @@ Delphi\Internet\OverbyteIcsClient7.dof
 Delphi\Internet\OverbyteIcsClient7.cfg
 Delphi\Internet\OverbyteIcsClient7.bdsproj
 Delphi\Internet\OverbyteIcsClient7.dproj
-Delphi\Internet\OverbyteIcsCli5.pas
-Delphi\Internet\OverbyteIcsCli5.dfm
+Delphi\Internet\OverbyteIcsCli7.pas
+Delphi\Internet\OverbyteIcsCli7.dfm
 
 Delphi\Internet\OverbyteIcsConCli1.dpr
 Delphi\Internet\OverbyteIcsConCli1.dof
@@ -835,17 +835,17 @@ Delphi\Internet\OverbyteIcsConUdpLstn.cfg
 Delphi\Internet\OverbyteIcsConUdpLstn.bdsproj
 Delphi\Internet\OverbyteIcsConUdpLstn.dproj
 
-Delphi\Internet\OverbyteIcsIcsDll1.dpr
-Delphi\Internet\OverbyteIcsIcsDll1.cfg
-Delphi\Internet\OverbyteIcsIcsDll1.dof
-Delphi\Internet\OverbyteIcsIcsDll1.bdsproj
-Delphi\Internet\OverbyteIcsIcsDll1.dproj
+Delphi\Internet\OverbyteIcsDll1.dpr
+Delphi\Internet\OverbyteIcsDll1.cfg
+Delphi\Internet\OverbyteIcsDll1.dof
+Delphi\Internet\OverbyteIcsDll1.bdsproj
+Delphi\Internet\OverbyteIcsDll1.dproj
 
-Delphi\Internet\OverbyteIcsIcsDll2.dpr
-Delphi\Internet\OverbyteIcsIcsDll2.cfg
-Delphi\Internet\OverbyteIcsIcsDll2.dof
-Delphi\Internet\OverbyteIcsIcsDll2.bdsproj
-Delphi\Internet\OverbyteIcsIcsDll2.dproj
+Delphi\Internet\OverbyteIcsDll2.dpr
+Delphi\Internet\OverbyteIcsDll2.cfg
+Delphi\Internet\OverbyteIcsDll2.dof
+Delphi\Internet\OverbyteIcsDll2.bdsproj
+Delphi\Internet\OverbyteIcsDll2.dproj
 
 Delphi\Internet\OverbyteIcsDllTst.dpr
 Delphi\Internet\OverbyteIcsDllTst.res
@@ -943,9 +943,9 @@ Delphi\Internet\OverbyteIcsHttpThrd.dof
 Delphi\Internet\OverbyteIcsHttpThrd.cfg
 Delphi\Internet\OverbyteIcsHttpThrd.bdsproj
 Delphi\Internet\OverbyteIcsHttpThrd.dproj
-Delphi\Internet\OverbyteIcsHttpThrd1.pas
-Delphi\Internet\OverbyteIcsHttpThrd1.dfm
-Delphi\Internet\OverbyteIcsHttpThrd2.pas
+Delphi\Internet\OverbyteIcsHttpThr1.pas
+Delphi\Internet\OverbyteIcsHttpThr1.dfm
+Delphi\Internet\OverbyteIcsHttpThr2.pas
 
 Delphi\Internet\OverbyteIcsIsapi.dpr
 Delphi\Internet\OverbyteIcsIsapi.dof
