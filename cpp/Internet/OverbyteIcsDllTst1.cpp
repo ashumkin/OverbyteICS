@@ -84,16 +84,16 @@ void __fastcall TDllTestForm::FormShow(TObject *Sender)
         delete IniFile;
         DisplayMemo->Clear();
 
-        DllHandle = LoadLibrary("IcsDLL1.dll");
+        DllHandle = LoadLibrary("OverbyteIcsDLL1.dll");
         if (DllHandle == 0) {
-            Application->MessageBox("ICSDLL1.DLL not found", "Error", MB_OK);
+            Application->MessageBox("OverbyteIcsDLL1.dll not found", "Error", MB_OK);
             Application->Terminate();
             return;
         }
 
         IcsDllDemo = (TIcsDllDemo)GetProcAddress(DllHandle, "IcsDllDemo");
         if (IcsDllDemo == NULL) {
-            Application->MessageBox("IcsDllDemo not found (ICSDLL1.DLL)", "Error", MB_OK);
+            Application->MessageBox("IcsDllDemo not found (OverbyteIcsDLL1.dll)", "Error", MB_OK);
             Application->Terminate();
             return;
         }

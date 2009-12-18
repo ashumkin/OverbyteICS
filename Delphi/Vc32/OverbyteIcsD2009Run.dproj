@@ -86,6 +86,7 @@
 			<DCCReference Include="OverbyteIcsHttpAppServer.dcr"/>
 			<DCCReference Include="OverbyteIcsTimeList.dcr"/>
 			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
+			<DCCReference Include="OverbyteIcsWSocketTS.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="OverbyteIcsTypes.pas"/>
@@ -146,6 +147,7 @@
 			<DCCReference Include="OverbyteIcsWebSession.pas"/>
 			<DCCReference Include="OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="OverbyteIcsThreadTimer.pas"/>
+			<DCCReference Include="OverbyteIcsWSocketTS.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>
@@ -172,6 +174,7 @@
 			<DCCReference Include="OverbyteIcsHttpAppServer.dcr"/>
 			<DCCReference Include="OverbyteIcsTimeList.dcr"/>
 			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
+			<DCCReference Include="OverbyteIcsWSocketTS.dcr"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

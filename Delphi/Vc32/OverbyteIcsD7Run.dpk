@@ -27,6 +27,7 @@ package OverbyteIcsD7Run;
 {$R 'OverbyteIcsHttpAppServer.dcr'}
 {$R 'OverbyteIcsTimeList.dcr'}
 {$R 'OverbyteIcsCharsetComboBox.dcr'}
+{$R 'OverbyteIcsWSocketTS.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -115,6 +116,7 @@ contains
   OverbyteIcsTimeList in 'OverbyteIcsTimeList.pas',
   OverbyteIcsWebSession in 'OverbyteIcsWebSession.pas',
   OverbyteIcsCharsetComboBox in 'OverbyteIcsCharsetComboBox.pas',
-  OverbyteIcsThreadTimer in 'OverbyteIcsThreadTimer.pas';
+  OverbyteIcsThreadTimer in 'OverbyteIcsThreadTimer.pas',
+  OverbyteIcsWSocketTS in 'OverbyteIcsWSocketTS.pas';
 
 end.

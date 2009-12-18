@@ -1,6 +1,6 @@
 object NNTPForm: TNNTPForm
-  Left = 168
-  Top = 734
+  Left = 190
+  Top = 126
   Width = 588
   Height = 366
   Caption = 'NNTP - http://www.overbyte.be'

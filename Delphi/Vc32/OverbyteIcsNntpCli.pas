@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Description:  TNntpCli is a client for the NNTP protocol (RFC-977)
 Creation:     December 19, 1997
-Version:      6.02
+Version:      6.03
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2008 by François PIETTE
+Legal issues: Copyright (C) 1997-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -99,6 +99,8 @@ Mar 24, 2008  V6.01 Francois Piette made some changes to prepare code
                     for Unicode.
 Dec 21, 2008  V6.02 F.Piette added a string cast in PostBlock to avoid
               a warning when compiling with D2009.
+Dec 17, 2009  V6.03 Arno changed most string types of TNntpCli to AnsiString.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsNntpCli;
@@ -141,17 +143,20 @@ uses
 {$IFNDEF NOFORMS}
     Forms,
 {$ENDIF}
+{$IFDEF COMPILER12_UP}
+    AnsiStrings,
+{$ENDIF}
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
 {$IFDEF USE_SSL}
     OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
 {$ENDIF}
-    OverbyteIcsMimeUtils,
+    OverbyteIcsMimeUtils, OverbyteIcsLibrary, OverbyteIcsUtils,
     OverbyteIcsWndControl, OverbyteIcsWinSock, OverbyteIcsWSocket;
 
 const
-    NntpCliVersion     = 602;
-    CopyRight : String = ' TNntpCli (c) 1997-2008 F. Piette V6.02 ';
+    NntpCliVersion     = 603;
+    CopyRight : String = ' TNntpCli (c) 1997-2009 F. Piette V6.03 ';
 {$IFDEF VER80}
     { Delphi 1 has a 255 characters string limitation }
     NNTP_SND_BUF_SIZE = 255;
@@ -199,41 +204,41 @@ type
         procedure   Connect; virtual;
         procedure   Abort; virtual;
         procedure   Quit; virtual;
-        procedure   Group(NewsGroupName : String); virtual;
+        procedure   Group(NewsGroupName : AnsiString); virtual;
         procedure   ArticleByNumber(Number : Integer; DestStream : TStream); virtual;
-        procedure   ArticleByID(ID : String; DestStream : TStream); virtual;
+        procedure   ArticleByID(ID : AnsiString; DestStream : TStream); virtual;
         procedure   HeadByNumber(Number : Integer; DestStream : TStream); virtual;
-        procedure   HeadByID(ID : String; DestStream : TStream); virtual;
+        procedure   HeadByID(ID : AnsiString; DestStream : TStream); virtual;
         procedure   BodyByNumber(Number : Integer; DestStream : TStream); virtual;
-        procedure   BodyByID(ID : String; DestStream : TStream); virtual;
+        procedure   BodyByID(ID : AnsiString; DestStream : TStream); virtual;
         procedure   StatByNumber(Number : Integer); virtual;
-        procedure   StatByID(ID : String); virtual;
+        procedure   StatByID(ID : AnsiString); virtual;
         procedure   Next; virtual;
         procedure   Last; virtual;     { It is really Prior, but RFC-977 call it Last !}
         procedure   List(DestStream : TStream); virtual;
         procedure   ListNewsgroups(DestStream : TStream;
-                                   chFiltre   : String); {AS}
+                                   chFiltre   : AnsiString); {AS}
         procedure   Post(FromStream : TStream); virtual;
         procedure   Help(DestStream : TStream); virtual;
         procedure   Authenticate; virtual;
-        procedure   XOver(Articles : String; DestStream : TStream); virtual;
+        procedure   XOver(Articles : AnsiString; DestStream : TStream); virtual;
         procedure   ListOverViewFmt(DestStream : TStream); virtual;
         procedure   ListMotd(DestStream : TStream); virtual; {HLX}
         procedure   Date; virtual;
         procedure   ModeReader; virtual;
         procedure   XHdr(DestStream : TStream;
-                         Header     : String;
-                         Range      : String); virtual;
+                         Header     : AnsiString;
+                         Range      : AnsiString); virtual;
         procedure   XPat(DestStream : TStream;
-                         Header, Range, FindStr: String); virtual; {HLX}
+                         Header, Range, FindStr: AnsiString); virtual; {HLX}
         procedure   NewGroups(When          : TDateTime;
                               GMTFLag       : Boolean;
-                              Distributions : String;
+                              Distributions : AnsiString;
                               DestStream    : TStream);  virtual;
         procedure   NewNews(When          : TDateTime;
                             GMTFLag       : Boolean;
-                            NewsGroupName : String;
-                            Distributions : String;
+                            NewsGroupName : AnsiString;
+                            Distributions : AnsiString;
                             DestStream    : TStream); virtual;
     protected
 {$IFDEF DUMP}
@@ -244,22 +249,22 @@ type
         FPort               : String;
         FState              : TNntpState;
         FWSocket            : TWSocket;
-        FRequest            : String;
+        FRequest            : AnsiString;
         FRequestType        : TNntpRequest;
         FRequestDoneFlag    : Boolean;
         FSentFlag           : Boolean;
         FStatusCode         : Integer;
         FSendCount          : Integer;  { Count sent bytes     }
         FRcvdCount          : Integer;  { Count received bytes }
-        FSendBuffer         : array [0..NNTP_SND_BUF_SIZE - 1] of Char;
-        FLastResponse       : String;
-        FLastCmdResponse    : String;
+        FSendBuffer         : array [0..NNTP_SND_BUF_SIZE - 1] of Byte;
+        FLastResponse       : AnsiString;
+        FLastCmdResponse    : AnsiString;
         FErrorMessage       : String;
         FArticleEstimated   : Integer;
         FArticleFirst       : Integer;
         FArticleLast        : Integer;
         FArticleNumber      : Integer;
-        FArticleID          : String;
+        FArticleID          : AnsiString;
         FServerDate         : TDateTime;
         FDataStream         : TStream;
         FUserName           : String;
@@ -282,7 +287,7 @@ type
         FOnStateChange      : TNotifyEvent;
         FOnSendData         : TNotifyEvent;
         FOnRcvdData         : TNotifyEvent;
-        FGroupName          : String;
+        FGroupName          : AnsiString;
         procedure CreateSocket; virtual;
         procedure SetLineLimit(NewValue : Integer);
         procedure AllocateMsgHandlers; override;
@@ -307,8 +312,8 @@ type
         procedure GetArticleNext; virtual;
         procedure GetArticleLineNext; virtual;
         procedure GetArticleByNumber(RqType: TNntpRequest; Number : Integer; DestStream : TStream); virtual;
-        procedure GetArticleByID(RqType: TNntpRequest; ID : String; DestStream : TStream); virtual;
-        procedure GetArticle(RqType: TNntpRequest; ID : String; DestStream : TStream); virtual;
+        procedure GetArticleByID(RqType: TNntpRequest; ID : AnsiString; DestStream : TStream); virtual;
+        procedure GetArticle(RqType: TNntpRequest; ID : AnsiString; DestStream : TStream); virtual;
         procedure PostNext; virtual;
         procedure PostDone; virtual;
         procedure PostBlock; virtual;
@@ -332,14 +337,14 @@ type
         property Host       : String                    read  FHost
                                                         write FHost;
         property ErrorMessage : String                  read  FErrorMessage;
-        property LastResponse : String                  read  FLastResponse;
+        property LastResponse : AnsiString              read  FLastResponse;
         property StatusCode : Integer                   read  FStatusCode;
         property PostingPermited    : Boolean           read  FPostingPermited;
         property ArticleEstimated   : Integer           read  FArticleEstimated;
         property ArticleFirst       : Integer           read  FArticleFirst;
         property ArticleLast        : Integer           read  FArticleLast;
         property ArticleNumber      : Integer           read  FArticleNumber;
-        property ArticleID          : String            read  FArticleID;
+        property ArticleID          : AnsiString        read  FArticleID;
         property ServerDate         : TDateTime         read  FServerDate;
         property UserName           : String            read  FUserName
                                                         write FUserName;
@@ -349,7 +354,7 @@ type
                                                         write FPort;
         property LineLimit          : Integer           read  FLineLimit
                                                         write SetLineLimit;
-        property GroupName          : String            read  FGroupName;
+        property GroupName          : AnsiString        read  FGroupName;
         property OnSessionConnected : TSessionConnected read  FOnSessionConnected
                                                         write FOnSessionConnected;
         property OnSessionClosed : TSessionClosed       read  FOnSessionClosed
@@ -468,94 +473,17 @@ Description:  A component adding SSL support to TNntpCli.
 {$ENDIF} // USE_ SSL
 
 
-procedure ParseListLine(const Line          : String;
-                        var NewsGroupName   : String;
+procedure ParseListLine(const Line          : AnsiString;
+                        var NewsGroupName   : AnsiString;
                         var LastArticle     : Integer;
                         var FirstArticle    : Integer;
-                        var PostingFlag     : Char);
+                        var PostingFlag     : AnsiChar);
 
 implementation
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF VER80}
-function TrimRight(Str : String) : String;
-var
-    I : Integer;
-begin
-    I := Length(Str);
-    while (I > 0) and (Str[I] = ' ') do
-        I := I - 1;
-    Result := Copy(Str, 1, I);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TrimLeft(Str : String) : String;
-var
-    I : Integer;
-begin
-    if Str[1] <> ' ' then
-        Result := Str
-    else begin
-        I := 1;
-        while (I <= Length(Str)) and (Str[I] = ' ') do
-            I := I + 1;
-        Result := Copy(Str, I, Length(Str) - I + 1);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Trim(Str : String) : String;
-begin
-    Result := TrimLeft(TrimRight(Str));
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure SetLength(var S: string; NewLength: Integer);
-begin
-    S[0] := chr(NewLength);
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsDigit(Ch : Char) : Boolean;
-begin
-    Result := (Ch >= '0') and (Ch <= '9');
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpace(Ch : Char) : Boolean;
-begin
-    Result := (Ch = ' ') or (Ch = #9);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSpaceOrCRLF(Ch : Char) : Boolean;
-begin
-    Result := (Ch = ' ') or (Ch = #9) or (Ch = #10) or (Ch = #13);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Step over blank spaces                                                    }
-function StpBlk(Data : PChar) : PChar;
-begin
-    Result := Data;
-    if Result <> nil then begin
-        while (Result^ <> #0) and IsSpaceOrCRLF(Result^) do
-            Inc(Result);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  GetInteger(Data : PChar; var Number : Integer) : PChar;
+function  GetInteger(Data : PAnsiChar; var Number : Integer) : PAnsiChar;
 var
     bSign : Boolean;
 begin
@@ -586,7 +514,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetMessageID(Data : PChar; var ID : String) : PChar;
+function GetMessageID(Data : PAnsiChar; var ID : AnsiString) : PAnsiChar;
 begin
     ID     := '';
     Result := StpBlk(Data);
@@ -607,7 +535,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetNewsGroupName(Data : PChar; var GroupName : String) : PChar;
+function GetNewsGroupName(Data : PAnsiChar; var GroupName : AnsiString) : PAnsiChar;
 begin
     GroupName := '';
     Result    := StpBlk(Data);
@@ -623,7 +551,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function GetChar(Data : PChar; var Ch : Char) : PChar;
+function GetChar(Data : PAnsiChar; var Ch : AnsiChar) : PAnsiChar;
 begin
     Ch     := #0;
     Result := StpBlk(Data);
@@ -637,12 +565,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function atoi(Data : String) : Integer;
+function atoi(Data : AnsiString) : Integer;
 begin
-{$IFDEF VER80}
-    { Nul terminate string for Delphi 1 }
-    Data[Length(Data) + 1] := #0;
-{$ENDIF}
     GetInteger(@Data[1], Result);
 end;
 
@@ -845,14 +769,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TNntpCli.Group(NewsGroupName : String);
+procedure TNntpCli.Group(NewsGroupName : AnsiString);
 begin
     if FState <> nntpReady then
         raise NntpException.Create('Not ready for GROUP');
 
     FRequestDoneFlag := FALSE;
     FRequestType     := nntpGroup;
-    FRequest         := 'GROUP ' + Trim(NewsGroupName);
+    FRequest         := AnsiString('GROUP ') + Trim(NewsGroupName);
     FNext            := GroupNext;
     StateChange(nntpWaitingResponse);
     SendRequest;
@@ -862,7 +786,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNntpCli.GroupNext;
 var
-    Data    : PChar;
+    Data    : PAnsiChar;
     ErrCode : Integer;
 begin
     Data := GetInteger(@FLastResponse[1], FStatusCode);
@@ -886,7 +810,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TNntpCli.ArticleByID(ID : String; DestStream : TStream);
+procedure TNntpCli.ArticleByID(ID : AnsiString; DestStream : TStream);
 begin
     GetArticleByID(nntpArticleByID, ID, DestStream);
 end;
@@ -900,7 +824,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TNntpCli.BodyByID(ID : String; DestStream : TStream);
+procedure TNntpCli.BodyByID(ID : AnsiString; DestStream : TStream);
 begin
     GetArticleByID(nntpBodyByID, ID, DestStream);
 end;
@@ -914,7 +838,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TNntpCli.HeadByID(ID : String; DestStream : TStream);
+procedure TNntpCli.HeadByID(ID : AnsiString; DestStream : TStream);
 begin
     GetArticleByID(nntpHeadByID, ID, DestStream);
 end;
@@ -928,7 +852,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TNntpCli.StatByID(ID : String);
+procedure TNntpCli.StatByID(ID : AnsiString);
 begin
     GetArticleByID(nntpStatByID, ID, nil);
 end;
@@ -937,7 +861,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNntpCli.GetArticleByID(
     RqType     : TNntpRequest;
-    ID         : String;
+    ID         : AnsiString;
     DestStream : TStream);
 begin
     GetArticle(RqType, ' <' + ID + '>', DestStream);
@@ -951,7 +875,7 @@ procedure TNntpCli.GetArticleByNumber(
     DestStream : TStream);
 begin
     if Number > 0 then
-        GetArticle(RqType, ' ' + IntToStr(Number), DestStream)
+        GetArticle(RqType, ' ' + IcsIntToStrA(Number), DestStream)
     else
         GetArticle(RqType, '', DestStream);
 end;
@@ -960,10 +884,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNntpCli.GetArticle(
     RqType     : TNntpRequest;
-    ID         : String;
+    ID         : AnsiString;
     DestStream : TStream);
 var
-    Cmd : String;
+    Cmd : AnsiString;
 begin
     case RqType of
     nntpArticleByID, nntpArticleByNumber:
@@ -979,7 +903,7 @@ begin
     end;
 
     if FState <> nntpReady then
-        raise NntpException.Create('Not ready for ' + Cmd);
+        raise NntpException.Create('Not ready for ' + String(Cmd));
     FDataStream      := DestStream;
     FRequestType     := RqType;
     FRequestDoneFlag := FALSE;
@@ -995,7 +919,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNntpCli.GetArticleNext;
 var
-    Data  : PChar;
+    Data  : PAnsiChar;
 begin
     Data := GetInteger(@FLastResponse[1], FStatusCode);
     if not (FStatusCode in [100, 215, 220, 221,
@@ -1097,7 +1021,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {AS}
-procedure TNntpCli.ListNewsgroups(DestStream : TStream; chFiltre : String);
+procedure TNntpCli.ListNewsgroups(DestStream : TStream; chFiltre : AnsiString);
 begin
     if FState <> nntpReady then
         raise NntpException.Create('Not ready for LIST NEWSGROUPS');
@@ -1206,7 +1130,7 @@ begin
         if FSentFlag then
             Exit;
         FSentFlag := TRUE;
-        StrCopy(@FSendBuffer, #13#10 + '.' + #13#10);
+        StrCopy(PAnsiChar(@FSendBuffer), PAnsiChar(#13#10 + '.' + #13#10));
         Len := 5;
     end;
     FWSocket.Send(@FSendBuffer, Len);
@@ -1239,7 +1163,7 @@ end;
 procedure TNntpCli.NewGroups(
     When          : TDateTime;
     GMTFLag       : Boolean;
-    Distributions : String;
+    Distributions : AnsiString;
     DestStream    : TStream);
 begin
     if FState <> nntpReady then
@@ -1249,7 +1173,7 @@ begin
     FRequestType     := nntpNewGroups;
     if When = 0 then
         When := Now;
-    FRequest         := 'NEWGROUPS ' + FormatDateTime('yymmdd hhnnss', When);
+    FRequest         := 'NEWGROUPS ' + AnsiString(FormatDateTime('yymmdd hhnnss', When));
     if GMTFlag then
         FRequest := FRequest + ' GMT';
     if Length(Distributions) > 0 then
@@ -1264,8 +1188,8 @@ end;
 procedure TNntpCli.NewNews(
     When          : TDateTime;
     GMTFLag       : Boolean;
-    NewsGroupName : String;
-    Distributions : String;
+    NewsGroupName : AnsiString;
+    Distributions : AnsiString;
     DestStream    : TStream);
 begin
     if FState <> nntpReady then
@@ -1278,7 +1202,7 @@ begin
     if NewsGroupName = '' then
         NewsGroupName := '*';
     FRequest         := 'NEWNEWS ' + NewsGroupName + ' ' +
-                        FormatDateTime('yymmdd hhnnss', When);
+                        AnsiString(FormatDateTime('yymmdd hhnnss', When));
     if GMTFlag then
         FRequest := FRequest + ' GMT';
     if Length(Distributions) > 0 then
@@ -1294,7 +1218,7 @@ end;
 {                  b) an article number followed by a dash                  }
 {                  c) two article numbers separated by a dash               }
 procedure TNntpCli.XOver(
-    Articles   : String;
+    Articles   : AnsiString;
     DestStream : TStream);
 begin
     if FState <> nntpReady then
@@ -1313,7 +1237,7 @@ end;
 {HLX}
 procedure TNntpCli.XPat(
     DestStream : TStream;
-    Header, Range, FindStr: String);
+    Header, Range, FindStr: AnsiString);
 begin
     if FState <> nntpReady then
         raise NntpException.Create('Not ready for XPAT');
@@ -1360,8 +1284,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TNntpCli.DateNext;
 var
-    Data  : PChar;
-    Buf   : String;
+    Data  : PAnsiChar;
+    Buf   : AnsiString;
     Year, Month, Day, Hour, Min, Sec : Word;
 begin
     Data := StpBlk(GetInteger(@FLastResponse[1], FStatusCode));
@@ -1479,7 +1403,7 @@ end;
 {   an article number followed by a dash followed by another article number }
 { Range can be replaced by a message id.                                    }
 { If range is empty current article is used.                                }
-procedure TNntpCli.XHdr(DestStream : TStream; Header : String; Range : String);
+procedure TNntpCli.XHdr(DestStream : TStream; Header, Range : AnsiString);
 begin
     if FState <> nntpReady then
         raise NntpException.Create('Not ready for XHDR');
@@ -1504,7 +1428,7 @@ begin
         Exit;
     end;
     FRequestDoneFlag := FALSE;
-    FRequest         := 'AUTHINFO PASS ' + FPassWord;
+    FRequest         := 'AUTHINFO PASS ' + AnsiString(FPassWord);
     FNext            := AuthenticateNext2;
     StateChange(nntpWaitingResponse);
     SendRequest;
@@ -1530,7 +1454,7 @@ begin
         raise NntpException.Create('Not ready for AUTHINFO');
     FRequestDoneFlag := FALSE;
     FRequestType     := nntpAuthenticate;
-    FRequest         := 'AUTHINFO USER ' + FUserName;
+    FRequest         := 'AUTHINFO USER ' + AnsiString(FUserName);
     FNext            := AuthenticateNext1;
     StateChange(nntpWaitingResponse);
     SendRequest;
@@ -1539,13 +1463,13 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure ParseListLine(
-    const Line          : String;
-    var NewsGroupName   : String;
+    const Line          : AnsiString;
+    var NewsGroupName   : AnsiString;
     var LastArticle     : Integer;
     var FirstArticle    : Integer;
-    var PostingFlag     : Char);
+    var PostingFlag     : AnsiChar);
 var
-    Data : PChar;
+    Data : PAnsiChar;
 begin
     if Length(Line) = 0 then
         Exit;
@@ -1609,7 +1533,7 @@ begin
     end;
 
     { We use line mode, we will receive complete lines }
-    FLastResponse := FWSocket.ReceiveStr;
+    FLastResponse := FWSocket.ReceiveStrA;
     FRcvdCount := (FRcvdCount + Length(FLastResponse)) and $7FFFFFF;
     TriggerRcvdData;
 

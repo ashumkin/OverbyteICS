@@ -24,6 +24,9 @@ uses
   OverbyteIcsSmtpProt,
   OverbyteIcsNntpCli,
   OverbyteIcsFingCli,
+{$IFNDEF BCB}
+  OverbyteIcsWSocketTS,
+{$ENDIF}
   OverbyteIcsPing
 {$IFDEF USE_SSL}
   , OverbyteIcsSslSessionCache
@@ -68,6 +71,9 @@ begin
     TPop3Cli, TSyncPop3Cli,
     TSmtpCli, TSyncSmtpCli, THtmlSmtpCli,
     TNntpCli, THtmlNntpCli,
+{$IFNDEF BCB}
+    TWSocketThrdServer,
+{$ENDIF}
     TIcsCharsetComboBox
 {$IFDEF VCL}
     ,TIcsLogger
@@ -84,7 +90,8 @@ begin
     TSslSmtpCli,
     TSslNntpCli,
     TSslAvlSessionCache,
-    TSslStaticLock
+    TSslStaticLock,
+    TSslWSocketThrdServer
   {$IFNDEF NO_DYNLOCK}
     ,TSslDynamicLock
   {$ENDIF}
