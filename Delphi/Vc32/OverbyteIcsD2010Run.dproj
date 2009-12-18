@@ -27,7 +27,7 @@
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_Description>Overbyte ICS Run-Time Package Delphi 2010</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\OverbyteIcsD2010Run.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\7.0\Bpl\OverbyteIcsD2010Run.bpl</DCC_DependencyCheckOutputName>
 			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
 			<GenDll>true</GenDll>
@@ -86,6 +86,7 @@
 			<DCCReference Include="OverbyteIcsHttpAppServer.dcr"/>
 			<DCCReference Include="OverbyteIcsTimeList.dcr"/>
 			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
+			<DCCReference Include="OverbyteIcsWSocketTS.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="OverbyteIcsTypes.pas"/>
@@ -146,32 +147,7 @@
 			<DCCReference Include="OverbyteIcsWebSession.pas"/>
 			<DCCReference Include="OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="OverbyteIcsThreadTimer.pas"/>
-			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
-			<DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
-			<DCCReference Include="OverbyteIcsNntpCli.dcr"/>
-			<DCCReference Include="OverbyteIcsWSocket.dcr"/>
-			<DCCReference Include="OverbyteIcsFtpCli.dcr"/>
-			<DCCReference Include="OverbyteIcsHttpProt.dcr"/>
-			<DCCReference Include="OverbyteIcsWSocketS.dcr"/>
-			<DCCReference Include="OverbyteIcsSmtpProt.dcr"/>
-			<DCCReference Include="OverbyteIcsPop3Prot.dcr"/>
-			<DCCReference Include="OverbyteIcsTnCnx.dcr"/>
-			<DCCReference Include="OverbyteIcsEmulVT.dcr"/>
-			<DCCReference Include="OverbyteIcsTnEmulVT.dcr"/>
-			<DCCReference Include="OverbyteIcsPing.dcr"/>
-			<DCCReference Include="OverbyteIcsDnsQuery.dcr"/>
-			<DCCReference Include="OverbyteIcsTnScript.dcr"/>
-			<DCCReference Include="OverbyteIcsFingCli.dcr"/>
-			<DCCReference Include="OverbyteIcsLogger.dcr"/>
-			<DCCReference Include="OverbyteIcsMimeDec.dcr"/>
-			<DCCReference Include="OverbyteIcsMultipartFtpDownloader.dcr"/>
-			<DCCReference Include="OverbyteIcsMultipartHttpDownloader.dcr"/>
-			<DCCReference Include="OverbyteIcsMultiProgressBar.dcr"/>
-			<DCCReference Include="OverbyteIcsSslSessionCache.dcr"/>
-			<DCCReference Include="OverbyteIcsSslThrdLock.dcr"/>
-			<DCCReference Include="OverbyteIcsHttpAppServer.dcr"/>
-			<DCCReference Include="OverbyteIcsTimeList.dcr"/>
-			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
+			<DCCReference Include="OverbyteIcsWSocketTS.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

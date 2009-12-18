@@ -176,7 +176,12 @@ begin
                 FURL     := UrlEdit.Text;
                 FProxy   := ProxyEdit.Text;
                 SetThreadState(i, tsInUse);   // In use
-                Resume;  //get the page
+                //get the page
+            {$if RTLVersion >= 21}
+                Start;
+            {$else}
+                Resume;
+            {$ifend}
                 Exit;    //For now, only start one thread for each click of DoIt
             end;
         end;
@@ -236,6 +241,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 // To be called by each thread as it completes (using Synchronize !)
+{$WARN SYMBOL_DEPRECATED OFF} // TThread.Suspend is deprecated, don't use it !!
 procedure THttpThreadForm.ProcessResults
    (ThreadNumber: Integer; Success : Boolean);
 var
@@ -259,6 +265,7 @@ begin
     SetThreadState(ThreadNumber, tsReady);
     //Waiting for something to do (get next url here)
 end;
+{$WARN SYMBOL_DEPRECATED ON}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

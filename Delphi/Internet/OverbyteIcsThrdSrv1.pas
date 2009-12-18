@@ -151,6 +151,8 @@ var
 implementation
 
 {$R *.DFM}
+uses
+    OverbyteIcsUtils;
 
 const
     SectionWindow      = 'WindowTcpSrv';
@@ -369,7 +371,7 @@ begin
         RcvdLine := ReceiveStr;
         { Remove trailing CR/LF }
         while (Length(RcvdLine) > 0) and
-              (RcvdLine[Length(RcvdLine)] in [#13, #10]) do
+              IsCharInSysCharset(RcvdLine[Length(RcvdLine)], [#13, #10]) do
             RcvdLine := Copy(RcvdLine, 1, Length(RcvdLine) - 1);
         ClientThread.Display('Received from ' + GetPeerAddr + ': ''' +
                              RcvdLine + ''' ' +

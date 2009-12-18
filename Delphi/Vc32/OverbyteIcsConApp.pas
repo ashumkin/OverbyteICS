@@ -207,7 +207,11 @@ class procedure TConApplication.Run;
 begin
     ConApplication.ProcessMessage;         // This will create message queue
     PostThreadMessage(ConApplication.FThreadID, WM_STARTUP, 0, 0);
+{$if RTLVersion >= 21}
+    ConApplication.FKbdThread.Start;
+{$else}
     ConApplication.FKbdThread.Resume;
+{$ifend}
     ConApplication.MessageLoop;
 end;
 
@@ -266,7 +270,11 @@ begin
     inherited Create(TRUE);
     FEvent := CreateEvent(nil, TRUE, FALSE, nil);
     if not Suspended then
+    {$if RTLVersion >= 21}
+        Start;
+    {$else}
         Resume;
+    {$ifend}
 end;
 
 

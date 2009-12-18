@@ -134,7 +134,11 @@ begin
 
     { Then start the client thread work                                     }
     { because it was created in the blocked state                           }
+{$if RTLVersion >= 21}
+    ClientThread.Start;
+{$else}
     ClientThread.Resume;
+{$ifend}
 end;
 
 

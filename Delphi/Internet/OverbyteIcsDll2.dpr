@@ -233,7 +233,11 @@ begin
         WorkerThread.ErrorCode := @Result;
         WorkerThread.Url       := Url;
         // Then let thread start his work
+    {$if RTLVersion >= 21}
+        WorkerThread.Start;
+    {$else}
         WorkerThread.Resume;
+    {$ifend}
         // And wait until it finishes
         WaitForSingleObject(WorkerThread.Handle, INFINITE);
     except

@@ -159,8 +159,11 @@ begin
     WSocketThread := TWSocketThread.Create;
 
     // Start the thread
+{$if RTLVersion >= 21}
+    WSocketThread.Start;
+{$else}
     WSocketThread.Resume;
-
+{$ifend}
     // The main thread continue here. Process user request here.
     Readln;
 
