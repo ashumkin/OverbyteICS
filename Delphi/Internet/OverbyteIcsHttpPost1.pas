@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Jan 15, 2005
 Description:
-Version:      7.01
+Version:      7.02
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Unsupported code.
 Legal issues: Copyright (C) 2005-2009 by François PIETTE
@@ -38,6 +38,7 @@ Legal issues: Copyright (C) 2005-2009 by François PIETTE
 History:
 Oct 03, 2009 V7.01 F.Piette added file upload demo. Fixed Unicode issue with
                    answer display.
+Dec 19, 2009 V7.02 Arno fixed URL encoding.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -183,10 +184,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpPostForm.PostButtonClick(Sender: TObject);
 var
-    Data : String;
+    Data : AnsiString;
 begin
-    Data := 'FirstName=' + UrlEncode(Trim(FirstNameEdit.Text)) + '&' +
-            'LastName='  + UrlEncode(Trim(LastNameEdit.Text))  + '&' +
+    Data := 'FirstName=' + UrlEncodeToA(Trim(FirstNameEdit.Text)) + '&' +
+            'LastName='  + UrlEncodeToA(Trim(LastNameEdit.Text))  + '&' +
             'Submit=Submit';
     HttpCli1.SendStream := TMemoryStream.Create;
     HttpCli1.SendStream.Write(Data[1], Length(Data));

@@ -2,12 +2,12 @@
 
 Author:       François PIETTE
 Creation:     Aug 08, 2004 (extracted from various ICS components)
-Version:      6.02
+Version:      6.03
 Description:  This unit contain support routines for URL handling.
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2008 by François PIETTE
+Legal issues: Copyright (C) 1997-2009 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -43,6 +43,8 @@ Sep 28, 2008 V6.01 A. Garrels modified UrlEncode() and UrlDecode() to support
              to OverbyteIcsUtils.
 Apr 17, 2009 V6.02 A. Garrels added argument CodePage to functions
              UrlEncode() and UrlDecode.
+Dec 19, 2009 V6.03 A. Garrels added UrlEncodeToA().
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUrl;
@@ -75,8 +77,8 @@ uses
     {SysUtils,} OverbyteIcsUtils, OverbyteIcsLibrary;
 
 const
-    IcsUrlVersion        = 601;
-    CopyRight : String   = ' TIcsURL (c) 1997-2008 F. Piette V6.01 ';
+    IcsUrlVersion        = 603;
+    CopyRight : String   = ' TIcsURL (c) 1997-2009 F. Piette V6.03 ';
 
 { Syntax of an URL: protocol://[user[:password]@]server[:port]/path }
 procedure ParseURL(const URL : String;
@@ -86,6 +88,9 @@ function  UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
 function  UrlDecode(const S     : String;
                     SrcCodePage : LongWord = CP_ACP;
                     DetectUtf8  : Boolean = TRUE) : String;
+function UrlEncodeToA(const S   : String;
+                    DstCodePage : LongWord = CP_UTF8): AnsiString;
+
 
 implementation
 
@@ -291,7 +296,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
+function UrlEncodeToA(const S : String; DstCodePage: LongWord = CP_UTF8) : AnsiString;
 var
     I, J   : Integer;
     AStr   : AnsiString;
@@ -326,7 +331,14 @@ begin
         end;
     end;
     SetLength(RStr, J);
-    Result := String(RStr);
+    Result := RStr;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
+begin
+    Result := String(UrlEncodeToA(S, DstCodePage));
 end;
 
 

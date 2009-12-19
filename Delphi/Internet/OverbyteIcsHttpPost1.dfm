@@ -1,9 +1,9 @@
 object HttpPostForm: THttpPostForm
-  Left = 165
-  Top = 489
+  Left = 250
+  Top = 147
+  Width = 380
+  Height = 334
   Caption = 'Http Post - http://www.orverbyte.be'
-  ClientHeight = 300
-  ClientWidth = 363
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,7 +19,7 @@ object HttpPostForm: THttpPostForm
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
-    Width = 363
+    Width = 372
     Height = 169
     Align = alTop
     TabOrder = 0
@@ -139,7 +139,7 @@ object HttpPostForm: THttpPostForm
   object DisplayMemo: TMemo
     Left = 0
     Top = 169
-    Width = 363
+    Width = 372
     Height = 131
     Align = alClient
     Font.Charset = ANSI_CHARSET
@@ -152,9 +152,6 @@ object HttpPostForm: THttpPostForm
     ParentFont = False
     ScrollBars = ssBoth
     TabOrder = 1
-    ExplicitTop = 113
-    ExplicitWidth = 371
-    ExplicitHeight = 100
   end
   object HttpCli1: THttpCli
     LocalAddr = '0.0.0.0'
@@ -172,6 +169,7 @@ object HttpPostForm: THttpPostForm
     BandwidthLimit = 10000
     BandwidthSampling = 1000
     Options = []
+    Timeout = 30
     OnRequestDone = HttpCli1RequestDone
     SocksLevel = '5'
     SocksAuthentication = socksNoAuthentication
