@@ -61,7 +61,7 @@ __fastcall TBasicNntpForm::TBasicNntpForm(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TBasicNntpForm::Display(AnsiString Msg)
+void __fastcall TBasicNntpForm::Display(const System::String Msg)
 {
     DisplayMemo->Lines->Add(Msg);
 }

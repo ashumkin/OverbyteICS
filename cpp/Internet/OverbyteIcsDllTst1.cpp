@@ -61,6 +61,15 @@ typedef __declspec(dllimport) int __stdcall (*TIcsDllDemo)(char *HostName,
                                                            int  *BufSize);
 HANDLE      DllHandle;
 TIcsDllDemo IcsDllDemo;
+
+//---------------------------------------------------------------------------
+void __fastcall MyMessageBox(const System::String &Msg,
+    const System::String &Title, int Flags)
+{
+    Application->MessageBox(Msg.c_str(), Title.c_str(), Flags);
+}
+
+
 //---------------------------------------------------------------------------
 __fastcall TDllTestForm::TDllTestForm(TComponent* Owner)
         : TForm(Owner)
@@ -86,14 +95,14 @@ void __fastcall TDllTestForm::FormShow(TObject *Sender)
 
         DllHandle = LoadLibrary("OverbyteIcsDLL1.dll");
         if (DllHandle == 0) {
-            Application->MessageBox("OverbyteIcsDLL1.dll not found", "Error", MB_OK);
+            MyMessageBox("OverbyteIcsDLL1.dll not found", "Error", MB_OK);
             Application->Terminate();
             return;
         }
 
         IcsDllDemo = (TIcsDllDemo)GetProcAddress(DllHandle, "IcsDllDemo");
         if (IcsDllDemo == NULL) {
-            Application->MessageBox("IcsDllDemo not found (OverbyteIcsDLL1.dll)", "Error", MB_OK);
+            MyMessageBox("IcsDllDemo not found (OverbyteIcsDLL1.dll)", "Error", MB_OK);
             Application->Terminate();
             return;
         }
@@ -110,7 +119,7 @@ void __fastcall TDllTestForm::FormDestroy(TObject *Sender)
 //---------------------------------------------------------------------------
 // Display a message in our display memo. Delete lines to be sure to not
 // overflow the memo which may have a limited capacity.
-void __fastcall TDllTestForm::Display(AnsiString Msg)
+void __fastcall TDllTestForm::Display(const System::String &Msg)
 {
     DisplayMemo->Lines->BeginUpdate();
     try {
@@ -150,8 +159,8 @@ void __fastcall TDllTestForm::CallDllButtonClick(TObject *Sender)
     Display("Calling DLL...");
     BufSize = 100;
     Buffer.SetLength(BufSize);
-    Status = IcsDllDemo(HostnameEdit->Text.c_str(),
-                        PortEdit->Text.c_str(),
+    Status = IcsDllDemo(AnsiString(HostnameEdit->Text).c_str(),
+                        AnsiString(PortEdit->Text).c_str(),
                         &Buffer[1], &BufSize);
     Buffer.SetLength(BufSize);
     if (Status)

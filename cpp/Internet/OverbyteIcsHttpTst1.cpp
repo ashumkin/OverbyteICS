@@ -267,10 +267,4 @@ void __fastcall THttpTestForm::AbortButtonClick(TObject *Sender)
     HttpCli1->Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall THttpTestForm::HttpCli1Command(TObject *Sender,
-      AnsiString &S)
-{
-    DisplayMemo->Lines->Add("cmd> " + S);
-}
-//---------------------------------------------------------------------------
 

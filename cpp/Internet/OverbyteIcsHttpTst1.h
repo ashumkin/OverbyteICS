@@ -44,7 +44,6 @@ __published:	// IDE-managed Components
 	void __fastcall HttpCli1RequestDone(TObject *Sender, THttpRequest RqType,
 	WORD Error);
 	void __fastcall AbortButtonClick(TObject *Sender);
-        void __fastcall HttpCli1Command(TObject *Sender, AnsiString &S);
 private:	// User declarations
     BOOL Initialized;
     AnsiString FIniFileName;

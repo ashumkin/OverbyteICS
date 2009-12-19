@@ -26,7 +26,7 @@ __published:	// IDE-managed Components
 private:	// User declarations
     AnsiString   FIniFileName;
     BOOL         FInitialized;
-    void __fastcall Display(AnsiString Msg);
+    void __fastcall Display(const System::String &Msg);
 public:		// User declarations
         __fastcall TDllTestForm(TComponent* Owner);
 };

@@ -78,7 +78,6 @@ void __fastcall TClientForm::CliSocketSessionClosed(TObject *Sender, WORD Error)
 // The user has clicked on the connect button...
 void __fastcall TClientForm::ConnectButtonClick(TObject *Sender)
 {
-    ReadLineButton->Enabled = TRUE;
     CliSocket->Addr   = "localhost";        // Server host name
     CliSocket->Proto  = "tcp";              // Protocol we wants to use
     CliSocket->Port   = "telnet";           // The port we wants to connect
@@ -115,15 +114,5 @@ void __fastcall TClientForm::IPButtonClick(TObject *Sender)
     InfoLabel->Caption = "";
     for (I = 0; I < IPList->Count; I++)
         InfoLabel->Caption = InfoLabel->Caption + "   " + IPList->Strings[I];
-}
-//---------------------------------------------------------------------------
-void __fastcall TClientForm::ReadLineButtonClick(TObject *Sender)
-{
-    String Buf;
-
-    ReadLineButton->Enabled = FALSE;
-    CliSocket->ReadLine(30, Buf);
-    DataLabel->Caption      = Buf;
-    ReadLineButton->Enabled = TRUE;
 }
 //---------------------------------------------------------------------------

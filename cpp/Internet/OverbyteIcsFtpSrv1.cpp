@@ -55,6 +55,7 @@ Jun 07, 2002  V1.06 Added a processing thread for Get.
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "OverbyteIcsFtpSrv"
+#pragma link "OverbyteIcsUtils"
 #pragma link "OverbyteIcsWndControl"
 #pragma resource "*.dfm"
 TFtpServerForm *FtpServerForm;
@@ -270,7 +271,9 @@ void __fastcall TFtpServerForm::FtpServer1ClientConnect(TObject *Sender,
 {
     // The next test shows how to refuse a client
     if (Client->GetPeerAddr() == "193.121.12.25") {
-        Client->SendStr("421 Connection not allowed.\r\n");
+        //Client->SendStr("421 Connection not allowed.\r\n"); // Bug in CB2009 ?
+        RawByteString S = "421 Connection not allowed.\r\n";
+        Client->SendStr(S);
         Client->Close();
         return;
     }
@@ -443,7 +446,7 @@ void __fastcall TFtpServerForm::FtpServer1AnswerToClient(TObject *Sender,
 }
 //---------------------------------------------------------------------------
 void __fastcall TFtpServerForm::FtpServer1Authenticate(TObject *Sender,
-      TFtpCtrlSocket *Client, TFtpString &UserName, TFtpString &Password,
+      TFtpCtrlSocket *Client, TFtpString UserName, TFtpString Password,
       bool &Authenticated)
 {
     // You should place here the code needed to authenticate the user.
@@ -454,6 +457,7 @@ void __fastcall TFtpServerForm::FtpServer1Authenticate(TObject *Sender,
     // If you need to store info about the client for later processing
     // you can use Client->UserData to store a pointer to an object or
     // a record with the needed info.
+
     InfoMemo->Lines->Add("! " + Client->GetPeerAddr() +
                        " User \"" + UserName + "\" is authenticated");
 }

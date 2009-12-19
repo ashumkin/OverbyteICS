@@ -183,12 +183,8 @@ void __fastcall TCli7Form::WSocket1DataAvailable(TObject *Sender,
     }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCli7Form::ReadLineButtonClick(TObject *Sender)
+void __fastcall TCli7Form::SendButtonClick(TObject *Sender)
 {
-    AnsiString Buffer;
-
-    Display("Waiting for a line... (Timeout = 10Sec)");
-    WSocket1->ReadLine(10000, Buffer);
-    Display("Received line: \"" + RemoveEndOfLine(Buffer) + "\"");
+    WSocket1->SendStr(DataEdit->Text + "\r\n");
 }
 //---------------------------------------------------------------------------

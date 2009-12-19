@@ -3,7 +3,7 @@ object Cli7Form: TCli7Form
   Top = 327
   Caption = 'Client 7'
   ClientHeight = 196
-  ClientWidth = 317
+  ClientWidth = 307
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,8 +18,8 @@ object Cli7Form: TCli7Form
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 317
-    Height = 81
+    Width = 307
+    Height = 109
     Align = alTop
     TabOrder = 0
     object Label6: TLabel
@@ -35,6 +35,13 @@ object Cli7Form: TCli7Form
       Width = 50
       Height = 13
       Caption = 'HostName'
+    end
+    object Label2: TLabel
+      Left = 12
+      Top = 84
+      Width = 23
+      Height = 13
+      Caption = 'Data'
     end
     object PortEdit: TEdit
       Left = 233
@@ -91,26 +98,33 @@ object Cli7Form: TCli7Form
       TabOrder = 5
       OnClick = DisconnectButtonClick
     end
-    object ReadLineButton: TButton
-      Left = 184
-      Top = 40
+    object SendButton: TButton
+      Left = 173
+      Top = 60
       Width = 75
       Height = 17
-      Caption = '&Read Line'
+      Caption = '&Send'
       TabOrder = 6
-      OnClick = ReadLineButtonClick
+      OnClick = SendButtonClick
+    end
+    object DataEdit: TEdit
+      Left = 41
+      Top = 80
+      Width = 249
+      Height = 21
+      TabOrder = 7
+      Text = 'DataEdit'
     end
   end
   object DisplayMemo: TMemo
     Left = 0
-    Top = 81
-    Width = 317
-    Height = 115
+    Top = 109
+    Width = 307
+    Height = 87
     Align = alClient
     Lines.Strings = (
       'DisplayMemo')
     TabOrder = 1
-    ExplicitHeight = 122
   end
   object WSocket1: TWSocket
     LineMode = False

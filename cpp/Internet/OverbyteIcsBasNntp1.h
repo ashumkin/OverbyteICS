@@ -29,7 +29,7 @@ private:	// User declarations
     int   FCurrentArticle;
 public:		// User declarations
 	__fastcall TBasicNntpForm(TComponent* Owner);
-    void __fastcall Display(AnsiString Msg);
+  void __fastcall Display(const System::String Msg);
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TBasicNntpForm *BasicNntpForm;

@@ -11,6 +11,7 @@
 #include <Menus.hpp>
 #include <Graphics.hpp>
 #include "OverbyteIcsWndControl.hpp"
+#include <OverbyteIcsUtils.hpp>
 #define   WM_APPSTARTUP  (WM_USER + 1)
 //---------------------------------------------------------------------------
 class TMyClient;
@@ -90,8 +91,8 @@ __published:	// IDE-managed Components
     void __fastcall FtpServer1AnswerToClient(TObject *Sender,
           TFtpCtrlSocket *Client, TFtpString &Answer);
     void __fastcall FtpServer1Authenticate(TObject *Sender,
-          TFtpCtrlSocket *Client, TFtpString &UserName,
-          TFtpString &Password, bool &Authenticated);
+          TFtpCtrlSocket *Client, TFtpString UserName,
+          TFtpString Password, bool &Authenticated);
     void __fastcall FtpServer1ChangeDirectory(TObject *Sender,
           TFtpCtrlSocket *Client, TFtpString &Directory, bool &Allowed);
     void __fastcall Cleardisplay1Click(TObject *Sender);

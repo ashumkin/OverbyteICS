@@ -22,9 +22,11 @@ __published:	// IDE-managed Components
     TButton *LineOnButton;
     TButton *LineOffButton;
     TButton *DisconnectButton;
-    TButton *ReadLineButton;
+  TButton *SendButton;
     TMemo *DisplayMemo;
     TWSocket *WSocket1;
+  TLabel *Label2;
+  TEdit *DataEdit;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
     void __fastcall LineOnButtonClick(TObject *Sender);
@@ -34,7 +36,7 @@ __published:	// IDE-managed Components
     void __fastcall WSocket1SessionConnected(TObject *Sender, WORD Error);
     void __fastcall WSocket1SessionClosed(TObject *Sender, WORD Error);
     void __fastcall WSocket1DataAvailable(TObject *Sender, WORD Error);
-    void __fastcall ReadLineButtonClick(TObject *Sender);
+    void __fastcall SendButtonClick(TObject *Sender);
 private:	// User declarations
     AnsiString FIniFileName;
     BOOL       FInitialized;

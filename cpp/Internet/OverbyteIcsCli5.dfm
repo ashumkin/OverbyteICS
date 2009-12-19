@@ -2,7 +2,7 @@ object ClientForm: TClientForm
   Left = 17
   Top = 324
   Caption = 'ClientForm'
-  ClientHeight = 125
+  ClientHeight = 100
   ClientWidth = 276
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -56,15 +56,6 @@ object ClientForm: TClientForm
     Caption = '&IP address'
     TabOrder = 2
     OnClick = IPButtonClick
-  end
-  object ReadLineButton: TButton
-    Left = 8
-    Top = 96
-    Width = 75
-    Height = 25
-    Caption = '&Read line'
-    TabOrder = 3
-    OnClick = ReadLineButtonClick
   end
   object CliSocket: TWSocket
     LineMode = False
