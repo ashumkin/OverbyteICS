@@ -90,8 +90,10 @@ begin
     TSslSmtpCli,
     TSslNntpCli,
     TSslAvlSessionCache,
-    TSslStaticLock,
-    TSslWSocketThrdServer
+{$IFNDEF BCB}
+    TSslWSocketThrdServer,
+{$ENDIF}
+    TSslStaticLock
   {$IFNDEF NO_DYNLOCK}
     ,TSslDynamicLock
   {$ENDIF}
