@@ -451,7 +451,7 @@ procedure THttpTestForm.PostOrPut(Request: THttpRequest);
 var
     DataOut : TMemoryStream;
     DataIn  : TFileStream;
-    Buf     : String;
+    Buf     : AnsiString;
     I       : Integer;
 begin
     DisplayMemo.Clear;
@@ -460,7 +460,7 @@ begin
 
     try
         DataOut := TMemoryStream.Create;
-        Buf     := DataEdit.Text;
+        Buf     := AnsiString(DataEdit.Text);
         if Length(Buf) > 0 then      { Check if some data to post }
             DataOut.Write(Buf[1], Length(Buf));
         DataOut.Seek(0, soBeginning);
