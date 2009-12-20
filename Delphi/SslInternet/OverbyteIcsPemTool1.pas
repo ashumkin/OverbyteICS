@@ -9,7 +9,7 @@ Description:  A small utility to export SSL certificate from IE certificate
               Make use of OpenSSL (http://www.openssl.org)
               Make use of the Jedi CryptoAPI2
               (http://delphi-jedi.org/Jedi:APILIBRARY:172871)(CryptoAPI2.zip).
-Version:      1.10
+Version:      1.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -58,6 +58,7 @@ Jul 14, 2008 V1.08 Paul <paul.blommaerts@telenet.be> added an option to import
              Windows certificates to a single file (CA bundle).
 Jul 15, 2008 V1.09 Made one change to prepare SSL code for Unicode.
 Jan 29, 2009 V1.10 Removed some string cast warnings.
+Dec 20, 2009 V1.11 Memory leak fixed.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -86,10 +87,10 @@ uses
   OverbyteIcsLibeayEx, OverbyteIcsSslX509Utils, OverByteIcsMimeUtils;
 
 const
-     PemToolVersion     = 110;
+     PemToolVersion     = 111;
      PemToolDate        = 'January 29, 2009';
      PemToolName        = 'PEM Certificate Tool';
-     CopyRight : String = '(c) 2003-2009 by François PIETTE V1.10 ';
+     CopyRight : String = '(c) 2003-2009 by François PIETTE V1.11 ';
      CaptionMain        = 'ICS PEM Certificate Tool - ';
      WM_APPSTARTUP      = WM_USER + 1;
 
@@ -781,6 +782,7 @@ var
      BundleFilename  : String;        // added
      BundlePath      : String;        // added
      Count           : Integer;
+     xTmp            : PX509;
 begin
     Count := 0;
     pCertContext := nil;
@@ -855,9 +857,10 @@ begin
     X := TX509Base.Create(nil);
     try
         while pCertContext <> nil do begin
-            X.X509 := f_d2i_X509(nil, @pCertContext.pbCertEncoded,
-                             pCertContext.cbCertEncoded);
-            if Assigned(X.X509) then begin
+            xTmp := f_d2i_X509(nil, @pCertContext.pbCertEncoded, pCertContext.cbCertEncoded);
+            if Assigned(xTmp) then begin
+                X.X509 := xTmp;
+                f_X509_free(xTmp);
                 Subject_Hash := f_X509_subject_name_hash(X.X509);
                 FileName := PathAddBackSlash(Path) + IntToHex(Subject_Hash, 8) + '.0';
                 if not CheckBoxOverwriteExisting.Checked then

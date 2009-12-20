@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  Logger class donated to ICS.
 Creation:     December 2005
-Version:      6.03
+Version:      6.04
 EMail:        francois.piette@overbyte.be      http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -47,7 +47,7 @@ Jul 03, 2008 V6.02 A. Garrels made some changes to prepare code for Unicode.
                    will be probably faster than lfeUtf8.
 May 08, 2009 V6.03 Added properties TimeStampFormatString and TimeStampSeparator
                    similar as suggested by Anton Sviridov.
-                                      
+Dec 20, 2009 V6.04 Exchanged symbol "NO_ADV_MT" by "NO_LOGGER_MT".
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLogger;
@@ -72,9 +72,9 @@ unit OverbyteIcsLogger;
     {$ObjExportAll On}
 {$ENDIF}
 
-{ If NO_ADV_MT is defined, then there is less multithread code compiled.    }
+{ If NO_LOGGER_MT is defined, then there is less multi-thread code compiled. }
 
-{#$DEFINE NO_ADV_MT}
+{#$DEFINE NO_LOGGER_MT}
 
 {$IFDEF WIN32}
     {$DEFINE VCL}
@@ -98,8 +98,8 @@ uses
 {$ENDIF}
 
 const
-    TIcsLoggerVersion   = 603;
-    CopyRight : String  = ' IcsLogger (c) 2005-2009 by François PIETTE V6.03 ';
+    TIcsLoggerVersion   = 604;
+    CopyRight : String  = ' IcsLogger (c) 2005-2009 by François PIETTE V6.04 ';
 
 type
     ELoggerException = class(Exception);
@@ -141,7 +141,7 @@ type
         FLogFileEncoding        : TLogFileEncoding;
         FLogFileInternalEnc     : TLogFileEncoding;
     {$ENDIF}
-    {$IFNDEF NO_ADV_MT}
+    {$IFNDEF NO_LOGGER_MT}
         FLock                   : TRtlCriticalSection;
         procedure   Lock;
         procedure   UnLock;
@@ -202,7 +202,7 @@ implementation
 constructor TIcsLogger.Create{$IFDEF VCL}(AOwner: TComponent){$ENDIF};
 begin
     inherited Create{$IFDEF VCL}(AOwner){$ENDIF};
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     InitializeCriticalSection(FLock);
 {$ENDIF}
     FTimeStampFormatString := 'hh:nn:ss:zzz'; {V6.03}
@@ -214,7 +214,7 @@ end;
 destructor TIcsLogger.Destroy;
 begin
     CloseLogFile;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     DeleteCriticalSection(FLock);
 {$ENDIF}
     inherited Destroy;
@@ -344,7 +344,7 @@ procedure TIcsLogger.DoDebugLog(
     LogOption   : TLogOption;
     const Msg   : String);
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
@@ -373,7 +373,7 @@ begin
             if loDestFile in FLogOptions then
                 WriteToLogFile(Msg + #13#10);
         end;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;
@@ -384,7 +384,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.SetLogFileName(const Value: String);
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
@@ -394,7 +394,7 @@ begin
         end
         else if Value <> FLogFileName then
             FLogFileName := Value;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;
@@ -405,12 +405,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.SetLogFileOption(const Value: TLogFileOption);
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
         FLogFileOption := Value;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;
@@ -421,12 +421,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.SetLogOptions(const Value: TLogOptions);
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
         FLogOptions := Value;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;
@@ -437,12 +437,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.SetOnIcsLogEvent(const Value: TIcsLogEvent);
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
         FOnIcsLogEvent := Value;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;
@@ -451,7 +451,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
 procedure TIcsLogger.Lock;
 begin
     EnterCriticalSection(FLock)
@@ -468,12 +468,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.CloseLogFile;
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
         InternalCloseLogFile;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;
@@ -484,12 +484,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.OpenLogFile;
 begin
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     Lock;
     try
 {$ENDIF}
         InternalOpenLogFile;
-{$IFNDEF NO_ADV_MT}
+{$IFNDEF NO_LOGGER_MT}
     finally
         Unlock;
     end;

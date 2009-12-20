@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.03
+Version:      1.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -56,6 +56,8 @@ Mar 03, 2007 A. Garrels: Small changes to support OpenSSL 0.9.8e.
 Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
              Added a few constants and dummy records.
 Aug 02, 2008 Still one PChar caught in one of the records.
+Dec 20, 2009 A.Garrels added plenty of stuff. Some is not yet used some is, like
+             Server Name Indication (SNI).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -84,11 +86,11 @@ interface
 {$IFDEF USE_SSL}
 
 uses
-    Windows, SysUtils;
+    Windows, SysUtils, OverbyteIcsUtils;
 
 const
-    IcsSSLEAYVersion   = 100;
-    CopyRight : String = ' IcsSSLEAY (c) 2003-2007 F. Piette V1.00 ';
+    IcsSSLEAYVersion   = 104;
+    CopyRight : String = ' IcsSSLEAY (c) 2003-2009 F. Piette V1.04 ';
 
     EVP_MAX_IV_LENGTH                 = 16;       { 03/02/07 AG }
     EVP_MAX_BLOCK_LENGTH              = 32;       { 11/08/07 AG }
@@ -146,12 +148,6 @@ type
     end;
     PX509_STORE_CTX = ^TX509_STORE_CTX_st;
 
-    TX509_st = packed record
-        Dummy : array [0..0] of Byte;
-    end;
-    PX509  = ^TX509_st;
-    PPX509 = ^PX509;
-
     TX509_NAME_st = packed record
         Dummy : array [0..0] of Byte;
     end;
@@ -162,21 +158,45 @@ type
     end;
     PSTACK = ^TSTACK_st;
 
+    TASN1_TYPE_st = packed record                   //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PASN1_TYPE = ^TASN1_TYPE_st;
+
     { Stack - dummies i.e. STACK_OF(X509) }
-    {
-    PSTACK_OF_X509_EXTENSION    = type PStack;     //AG
-    PSTACK_OF_X509_ALGOR        = type PStack;     //AG
-    PSTACK_OF_X509              = type PStack;     //AG
+
+    PSTACK_OF_X509_EXTENSION    = PStack;     //AG
+    PSTACK_OF_X509_ALGOR        = PStack;     //AG
+
+    PSTACK_OF_X509              = PSTACK;     //AG
+    PSTACK_OF_X509_CRL          = PSTACK;     //AG
+
     PPSTACK_OF_X509             = ^PSTACK_OF_X509; //AG
-    PSTACK_OF_X509_CRL          = type PStack;     //AG
-    PSTACK_OF_PKCS7_RECIP_INFO  = type PStack;     //AG
-    PSTACK_OF_X509_ATTRIBUTE    = type PStack;     //AG
-    PSTACK_OF_PKCS7_SIGNER_INFO = type PStack;     //AG
-    PSTACK_OF_509_LOOKUP        = type PStack;     //AG
-    PSTACK_OF_X509_OBJECT       = type PStack;     //AG
-    }
+
+    PSTACK_OF_PKCS7_RECIP_INFO  = PStack;     //AG
+    PSTACK_OF_X509_ATTRIBUTE    = PStack;     //AG
+    PSTACK_OF_PKCS7_SIGNER_INFO = PStack;     //AG
+    PSTACK_OF_509_LOOKUP        = PStack;     //AG
+    PSTACK_OF_X509_OBJECT       = PStack;     //AG
+
     PSTACK_OF_X509_NAME = {$IFNDEF NoTypeEnforce}type{$ENDIF} PStack;
-    PSTACK_OF_X509_INFO = {$IFNDEF NoTypeEnforce}type{$ENDIF} PStack;  
+    PSTACK_OF_X509_INFO = {$IFNDEF NoTypeEnforce}type{$ENDIF} PStack;
+
+
+    TX509_lookup_method_st = packed record
+        Dummy : array [0..0] of Byte;
+    end;
+    PX509_LOOKUP_METHOD = ^TX509_lookup_method_st;
+
+    TX509_lookup_st = packed record
+        Dummy : array [0..0] of Byte;
+    end;
+    PX509_LOOKUP = ^TX509_lookup_st;
+
+    TX509_OBJECT_st = packed record         //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PX509_OBJECT = ^TX509_OBJECT_st;
 
     TX509_NAME_ENTRY_st = packed record      //AG
         Dummy : array [0..0] of Byte;
@@ -203,6 +223,11 @@ type
     end;
     PDH = ^TDH_st;
 
+    TEC_KEY_st = packed record                 //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PEC_KEY = ^TEC_KEY_st;
+
     // 0.9.7g, 0.9.8a, 0.9.8e
     TEVP_PKEY_st = packed record
         type_       : Longint;
@@ -213,6 +238,7 @@ type
         1 : (rsa  : PRSA); // RSA
         2 : (dsa  : PDSA); // DSA
         3 : (dh   : PDH);  // DH
+        4 : (ec   : PEC_KEY); //* ECC */
         { more not needed ...
         int save_parameters;
         STACK_OF(X509_ATTRIBUTE) *attributes; /* [ 0 ] */ }
@@ -225,10 +251,21 @@ type
     end;
     PEVP_CIPHER = ^TEVP_CIPHER_st;
 
-    TX509_ALGOR_st = packed record
+    TASN1_OBJECT_st = packed record
         Dummy : array [0..0] of Byte;
     end;
+    PASN1_OBJECT = ^TASN1_OBJECT_st;
+
+    TX509_ALGOR_st = packed record
+        algorithm : PASN1_OBJECT;
+        parameter : PASN1_TYPE;
+    end;
     PX509_ALGOR = ^TX509_ALGOR_st;
+
+    TX509_PURPOSE_st = packed record
+        Dummy : array [0..0] of Byte;
+    end;
+    PX509_PURPOSE = ^TX509_PURPOSE_st;
 
     // 0.9.7g, 0.9.8a, 0.9.8e
     TASN1_STRING_st = packed record
@@ -244,17 +281,14 @@ type
     PASN1_STRING       = ^TASN1_STRING_st;
     TASN1_OCTET_STRING = TASN1_STRING_st;
     PASN1_OCTET_STRING = ^TASN1_OCTET_STRING;
+    TASN1_BIT_STRING   = TASN1_STRING_st;
+    PASN1_BIT_STRING   = ^TASN1_BIT_STRING;
 
     TASN1_TIME = {$IFNDEF NoTypeEnforce}type{$ENDIF} TASN1_STRING_st;
     PASN1_TIME = ^TASN1_TIME;
 
     TASN1_INTEGER = {$IFNDEF NoTypeEnforce}type{$ENDIF} TASN1_STRING_st;
     PASN1_INTEGER = ^TASN1_INTEGER;
-
-    TASN1_OBJECT_st = packed record
-        Dummy : array [0..0] of Byte;
-    end;
-    PASN1_OBJECT = ^TASN1_OBJECT_st;
 
     TASN1_VALUE_st = packed record
         Dummy : array [0..0] of Byte;
@@ -270,8 +304,8 @@ type
     PEVP_CIPHER_INFO = ^EVP_CIPHER_INFO;
 
     TPrivate_key_st = packed record            //AG
-        Dummy : array [0..0] of Byte;
-        {version     : Integer;
+        //Dummy : array [0..0] of Byte;
+        version     : Integer;
         // The PKCS#8 data types
         enc_algor   : PX509_ALGOR;
         enc_pkey    : PASN1_OCTET_STRING; // encrypted pub key
@@ -283,7 +317,7 @@ type
         key_free    : Integer; // true if we should auto free key_data
         // expanded version of 'enc_algor'
         cipher      : PEVP_CIPHER_INFO;
-        references  : Integer ;}
+        references  : Integer ;
     end;
     PX509_PKEY = ^TPrivate_key_st;
 
@@ -292,18 +326,38 @@ type
     end;
     PX509_REQ = ^TX509_REQ_st;
 
+    TX509_CRL_INFO_st = packed record
+        version     : PASN1_INTEGER;
+        sig_alg     : PX509_ALGOR;
+        issuer      : PX509_NAME;
+        lastUpdate  : PASN1_TIME;
+        nextUpdate  : PASN1_TIME;
+        {
+        STACK_OF(X509_REVOKED) *revoked;
+        STACK_OF(X509_EXTENSION) /* [0] */ *extensions;
+        ASN1_ENCODING enc; }
+    end;
+    PX509_CRL_INFO = ^TX509_CRL_INFO_st;
+
     TX509_CRL_st = packed record
-        Dummy : array [0..0] of Byte;
+        //* actual signature *//
+        crl       : PX509_CRL_INFO;
+        sig_alg   : PX509_ALGOR;
+        signature : PASN1_BIT_STRING;
+        references: Integer;
     end;
     PX509_CRL = ^TX509_CRL_st;
     PPX509_CRL = ^PX509_CRL;
 
+
+    PX509  = ^TX509_st;
+    PPX509 = ^PX509;
+    
     // 0.9.7g, 0.9.8a 0.9.8e
     TX509_INFO_st = packed record
         x509        : PX509;
         crl         : PX509_CRL;
         x_pkey      : PX509_PKEY;
-        //enc_cipher  : PEVP_CIPHER_INFO;  It's not a pointer !! { 03/02/07 AG }
         enc_cipher  : EVP_CIPHER_INFO;
         enc_len     : Integer;
         enc_data    : PAnsiChar;
@@ -329,6 +383,13 @@ type
     end;
     PX509_VAL = ^TX509_VAL_st;
 
+    TX509_PUBKEY_st = packed record                 //AG
+        algor       : PX509_ALGOR;
+        public_key  : PASN1_BIT_STRING;
+        pkey        : PEVP_PKEY;
+    end;
+    PX509_PUBKEY = ^TX509_PUBKEY_st;
+
     { Certinfo }  // 0.9.7g, 0.9.8a, 0.9.8e         {AG 02/06/06}
     TX509_CINF_st = packed record
         version         : PASN1_INTEGER;            // [ 0 ] default of v1
@@ -336,9 +397,9 @@ type
         signature       : PX509_ALGOR;
         issuer          : PX509_NAME;
         validity        : PX509_VAL;
-        {subject         : PX509_NAME;
+        subject         : PX509_NAME;
         key             : PX509_PUBKEY;
-        issuerUID       : PASN1_BIT_STRING;         // [ 1 ] optional in v2
+        {issuerUID       : PASN1_BIT_STRING;         // [ 1 ] optional in v2
         subjectUID      : PASN1_BIT_STRING;         // [ 2 ] optional in v2
         extensions      : PSTACK_OF_X509_EXTENSION; // [ 3 ] optional in v3}
     end;
@@ -352,6 +413,118 @@ type
         value         : PASN1_OCTET_STRING;
     end;
     PX509_EXTENSION = ^TX509_EXTENSION_st;
+
+    TX509_st = packed record
+        cert_info   : PX509_CINF;
+        sig_alg     : PX509_ALGOR;
+        signature   : PASN1_BIT_STRING;
+        valid       : Integer ;
+        references  : Integer;
+        name        : PAnsiChar;
+        {more ...}
+    end;
+
+    TPKCS7_ISSUER_AND_SERIAL_st = packed record     //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PPKCS7_ISSUER_AND_SERIAL = ^TPKCS7_ISSUER_AND_SERIAL_st;
+
+    TPKCS7_ENC_CONTENT_st = packed record           //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PPKCS7_ENC_CONTENT = ^TPKCS7_ENC_CONTENT_st;
+
+    TPKCS7_DIGEST_st = packed record                //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PPKCS7_DIGEST = ^TPKCS7_DIGEST_st;
+
+    TPKCS7_ENCRYPT_st = packed record               //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PPKCS7_ENCRYPT = ^TPKCS7_ENCRYPT_st;
+
+    { Caution! Structures may change in future versions 0.96g-0.98 beta OK} {AG}
+    { However needed for S/MIME PKCS#7 parsing }
+
+    TPKCS7_SIGNER_INFO_st = packed record
+        version             : PASN1_INTEGER;                // version 1
+        issuer_and_serial   : PPKCS7_ISSUER_AND_SERIAL;
+        digest_alg          : PX509_ALGOR;
+        auth_attr           : PSTACK_OF_X509_ATTRIBUTE;     // [ 0 ]
+        digest_enc_alg      : PX509_ALGOR;
+        enc_digest          : PASN1_OCTET_STRING;
+        unauth_attr         : PSTACK_OF_X509_ATTRIBUTE;     // [ 1 ]
+        // The private key to sign with //
+        pkey                : PEVP_PKEY;
+    end;
+    //PKCS7_SIGNER_INFO = ^TPKCS7_SIGNER_INFO_st; // **Name conflict with wincrypt.h**
+    PKCS7_SIGNER_INFO_OSSL = ^TPKCS7_SIGNER_INFO_st;
+
+    TPKCS7_ENVELOPED_st = packed record
+        version       : PASN1_INTEGER;
+        recipientinfo : PSTACK_OF_PKCS7_SIGNER_INFO;
+        enc_data      : PPKCS7_ENC_CONTENT;
+    end;
+    PPKCS7_ENVELOPE = ^TPKCS7_ENVELOPED_st;
+
+    PPKCS7  = ^TPKCS7_st;                           
+
+    TPKCS7_SIGNED_st = packed record
+        version     : PASN1_INTEGER;
+        md_algs     : PSTACK_OF_X509_ALGOR;
+        cert        : PSTACK_OF_X509;
+        crl         : PSTACK_OF_X509_CRL;
+        signer_info : PSTACK_OF_PKCS7_SIGNER_INFO;
+        contents    : PPKCS7;
+    end;
+    PPKCS7_SIGNED = ^TPKCS7_SIGNED_st;
+
+    PKCS7_signedandenveloped = packed record
+        version         : PASN1_INTEGER;
+        md_algs         : PSTACK_OF_X509_ALGOR;
+        cert            : PSTACK_OF_X509;
+        crl             : PSTACK_OF_X509_CRL;
+        signer_info     : PSTACK_OF_PKCS7_SIGNER_INFO;
+        enc_data        : PPKCS7_ENC_CONTENT;
+        recipientinfo   : PSTACK_OF_PKCS7_RECIP_INFO;
+    end;
+    PPKCS7_SIGN_ENVELOPE = ^PKCS7_signedandenveloped;
+    
+
+    TPKCS7_st = packed record                         //AG
+      { The following is non NULL if it contains ASN1 encoding of this structure }
+        asn1        : PAnsiChar;
+        length      : Integer;
+        state       : Integer;
+        detached    : Integer;
+        type_       : PASN1_OBJECT;
+        case Integer of
+        0: (ptr                  : PAnsiChar);
+        // NID_pkcs7_data
+        1: (data                 : PASN1_OCTET_STRING);
+        // NID_pkcs7_signed
+        2: (sign                 : PPKCS7_SIGNED);
+        // NID_pkcs7_enveloped
+        3: (enveloped            : PPKCS7_ENVELOPE);
+        // NID_pkcs7_signedAndEnveloped
+        4: (signed_and_enveloped : PPKCS7_SIGN_ENVELOPE);
+        // NID_pkcs7_digest
+        5: (digest               : PPKCS7_DIGEST);
+        // NID_pkcs7_encrypted
+        6: (encrypted            : PPKCS7_ENCRYPT);
+        // Anything else
+        7: (other                : PASN1_TYPE);
+    end;
+    PPPKCS7 = ^PPKCS7;
+    { Danger ends } {AG}
+
+    TPKCS12_st = packed record                          //AG
+        Dummy : array [0..0] of Byte;
+    end;
+    PPKCS12 = ^TPKCS12_st;
+    PPPKCS12 = ^PPKCS12;
+
 
     TV3_EXT_CTX_st = packed record
         Dummy : array [0..0] of Byte;
@@ -437,6 +610,11 @@ type
     TClient_cert_cb = function (Ssl : PSSL; X509 : PPX509; PKEY : PPEVP_PKEY): Integer; cdecl;
     PClient_cert_cb = ^TClient_cert_cb;
 
+{$IFNDEF OPENSSL_NO_TLSEXT}
+    TCallback_ctrl_fp = procedure (p : Pointer); cdecl;
+    TSsl_servername_cb = function (s: PSSL; var ad: Integer; arg: Pointer): Integer; cdecl;
+{$ENDIF}
+
 const
     SSL2_VERSION                                = $0002;
     SSL2_VERSION_MAJOR                          = $00;
@@ -513,6 +691,7 @@ const
     SSL_CTRL_GET_SESS_CACHE_SIZE                = 43;
     SSL_CTRL_SET_SESS_CACHE_MODE                = 44;
     SSL_CTRL_GET_SESS_CACHE_MODE                = 45;
+
     SSL_OP_MICROSOFT_SESS_ID_BUG                = $00000001;
     SSL_OP_NETSCAPE_CHALLENGE_BUG               = $00000002;
     SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG     = $00000008;
@@ -538,6 +717,9 @@ const
     SSL_OP_NO_QUERY_MTU                         = $00001000;
     //Turn on Cookie Exchange (on relevant for servers)
     SSL_OP_COOKIE_EXCHANGE                      = $00002000;
+
+    // Don't use RFC4507 ticket extension
+    SSL_OP_NO_TICKET                            = $00004000;
 
     // As server, disallow session resumption on renegotiation
     SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION  = $00010000;
@@ -618,6 +800,33 @@ const
 
     SSL_MAX_SSL_SESSION_ID_LENGTH               = 32; //AG
     SSL_MAX_SID_CTX_LENGTH                      = 32; //AG
+
+{$IFNDEF OPENSSL_NO_TLSEXT}
+    {* ExtensionType values from RFC 3546 *}
+    TLSEXT_TYPE_server_name                     = 0;
+    TLSEXT_TYPE_max_fragment_length             = 1;
+    TLSEXT_TYPE_client_certificate_url          = 2;
+    TLSEXT_TYPE_trusted_ca_keys                 = 3;
+    TLSEXT_TYPE_truncated_hmac                  = 4;
+    TLSEXT_TYPE_status_request                  = 5;
+    TLSEXT_TYPE_elliptic_curves                 = 10;
+    TLSEXT_TYPE_ec_point_formats                = 11;
+    TLSEXT_TYPE_session_ticket                  = 35;
+
+    TLSEXT_MAXLEN_host_name                     = 255;
+    TLSEXT_NAMETYPE_host_name                   = 0;
+
+    SSL_CTRL_SET_TLSEXT_SERVERNAME_CB           = 53;
+    SSL_CTRL_SET_TLSEXT_SERVERNAME_ARG          = 54;
+    SSL_CTRL_SET_TLSEXT_HOSTNAME                = 55;
+    SSL_CTRL_SET_TLSEXT_DEBUG_CB                = 56;
+    SSL_CTRL_SET_TLSEXT_DEBUG_ARG               = 57;
+
+    SSL_TLSEXT_ERR_OK                           = 0;
+    SSL_TLSEXT_ERR_ALERT_WARNING                = 1;
+    SSL_TLSEXT_ERR_ALERT_FATAL                  = 2;
+    SSL_TLSEXT_ERR_NOACK                        = 3;
+{$ENDIF}
     
 const
     f_SSL_do_handshake :                       function(S: PSSL): Integer; cdecl = nil; //AG
@@ -670,6 +879,8 @@ const
     f_SSL_set_ex_data :                        function(S: PSSL; Idx: Integer; Arg: Pointer): Integer; cdecl = nil;
     f_SSL_get_ex_data :                        function(S: PSSL; Idx: Integer): Pointer; cdecl = nil;
     f_SSL_get_peer_certificate :               function(S: PSSL): PX509; cdecl = nil;
+    f_SSL_get_peer_cert_chain :                function(const S: PSSL): PSTACK_OF_X509; cdecl = nil;
+    f_SSL_get_verify_depth :                   function(const S: PSSL): Integer; cdecl = nil;
     f_SSL_get_verify_result :                  function(S: PSSL): LongInt; cdecl = nil;
     f_SSL_set_verify_result :                  procedure(S: PSSL; VResult: LongInt); cdecl = nil;
     f_SSL_set_info_callback :                  procedure(S: PSSL; cb : TSetInfo_cb); cdecl = nil;
@@ -687,6 +898,7 @@ const
     f_SSL_CIPHER_get_name :                    function(Cipher: Pointer): PAnsiChar; cdecl = nil;
     f_SSL_CIPHER_description :                 function(Cipher: Pointer; buf: PAnsiChar; size: Integer): PAnsiChar; cdecl = nil;
     f_SSL_CTX_free :                           procedure(C: PSSL_CTX); cdecl = nil;
+    f_SSL_CTX_set_info_callback:               procedure(ctx: PSSL_CTX; cb : TSetInfo_cb); cdecl = nil;
     f_SSL_CTX_use_certificate_chain_file :     function(C: PSSL_CTX; const FileName: PAnsiChar): Integer; cdecl = nil;
     f_SSL_CTX_use_certificate_file :           function(C: PSSL_CTX; const FileName: PAnsiChar; type_: Integer): Integer; cdecl = nil; //AG
     f_SSL_CTX_set_default_passwd_cb :          procedure(C: PSSL_CTX; CallBack: TPem_password_cb); cdecl = nil;
@@ -698,6 +910,7 @@ const
     f_SSL_CTX_set_verify :                     procedure(C: PSSL_CTX; Mode: Integer; CallBack : TSetVerify_cb); cdecl = nil;
     f_SSL_set_verify :                         procedure(S: PSSL; Mode: Integer; CallBack : TSetVerify_cb); cdecl = nil;
     f_SSL_CTX_get_verify_mode :                function(const C: PSSL_CTX): Integer; cdecl = nil; //AG
+    f_SSL_CTX_get_verify_depth :               function(const ctx: PSSL_CTX): Integer; cdecl = nil; //AG
     f_SSL_CTX_set_verify_depth :               procedure(C: PSSL_CTX; Depth: Integer); cdecl = nil;
     f_SSL_CTX_ctrl :                           function(C: PSSL_CTX; Cmd: Integer; LArg: LongInt; PArg: PAnsiChar): LongInt; cdecl = nil;
     f_SSL_CTX_set_ex_data :                    function(C: PSSL_CTX; Idx: Integer; Arg: PAnsiChar): Integer; cdecl = nil;
@@ -728,6 +941,14 @@ const
     f_SSL_get_rfd:                             function(S: PSSL): Integer; cdecl = nil; // B.S.
     f_SSL_get_wfd:                             function(S: PSSL): Integer; cdecl = nil; // B.S.
 
+    f_SSL_get_SSL_CTX:                         function(const S: PSSL): PSSL_CTX; cdecl = nil;
+{$IFNDEF OPENSSL_NO_TLSEXT}
+    f_SSL_set_SSL_CTX:                         function(S: PSSL; ctx: PSSL_CTX): PSSL_CTX; cdecl = nil;
+    f_SSL_get_servername:                      function(const S: PSSL; const type_: Integer): PAnsiChar; cdecl = nil;
+    f_SSL_get_servername_type:                 function(const S: PSSL): Integer; cdecl = nil;
+    f_SSL_CTX_callback_ctrl:                   function(ctx: PSSL_CTX; cb_id: Integer; fp: TCallback_ctrl_fp): Longint; cdecl = nil;
+    f_SSL_callback_ctrl:                       function(s: PSSL; cb_id: Integer; fp: TCallback_ctrl_fp): Longint; cdecl = nil;
+{$ENDIF}
 
 function Load : Boolean;
 function WhichFailedToLoad : String;
@@ -735,15 +956,18 @@ function GetFileVerInfo(
     const AppName         : String;
     out   FileVersion     : String;
     out   FileDescription : String): Boolean;
-function  f_SSL_CTX_set_options(C: PSSL_CTX; Op: LongInt): LongInt;
-function  f_SSL_want_read(S: PSSL) : Boolean;
-function  f_SSL_want_write(S: PSSL) : Boolean;
-function  f_SSL_want_nothing(S: PSSL) : Boolean;
-function  f_SSL_want_x509_lookup(S: PSSL) : Boolean;
-function  f_SSL_session_reused(SSL: PSSL): Integer;
-function  f_SSL_CTX_set_session_cache_mode(Ctx: PSSL_CTX; Mode: Integer): Integer;
-function  f_SSL_CTX_sess_set_cache_size(Ctx: PSSL_CTX; CacheSize: Integer): Integer;
-function  f_SSL_CTX_add_extra_chain_cert(Ctx: PSSL_CTX; Cert: PX509): Longword;
+function  f_SSL_CTX_set_options(C: PSSL_CTX; Op: LongInt): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_CTX_get_options(C: PSSL_CTX): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_get_options(S: PSSL): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_set_options(S: PSSL; Op: LongInt): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_want_read(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_want_write(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_want_nothing(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_want_x509_lookup(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_session_reused(SSL: PSSL): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_CTX_set_session_cache_mode(Ctx: PSSL_CTX; Mode: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_CTX_sess_set_cache_size(Ctx: PSSL_CTX; CacheSize: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_CTX_add_extra_chain_cert(Ctx: PSSL_CTX; Cert: PX509): Longword; {$IFDEF USE_INLINE} inline; {$ENDIF}
 
 {$IFDEF BEFORE_OSSL_098E}
 //procedure f_SSL_session_get_id(Ses: PSSL_SESSION; var SessID: Pointer; var IdLen: Integer);
@@ -753,6 +977,14 @@ procedure f_SSL_CTX_sess_set_get_cb(Ctx: PSSL_CTX; CB: TGet_session_cb);
 procedure f_SSL_CTX_sess_set_remove_cb(Ctx: PSSL_CTX; CB: TRemove_session_cb);
 procedure f_SSL_CTX_set_client_cert_cb(Ctx: PSSL_CTX; CB: TClient_cert_cb);
 function  f_SSL_CTX_get_client_cert_cb(CTX: PSSL_CTX): Pointer;
+{$ENDIF}
+
+{$IFNDEF OPENSSL_NO_TLSEXT}
+function f_SSL_set_tlsext_host_name(const S: PSSL; const name: String): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function f_SSL_CTX_set_tlsext_servername_callback(ctx: PSSL_CTX; cb: TCallback_ctrl_fp): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function f_SSL_CTX_set_tlsext_servername_arg(ctx: PSSL_CTX; arg: Pointer): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function f_SSL_set_tlsext_debug_callback(S: PSSL; cb: TCallback_ctrl_fp): Longint; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function f_SSL_set_tlsext_debug_arg(S: PSSL; arg: Pointer): Longint; {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ENDIF}
 
 const
@@ -910,6 +1142,8 @@ begin
     f_SSL_set_ex_data                        := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_ex_data');
     f_SSL_get_ex_data                        := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_ex_data');
     f_SSL_get_peer_certificate               := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_peer_certificate');
+    f_SSL_get_peer_cert_chain                := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_peer_cert_chain');
+    f_SSL_get_verify_depth                   := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_verify_depth');
     f_SSL_get_verify_result                  := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_verify_result');
     f_SSL_set_verify_result                  := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_verify_result');
     f_SSL_set_info_callback                  := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_info_callback');
@@ -927,6 +1161,7 @@ begin
     f_SSL_CIPHER_get_name                    := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CIPHER_get_name');
     f_SSL_CIPHER_description                 := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CIPHER_description');
     f_SSL_CTX_free                           := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_free');
+    f_SSL_CTX_set_info_callback              := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_info_callback');
     f_SSL_CTX_set_timeout                    := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_timeout');
     f_SSL_CTX_use_certificate_chain_file     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_use_certificate_chain_file');
     f_SSL_CTX_use_certificate_file           := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_use_certificate_file');
@@ -939,6 +1174,7 @@ begin
     f_SSL_CTX_set_verify                     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_verify');
     f_SSL_set_verify                         := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_verify');
     f_SSL_CTX_get_verify_mode                := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_get_verify_mode');
+    f_SSL_CTX_get_verify_depth               := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_get_verify_depth');
     f_SSL_CTX_set_verify_depth               := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_verify_depth');
     f_SSL_CTX_ctrl                           := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_ctrl');
     f_SSL_CTX_set_cipher_list                := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_cipher_list');
@@ -970,6 +1206,14 @@ begin
     f_SSL_get_rfd                            := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_rfd'); // B.S.
     f_SSL_get_wfd                            := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_wfd'); // B.S.
 
+    f_SSL_get_SSL_CTX                        := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_SSL_CTX'); //AG
+{$IFNDEF OPENSSL_NO_TLSEXT}
+    f_SSL_set_SSL_CTX                        := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_SSL_CTX'); //AG
+    f_SSL_get_servername                     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_servername'); //AG
+    f_SSL_get_servername_type                := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_servername_type'); //AG
+    f_SSL_CTX_callback_ctrl                  := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_callback_ctrl'); //AG
+    f_SSL_callback_ctrl                      := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_callback_ctrl'); //AG
+{$ENDIF}
 
     // Check if any failed
     Result := not ((@f_SSL_do_handshake                       = nil) or
@@ -1020,6 +1264,8 @@ begin
                    (@f_SSL_set_ex_data                        = nil) or
                    (@f_SSL_get_ex_data                        = nil) or
                    (@f_SSL_get_peer_certificate               = nil) or
+                   (@f_SSL_get_peer_cert_chain                = nil) or
+                   (@f_SSL_get_verify_depth                   = nil) or
                    (@f_SSL_get_verify_result                  = nil) or
                    (@f_SSL_set_verify_result                  = nil) or
                    (@f_SSL_set_info_callback                  = nil) or
@@ -1037,6 +1283,7 @@ begin
                    (@f_SSL_CIPHER_get_name                    = nil) or
                    (@f_SSL_CIPHER_description                 = nil) or
                    (@f_SSL_CTX_free                           = nil) or
+                   (@f_SSL_CTX_set_info_callback              = nil) or
                    (@f_SSL_CTX_set_timeout                    = nil) or
                    (@f_SSL_CTX_use_certificate_chain_file     = nil) or
                    (@f_SSL_CTX_use_certificate_file           = nil) or
@@ -1050,6 +1297,7 @@ begin
                    (@f_SSL_CTX_get_verify_mode                = nil) or
                    (@f_SSL_CTX_ctrl                           = nil) or
                    (@f_SSL_CTX_set_cipher_list                = nil) or
+                   (@f_SSL_CTX_get_verify_depth               = nil) or
                    (@f_SSL_CTX_set_verify_depth               = nil) or
                    (@f_SSL_CTX_get_ex_data                    = nil) or
                    (@f_SSL_CTX_set_ex_data                    = nil) or
@@ -1078,7 +1326,18 @@ begin
                    (@f_SSL_get_fd                             = nil) or
                    (@f_SSL_get_rfd                            = nil) or
                    (@f_SSL_get_wfd                            = nil) or
-                   (@f_SSL_CTX_use_PrivateKey                 = nil)
+                   (@f_SSL_CTX_use_PrivateKey                 = nil) or
+
+                   (@f_SSL_get_SSL_CTX                        = nil)
+              {$IFNDEF OPENSSL_NO_TLSEXT}
+                                                                     or
+
+                   (@f_SSL_set_SSL_CTX                        = nil) or
+                   (@f_SSL_get_servername                     = nil) or
+                   (@f_SSL_get_servername_type                = nil) or
+                   (@f_SSL_CTX_callback_ctrl                  = nil) or
+                   (@f_SSL_callback_ctrl                      = nil)
+              {$ENDIF}
                    );
 end;
 
@@ -1135,6 +1394,8 @@ begin
     if @f_SSL_set_ex_data                        = nil then Result := Result + ' SSL_set_ex_data';
     if @f_SSL_get_ex_data                        = nil then Result := Result + ' SSL_get_ex_data';
     if @f_SSL_get_peer_certificate               = nil then Result := Result + ' SSL_get_peer_certificate';
+    if @f_SSL_get_peer_cert_chain                = nil then Result := Result + ' SSL_get_peer_cert_chain';
+    if @f_SSL_get_verify_depth                   = nil then Result := Result + ' SSL_get_verify_depth';
     if @f_SSL_get_verify_result                  = nil then Result := Result + ' SSL_get_verify_result';
     if @f_SSL_set_verify_result                  = nil then Result := Result + ' SSL_set_verify_result';
     if @f_SSL_set_info_callback                  = nil then Result := Result + ' SSL_set_info_callback';
@@ -1153,6 +1414,7 @@ begin
     if @f_SSL_CIPHER_get_name                    = nil then Result := Result + ' SSL_CIPHER_get_name';
     if @f_SSL_CIPHER_description                 = nil then Result := Result + ' SSL_CIPHER_description';
     if @f_SSL_CTX_free                           = nil then Result := Result + ' SSL_CTX_free';
+    if @f_SSL_CTX_set_info_callback              = nil then Result := Result + ' SSL_CTX_set_info_callback';
     if @f_SSL_CTX_set_timeout                    = nil then Result := Result + ' SSL_CTX_set_timeout';
     if @f_SSL_CTX_use_certificate_chain_file     = nil then Result := Result + ' SSL_CTX_use_certificate_chain_file';
     if @f_SSL_CTX_use_certificate_file           = nil then Result := Result + ' SSL_CTX_use_certificate_file';
@@ -1167,6 +1429,7 @@ begin
     if @f_SSL_CTX_get_verify_mode                = nil then Result := Result + ' SSL_CTX_get_verify_mode';
     if @f_SSL_CTX_ctrl                           = nil then Result := Result + ' SSL_CTX_ctrl';
     if @f_SSL_CTX_set_cipher_list                = nil then Result := Result + ' SSL_CTX_set_cipher_list';
+    if @f_SSL_CTX_get_verify_depth               = nil then Result := Result + ' SSL_CTX_get_verify_depth';
     if @f_SSL_CTX_set_verify_depth               = nil then Result := Result + ' SSL_CTX_set_verify_depth';
     if @f_SSL_CTX_get_ex_data                    = nil then Result := Result + ' SSL_CTX_get_ex_data';
     if @f_SSL_CTX_set_ex_data                    = nil then Result := Result + ' SSL_CTX_set_ex_data';
@@ -1195,6 +1458,16 @@ begin
     if @f_SSL_get_fd                             = nil then Result := Result + ' SSL_get_fd';
     if @f_SSL_get_rfd                            = nil then Result := Result + ' SSL_get_rfd';
     if @f_SSL_get_wfd                            = nil then Result := Result + ' SSL_get_wfd';
+
+    if @f_SSL_get_SSL_CTX                        = nil then Result := Result + ' SSL_get_SSL_CTX';
+{$IFNDEF OPENSSL_NO_TLSEXT}
+    if @f_SSL_set_SSL_CTX                        = nil then Result := Result + ' SSL_set_SSL_CTX';
+    if @f_SSL_get_servername                     = nil then Result := Result + ' SSL_get_servername';
+    if @f_SSL_get_servername_type                = nil then Result := Result + ' SSL_get_servername_type';
+    if @f_SSL_CTX_callback_ctrl                  = nil then Result := Result + ' SSL_CTX_callback_ctrl';
+    if @f_SSL_callback_ctrl                      = nil then Result := Result + ' SSL_callback_ctrl';
+{$ENDIF}
+
     if Length(Result) > 0 then
        Delete(Result, 1, 1);
 end;
@@ -1204,6 +1477,27 @@ end;
 function f_SSL_CTX_set_options(C: PSSL_CTX; Op: LongInt): LongInt;
 begin
     Result := f_SSL_CTX_ctrl(C, SSL_CTRL_OPTIONS, Op, nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_CTX_get_options(C: PSSL_CTX): LongInt;
+begin
+    Result := f_SSL_CTX_ctrl(C, SSL_CTRL_OPTIONS, 0, nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_set_options(S: PSSL; Op: LongInt): LongInt;
+begin
+    Result := f_SSL_ctrl(S, SSL_CTRL_OPTIONS, Op, nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_get_options(S: PSSL): LongInt;
+begin
+    Result := f_SSL_ctrl(S, SSL_CTRL_OPTIONS, 0, nil);
 end;
 
 
@@ -1334,6 +1628,45 @@ begin
         Result := nil
 end;
 {$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF OPENSSL_NO_TLSEXT}
+function f_SSL_set_tlsext_host_name(const S: PSSL; const name: String): Longint;
+begin
+    Result := f_SSL_ctrl(S, SSL_CTRL_SET_TLSEXT_HOSTNAME,
+                      TLSEXT_NAMETYPE_host_name, Pointer(StringToUtf8(name)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_CTX_set_tlsext_servername_callback(ctx: PSSL_CTX;
+  cb: TCallback_ctrl_fp): Longint;
+begin
+    Result := f_SSL_CTX_callback_ctrl(ctx, SSL_CTRL_SET_TLSEXT_SERVERNAME_CB, cb);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_CTX_set_tlsext_servername_arg(ctx: PSSL_CTX; arg: Pointer): Longint;
+begin
+    Result := f_SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_SERVERNAME_ARG, 0, arg);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_set_tlsext_debug_callback(S: PSSL; cb: TCallback_ctrl_fp): Longint;
+begin
+    Result := f_SSL_callback_ctrl(S, SSL_CTRL_SET_TLSEXT_DEBUG_CB, cb);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_set_tlsext_debug_arg(S: PSSL; arg: Pointer): Longint;
+begin
+    Result := f_SSL_ctrl(S, SSL_CTRL_SET_TLSEXT_DEBUG_ARG, 0, arg);
+end;
+{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$ENDIF}//USE_SSL

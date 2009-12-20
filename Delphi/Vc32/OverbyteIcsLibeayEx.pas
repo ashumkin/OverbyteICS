@@ -43,6 +43,7 @@ History:
 Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 Sep 09, 2009 Arno - Don't define PEngine if it's already defined in
              OverbyteIcsLibeay.pas.
+Oct 17, 2009 Removed some declarations available in OverbyteIcsLibeay as well.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -61,9 +62,6 @@ uses
     Windows, SysUtils, PsApi, OverbyteIcsSSLEAY, OverbyteIcsLibeay;
 
 const
-    NID_key_usage                     = 83;
-    NID_basic_constraints             = 87;
-
     RSA_PKCS1_PADDING                 = 1;
     RSA_SSLV23_PADDING                = 2;
     RSA_NO_PADDING                    = 3;
@@ -71,8 +69,6 @@ const
 
     RSA_PKCS1_PADDING_SIZE            = 11;
     RSA_PKCS1_OAEP_PADDING_SIZE       = 41;
-
-    EVP_MAX_MD_SIZE                   = 64; //* longest known is SHA512 */
     PKCS5_SALT_LEN                    =  8;
 
 type
@@ -104,9 +100,6 @@ type
     PEngine = ^TEngine_st;
 {$ENDIF}
 
-    TASN1_BIT_STRING   = TASN1_STRING_st;
-    PASN1_BIT_STRING   = ^TASN1_BIT_STRING;
-
     TASN1_ENCODING_st = packed record
         enc       : PAnsiChar;
         len       : LongWord;
@@ -125,12 +118,12 @@ type
     end;
     PX509V3_CTX = ^TX509V3_CTX_st;
 
-    TX509_PUBKEY_st = packed record
+    {TX509_PUBKEY_st = packed record
         algor       : PX509_ALGOR;
         public_key  : PASN1_BIT_STRING;
         pkey        : PEVP_PKEY;
     end;
-    PX509_PUBKEY = ^TX509_PUBKEY_st;
+    PX509_PUBKEY = ^TX509_PUBKEY_st;}
 
     TX509_REQ_INFO_st = packed record
         enc         : TASN1_ENCODING;
@@ -173,7 +166,6 @@ f_X509_REQ_sign           : function(Req: PX509_REQ; PKey: PEVP_PKEY; const Md: 
 f_X509_REQ_add_extensions : function(Req: PX509_REQ; Exts: PSTACK): Integer; cdecl = nil;
 f_X509_REQ_free           : procedure(Req: PX509_REQ); cdecl = nil;
 
-f_EVP_PKEY_size           : function(Pkey: PEVP_PKEY): Integer; cdecl = nil;
 f_RSA_public_encrypt      : function(flen: Integer; from: PAnsiChar; to_: PAnsiChar; rsa: PRSA; padding: Integer): Integer; cdecl = nil;
 f_RSA_private_decrypt     : function(flen: Integer; from: PAnsiChar; to_: PAnsiChar; rsa: PRSA; padding: Integer): Integer; cdecl = nil;
 
@@ -194,7 +186,6 @@ f_EVP_CipherUpdate        : function(ctx: PEVP_CIPHER_CTX; out_: PAnsiChar; var 
 f_EVP_CipherFinal_ex      : function(ctx: PEVP_CIPHER_CTX; out_: PAnsiChar; var outl: Integer): LongBool; cdecl = nil;
 f_EVP_CIPHER_CTX_cleanup  : function(ctx: PEVP_CIPHER_CTX): Integer; cdecl = nil;
 f_EVP_BytesToKey          : function(const type_: PEVP_CIPHER; const md: PEVP_MD; const salt: PAnsiChar; const data: PAnsiChar; datalen, count : Integer; key, iv: PAnsiChar): Integer; cdecl = nil;
-f_EVP_md5                 : function: PEVP_MD; cdecl = nil;
 
 var
   LibeayExLoaded: Boolean = FALSE;
@@ -345,9 +336,6 @@ begin
     f_X509_PUBKEY_free := GetProcAddress(GLIBEAY_DLL_Handle, 'X509_PUBKEY_free');
     if not Assigned(f_X509_PUBKEY_free) then
         raise Exception.Create(Msg + 'X509_PUBKEY_free');
-    f_EVP_PKEY_size := GetProcAddress(GLIBEAY_DLL_Handle, 'EVP_PKEY_size');
-    if not Assigned(f_EVP_PKEY_size) then
-        raise Exception.Create(Msg + 'EVP_PKEY_size');
     f_RSA_public_encrypt := GetProcAddress(GLIBEAY_DLL_Handle, 'RSA_public_encrypt');
     if not Assigned(f_RSA_public_encrypt) then
         raise Exception.Create(Msg + 'RSA_public_encrypt');
@@ -392,10 +380,7 @@ begin
         raise Exception.Create(Msg + 'EVP_CIPHER_CTX_set_key_length');
     f_EVP_BytesToKey := GetProcAddress(GLIBEAY_DLL_Handle, 'EVP_BytesToKey');
     if not Assigned(f_EVP_BytesToKey) then
-        raise Exception.Create(Msg + 'EVP_BytesToKey');
-    f_EVP_md5 := GetProcAddress(GLIBEAY_DLL_Handle, 'EVP_md5');
-    if not Assigned(f_EVP_md5) then
-        raise Exception.Create(Msg + 'EVP_md5');
+        raise Exception.Create(Msg + 'EVP_BytesToKey'); 
 
     LibeayExLoaded := TRUE;
 
