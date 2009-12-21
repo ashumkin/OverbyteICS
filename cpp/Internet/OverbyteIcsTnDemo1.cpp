@@ -135,7 +135,7 @@ void __fastcall TTnDemoForm::DisplayMemoKeyDown(TObject *Sender, WORD &Key,
     Key = 0;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTnDemoForm::DisplayMemoKeyPress(TObject *Sender, char &Key)
+void __fastcall TTnDemoForm::DisplayMemoKeyPress(TObject *Sender, wchar_t &Key)
 {
     TnCnx->Send(&Key, 1);
     if (Key == 13) {

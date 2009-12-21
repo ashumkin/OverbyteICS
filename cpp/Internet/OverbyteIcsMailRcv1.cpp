@@ -85,7 +85,7 @@ void __fastcall TPOP3ExcercizerForm::FormCloseQuery(
 // This event handler is called when the TPop3Client object wants to display
 // some information such as connection progress or errors.
 void __fastcall TPOP3ExcercizerForm::Pop3ClientDisplay(
-    TObject *Sender, AnsiString Msg)
+    TObject *Sender, String Msg)
 {
     DisplayMemo->Lines->Add(Msg);
 }
@@ -96,7 +96,7 @@ void __fastcall TPOP3ExcercizerForm::Pop3ClientDisplay(
 // the result in the InfoLabel->Caption->
 void __fastcall TPOP3ExcercizerForm::Exec(
     TPop3NextProc MethodPtr,
-    AnsiString    MethodName)
+    String        MethodName)
 {
     Pop3Client->Host           = HostEdit->Text;
     Pop3Client->Port           = PortEdit->Text;

@@ -72,7 +72,7 @@ void __fastcall TTWSChatForm::StartServer()
             // The socket is probably already in use
             RunningRadioButton->Checked = FALSE;
             StoppedRadioButton->Checked = TRUE;
-            if (strncmp(E.Message.c_str(), "Error 10048", 11) == 0)
+            if (strncmp(AnsiString(E.Message).c_str(), "Error 10048", 11) == 0)
                 DisplayMemo->Lines->Add("TWSChat already running as server");
             else
                 throw;
@@ -223,7 +223,7 @@ void __fastcall TTWSChatForm::SrvWSocketSessionAvailable(TObject *Sender,
         TmpWSocket->HSocket = SrvWSocket->Accept();
         DisplayMemo->Lines->Add("System> " + TmpWSocket->GetPeerAddr() +
                               " is trying to call you");
-        TmpWSocket->SendStr("Busy ! Try later...\r\n" );
+        TmpWSocket->SendStr(RawByteString("Busy ! Try later...\r\n"));
         TmpWSocket->Close();
         return;
     }

@@ -102,7 +102,7 @@ void __fastcall TTelnetForm::TnEmulVT1SessionClosed(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TTelnetForm::SendButtonClick(TObject *Sender)
 {
-    TnEmulVT1->SendStr("Hello world !\r\n");
+    TnEmulVT1->SendStr(RawByteString("Hello world !\r\n"));
     ActiveControl = TnEmulVT1;
 }
 //---------------------------------------------------------------------------

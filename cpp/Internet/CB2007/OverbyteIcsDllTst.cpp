@@ -11,6 +11,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     {
          Application->Initialize();
          SetApplicationMainFormOnTaskBar(Application, true);
+         Application->CreateForm(__classid(TDllTestForm), &DllTestForm);
          Application->Run();
     }
     catch (Exception &exception)

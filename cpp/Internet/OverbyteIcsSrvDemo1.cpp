@@ -53,10 +53,16 @@ __fastcall TSrvForm::TSrvForm(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
+void __fastcall MyMessageBox(const System::String &Msg,
+    const System::String &Title, int Flags)
+{
+    Application->MessageBox(Msg.c_str(), Title.c_str(), Flags);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSrvForm::FormShow(TObject *Sender)
 {
     TIniFile   *IniFile;
-    AnsiString Buffer;
+    String     Buffer;
 
     if (!Initialized) {
         Initialized     = TRUE;
@@ -65,7 +71,7 @@ void __fastcall TSrvForm::FormShow(TObject *Sender)
         Left            = IniFile->ReadInteger("Window", "Left",   Left);
         Width           = IniFile->ReadInteger("Window", "Width",  Width);
         Height          = IniFile->ReadInteger("Window", "Height", Height);
-        PortEdit->Text   = IniFile->ReadString("Data",    "Port",   "telnet");
+        PortEdit->Text  = IniFile->ReadString("Data",    "Port",   "telnet");
         delete IniFile;
 
         DataTable->DatabaseName = ExtractFilePath(Application->ExeName);
@@ -74,7 +80,7 @@ void __fastcall TSrvForm::FormShow(TObject *Sender)
         } catch (const Exception &E) {
             Buffer = "Unable to open " + DataTable->DatabaseName +
                       DataTable->TableName;
-            Application->MessageBox(Buffer.c_str(), "Error", MB_OK);
+            MyMessageBox(Buffer.c_str(), "Error", MB_OK);
             Application->Terminate();
             return;
         }

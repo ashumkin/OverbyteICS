@@ -166,7 +166,7 @@ void __fastcall TMainForm::WSocketDataAvailable(TObject *Sender, WORD Error)
             (FServerAddr.s_addr == Src.sin_addr.s_addr)) {
             Buffer[Len] = 0;
             DataAvailableLabel->Caption =
-                IntToStr(atoi(DataAvailableLabel->Caption.c_str()) + 1) +
+                IntToStr(atoi(DataAvailableLabel->Caption) + 1) +
                 ": " + Buffer;
         }
     }
@@ -180,7 +180,7 @@ void __fastcall TMainForm::AnyServerCheckBoxClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ServerEditChange(TObject *Sender)
 {
-    AnyServerCheckBox->Checked = (strcmp(Trim(ServerEdit->Text).c_str(),
+    AnyServerCheckBox->Checked = (strcmp(AnsiString(Trim(ServerEdit->Text)).c_str(),
                                   "0.0.0.0") == 0);
 }
 //---------------------------------------------------------------------------

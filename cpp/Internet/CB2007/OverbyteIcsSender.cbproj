@@ -1,4 +1,5 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{5034040d-97d6-4e29-8c4f-e4b5a9586437}</ProjectGuid>
     <MainSource>OverbyteIcsSender.cpp</MainSource>
@@ -18,13 +19,13 @@
     <CfgParent>Base</CfgParent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Base)'!=''">
-    <OutputExt>exe</OutputExt>
     <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-    <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+    <OutputExt>exe</OutputExt>
     <Defines>NO_STRICT</Defines>
+    <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
     <DynamicRTL>true</DynamicRTL>
-    <ILINK_ObjectSearchPath>D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
     <UsePackages>true</UsePackages>
+    <ILINK_ObjectSearchPath>D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
     <ProjectType>CppVCLApplication</ProjectType>
     <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;IndyProtocols.bpi;OverbyteIcsCB2007Run.bpi</PackageImports>
     <BCC_wpar>false</BCC_wpar>
@@ -34,10 +35,10 @@
     <Multithreaded>true</Multithreaded>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1)'!=''">
-    <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
     <DCC_Optimize>false</DCC_Optimize>
-    <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+    <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
     <Defines>_DEBUG;$(Defines)</Defines>
+    <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
     <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
     <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
     <ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
@@ -47,8 +48,8 @@
     <IntermediateOutputDir>Debug</IntermediateOutputDir>
     <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
     <BCC_StackFrames>true</BCC_StackFrames>
-    <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
     <ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+    <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
     <TASM_Debugging>Full</TASM_Debugging>
     <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
   </PropertyGroup>

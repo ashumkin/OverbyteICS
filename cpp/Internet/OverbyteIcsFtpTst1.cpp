@@ -164,7 +164,7 @@ void __fastcall TFtpReceiveForm::FormClose(TObject *Sender,
 //---------------------------------------------------------------------------
 void __fastcall TFtpReceiveForm::Display(
     TObject *Sender,
-    AnsiString &Msg)
+    System::String &Msg)
 {
     DisplayMemo->Lines->Add(Msg);
 }
@@ -186,7 +186,7 @@ void __fastcall TFtpReceiveForm::FtpClient1Progress64(TObject *Sender,
     InfoLabel->Repaint();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFtpReceiveForm::DisplayFile(const System::AnsiString FileName)
+void __fastcall TFtpReceiveForm::DisplayFile(const System::String FileName)
 {
     try {
         DirectoryForm->DirListBox->Items->LoadFromFile(FileName);
@@ -195,6 +195,7 @@ void __fastcall TFtpReceiveForm::DisplayFile(const System::AnsiString FileName)
     }
     DirectoryForm->ShowModal();
 }
+
 //---------------------------------------------------------------------------
 void __fastcall TFtpReceiveForm::FtpClient1RequestDone(TObject *Sender,
     TFtpRequest RqType, WORD Error)
@@ -638,4 +639,6 @@ void __fastcall TFtpReceiveForm::AppendFileAsyncButtonClick(TObject *Sender)
     ExecuteCmd(FtpClient1->AppendFile, FtpClient1->AppendFileAsync);
 }
 //---------------------------------------------------------------------------
+
+
 

@@ -63,7 +63,7 @@ private:	// User declarations
     BOOL       FFinished;
     BOOL       FPaused;
     int        FAutoStart;
-    void __fastcall Display(AnsiString Msg);
+    void __fastcall Display(String Msg);
     void __fastcall DoSend(void);
     void __fastcall WSocket1NoDataSent(TObject *Sender, WORD Error);
 protected:

@@ -31,7 +31,7 @@ __published:	// IDE-managed Components
     void __fastcall TnCnxDataAvailableX(TTnCnx *Sender, PChar Buffer, int Len);
     void __fastcall DisplayMemoKeyDown(TObject *Sender, WORD &Key,
     TShiftState Shift);
-    void __fastcall DisplayMemoKeyPress(TObject *Sender, char &Key);
+    void __fastcall DisplayMemoKeyPress(TObject *Sender, wchar_t &Key);
         void __fastcall TnCnxDataAvailable(TTnCnx *Sender, Pointer Buffer,
           int Len);
 private:	// User declarations

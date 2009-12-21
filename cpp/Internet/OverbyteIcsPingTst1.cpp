@@ -104,6 +104,6 @@ void __fastcall TPingTstForm::Ping1EchoReply(TObject *Sender, TObject *Icmp, int
     else
         DisplayMemo->Lines->Add("Received " + IntToStr(Ping1->Reply.DataSize) +
                               " bytes from " + Ping1->HostIP +
-                              " in " + IntToStr(Ping1->Reply.RTT) + " msecs");
+                              " in " + IntToStr((int)Ping1->Reply.RTT) + " msecs");
 }
 //---------------------------------------------------------------------------

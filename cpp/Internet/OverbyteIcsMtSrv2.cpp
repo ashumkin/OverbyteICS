@@ -112,7 +112,7 @@ void __fastcall TClientThread::Execute()
     FClientSocket->OnSessionClosed = ServerWSocketSessionClosed;
 
     // Send the welcome message
-    FClientSocket->SendStr("Hello !\r\n >");
+    FClientSocket->SendStr(RawByteString("Hello !\r\n >"));
 
     // Message loop to handle TWSocket messages
     // The loop is exited when WM_QUIT message is received
@@ -150,13 +150,14 @@ void __fastcall TClientThread::ServerWSocketDataAvailable(TObject *Sender, WORD 
     if (Count > 0) {
         if (Buffer[0] == '*') {
             // If the first character is '*' then go to sleep a while
-            FClientSocket->SendStr("Sleeping for 15 sec...\r\n");
+            FClientSocket->SendStr(RawByteString("Sleeping for 15 sec...\r\n"));
             Sleep(15000);
-            FClientSocket->SendStr("Wake up !\r\n");
+            FClientSocket->SendStr(RawByteString("Wake up !\r\n"));
         }
         else
             // Just echo data back to client
             FClientSocket->Send(&Buffer, Count);
+
     }
 }
 //---------------------------------------------------------------------------

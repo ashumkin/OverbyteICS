@@ -66,8 +66,8 @@ __published:	// IDE-managed Components
 	void __fastcall SmtpClientRequestDone(TObject *Sender,
 		  TSmtpRequest RqType, WORD Error);
 private:	// User declarations
-	AnsiString FIniFileName;
-    BOOL       FInitialized;
+	  String FIniFileName;
+    BOOL   FInitialized;
     void __fastcall ExceptionHandler(TObject *Sender, Exception *E);
     void __fastcall BuildRcptList(void);
 public:		// User declarations

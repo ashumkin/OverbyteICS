@@ -374,9 +374,15 @@ void __fastcall TNNTPForm::StatByNumberButtonClick(TObject *Sender)
     NntpCli1->StatByNumber(StrToInt(ArticleNumEdit->Text));
 }
 //---------------------------------------------------------------------------
+int __fastcall MyMessageBox(const System::String &Msg,
+    const System::String &Title, int Flags)
+{
+    return Application->MessageBox(Msg.c_str(), Title.c_str(), Flags);
+}
+//---------------------------------------------------------------------------
 void __fastcall TNNTPForm::ListButtonClick(TObject *Sender)
 {
-    if (Application->MessageBox("This could take a VERY long time, proceed ? ",
+    if (MyMessageBox("This could take a VERY long time, proceed ? ",
                                 "Warning", MB_YESNO) != ID_YES)
         return;
     NntpCli1->List(GetStream());

@@ -169,16 +169,17 @@ void __fastcall TMailSndForm::SmtpClientGetData(TObject *Sender,
 	  int LineNum, Pointer MsgLine, int MaxLen, bool &More)
 {
 	int Len;
-
+  AnsiString s;
 	if (LineNum > MsgMemo->Lines->Count)
 		More = FALSE;
 	else {
-		Len = MsgMemo->Lines->Strings[LineNum - 1].Length();
+    s = AnsiString(MsgMemo->Lines->Strings[LineNum - 1]);
+		Len = s.Length();
 		// Truncate the line if too long (should wrap to next line)
 		if (Len >= MaxLen)
-			strncpy((char *)MsgLine, MsgMemo->Lines->Strings[LineNum - 1].c_str(), MaxLen - 1);
+			strncpy((char *)MsgLine, s.c_str(), MaxLen - 1);
 		else
-			strcpy((char *)MsgLine, MsgMemo->Lines->Strings[LineNum - 1].c_str());
+			strcpy((char *)MsgLine, s.c_str());
 	}
 }
 //---------------------------------------------------------------------------

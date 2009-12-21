@@ -25,13 +25,13 @@
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<Defines>NO_STRICT</Defines>
 			<DynamicRTL>true</DynamicRTL>
-			<ILINK_ObjectSearchPath>D:\ICS-Root\V7Temp1\cpp\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
+			<ILINK_ObjectSearchPath>D:\ICS-Root\V7Temp1\cpp\Internet\CB2009;..\..\Internet</ILINK_ObjectSearchPath>
 			<ProjectType>CppVCLApplication</ProjectType>
-			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;IndyCore.bpi;IndySystem.bpi;IndyProtocols.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;OverbyteIcsCB2007Run.bpi</PackageImports>
+			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;IndyCore.bpi;IndySystem.bpi;IndyProtocols.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;OverbyteIcsCB2009Run.bpi</PackageImports>
 			<BCC_wpar>false</BCC_wpar>
-			<IncludePath>..\CB2009;$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet;..\..\..\Delphi\Vc32;$(IncludePath)</IncludePath>
+			<IncludePath>..\;..\CB2009;$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet;..\..\..\Delphi\Vc32;$(IncludePath)</IncludePath>
 			<AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2009Run.lib</AllPackageLibs>
-			<ILINK_LibraryPath>..\CB2009;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>..\;..\CB2009;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<Multithreaded>true</Multithreaded>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -135,14 +135,14 @@
 					</ProjectProperties>
 					<HistoryLists_hlIncludePath>
 						<HistoryLists_hlIncludePath Name="Count">2</HistoryLists_hlIncludePath>
-						<HistoryLists_hlIncludePath Name="Item0">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet\CB2007;..\..\Internet</HistoryLists_hlIncludePath>
-						<HistoryLists_hlIncludePath Name="Item1">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet\CB2007;..\..\Internet;..\..\..\Delphi\vc32</HistoryLists_hlIncludePath>
+						<HistoryLists_hlIncludePath Name="Item0">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet\CB2009;..\..\Internet</HistoryLists_hlIncludePath>
+						<HistoryLists_hlIncludePath Name="Item1">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet\CB2009;..\..\Internet;..\..\..\Delphi\vc32</HistoryLists_hlIncludePath>
 					</HistoryLists_hlIncludePath>
 					<HistoryLists_hlILINK_LibraryPath>
 						<HistoryLists_hlILINK_LibraryPath Name="Count">2</HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Item0">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Item1">$(BDS)\lib\debug;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Item2">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
+						<HistoryLists_hlILINK_LibraryPath Name="Item0">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2009;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
+						<HistoryLists_hlILINK_LibraryPath Name="Item1">$(BDS)\lib\debug;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2009;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
+						<HistoryLists_hlILINK_LibraryPath Name="Item2">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2009;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
 					</HistoryLists_hlILINK_LibraryPath>
 					<HistoryLists_hlDefines>
 						<HistoryLists_hlDefines Name="Count">2</HistoryLists_hlDefines>
@@ -194,17 +194,17 @@
 			<ProjectFileVersion>12</ProjectFileVersion>
 		</ProjectExtensions>
 		<ItemGroup>
-			<CppCompile Include="OverbyteIcsHttpTst.cpp">
-				<BuildOrder>1</BuildOrder>
-			</CppCompile>
+			<ResFiles Include="OverbyteIcsHttpTst.res">
+				<BuildOrder>0</BuildOrder>
+			</ResFiles>
 			<CppCompile Include="..\OverbyteIcsHttpTst1.cpp">
 				<Form>HttpTestForm</Form>
 				<DependentOn>..\OverbyteIcsHttpTst1.h</DependentOn>
 				<BuildOrder>2</BuildOrder>
 			</CppCompile>
-			<ResFiles Include="OverbyteIcsHttpTst.res">
-				<BuildOrder>0</BuildOrder>
-			</ResFiles>
+			<CppCompile Include="OverbyteIcsHttpTst.cpp">
+				<BuildOrder>1</BuildOrder>
+			</CppCompile>
 			<FormResources Include="..\OverbyteIcsHttpTst1.dfm"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>

@@ -136,11 +136,17 @@ void __fastcall TSenderForm::ContCheckBoxClick(TObject *Sender)
     RepeatEdit->Enabled = !ContCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSenderForm::Display(AnsiString Msg)
+void __fastcall TSenderForm::Display(String Msg)
 {
     if (DisplayMemo->Lines->Count > 200)
         DisplayMemo->Clear();
     DisplayMemo->Lines->Add(Msg);
+}
+//---------------------------------------------------------------------------
+int __fastcall MyMessageBox(const System::String &Msg,
+    const System::String &Title, int Flags)
+{
+    return Application->MessageBox(Msg.c_str(), Title.c_str(), Flags);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSenderForm::ActionButtonClick(TObject *Sender)
@@ -158,7 +164,7 @@ void __fastcall TSenderForm::ActionButtonClick(TObject *Sender)
 
         // Check if some data remains in TWSocket"s internal buffer
         if (!WSocket1->AllSent &&
-           (Application->MessageBox("Data is still being sent\n"
+           (MyMessageBox("Data is still being sent\n"
                                     "Close anyway ?",
                                     "Warning", MB_YESNO) != IDYES))
             return;

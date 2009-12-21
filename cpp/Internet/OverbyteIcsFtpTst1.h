@@ -131,8 +131,8 @@ __published:	// IDE-managed Components
 private:	// User declarations
     AnsiString FIniFileName;
     BOOL	   FInitialized;
-    void __fastcall Display(TObject *Sender, AnsiString &Msg);
-    void __fastcall DisplayFile(const System::AnsiString FileName);
+    void __fastcall Display(TObject *Sender, System::String &Msg);
+    void __fastcall DisplayFile(const System::String FileName);
     void __fastcall TFtpReceiveForm::ExecuteCmd(
                                 TSyncCmd SyncCmd, TASyncCmd ASyncCmd);
 public:		// User declarations

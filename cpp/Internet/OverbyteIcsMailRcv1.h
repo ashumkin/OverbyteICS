@@ -86,8 +86,8 @@ private:	// User declarations
     AnsiString FFileName;
     int        FGetAllState;
     BOOL       FFileOpened;
-    void __fastcall Pop3ClientDisplay(TObject *Sender, AnsiString Msg);
-    void __fastcall Exec(TPop3NextProc MethodPtr, AnsiString MethodName);
+    void __fastcall Pop3ClientDisplay(TObject *Sender, String Msg);
+    void __fastcall Exec(TPop3NextProc MethodPtr, String MethodName);
     void __fastcall MessageBegin(TObject *Sender);
     void __fastcall MessageLine(TObject *Sender);
     void __fastcall NextMessageRequestDone(TObject      *Sender,

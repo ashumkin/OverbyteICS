@@ -104,9 +104,9 @@ __published: // IDE-managed Components
         void __fastcall SslHttpCli1RequestDone(TObject *Sender, THttpRequest RqType,
         WORD ErrCode);
         void __fastcall AbortButtonClick(TObject *Sender);
-        void __fastcall SslHttpCli1Command(TObject *Sender, AnsiString &S);
+        void __fastcall SslHttpCli1Command(TObject *Sender, String &S);
         void __fastcall SslHttpCli1Cookie(TObject *Sender,
-          const AnsiString Data, bool &Accept);
+          const String Data, bool &Accept);
         void __fastcall SslHttpCli1DocEnd(TObject *Sender);
         void __fastcall SslHttpCli1HeaderData(TObject *Sender);
         void __fastcall SslHttpCli1LocationChange(TObject *Sender);
@@ -121,7 +121,7 @@ __published: // IDE-managed Components
         void __fastcall SslHttpCli1SslVerifyPeer(TObject *Sender, int &Ok,
           TX509Base *Cert);
         void __fastcall IcsLogger1IcsLogEvent(TObject *Sender,
-          TLogOption LogOption, const AnsiString Msg);
+          TLogOption LogOption, const String Msg);
         void __fastcall ButtonOSSLVersionClick(TObject *Sender);
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall FormDestroy(TObject *Sender);
@@ -140,7 +140,7 @@ private:
     TSslAvlSessionCache* FMyExternalSslSessionCache;
     TStringList* FTrustedList;
     void __fastcall SetButtonState(BOOL State);
-    void __fastcall Display(const AnsiString Msg);
+    void __fastcall Display(const String Msg);
     void __fastcall BackgroundException(TObject* Sender, Exception* E, bool& CanClose);
     void __fastcall PrepareConnection(void);
 public:

@@ -73,7 +73,7 @@ void __fastcall TCliForm::ProcessCommand(AnsiString Cmd)
         DataTable->FieldByName("PRENOM")->AsString = CommandTail;
     }
     else {
-        CliSocket->SendStr("Syntax error !\r\n");
+        CliSocket->SendStr(RawByteString("Syntax error !\r\n"));
         return;
     }
 
@@ -85,7 +85,7 @@ void __fastcall TCliForm::ProcessCommand(AnsiString Cmd)
             "\"" + DataTable->FieldByName("CP")->AsString       + "\", " +
             "\"" + DataTable->FieldByName("LOCALITE")->AsString + "\"\r\n");
     else
-        CliSocket->SendStr("Not found.\r\n");
+        CliSocket->SendStr(RawByteString("Not found.\r\n"));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCliForm::CliSocketDataAvailable(TObject *Sender,

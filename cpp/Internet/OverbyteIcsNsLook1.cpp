@@ -98,7 +98,7 @@ void __fastcall TNsLookupForm::FormClose(TObject *Sender, TCloseAction &Action)
     delete IniFile;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNsLookupForm::Display(AnsiString Msg)
+void __fastcall TNsLookupForm::Display(String Msg)
 {
     if (DisplayMemo->Lines->Count > 200)   // Prevent TMemo overflow
         DisplayMemo->Clear();
@@ -146,9 +146,9 @@ void __fastcall TNsLookupForm::DnsQuery1RequestDone(TObject *Sender, WORD Error)
     Display("ID                 : " + IntToStr(DnsQuery1->ResponseID));
     Display("ResponseCode       : " + IntToStr(DnsQuery1->ResponseCode));
     Display("OpCode             : " + IntToStr(DnsQuery1->ResponseOpCode));
-    Display("Authoritative      : " + IntToStr(DnsQuery1->ResponseAuthoritative));
-    Display("Truncation         : " + IntToStr(DnsQuery1->ResponseTruncation));
-    Display("RecursionAvailable : " + IntToStr(DnsQuery1->ResponseRecursionAvailable));
+    Display("Authoritative      : " + IntToStr((int)DnsQuery1->ResponseAuthoritative));
+    Display("Truncation         : " + IntToStr((int)DnsQuery1->ResponseTruncation));
+    Display("RecursionAvailable : " + IntToStr((int)DnsQuery1->ResponseRecursionAvailable));
     Display("QDCount            : " + IntToStr(DnsQuery1->ResponseQDCount));
     Display("ANCount            : " + IntToStr(DnsQuery1->ResponseANCount));
     Display("NSCount            : " + IntToStr(DnsQuery1->ResponseNSCount));

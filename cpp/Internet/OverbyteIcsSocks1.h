@@ -52,7 +52,7 @@ private:	// User declarations
     BOOL       FInitialized;
     char       FRcvBuf[2048];
     int        FRcvCnt;
-    void __fastcall DisplayMsg(TObject *Sender, AnsiString &Msg);
+    void __fastcall DisplayMsg(TObject *Sender, String &Msg);
 public:		// User declarations
     __fastcall TSocksTestForm(TComponent* Owner);
 };

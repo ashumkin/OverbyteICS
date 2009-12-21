@@ -161,7 +161,7 @@ void __fastcall TRecvForm::WSocket1SessionAvailable(TObject *Sender,
     NewClient->LingerTimeout       = 300;
     NewClient->SetLingerOption();
     if (BannerCheckBox->Checked)
-        NewClient->SendStr("Hello !\r\n");
+        NewClient->SendStr(RawByteString("Hello !\r\n"));
 }
 //---------------------------------------------------------------------------
 void __fastcall TRecvForm::ClientDataAvailable(TObject *Sender,

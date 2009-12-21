@@ -101,19 +101,20 @@ void __fastcall TClientForm::Display(AnsiString *Msg)
 void __fastcall TClientForm::CommandInterpreter()
 {
     // Process Command
-    Socket->SendStr("\r\nExecuting command '" + FCommand + "'...\r\n");
+    Socket->SendStr(RawByteString("\r\nExecuting command '" + FCommand + "'...\r\n"));
 
     FCommand = FCommand.UpperCase();
     if (FCommand == "EXIT")
         DisconnectButtonClick(this);
     else if (FCommand == "HELP")
-        Socket->SendStr("List of commands:\r\n"
+        Socket->SendStr(RawByteString(
+                        "List of commands:\r\n"
                         "    Exit      logoff from server\r\n"
-                        "    Help      show this help screen\r\n");
+                        "    Help      show this help screen\r\n"));
     else
-        Socket->SendStr("Unknown command, ignoring");
+        Socket->SendStr(RawByteString("Unknown command, ignoring"));
 
-    Socket->SendStr("\r\n--> ");
+    Socket->SendStr(RawByteString("\r\n--> "));
     FCommand = "";
 }
 //---------------------------------------------------------------------------
@@ -123,10 +124,10 @@ void __fastcall TClientForm::ProcessChar(char Ch)
     if (Ch == '\b') {
         if (FCommand.Length() > 0) {
             FCommand.SetLength(FCommand.Length() - 1);
-            Socket->SendStr("\b \b");
+            Socket->SendStr(RawByteString("\b \b"));
         }
         else
-            Socket->SendStr('\a');
+            Socket->SendStr(RawByteString('\a'));
         return;
     }
     else if ((Ch == '\n') && FRcvdCR) {

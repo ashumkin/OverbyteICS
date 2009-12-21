@@ -195,7 +195,7 @@ void __fastcall TTcpSrvForm::ProcessData(TTcpSrvClient *Client)
         PostMessage(Client->Handle, WM_TRIGGER_EXCEPTION, 0, 0);
     */
     else
-        Client->SendStr("Unknown command: '" + Client->RcvdLine + "'\r\n");
+        Client->SendStr(RawByteString("Unknown command: '" + Client->RcvdLine + "'\r\n"));
 }
 //---------------------------------------------------------------------------
 // This event handler is called when listening (server) socket experienced

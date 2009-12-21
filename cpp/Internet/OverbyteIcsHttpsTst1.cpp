@@ -182,7 +182,7 @@ void __fastcall THttpTestForm::FormClose(TObject *Sender, TCloseAction &Action)
     delete IniFile;
 }
 //---------------------------------------------------------------------------
-void __fastcall THttpTestForm::Display(const AnsiString Msg)
+void __fastcall THttpTestForm::Display(const String Msg)
 {
     DisplayMemo->Lines->Add(Msg);
 }
@@ -271,13 +271,13 @@ void __fastcall THttpTestForm::CloseButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 void __fastcall THttpTestForm::SslHttpCli1Command(TObject *Sender,
-      AnsiString &S)
+      String &S)
 {
     Display("cmd> " + S);
 }
 //---------------------------------------------------------------------------
 void __fastcall THttpTestForm::SslHttpCli1Cookie(TObject *Sender,
-      const AnsiString Data, bool &Accept)
+      const String Data, bool &Accept)
 {
     Display("cookie: \"" + Data + "\"");
 }
@@ -569,7 +569,7 @@ void __fastcall THttpTestForm::BackgroundException(
 }
 //---------------------------------------------------------------------------
 void __fastcall THttpTestForm::IcsLogger1IcsLogEvent(TObject *Sender,
-      TLogOption LogOption, const AnsiString Msg)
+      TLogOption LogOption, const String Msg)
 {
     Display(Msg);
 }

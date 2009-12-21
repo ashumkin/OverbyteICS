@@ -121,7 +121,7 @@ void __fastcall TSocksTestForm::FormClose(TObject *Sender,
     delete IniFile;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSocksTestForm::DisplayMsg(TObject *Sender, AnsiString &Msg)
+void __fastcall TSocksTestForm::DisplayMsg(TObject *Sender, String &Msg)
 {
     DisplayMemo->Lines->Add(Msg);
 }

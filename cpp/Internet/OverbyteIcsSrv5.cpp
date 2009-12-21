@@ -93,7 +93,7 @@ void __fastcall TServerForm::SrvSocketSessionAvailable(TObject *Sender,
     InfoLabel->Caption = "Remote " + Peer + " connected";
 
     // Send a welcome message to the client
-    CliSocket->SendStr("Hello\r\n");
+    CliSocket->SendStr(RawByteString("Hello\r\n"));
 
     // Enable the server user to disconect the client
     DisconnectButton->Enabled = TRUE;

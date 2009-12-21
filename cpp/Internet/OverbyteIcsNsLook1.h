@@ -31,7 +31,7 @@ private:	// User declarations
     AnsiString FIniFileName;
     BOOL       FInitialized;
     int        FRequestID;
-    void __fastcall Display(AnsiString Msg);
+    void __fastcall Display(String Msg);
     void __fastcall DumpDnsResponse(void);
 public:		// User declarations
     __fastcall TNsLookupForm(TComponent* Owner);

@@ -271,9 +271,7 @@ void __fastcall TFtpServerForm::FtpServer1ClientConnect(TObject *Sender,
 {
     // The next test shows how to refuse a client
     if (Client->GetPeerAddr() == "193.121.12.25") {
-        //Client->SendStr("421 Connection not allowed.\r\n"); // Bug in CB2009 ?
-        RawByteString S = "421 Connection not allowed.\r\n";
-        Client->SendStr(S);
+        Client->SendStr(RawByteString("421 Connection not allowed.\r\n"));
         Client->Close();
         return;
     }

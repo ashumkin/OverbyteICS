@@ -20,7 +20,7 @@ object SenderForm: TSenderForm
     Left = 0
     Top = 0
     Width = 559
-    Height = 69
+    Height = 73
     Align = alTop
     TabOrder = 0
     object Label1: TLabel
@@ -126,7 +126,7 @@ object SenderForm: TSenderForm
     end
     object DisplayDataCheckBox: TCheckBox
       Left = 444
-      Top = 20
+      Top = 22
       Width = 81
       Height = 17
       Alignment = taLeftJustify
@@ -136,7 +136,7 @@ object SenderForm: TSenderForm
     end
     object UseDataSentCheckBox: TCheckBox
       Left = 428
-      Top = 32
+      Top = 38
       Width = 97
       Height = 17
       Alignment = taLeftJustify
@@ -165,7 +165,7 @@ object SenderForm: TSenderForm
     end
     object LingerCheckBox: TCheckBox
       Left = 477
-      Top = 46
+      Top = 55
       Width = 48
       Height = 17
       Alignment = taLeftJustify
@@ -175,14 +175,15 @@ object SenderForm: TSenderForm
   end
   object DisplayMemo: TMemo
     Left = 0
-    Top = 69
+    Top = 73
     Width = 559
-    Height = 272
+    Height = 268
     Align = alClient
     Lines.Strings = (
       'DisplayMemo')
     TabOrder = 1
-    ExplicitHeight = 279
+    ExplicitTop = 69
+    ExplicitHeight = 272
   end
   object WSocket1: TWSocket
     LineMode = False

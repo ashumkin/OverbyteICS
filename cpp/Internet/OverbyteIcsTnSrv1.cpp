@@ -199,9 +199,15 @@ void __fastcall TServerForm::QuitButtonClick(TObject *Sender)
     Close();
 }
 //---------------------------------------------------------------------------
+void __fastcall MyMessageBox(const System::String &Msg,
+    const System::String &Title, int Flags)
+{
+    Application->MessageBox(Msg.c_str(), Title.c_str(), Flags);
+}
+//---------------------------------------------------------------------------
 void __fastcall TServerForm::AboutButtonClick(TObject *Sender)
 {
-    Application->MessageBox(
+    MyMessageBox(
         "TnSRV  V1.1 C++Builder 32 bit September 27, 1997\n\n"
         "Free Software, Copyright François Piette\n\n"
         "francois.piette@pophost.eunet.be  http://www.rtfm.be/fpiette\n",
