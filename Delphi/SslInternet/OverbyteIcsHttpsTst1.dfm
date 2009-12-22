@@ -1,9 +1,9 @@
 object HttpsTstForm: THttpsTstForm
   Left = 244
   Top = 170
+  Width = 657
+  Height = 421
   Caption = 'HTTPS TEST'
-  ClientHeight = 387
-  ClientWidth = 649
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -24,7 +24,6 @@ object HttpsTstForm: THttpsTstForm
     Height = 3
     Cursor = crVSplit
     Align = alBottom
-    ExplicitTop = 288
   end
   object DisplayMemo: TMemo
     Left = 0
@@ -508,7 +507,7 @@ object HttpsTstForm: THttpsTstForm
   object IcsLogger1: TIcsLogger
     TimeStampFormatString = 'hh:nn:ss:zzz'
     TimeStampSeparator = ' '
-    LogFileOption = lfoOverwrite    
+    LogFileOption = lfoOverwrite
     LogFileName = 'Debug_Out_HttpsTst.txt'
     LogOptions = [loDestFile, loProtSpecErr, loProtSpecInfo, loProtSpecDump]
     OnIcsLogEvent = IcsLogger1IcsLogEvent
