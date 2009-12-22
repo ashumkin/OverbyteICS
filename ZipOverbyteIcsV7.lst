@@ -1416,6 +1416,13 @@ Delphi\SslInternet\OverbyteIcsPemTool3.dfm
 Delphi\SslInternet\Wcrypt2.pas
 Delphi\SslInternet\OverbyteIcsSslX509Utils.pas
 
+Delphi\SslInternet\OverbyteIcsSslSniSrv.dproj
+Delphi\SslInternet\OverbyteIcsSslSniSrv.dpr
+Delphi\SslInternet\OverbyteIcsSslSniSrv.dof
+Delphi\SslInternet\OverbyteIcsSslSniSrv.res
+Delphi\SslInternet\OverbyteIcsSslSniSrv1.dfm
+Delphi\SslInternet\OverbyteIcsSslSniSrv1.pas
+
 Delphi\MiscDemos\OverbyteIcsD7MiscDemos.bpg
 Delphi\MiscDemos\OverbyteIcsD2006MiscDemos.bdsgroup
 Delphi\MiscDemos\OverbyteIcsD2007MiscDemos.groupproj

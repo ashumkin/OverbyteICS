@@ -12,7 +12,8 @@ BRCC = $(ROOT)\bin\brcc32.exe $**
 PROJECTS = OverbyteIcsD7Run.bpl OverbyteIcsD7Design.bpl \
   OverbyteIcsSslWebServ.exe OverbyteIcsSslFtpServ.exe OverbyteIcsSslFtpTst.exe \
   OverbyteIcsSslMailSnd.exe OverbyteIcsSslNewsRdr.exe OverbyteIcsSimpleSslCli.exe \
-  OverbyteIcsHttpsServer.exe OverbyteIcsPemTool.exe OverbyteIcsSslMailRcv.exe
+  OverbyteIcsHttpsServer.exe OverbyteIcsPemTool.exe OverbyteIcsSslMailRcv.exe \
+  OverbyteIcsHttpsTst.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -48,6 +49,9 @@ OverbyteIcsPemTool.exe: OverbyteIcsPemTool.dpr
   $(DCC)
 
 OverbyteIcsSslMailRcv.exe: OverbyteIcsSslMailRcv.dpr
+  $(DCC)
+
+OverbyteIcsHttpsTst.exe: OverbyteIcsHttpsTst.dpr
   $(DCC)
 
 
