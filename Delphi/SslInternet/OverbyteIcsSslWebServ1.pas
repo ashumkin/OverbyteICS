@@ -152,8 +152,6 @@ type
     StartHttpButton: TButton;
     PortHttpEdit: TEdit;
     Label12: TLabel;
-    Label13: TLabel;
-    Label14: TLabel;
     Label15: TLabel;
     ClientHttpCountLabel: TLabel;
     RenegotiationIntervalEdit: TEdit;

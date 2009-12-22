@@ -17,20 +17,6 @@ object SslWebServForm: TSslWebServForm
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
-  object Label13: TLabel
-    Left = 320
-    Top = 98
-    Width = 79
-    Height = 13
-    Caption = ' Clients (HTTPS)'
-  end
-  object Label14: TLabel
-    Left = 404
-    Top = 98
-    Width = 105
-    Height = 13
-    Caption = 'ClientHttpsCountLabel'
-  end
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
