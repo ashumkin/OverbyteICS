@@ -42,7 +42,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  OverbyteIcsHttpProt, StdCtrls, IniFiles;
+  OverbyteIcsHttpProt, StdCtrls, OverbyteIcsIniFiles;
 
 
 type
@@ -116,8 +116,7 @@ procedure THttpThreadForm.FormCreate(Sender: TObject);
 var
     i: Integer;
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     for i := Low(ThreadsObjects) to High(ThreadsObjects) do
         SetThreadState(i, tsInexistant);  //Not created.
     ResultsMemo.Clear;
@@ -127,20 +126,22 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpThreadForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized   := TRUE;
-        IniFile        := TIniFile.Create(FIniFileName);
-        URLEdit.Text   := IniFile.ReadString(SectionData, KeyURL,
+        IniFile        := TIcsIniFile.Create(FIniFileName);
+        try
+            URLEdit.Text   := IniFile.ReadString(SectionData, KeyURL,
                                              'http://www.rtfm.be/fpiette');
-        ProxyEdit.Text := IniFile.ReadString(SectionData, KeyProxy, '');
-        Top            := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
-        Left           := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
-        Width          := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height         := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-
-        IniFile.Free;
+            ProxyEdit.Text := IniFile.ReadString(SectionData, KeyProxy, '');
+            Top            := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
+            Left           := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
+            Width          := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height         := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+        finally
+            IniFile.Free;
+        end;
     end;
 end;
 
@@ -149,16 +150,20 @@ end;
 procedure THttpThreadForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteString(SectionData, KeyURL,       URLEdit.Text);
-    IniFile.WriteString(SectionData, KeyProxy,     proxyEdit.Text);
-    IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
-    IniFile.Free;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteString(SectionData, KeyURL,       URLEdit.Text);
+        IniFile.WriteString(SectionData, KeyProxy,     proxyEdit.Text);
+        IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

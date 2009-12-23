@@ -42,7 +42,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, OverbyteIcsHttpProt, StdCtrls, IniFiles, OverbyteIcsWndControl;
+  Dialogs, OverbyteIcsHttpProt, StdCtrls, OverbyteIcsIniFiles, OverbyteIcsWndControl;
 
 type
   THttpGetForm = class(TForm)
@@ -97,8 +97,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpGetForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
     InfoLabel.Caption := '';
 end;
 
@@ -106,24 +105,27 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpGetForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized       := TRUE;
-        IniFile            := TIniFile.Create(FIniFileName);
-        URLEdit.Text       := IniFile.ReadString(SectionData, KeyURL,
-                              'http://www.rtfm.be/fpiette/images/overbyte.gif');
-        ProxyHostEdit.Text := IniFile.ReadString(SectionData, KeyProxyHost,
-                              '');
-        ProxyPortEdit.Text := IniFile.ReadString(SectionData, KeyProxyPort,
-                              '80');
-        FileNameEdit.Text  := IniFile.ReadString(SectionData, KeyFileName,
-                              'test.tmp');
-        Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
-        Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
-        Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        IniFile.Free;
+        IniFile            := TIcsIniFile.Create(FIniFileName);
+        try
+            URLEdit.Text       := IniFile.ReadString(SectionData, KeyURL,
+                                'http://www.rtfm.be/fpiette/images/overbyte.gif');
+            ProxyHostEdit.Text := IniFile.ReadString(SectionData, KeyProxyHost,
+                                  '');
+            ProxyPortEdit.Text := IniFile.ReadString(SectionData, KeyProxyPort,
+                                  '80');
+            FileNameEdit.Text  := IniFile.ReadString(SectionData, KeyFileName,
+                                  'test.tmp');
+            Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
+            Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
+            Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+        finally
+            IniFile.Free;
+        end;
     end;
 end;
 
@@ -132,18 +134,22 @@ end;
 procedure THttpGetForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteString(SectionData, KeyURL,       URLEdit.Text);
-    IniFile.WriteString(SectionData, KeyProxyHost, ProxyHostEdit.Text);
-    IniFile.WriteString(SectionData, KeyProxyPort, ProxyPortEdit.Text);
-    IniFile.WriteString(SectionData, KeyFileName,  FileNameEdit.Text);
-    IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
-    IniFile.Free;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteString(SectionData, KeyURL,       URLEdit.Text);
+        IniFile.WriteString(SectionData, KeyProxyHost, ProxyHostEdit.Text);
+        IniFile.WriteString(SectionData, KeyProxyPort, ProxyPortEdit.Text);
+        IniFile.WriteString(SectionData, KeyFileName,  FileNameEdit.Text);
+        IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;    
 end;
 
 

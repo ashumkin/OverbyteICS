@@ -47,7 +47,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, IniFiles, OverbyteIcsWSocket,
+  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsIniFiles, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 
 const
@@ -108,30 +108,31 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCli7Form.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCli7Form.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
-        HostNameEdit.Text  := IniFile.ReadString(SectionData, KeyHostName,
-                                                 'localhost');
-        PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,
-                                                 'telnet');
+        IniFile := TIcsIniFile.Create(FIniFileName);
+        try
+            HostNameEdit.Text  := IniFile.ReadString(SectionData, KeyHostName,
+                                                    'localhost');
+            PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,
+                                                    'telnet');
 
-        Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
-        Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
-
-        IniFile.Free;
+            Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
+            Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
+        finally
+            IniFile.Free;
+        end;
         DisplayMemo.Clear;
     end;
 end;
@@ -140,16 +141,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCli7Form.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteString(SectionData, KeyHostName,  HostNameEdit.Text);
-    IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
-    IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
-    IniFile.Free;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteString(SectionData, KeyHostName,  HostNameEdit.Text);
+        IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
+        IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

@@ -45,7 +45,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, IniFiles, OverbyteIcsWSocket,
+  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsIniFiles, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 
 const
@@ -107,8 +107,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TRecvForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
     FClients     := TList.Create;
 end;
 
@@ -126,22 +125,27 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TRecvForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        PortEdit.Text := IniFile.ReadString(SectionData, KeyPort, 'telnet');
-        LingerCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeyLinger, 0));
-        BannerCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeyBanner, 1));
-        Label2.Caption := '';
-        IniFile.Destroy;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+            PortEdit.Text := IniFile.ReadString(SectionData, KeyPort, 'telnet');
+            LingerCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData,
+                                                KeyLinger, 0));
+            BannerCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData,
+                                                                KeyBanner, 1));
+            Label2.Caption := '';
+        finally
+            IniFile.Free
+        end;
     end;
 end;
 
@@ -149,17 +153,21 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TRecvForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
-    IniFile.WriteString(SectionData,    KeyPort,   PortEdit.text);
-    IniFile.WriteInteger(SectionData,   KeyLinger, Ord(LingerCheckBox.Checked));
-    IniFile.WriteInteger(SectionData,   KeyBanner, Ord(BannerCheckBox.Checked));
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+        IniFile.WriteString(SectionData,    KeyPort,   PortEdit.text);
+        IniFile.WriteInteger(SectionData,   KeyLinger, Ord(LingerCheckBox.Checked));
+        IniFile.WriteInteger(SectionData,   KeyBanner, Ord(BannerCheckBox.Checked));
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

@@ -47,7 +47,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls, OverbyteIcsFtpCli, OverbyteIcsWndControl;
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsFtpCli, OverbyteIcsWndControl;
 
 type
   TFtpAsyncForm = class(TForm)
@@ -127,41 +127,43 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpAsyncForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpAsyncForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        HostNameEdit.Text  := IniFile.ReadString(SectionData, KeyHostName,
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+            HostNameEdit.Text  := IniFile.ReadString(SectionData, KeyHostName,
                                                  'ftp.simtel.net');
-        PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,
-                                                 'ftp');
-        UserNameEdit.Text  := IniFile.ReadString(SectionData, KeyUserName,
-                                                 'anonymous');
-        PassWordEdit.Text  := IniFile.ReadString(SectionData, KeyPassWord,
-                                                 'your.name@your.company.com');
-        LocalDirEdit.Text  := IniFile.ReadString(SectionData, KeyLocalDir,
-                                                 'c:\temp');
-        HostDirEdit.Text   := IniFile.ReadString(SectionData, KeyHostDir,
-                                                 '/pub/simtelnet');
-        HostFileEdit.Text  := IniFile.ReadString(SectionData, KeyHostFile,
-                                                 'simtel.html');
-        IniFile.Destroy;
+            PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,
+                                                    'ftp');
+            UserNameEdit.Text  := IniFile.ReadString(SectionData, KeyUserName,
+                                                    'anonymous');
+            PassWordEdit.Text  := IniFile.ReadString(SectionData, KeyPassWord,
+                                                    'your.name@your.company.com');
+            LocalDirEdit.Text  := IniFile.ReadString(SectionData, KeyLocalDir,
+                                                    'c:\temp');
+            HostDirEdit.Text   := IniFile.ReadString(SectionData, KeyHostDir,
+                                                    '/pub/simtelnet');
+            HostFileEdit.Text  := IniFile.ReadString(SectionData, KeyHostFile,
+                                                    'simtel.html');
+        finally
+            IniFile.Free;
+        end;
         FilesListBox.Items.Add('simtel40.gif');
         FilesListBox.Items.Add('CDROMS1.TXT');
         FilesListBox.Items.Add(Trim(HostFileEdit.Text));
@@ -173,21 +175,25 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpAsyncForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.WriteString(SectionData, KeyHostName,  HostNameEdit.Text);
-    IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
-    IniFile.WriteString(SectionData, KeyUserName,  UserNameEdit.Text);
-    IniFile.WriteString(SectionData, KeyPassWord,  PassWordEdit.Text);
-    IniFile.WriteString(SectionData, KeyLocalDir,  LocalDirEdit.Text);
-    IniFile.WriteString(SectionData, KeyHostDir,   HostDirEdit.Text);
-    IniFile.WriteString(SectionData, KeyHostFile,  HostFileEdit.Text);
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.WriteString(SectionData, KeyHostName,  HostNameEdit.Text);
+        IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
+        IniFile.WriteString(SectionData, KeyUserName,  UserNameEdit.Text);
+        IniFile.WriteString(SectionData, KeyPassWord,  PassWordEdit.Text);
+        IniFile.WriteString(SectionData, KeyLocalDir,  LocalDirEdit.Text);
+        IniFile.WriteString(SectionData, KeyHostDir,   HostDirEdit.Text);
+        IniFile.WriteString(SectionData, KeyHostFile,  HostFileEdit.Text);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

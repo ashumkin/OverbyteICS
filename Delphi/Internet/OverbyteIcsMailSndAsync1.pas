@@ -64,7 +64,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, IniFiles, OverbyteIcsSmtpProt, OverbyteIcsWSocket;
+  StdCtrls, OverbyteIcsIniFiles, OverbyteIcsSmtpProt, OverbyteIcsWSocket;
 
   const
     MailSndAsyncVersion = 100;
@@ -190,9 +190,7 @@ begin
     if FProgDir[Length(FProgDir)] <> '\' then
         FProgDir := FProgDir + '\';
 
-    FIniFileName             := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName             := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
-    FIniFileName             := FProgDir + FIniFileName;
+    FIniFileName             := GetIcsIniFileName;
     FInitialized             := False;
     FCount                   := 0;
     Queue                    := TList.Create;
@@ -232,36 +230,38 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TForm1.FormShow(Sender: TObject);
 var
-    IniFile: TIniFile;
+    IniFile: TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
-        HostEdit.Text       := IniFile.ReadString(SectionData, KeyHost,
-                                               'localhost');
-        FromEdit.Text       := IniFile.ReadString(SectionData, KeyFrom,
-                                               'first.last@company.com');
-        ToEdit.Text         := IniFile.ReadString(SectionData, KeyTo,
-                                               'john.doe@acme');
-        SubjectEdit.Text    := IniFile.ReadString(SectionData, KeySubject,
-                                               'This is the message subject');
-        UserEdit.Text       :=  IniFile.ReadString(SectionData, KeyUser,
-                                               'account name');
-        PasswordEdit.Text   :=  IniFile.ReadString(SectionData, KeyPwd, 'password');
-        MessageEdit.Text    :=  IniFile.ReadString(SectionData, KeyMessage,
-                                                'This is the message text, here ' +
-                                                'just a simple string');
-        NumOfMailsEdit.Text := IniFile.ReadString(SectionData, KeyNumOfMails, '10');
-        MaxConEdit.Text     := IniFile.ReadString(SectionData, KeyMaxCon, '2');
-        CheckBoxDisplay.Checked := IniFile.ReadBool(SectionData, KeyDisplayLog, TRUE);
-        CheckBoxAuth.Checked    := IniFile.ReadBool(SectionData, KeyDoAuth, FALSE);
+        IniFile := TIcsIniFile.Create(FIniFileName);
+        try
+            HostEdit.Text       := IniFile.ReadString(SectionData, KeyHost,
+                                                  'localhost');
+            FromEdit.Text       := IniFile.ReadString(SectionData, KeyFrom,
+                                                  'first.last@company.com');
+            ToEdit.Text         := IniFile.ReadString(SectionData, KeyTo,
+                                                  'john.doe@acme');
+            SubjectEdit.Text    := IniFile.ReadString(SectionData, KeySubject,
+                                                  'This is the message subject');
+            UserEdit.Text       :=  IniFile.ReadString(SectionData, KeyUser,
+                                                  'account name');
+            PasswordEdit.Text   :=  IniFile.ReadString(SectionData, KeyPwd, 'password');
+            MessageEdit.Text    :=  IniFile.ReadString(SectionData, KeyMessage,
+                                                  'This is the message text, here ' +
+                                                  'just a simple string');
+            NumOfMailsEdit.Text := IniFile.ReadString(SectionData, KeyNumOfMails, '10');
+            MaxConEdit.Text     := IniFile.ReadString(SectionData, KeyMaxCon, '2');
+            CheckBoxDisplay.Checked := IniFile.ReadBool(SectionData, KeyDisplayLog, TRUE);
+            CheckBoxAuth.Checked    := IniFile.ReadBool(SectionData, KeyDoAuth, FALSE);
 
-        Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
-        Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
-        Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        IniFile.Free;
-
+            Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
+            Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
+            Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+        finally
+            IniFile.Free;
+        end;
         Label10.Caption   := IntToStr(Queue.Count) + ' Jobs in Queue';
         Caption := 'ICS Parallel SMTP Demo';
         DisplayMemo.Clear;
@@ -272,28 +272,31 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile: TIniFile;
+    IniFile: TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteString(SectionData, KeyHost,             HostEdit.Text);
-    IniFile.WriteString(SectionData, KeyFrom,             FromEdit.Text);
-    IniFile.WriteString(SectionData, KeyTo,               ToEdit.Text);
-    IniFile.WriteString(SectionData, KeySubject,          SubjectEdit.Text);
-    IniFile.WriteString(SectionData, KeyUser,             UserEdit.Text);
-    IniFile.WriteString(SectionData, KeyPwd,              PasswordEdit.Text);
-    IniFile.WriteString(SectionData, KeyMessage,          MessageEdit.Text);
-    IniFile.WriteString(SectionData, KeyNumOfMails,       NumOfMailsEdit.Text);
-    IniFile.WriteBool(SectionData,   KeyDoAuth,           CheckBoxAuth.Checked);
-    IniFile.WriteBool(SectionData,   KeyDisplayLog,       CheckBoxDisplay.Checked);
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteString(SectionData, KeyHost,             HostEdit.Text);
+        IniFile.WriteString(SectionData, KeyFrom,             FromEdit.Text);
+        IniFile.WriteString(SectionData, KeyTo,               ToEdit.Text);
+        IniFile.WriteString(SectionData, KeySubject,          SubjectEdit.Text);
+        IniFile.WriteString(SectionData, KeyUser,             UserEdit.Text);
+        IniFile.WriteString(SectionData, KeyPwd,              PasswordEdit.Text);
+        IniFile.WriteString(SectionData, KeyMessage,          MessageEdit.Text);
+        IniFile.WriteString(SectionData, KeyNumOfMails,       NumOfMailsEdit.Text);
+        IniFile.WriteBool(SectionData,   KeyDoAuth,           CheckBoxAuth.Checked);
+        IniFile.WriteBool(SectionData,   KeyDisplayLog,       CheckBoxDisplay.Checked);
 
-    IniFile.WriteString(SectionData, KeyMaxCon,           MaxConEdit.Text);
+        IniFile.WriteString(SectionData, KeyMaxCon,           MaxConEdit.Text);
 
-    IniFile.WriteInteger(SectionWindow, KeyTop,           Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,          Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,         Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,        Height);
-
-    IniFile.Free;
+        IniFile.WriteInteger(SectionWindow, KeyTop,           Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,          Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,         Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,        Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;    
 end;
 
 

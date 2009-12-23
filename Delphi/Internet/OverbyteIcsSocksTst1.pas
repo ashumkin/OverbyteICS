@@ -43,7 +43,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, IniFiles, WinSock, OverbyteIcsWSocket, StdCtrls, ExtCtrls,
+  Dialogs, OverbyteIcsIniFiles, WinSock, OverbyteIcsWSocket, StdCtrls, ExtCtrls,
   OverbyteIcsWndControl;
 
 type
@@ -157,36 +157,38 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSocksTestForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSocksTestForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
         DisplayMemo.Clear;
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        TargetHostEdit.Text    := IniFile.ReadString(SectionData, KeyTargetHost,    '');
-        TargetPortEdit.Text    := IniFile.ReadString(SectionData, KeyTargetPort,    '');
-        SocksServerEdit.Text   := IniFile.ReadString(SectionData, KeySocksServer,   '');
-        SocksPortEdit.Text     := IniFile.ReadString(SectionData, KeySocksPort,     '1080');
-        SocksUsercodeEdit.Text := IniFile.ReadString(SectionData, KeySocksUsercode, '');
-        SocksPasswordEdit.Text := IniFile.ReadString(SectionData, KeySocksPassword, '');
-        SocksAuthCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeySocksAuth, 0));
-        Socks4RadioButton.Checked := Boolean(IniFile.ReadInteger(SectionData, KeySocks4,    0));
-        Socks5RadioButton.Checked := Boolean(IniFile.ReadInteger(SectionData, KeySocks5,    1));
-        IniFile.Destroy;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+            TargetHostEdit.Text    := IniFile.ReadString(SectionData, KeyTargetHost,    '');
+            TargetPortEdit.Text    := IniFile.ReadString(SectionData, KeyTargetPort,    '');
+            SocksServerEdit.Text   := IniFile.ReadString(SectionData, KeySocksServer,   '');
+            SocksPortEdit.Text     := IniFile.ReadString(SectionData, KeySocksPort,     '1080');
+            SocksUsercodeEdit.Text := IniFile.ReadString(SectionData, KeySocksUsercode, '');
+            SocksPasswordEdit.Text := IniFile.ReadString(SectionData, KeySocksPassword, '');
+            SocksAuthCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeySocksAuth, 0));
+            Socks4RadioButton.Checked := Boolean(IniFile.ReadInteger(SectionData, KeySocks4,    0));
+            Socks5RadioButton.Checked := Boolean(IniFile.ReadInteger(SectionData, KeySocks5,    1));
+        finally
+            IniFile.Free;
+        end;
     end;
 end;
 
@@ -194,23 +196,27 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSocksTestForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.WriteString(SectionData, KeyTargetHost,    Trim(TargetHostEdit.Text));
-    IniFile.WriteString(SectionData, KeyTargetPort,    Trim(TargetPortEdit.Text));
-    IniFile.WriteString(SectionData, KeySocksServer,   Trim(SocksServerEdit.Text));
-    IniFile.WriteString(SectionData, KeySocksPort,     Trim(SocksPortEdit.Text));
-    IniFile.WriteString(SectionData, KeySocksUsercode, Trim(SocksUsercodeEdit.Text));
-    IniFile.WriteString(SectionData, KeySocksPassword, Trim(SocksPasswordEdit.Text));
-    IniFile.WriteInteger(SectionData, KeySocksAuth, Ord(SocksAuthCheckBox.Checked));
-    IniFile.WriteInteger(SectionData, KeySocks5,    Ord(Socks5RadioButton.Checked));
-    IniFile.WriteInteger(SectionData, KeySocks4,    Ord(Socks4RadioButton.Checked));
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.WriteString(SectionData, KeyTargetHost,    Trim(TargetHostEdit.Text));
+        IniFile.WriteString(SectionData, KeyTargetPort,    Trim(TargetPortEdit.Text));
+        IniFile.WriteString(SectionData, KeySocksServer,   Trim(SocksServerEdit.Text));
+        IniFile.WriteString(SectionData, KeySocksPort,     Trim(SocksPortEdit.Text));
+        IniFile.WriteString(SectionData, KeySocksUsercode, Trim(SocksUsercodeEdit.Text));
+        IniFile.WriteString(SectionData, KeySocksPassword, Trim(SocksPasswordEdit.Text));
+        IniFile.WriteInteger(SectionData, KeySocksAuth, Ord(SocksAuthCheckBox.Checked));
+        IniFile.WriteInteger(SectionData, KeySocks5,    Ord(Socks5RadioButton.Checked));
+        IniFile.WriteInteger(SectionData, KeySocks4,    Ord(Socks4RadioButton.Checked));
+        IniFile.UpdateFile;
+    finally
+        IniFile.Destroy;
+    end;
 end;
 
 

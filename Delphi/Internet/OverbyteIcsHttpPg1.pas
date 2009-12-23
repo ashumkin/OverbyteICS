@@ -54,7 +54,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, IniFiles,
+  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsIniFiles,
   OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsHttpProt,
   OverbyteIcsLibrary;
 
@@ -112,8 +112,7 @@ const
 procedure THttpTestForm.FormCreate(Sender: TObject);
 begin
     DisplayMemo.Clear;
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := GetIcsIniFileName;
 end;
 
 
@@ -121,26 +120,28 @@ end;
 { Restore the form position and size, restore the datas for edit boxes.     }
 procedure THttpTestForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
-        UserIDEdit.Text  := IniFile.ReadString(SectionData, KeyUserID,
-                            '27313');
-        EMailEdit.Text   := IniFile.ReadString(SectionData, KeyEMail,
-                            'francois.piette@overbyte.be');
-        ProxyEdit.Text   := IniFile.ReadString(SectionData, KeyProxy,
-                            '');
-        MessageEdit.Text := IniFile.ReadString(SectionData, KeyMessage,
-                            'Hello World ! (Message sent by HttpPg).');
+        IniFile := TIcsIniFile.Create(FIniFileName);
+        try
+            UserIDEdit.Text  := IniFile.ReadString(SectionData, KeyUserID,
+                                '27313');
+            EMailEdit.Text   := IniFile.ReadString(SectionData, KeyEMail,
+                                'francois.piette@overbyte.be');
+            ProxyEdit.Text   := IniFile.ReadString(SectionData, KeyProxy,
+                                '');
+            MessageEdit.Text := IniFile.ReadString(SectionData, KeyMessage,
+                                'Hello World ! (Message sent by HttpPg).');
 
-        Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
-        Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
-        Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-
-        IniFile.Free;
+            Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    Top);
+            Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   Left);
+            Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+        finally
+            IniFile.Free;
+        end;
     end;
 end;
 
@@ -150,18 +151,22 @@ end;
 procedure THttpTestForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteString(SectionData, KeyUserID,    UserIDEdit.Text);
-    IniFile.WriteString(SectionData, KeyProxy,     ProxyEdit.Text);
-    IniFile.WriteString(SectionData, KeyMessage,   MessageEdit.Text);
-    IniFile.WriteString(SectionData, KeyEMail,     EMailEdit.Text);
-    IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
-    IniFile.Free;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteString(SectionData, KeyUserID,    UserIDEdit.Text);
+        IniFile.WriteString(SectionData, KeyProxy,     ProxyEdit.Text);
+        IniFile.WriteString(SectionData, KeyMessage,   MessageEdit.Text);
+        IniFile.WriteString(SectionData, KeyEMail,     EMailEdit.Text);
+        IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

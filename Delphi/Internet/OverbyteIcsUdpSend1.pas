@@ -54,8 +54,8 @@ unit OverbyteIcsUdpSend1;
 interface
 
 uses
-  WinTypes, Messages, Classes, SysUtils, Controls, Forms, StdCtrls, IniFiles,
-  OverbyteIcsWSocket, OverbyteIcsWndControl;
+  WinTypes, Messages, Classes, SysUtils, Controls, Forms, StdCtrls,
+  OverbyteIcsIniFiles, OverbyteIcsWSocket, OverbyteIcsWndControl;
 
 const
   UdpSendVersion     = 203;
@@ -105,27 +105,29 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMainForm.FormShow(Sender: TObject);
 var
-    IniFile   : TIniFile;
+    IniFile   : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile := TIniFile.Create(FIniFileName);
-        Width   := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height  := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top     := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
-        Left    := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
-        PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,      '600');
-        LocalPortEdit.Text := IniFile.ReadString(SectionData, KeyLocalPort, '0');
-        MessageEdit.Text   := IniFile.ReadString(SectionData, KeyMessage,   '');
-        IniFile.Free;
+        IniFile := TIcsIniFile.Create(FIniFileName);
+        try
+            Width   := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height  := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top     := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
+            Left    := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
+            PortEdit.Text      := IniFile.ReadString(SectionData, KeyPort,      '600');
+            LocalPortEdit.Text := IniFile.ReadString(SectionData, KeyLocalPort, '0');
+            MessageEdit.Text   := IniFile.ReadString(SectionData, KeyMessage,   '');
+        finally
+            IniFile.Free;
+        end;
     end;
 end;
 
@@ -133,17 +135,21 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile   : TIniFile;
+    IniFile   : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
-    IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
-    IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
-    IniFile.WriteString(SectionData, KeyLocalPort, LocalPortEdit.Text);
-    IniFile.WriteString(SectionData, KeyMessage,   MessageEdit.Text);
-    IniFile.Free;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight, Height);
+        IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
+        IniFile.WriteString(SectionData, KeyPort,      PortEdit.Text);
+        IniFile.WriteString(SectionData, KeyLocalPort, LocalPortEdit.Text);
+        IniFile.WriteString(SectionData, KeyMessage,   MessageEdit.Text);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

@@ -44,7 +44,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, IniFiles, OverbyteIcsWSocket, OverbyteIcsSrvDemo2, Db, 
+  Dialogs, StdCtrls, OverbyteIcsIniFiles, OverbyteIcsWSocket, OverbyteIcsSrvDemo2, Db, 
   DBTables, ExtCtrls, OverbyteIcsWndControl;
 
 const
@@ -81,12 +81,12 @@ implementation
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSrvForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     Buffer  : String;
 begin
     if not Initialized then begin
         Initialized     := TRUE;
-        IniFile         := TIniFile.Create(IniFileName);
+        IniFile         := TIcsIniFile.Create(IniFileName);
         Top             := IniFile.ReadInteger('Window', 'Top',    Top);
         Left            := IniFile.ReadInteger('Window', 'Left',   Left);
         Width           := IniFile.ReadInteger('Window', 'Width',  Width);
@@ -112,9 +112,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSrvForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(IniFileName);
+    IniFile := TIcsIniFile.Create(IniFileName);
     IniFile.WriteInteger('Window', 'Top',    Top);
     IniFile.WriteInteger('Window', 'Left',   Left);
     IniFile.WriteInteger('Window', 'Width',  Width);

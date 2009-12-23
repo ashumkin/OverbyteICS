@@ -59,7 +59,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, IniFiles, StdCtrls, ExtCtrls, OverbyteIcsTcpCmd;
+  Dialogs, OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsTcpCmd;
 
 const
   SrvTcpVersion             = 100;
@@ -105,8 +105,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TGetGroupsForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName         := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName         := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
     FTcpDaemon           := TTcpDaemon.Create;
     FTcpDaemon.Banner    := 'ICS Tcp Server Ready';
     FTcpDaemon.OnDisplay := Display;
@@ -126,19 +125,22 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TGetGroupsForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
                                             (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
                                             (Screen.Width  - Width)  div 2);
-        IniFile.Destroy;
+        finally
+            IniFile.Free;
+        end;
         DisplayMemo.Clear;
         { Delay startup code until our UI is ready and visible }
         PostMessage(Handle, WM_APPSTARTUP, 0, 0);
@@ -149,14 +151,18 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TGetGroupsForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 

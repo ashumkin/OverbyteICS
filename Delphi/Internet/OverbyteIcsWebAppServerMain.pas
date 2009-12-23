@@ -52,7 +52,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls,
   OverbyteIcsWndControl,
   OverbyteIcsWebSession,
   OverbyteIcsHttpSrv,
@@ -192,26 +192,29 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := ChangeFileExt(Application.ExeName, '.ini');
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
                                             (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
                                             (Screen.Width  - Width)  div 2);
-        IniFile.Destroy;
+        finally
+            IniFile.Free;
+        end;
         DisplayMemo.Clear;
         PostMessage(Handle, WM_APPSTARTUP, 0, 0);
     end;
@@ -355,17 +358,18 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     HttpAppSrv1.Stop;
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     try
         IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
         IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
         IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
         IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.UpdateFile;
     finally
-        IniFile.Destroy;
+        IniFile.Free;
     end;
 end;
 

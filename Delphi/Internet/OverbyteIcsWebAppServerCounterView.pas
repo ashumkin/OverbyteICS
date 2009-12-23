@@ -50,7 +50,7 @@ unit OverbyteIcsWebAppServerCounterView;
 interface
 
 uses
-    Windows, Classes, SysUtils, IniFiles, Variants,
+    Windows, Classes, SysUtils, OverbyteIcsIniFiles, Variants,
     OverbyteIcsHttpSrv,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerDataModule,
@@ -137,12 +137,12 @@ procedure TUrlHandlerCounterViewHtml.GetRowData(
     var More        : Boolean;
     UserData        : TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
     NoTable : Integer;
 begin
     NoTable := StrToIntDef(TableName, 0);
     if Row = 1 then begin
-        IniFile := TIniFile.Create(WebAppSrvDataModule.CounterFileName);
+        IniFile := TIcsIniFile.Create(WebAppSrvDataModule.CounterFileName);
         try
             FCounters.Clear;
             IniFile.ReadSection(CounterSection, FCounters);

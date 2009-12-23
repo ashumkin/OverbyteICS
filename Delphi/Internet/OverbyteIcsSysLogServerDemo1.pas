@@ -46,13 +46,12 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls, OverbyteIcsSysLogServer;
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsSysLogServer;
 
 type
   TSysLogServerForm = class(TForm)
     ToolsPanel: TPanel;
     DisplayMemo: TMemo;
-    SysLogServer1: TSysLogServer;
     StartButton: TButton;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -63,6 +62,7 @@ type
   private
     FIniFileName : String;
     FInitialized : Boolean;
+    FSysLogServer: TSysLogServer;
   public
     procedure Display(Msg : String);
     property IniFileName : String read FIniFileName write FIniFileName;
@@ -86,7 +86,8 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSysLogServerForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName  := ChangeFileExt(Application.ExeName, '.ini');
+    FSysLogServer := TSysLogServer.Create(Self);
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
     DisplayMemo.Clear;
 end;
 
@@ -94,19 +95,22 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSysLogServerForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        IniFile.Destroy;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+        finally
+            IniFile.Free;
+        end;
         DisplayMemo.Clear;
     end;
 end;
@@ -115,14 +119,18 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSysLogServerForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 
@@ -146,7 +154,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSysLogServerForm.StartButtonClick(Sender: TObject);
 begin
-    SysLogServer1.Listen;
+    FSysLogServer.Listen;
 end;
 
 
@@ -158,7 +166,7 @@ var
     Decoded : TSysLogData;
 begin
     try
-        SysLogServer1.ParseRawMessage(RawMessage, Decoded);
+        FSysLogServer.ParseRawMessage(RawMessage, Decoded);
     except
         on E:Exception do begin
             Display(E.Message);

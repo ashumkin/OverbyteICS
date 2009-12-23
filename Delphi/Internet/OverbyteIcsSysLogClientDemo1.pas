@@ -46,14 +46,13 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  IniFiles, StdCtrls, ExtCtrls,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls,
   OverbyteIcsWSocket, OverbyteIcsSysLogClient, OverbyteIcsSysLogDefs;
 
 type
   TSysLogClientForm = class(TForm)
     ToolPanel: TPanel;
     DisplayMemo: TMemo;
-    SysLogClient1: TSysLogClient;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -113,6 +112,7 @@ type
   private
     FIniFileName : String;
     FInitialized : Boolean;
+    FSysLogClient: TSysLogClient;
     procedure Display(const Msg : String);
   public
     property IniFileName : String read FIniFileName write FIniFileName;
@@ -180,7 +180,8 @@ var
     Facility : TSysLogFacility;
     Severity : TSysLogSeverity;
 begin
-    FIniFileName  := ChangeFileExt(Application.ExeName, '.ini');
+    FSysLogClient := TSysLogClient.Create(Self);
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
     DisplayMemo.Clear;
 
     FacilityCombobox.Clear;
@@ -198,58 +199,61 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSysLogClientForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        TextEdit.Text                 := IniFile.ReadString(SectionData,
-                                             KeyText, DftText);
-        FacilityCombobox.ItemIndex    := IniFile.ReadInteger(SectionData,
-                                             KeyFacility, Ord(DftFacility));
-        SeverityCombobox.ItemIndex    := IniFile.ReadInteger(SectionData,
-                                             KeySeverity, Ord(DftSeverity));
-        HostNameEdit.Text             := IniFile.ReadString(SectionData,
-                                             KeyHostName, DftHostName);
-        ProcessNameEdit.Text          := IniFile.ReadString(SectionData,
-                                             KeyProcess, DftProcess);
-        ProcessIDEdit.Text            := IniFile.ReadString(SectionData,
-                                             KeyPID,     DftPID);
-        ProcessMySelfCheckbox.Checked := IniFile.ReadBool(SectionData,
-                                             KeyMySelf, DftMySelf);
-        ServerEdit.Text               := IniFile.ReadString(SectionData,
-                                             KeyServer, DftServer);
-        DefaultPRICheckBox.Checked    := IniFile.ReadBool(SectionData,
-                                             KeyDftPri, DftPRI);
-        NowCheckBox.Checked           := IniFile.ReadBool(SectionData,
-                                             KeyNow, DftNow);
-        YearEdit.Text                 := IniFile.ReadString(SectionData,
-                                             KeyYear, DftYear);
-        MonthEdit.Text                := IniFile.ReadString(SectionData,
-                                             KeyMonth, DftMonth);
-        DayEdit.Text                  := IniFile.ReadString(SectionData,
-                                             KeyDay, DftDay);
-        HourEdit.Text                 := IniFile.ReadString(SectionData,
-                                             KeyHour, DftHour);
-        MinEdit.Text                  := IniFile.ReadString(SectionData,
-                                             KeyMin, DftMin);
-        SecEdit.Text                  := IniFile.ReadString(SectionData,
-                                             KeySec, DftSec);
-        MsgIDEdit.Text                := IniFile.ReadString(SectionData,
-                                             KeyMsgID, DftMsgID);
-        StructDataEdit.Text           := IniFile.ReadString(SectionData,
-                                             KeyStructData, DftStructData);
-        RFC5424RadioButton.Checked    := IniFile.ReadBool(SectionData,
-                                             KeyRFC5424, DftRFC5424);
-        RFC3164RadioButton.Checked    := not RFC5424RadioButton.Checked;
-        IniFile.Destroy;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+            TextEdit.Text                 := IniFile.ReadString(SectionData,
+                                                KeyText, DftText);
+            FacilityCombobox.ItemIndex    := IniFile.ReadInteger(SectionData,
+                                                KeyFacility, Ord(DftFacility));
+            SeverityCombobox.ItemIndex    := IniFile.ReadInteger(SectionData,
+                                                KeySeverity, Ord(DftSeverity));
+            HostNameEdit.Text             := IniFile.ReadString(SectionData,
+                                                KeyHostName, DftHostName);
+            ProcessNameEdit.Text          := IniFile.ReadString(SectionData,
+                                                KeyProcess, DftProcess);
+            ProcessIDEdit.Text            := IniFile.ReadString(SectionData,
+                                                KeyPID,     DftPID);
+            ProcessMySelfCheckbox.Checked := IniFile.ReadBool(SectionData,
+                                                KeyMySelf, DftMySelf);
+            ServerEdit.Text               := IniFile.ReadString(SectionData,
+                                                KeyServer, DftServer);
+            DefaultPRICheckBox.Checked    := IniFile.ReadBool(SectionData,
+                                                KeyDftPri, DftPRI);
+            NowCheckBox.Checked           := IniFile.ReadBool(SectionData,
+                                                KeyNow, DftNow);
+            YearEdit.Text                 := IniFile.ReadString(SectionData,
+                                                KeyYear, DftYear);
+            MonthEdit.Text                := IniFile.ReadString(SectionData,
+                                                KeyMonth, DftMonth);
+            DayEdit.Text                  := IniFile.ReadString(SectionData,
+                                                KeyDay, DftDay);
+            HourEdit.Text                 := IniFile.ReadString(SectionData,
+                                                KeyHour, DftHour);
+            MinEdit.Text                  := IniFile.ReadString(SectionData,
+                                                KeyMin, DftMin);
+            SecEdit.Text                  := IniFile.ReadString(SectionData,
+                                                KeySec, DftSec);
+            MsgIDEdit.Text                := IniFile.ReadString(SectionData,
+                                                KeyMsgID, DftMsgID);
+            StructDataEdit.Text           := IniFile.ReadString(SectionData,
+                                                KeyStructData, DftStructData);
+            RFC5424RadioButton.Checked    := IniFile.ReadBool(SectionData,
+                                                KeyRFC5424, DftRFC5424);
+            RFC3164RadioButton.Checked    := not RFC5424RadioButton.Checked;
+        finally
+            IniFile.Free;
+        end;
         ProcessMySelfCheckBoxClick(nil);
         DefaultPRICheckBoxClick(nil);
         NowCheckBoxClick(nil);
@@ -261,10 +265,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSysLogClientForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     try
-        IniFile := TIniFile.Create(FIniFileName);
+        IniFile := TIcsIniFile.Create(FIniFileName);
         try
             IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
             IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
@@ -308,8 +312,9 @@ begin
                                 KeyStructData, StructDataEdit.Text);
             IniFile.WriteBool(SectionData,
                               KeyRFC5424, RFC5424RadioButton.Checked);
+            IniFile.UpdateFile;
         finally
-            IniFile.Destroy;
+            IniFile.Free;
         end;
     except
         // Ignore any exception writing INI file (Usally permission problem)
@@ -427,27 +432,27 @@ begin
     Minute := StrToInt(MinEdit.Text);
     Second := StrToInt(SecEdit.Text);
     try
-        SysLogClient1.TimeStamp := EncodeDate(Year, Month, Day) +
+        FSysLogClient.TimeStamp := EncodeDate(Year, Month, Day) +
                                    EncodeTime(Hour, Minute, Second, 0);
     except
         Beep;
         ShowMessage('Please check the date/time you entered');
         Exit;
     end;
-    SysLogClient1.Server     := Trim(ServerEdit.Text);
-    SysLogClient1.Text       := Trim(TextEdit.Text);
-    SysLogClient1.Facility   := TSysLogFacility(FacilityCombobox.ItemIndex);
-    SysLogClient1.Severity   := TSysLogSeverity(SeverityCombobox.ItemIndex);
-    SysLogClient1.HostName   := Trim(HostNameEdit.Text);
-    SysLogClient1.Process    := Trim(ProcessNameEdit.Text);
-    SysLogClient1.PID        := StrToIntDef(ProcessIDEdit.Text, 0);
-    SysLogClient1.MsgID      := Trim(MsgIDEdit.Text);
-    SysLogClient1.StructData := Trim(StructDataEdit.Text);
-    SysLogClient1.RFC5424    := RFC5424RadioButton.Checked;
-    SysLogClient1.Send;
-    SysLogClient1.Close;
+    FSysLogClient.Server     := Trim(ServerEdit.Text);
+    FSysLogClient.Text       := Trim(TextEdit.Text);
+    FSysLogClient.Facility   := TSysLogFacility(FacilityCombobox.ItemIndex);
+    FSysLogClient.Severity   := TSysLogSeverity(SeverityCombobox.ItemIndex);
+    FSysLogClient.HostName   := Trim(HostNameEdit.Text);
+    FSysLogClient.Process    := Trim(ProcessNameEdit.Text);
+    FSysLogClient.PID        := StrToIntDef(ProcessIDEdit.Text, 0);
+    FSysLogClient.MsgID      := Trim(MsgIDEdit.Text);
+    FSysLogClient.StructData := Trim(StructDataEdit.Text);
+    FSysLogClient.RFC5424    := RFC5424RadioButton.Checked;
+    FSysLogClient.Send;
+    FSysLogClient.Close;
     Display(FormatDateTime('YYYYMMDD HHNNSS', Now) + '|' +
-            SysLogClient1.RawMessage);
+            FSysLogClient.RawMessage);
 end;
 
 

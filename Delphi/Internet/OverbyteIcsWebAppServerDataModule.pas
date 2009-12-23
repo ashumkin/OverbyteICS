@@ -49,7 +49,7 @@ unit OverbyteIcsWebAppServerDataModule;
 interface
 
 uses
-    Windows, SysUtils, Classes, IniFiles;
+    Windows, SysUtils, Classes, OverbyteIcsIniFiles;
 
 type
     TWebAppSrvDisplayEvent = procedure (Sender : TObject;
@@ -104,9 +104,9 @@ function TWebAppSrvDataModule.CounterValue(
     const CounterName : String;
     DefaultValue      : Integer) : Integer;
 var
-    IniFile     : TIniFile;
+    IniFile     : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(WebAppSrvDataModule.CounterFileName);
+    IniFile := TIcsIniFile.Create(WebAppSrvDataModule.CounterFileName);
     try
         Result := IniFile.ReadInteger(CounterSection,
                                       CounterName,
@@ -119,15 +119,16 @@ end;
 function TWebAppSrvDataModule.CounterIncrement(
     const CounterRef: String): Integer;
 var
-    IniFile     : TIniFile;
+    IniFile     : TIcsIniFile;
 begin
     // Open the ini file (will be created if doesn't exists)
-    IniFile := TIniFile.Create(FCounterFileName);
+    IniFile := TIcsIniFile.Create(FCounterFileName);
     try
         // Read the counter value and increment it
         Result := IniFile.ReadInteger(CounterSection, CounterRef, 0) + 1;
         // Write the new value back to the inifile
         IniFile.WriteInteger(CounterSection, CounterRef, Result);
+        IniFile.UpdateFile;
     finally
         IniFile.Destroy;
     end;
@@ -147,9 +148,9 @@ end;
 
 procedure TWebAppSrvDataModule.LoadConfig;
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
+    IniFile := TIcsIniFile.Create(FIniFileName);
     try
         FPort := IniFile.ReadString(SectionConfig, KeyPort, DftPort);
     finally

@@ -1,9 +1,9 @@
 object SysLogServerForm: TSysLogServerForm
   Left = 70
   Top = 187
+  Width = 379
+  Height = 247
   Caption = 'SysLogServer - http://www.overbyte.be'
-  ClientHeight = 213
-  ClientWidth = 371
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -49,12 +49,5 @@ object SysLogServerForm: TSysLogServerForm
     ParentFont = False
     ScrollBars = ssBoth
     TabOrder = 1
-  end
-  object SysLogServer1: TSysLogServer
-    Addr = '0.0.0.0'
-    Port = '514'
-    OnDataAvailable = SysLogServer1DataAvailable
-    Left = 48
-    Top = 104
   end
 end

@@ -45,7 +45,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, IniFiles, StdCtrls, ExtCtrls, OverbyteIcsWSocket, OverbyteIcsWSocketS,
+  Dialogs, OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsWSocket, OverbyteIcsWSocketS,
   OverbyteIcsWSocketTS, OverbyteIcsWndControl;
 
 const
@@ -130,10 +130,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TThrdSrvForm.FormCreate(Sender: TObject);
 begin
-    { Compute INI file name based on exe file name. Remove path to make it  }
-    { go to windows directory.                                              }
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
     FLogList     := nil;
     FLogList     := TStringList.Create;
 end;
@@ -155,21 +152,24 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TThrdSrvForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
         { Fetch persistent parameters from INI file }
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        ClientsPerThreadEdit.Text :=  IniFile.ReadString(SectionMain,
-                                                         KeyCliPerThrd, '2');
-        IniFile.Destroy;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+            ClientsPerThreadEdit.Text :=  IniFile.ReadString(SectionMain,
+                                                           KeyCliPerThrd, '2');
+        finally
+            IniFile.Free;
+        end;
         DisplayMemo.Clear;
         { Delay startup code until our UI is ready and visible }
         PostMessage(Handle, WM_APPSTARTUP, 0, 0);
@@ -180,16 +180,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TThrdSrvForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     { Save persistent data to INI file }
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.WriteString(SectionMain,    KeyCliPerThrd,  ClientsPerThreadEdit.Text);
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.WriteString(SectionMain,    KeyCliPerThrd,  ClientsPerThreadEdit.Text);
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 { Display a message in our display memo. Delete lines to be sure to not     }

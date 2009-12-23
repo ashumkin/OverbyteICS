@@ -47,7 +47,7 @@ interface
 
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, IniFiles, OverbyteIcsWSocket,
+  Dialogs, ExtCtrls, StdCtrls, OverbyteIcsIniFiles, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 
 const
@@ -147,35 +147,37 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSenderForm.FormCreate(Sender: TObject);
 begin
-    FIniFileName := LowerCase(ExtractFileName(Application.ExeName));
-    FIniFileName := Copy(FIniFileName, 1, Length(FIniFileName) - 3) + 'ini';
+    FIniFileName := OverbyteIcsIniFiles.GetIcsIniFileName;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSenderForm.FormShow(Sender: TObject);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
-        IniFile      := TIniFile.Create(FIniFileName);
-        Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
-        Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
-        Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
-                                            (Screen.Height - Height) div 2);
-        Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
-                                            (Screen.Width  - Width)  div 2);
-        PortEdit.Text        := IniFile.ReadString(SectionData, KeyPort, 'telnet');
-        ServerEdit.Text      := IniFile.ReadString(SectionData, KeyServer, 'localhost');
-        DataEdit.Text        := IniFile.ReadString(SectionData, KeyData,       'The quick brown fox jumps over the lazy dog');
-        RepeatEdit.Text      := IniFile.ReadString(SectionData, KeyRepeat,     '');
-        LengthEdit.Text      := IniFile.ReadString(SectionData, KeyLength,     '60');
-        ContCheckBox.Checked        := Boolean(IniFile.ReadInteger(SectionData, KeyContinuous,  0));
-        LingerCheckBox.Checked      := Boolean(IniFile.ReadInteger(SectionData, KeyLinger,      1));
-        DisplayDataCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeyDisplay,     0));
-        UseDataSentCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeyUseDataSent, 1));
-        IniFile.Destroy;
+        IniFile      := TIcsIniFile.Create(FIniFileName);
+        try
+            Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
+            Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
+            Top          := IniFile.ReadInteger(SectionWindow, KeyTop,
+                                               (Screen.Height - Height) div 2);
+            Left         := IniFile.ReadInteger(SectionWindow, KeyLeft,
+                                               (Screen.Width  - Width)  div 2);
+            PortEdit.Text        := IniFile.ReadString(SectionData, KeyPort, 'telnet');
+            ServerEdit.Text      := IniFile.ReadString(SectionData, KeyServer, 'localhost');
+            DataEdit.Text        := IniFile.ReadString(SectionData, KeyData,       'The quick brown fox jumps over the lazy dog');
+            RepeatEdit.Text      := IniFile.ReadString(SectionData, KeyRepeat,     '');
+            LengthEdit.Text      := IniFile.ReadString(SectionData, KeyLength,     '60');
+            ContCheckBox.Checked        := Boolean(IniFile.ReadInteger(SectionData, KeyContinuous,  0));
+            LingerCheckBox.Checked      := Boolean(IniFile.ReadInteger(SectionData, KeyLinger,      1));
+            DisplayDataCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeyDisplay,     0));
+            UseDataSentCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData, KeyUseDataSent, 1));
+        finally
+            IniFile.Free;
+        end;
         RepeatEdit.Enabled := not ContCheckBox.Checked;
         CountLabel.Caption  := '';
     end;
@@ -185,23 +187,27 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSenderForm.FormClose(Sender: TObject; var Action: TCloseAction);
 var
-    IniFile : TIniFile;
+    IniFile : TIcsIniFile;
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,       Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,      Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,     Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,    Height);
-    IniFile.WriteString(SectionData, KeyPort,   PortEdit.text);
-    IniFile.WriteString(SectionData, KeyServer, ServerEdit.text);
-    IniFile.WriteString(SectionData, KeyData,   DataEdit.text);
-    IniFile.WriteString(SectionData, KeyRepeat, RepeatEdit.text);
-    IniFile.WriteString(SectionData, KeyLength, LengthEdit.text);
-    IniFile.WriteInteger(SectionData, KeyContinuous,  Ord(ContCheckBox.Checked));
-    IniFile.WriteInteger(SectionData, KeyLinger,      Ord(LingerCheckBox.Checked));
-    IniFile.WriteInteger(SectionData, KeyUseDataSent, Ord(UseDataSentCheckBox.Checked));
-    IniFile.WriteInteger(SectionData, KeyDisplay,     Ord(DisplayDataCheckBox.Checked));
-    IniFile.Destroy;
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,       Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,      Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,     Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,    Height);
+        IniFile.WriteString(SectionData, KeyPort,   PortEdit.text);
+        IniFile.WriteString(SectionData, KeyServer, ServerEdit.text);
+        IniFile.WriteString(SectionData, KeyData,   DataEdit.text);
+        IniFile.WriteString(SectionData, KeyRepeat, RepeatEdit.text);
+        IniFile.WriteString(SectionData, KeyLength, LengthEdit.text);
+        IniFile.WriteInteger(SectionData, KeyContinuous,  Ord(ContCheckBox.Checked));
+        IniFile.WriteInteger(SectionData, KeyLinger,      Ord(LingerCheckBox.Checked));
+        IniFile.WriteInteger(SectionData, KeyUseDataSent, Ord(UseDataSentCheckBox.Checked));
+        IniFile.WriteInteger(SectionData, KeyDisplay,     Ord(DisplayDataCheckBox.Checked));
+        IniFile.UpdateFile;
+    finally
+        IniFile.Free;
+    end;
 end;
 
 
