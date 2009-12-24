@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.35
+Version:      7.36
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -743,6 +743,8 @@ Dec 20, 2009 V7.35 Arno added support for SSL Server Name Indication (SNI).
                    Currently IE 7 and FireFox >= V2 support SNI, note that both
                    browers don't send both "localhost" and IP addresses as
                    server names, this is specified in RFC.
+Dec 24, 2009 V7.36 SSL SNI - Do not switch context if not initialized.
+
 }
 
 {
@@ -849,8 +851,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 735;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.35 ';
+  WSocketVersion            = 736;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.36 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -14450,7 +14452,8 @@ begin
                 Ctx := nil;
                 Err := teeAlertWarning; //SSL_TLSEXT_ERR_ALERT_WARNING
                 Ws.FOnSslServerName(Ws, Ctx, Err);
-                if Assigned(Ctx) then
+                { Do not switch context if not initialized }
+                if Assigned(Ctx) and Assigned(Ctx.FSslCtx) then
                 begin
                     if Ws.SslContext <> Ctx then
                     begin
