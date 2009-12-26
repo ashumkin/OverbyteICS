@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.36
+Version:      7.37
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -744,6 +744,10 @@ Dec 20, 2009 V7.35 Arno added support for SSL Server Name Indication (SNI).
                    browers don't send both "localhost" and IP addresses as
                    server names, this is specified in RFC.
 Dec 24, 2009 V7.36 SSL SNI - Do not switch context if not initialized.
+Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It 
+                   now takes an AnsiString buffer. Since this method is highly
+                   deprecated it's also marked as "deprecated". Do not use it
+                   in new applications.
 
 }
 
@@ -851,8 +855,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 736;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.36 ';
+  WSocketVersion            = 737;
+  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.37 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -2352,14 +2356,15 @@ type
       FLinePointer : TBytes;
 {$ENDIF}
 {$IFDEF WIN32}
-      FLinePointer : ^String;
+      FLinePointer : ^AnsiString;
 {$ENDIF}
       function    Synchronize(Proc         : TWSocketSyncNextProc;
                               var DoneFlag : Boolean) : Integer; virtual;
       function    WaitUntilReady(var DoneFlag : Boolean) : Integer; virtual;
       procedure   InternalDataAvailable(Sender: TObject; Error: Word);
   public
-      procedure   ReadLine(Timeout : Integer; var Buffer : String);
+      procedure   ReadLine(Timeout : Integer; var Buffer : AnsiString); deprecated
+          {$IFDEF COMPILER12_UP}'Do not use in new applications'{$ENDIF};
   end;
 
 {$IFDEF CLR}
@@ -10037,7 +10042,7 @@ end;
 { Instead, use pure event-driven design using OnDataAvailable event.        }
 procedure TCustomSyncWSocket.ReadLine(
     Timeout    : Integer;  { seconds if positive, milli-seconds if negative }
-    var Buffer : String);
+    var Buffer : AnsiString);
 var
     OldDataAvailable : TDataAvailable;
     OldLineMode      : Boolean;
