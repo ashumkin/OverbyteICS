@@ -25,7 +25,6 @@ object TnDemoForm: TTnDemoForm
     ScrollBars = ssBoth
     TabOrder = 0
     OnKeyDown = DisplayMemoKeyDown
-    OnKeyPress = DisplayMemoKeyPress
   end
   object Panel1: TPanel
     Left = 0

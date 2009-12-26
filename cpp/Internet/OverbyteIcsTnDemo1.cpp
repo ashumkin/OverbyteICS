@@ -56,6 +56,7 @@ TTnDemoForm *TnDemoForm;
 __fastcall TTnDemoForm::TTnDemoForm(TComponent* Owner)
     : TForm(Owner)
 {
+    DisplayMemo->OnKeyPress = DisplayMemoKeyPress;
 }
 //---------------------------------------------------------------------------
 // Display a message in the memo field, breaking with CR
@@ -135,7 +136,7 @@ void __fastcall TTnDemoForm::DisplayMemoKeyDown(TObject *Sender, WORD &Key,
     Key = 0;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTnDemoForm::DisplayMemoKeyPress(TObject *Sender, wchar_t &Key)
+void __fastcall TTnDemoForm::DisplayMemoKeyPress(TObject *Sender, Char &Key)
 {
     TnCnx->Send(&Key, 1);
     if (Key == 13) {
