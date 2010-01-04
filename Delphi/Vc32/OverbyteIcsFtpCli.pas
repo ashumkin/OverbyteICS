@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.07
+Version:      V7.08
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -57,7 +57,7 @@ Methods:
   User       - Send username
   Pass       - Send password
   Acct       - Send account
-  Connect    - Open the connection, send username, password and account
+  Connect    - Open the connection, send username, password, account and FEAT request
   Quit       - Disconnect gracefully from FTP server
   Abort      - Disconnect (close connection) immediately
   AbortXfer  - Abort file transfer without disconnecting.
@@ -195,7 +195,7 @@ Methods:
                Only supported if ftpFeatHost in SupportedExtensions, but can not be
                  sent once FEAT has been returned unless Rein sent first  - V7.01
 
-  ConnectHost - Open the connection, send host, username, password and account
+  ConnectHost - Open the connection, send host, username, password, account and FEAT request
 
   Rein       - Re-initialise connection so logon process restarted and Host or User can
                  be sent again (in the original FTP RFC so should be supported by all servers)
@@ -955,8 +955,9 @@ Jan 7, 2009  V7.05 Angus - allow 200 response for HOST (for ws_ftp server)
 Apr 6, 2009  V7.06 Angus check response for XMD5 properly (220 or 250 and no file name)
 Apr 16, 2009 V7.07 Angus assume STREAM64, USE_MODEZ, USE_ONPROGRESS64_ONLY, USE_BUFFERED_STREAM
              Remove old conditional and suppressed code, OnProgress gone (BREAKING CHANGE)
-
-
+Jan 4, 2010  V7.08 added TriggerResponse virtual and CreateSocket virtual
+             ConnectAsync and ConnectHostAsync methods now trigger FEAT command
+			 Thanks to "Anton Sviridov" <ant_s@rambler.ru>
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpCli;
@@ -1024,9 +1025,9 @@ OverbyteIcsZlibHigh,     { V2.102 }
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 707;
-  CopyRight : String = ' TFtpCli (c) 1996-2009 F. Piette V7.07 ';
-  FtpClientId : String = 'ICS FTP Client V7.07 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 708;
+  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.08 ';
+  FtpClientId : String = 'ICS FTP Client V7.08 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1279,6 +1280,7 @@ type
     procedure   TriggerReadyToTransmit(var bCancel : Boolean); virtual;
     procedure   TriggerDisplayFile(Msg : String); virtual;
     procedure   TriggerError(Msg: String); virtual;
+    procedure   TriggerResponse; virtual;   { V7.08 }
     procedure   DisplayLastResponse;
     procedure   Notification(AComponent: TComponent; Operation: TOperation); override;
     function    Progress : Boolean; virtual;
@@ -1346,6 +1348,7 @@ type
     procedure   RestAsyncGetResumePos; virtual;
     function    OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
     procedure   CreateLocalFileStream;         { V2.113 }
+    function    CreateSocket: TWSocket; virtual;   { V7.08 }
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
@@ -1910,6 +1913,7 @@ begin
       ftpAlloAsync: result:='AlloAsync';
       ftpCombAsync: result:='CombAsync';
       ftpXMd5Async: result:='XMd5Async';
+      ftpConnectHostAsync: result:='ConnectHostAsync'; { V7.08 }
       ftpReinAsync: result:='ReinAsync';
       ftpHostAsync: result:='HostAsync';
       ftpLangAsync: result:='LangAsync';
@@ -2103,13 +2107,13 @@ begin
     FLocalAddr          := '0.0.0.0'; {bb}
     FKeepAliveSecs      := 0; {V2.107 for control socket only }
     FClientIdStr        := ftpClientId; {V2.113 string sent for CLNT command }
-    FControlSocket      := TWSocket.Create(Self);
+    FControlSocket      := CreateSocket;   { V7.08 was  TWSocket.Create(Self); }
     FControlSocket.OnSessionConnected := ControlSocketSessionConnected;
     FControlSocket.OnDataAvailable    := ControlSocketDataAvailable;
     FControlSocket.OnSessionClosed    := ControlSocketSessionClosed;
     FControlSocket.OnDnsLookupDone    := ControlSocketDnsLookupDone;
-    FDataSocket                       := TWSocket.Create(Self);
-    FStreamFlag                       := FALSE;
+    FDataSocket         := CreateSocket;    { V7.08 was  TWSocket.Create(Self); }
+    FStreamFlag         := FALSE;
     SetLength(FZlibWorkDir, 1024);
     Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.03 }
     SetLength(FZlibWorkDir, Len);                                 { AG V6.03 }
@@ -2245,6 +2249,12 @@ procedure TCustomFtpCli.SetErrorMessage;
 begin
     if FErrorMessage = '' then
         FErrorMessage := FLastResponse;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomFtpCli.CreateSocket: TWSocket;   { V7.08 }
+begin
+  Result := TWSocket.Create(Self);
 end;
 
 
@@ -3463,6 +3473,13 @@ begin
         end;
     end;
 
+    if ftpFctFeat in FFctSet then begin    { V7.08 }
+        FFctPrv := ftpFctFeat;
+        FFctSet := FFctSet - [FFctPrv];
+        FeatAsync;
+        Exit;
+    end;
+
     if ftpFctCDup in FFctSet then begin
         FFctPrv := ftpFctCDup;
         FFctSet := FFctSet - [FFctPrv];
@@ -3693,15 +3710,15 @@ procedure TCustomFtpCli.ConnectAsync;
 begin
     HighLevelAsync(ftpConnectAsync,
                    [ftpFctOpen, ftpFctAuth, ftpFctUser, ftpFctPass,
-                    ftpFctAcct]);
+                    ftpFctAcct, ftpFctFeat]);               { V7.08 }
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.ConnectHostAsync;       { V7.01 } 
+procedure TCustomFtpCli.ConnectHostAsync;       { V7.01 }
 begin
     HighLevelAsync(ftpConnectHostAsync,
                    [ftpFctOpen, ftpFctHost, ftpFctAuth, ftpFctUser,
-                    ftpFctPass, ftpFctAcct]);
+                    ftpFctPass, ftpFctAcct, ftpFctFeat]);   { V7.08 }
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -5539,9 +5556,7 @@ begin
             if LongInt(Length(FLastMultiResponse)) < 65536 then
                 FLastMultiResponse := FLastMultiResponse + FLastResponse + #13#10;
         end;
-
-        if Assigned(FOnResponse) then
-            FOnresponse(Self);
+        TriggerResponse;         { V7.08 }
 
 {$IFNDEF NO_DEBUG_LOG}                                             { 2.105 }
     if CheckLogOptions(loProtSpecDump) then
@@ -5774,6 +5789,13 @@ begin
                 FOnRequestDone(Self, FRequestType, ErrCode); }
         end;
     end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.TriggerResponse;   { V7.08 }
+begin
+    if Assigned(FOnResponse) then
+        FOnResponse(Self);
 end;
 
 
