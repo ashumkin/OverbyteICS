@@ -1,17 +1,64 @@
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+Author:       François PIETTE
+Creation:     Jan 21, 2010
+Description:  Demo program showing how to use REST API from Google Search
+              and JSON. REST stands for "Representational State Transfer".
+              For an introduction to REST, see wikipedia article:
+              http://en.wikipedia.org/wiki/Representational_State_Transfer
+              JSON stands for "JavaScript Object Notation". For details,
+              see http://www.json.org/.
+Version:      1.00
+EMail:        francois.piette@overbyte.be    francois.piette@rtfm.be
+              http://www.overbyte.be
+Support:      Unsupported code.
+Legal issues: Copyright (C) 2010 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              <francois.piette@overbyte.be>
+
+              This software is provided 'as-is', without any express or
+              implied warranty.  In no event will the author be held liable
+              for any  damages arising from the use of this software.
+
+              Permission is granted to anyone to use this software for any
+              purpose, including commercial applications, and to alter it
+              and redistribute it freely, subject to the following
+              restrictions:
+
+              1. The origin of this software must not be misrepresented,
+                 you must not claim that you wrote the original software.
+                 If you use this software in a product, an acknowledgment
+                 in the product documentation would be appreciated but is
+                 not required.
+
+              2. Altered source versions must be plainly marked as such, and
+                 must not be misrepresented as being the original software.
+
+              3. This notice may not be removed or altered from any source
+                 distribution.
+
+              4. You must register this software by sending a picture postcard
+                 to the author. Use a nice stamp and mention your name, street
+                 address, EMail address and any comment you like to say.
+
+History:
+
+
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsRestJsonClientDemo1;
 
 interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls,
+  Dialogs, StdCtrls, ExtCtrls, Grids,
   // ICS components for HTTP access
   OverbyteIcsWndControl,
   OverbyteIcsHttpProt,
   OverbyteIcsUrl,
   // OpenSource JASON parser by Henri Gourvest.
   // Download from http://www.progdigy.com/?page_id=6
-  SuperObject, Grids;
+  SuperObject;
 
 type
   TGoogleSearchJsonClientForm = class(TForm)
@@ -101,8 +148,6 @@ begin
         end
         else begin
             O := TSuperObject.ParseStream(DataStream, TRUE);
-// O.SaveTo('json.formatted.txt', TRUE, TRUE);
-// O := TSuperObject.ParseFile('jason.data.txt', TRUE);
             if O.I['responseStatus'] <> 200 then
                 Display('  => Failed ' +
                         O.S['responseStatus'] + ' ' +

@@ -1,7 +1,7 @@
 object GoogleSearchJsonClientForm: TGoogleSearchJsonClientForm
   Left = 54
   Top = 411
-  Caption = 'Google Search JSON Client demo'
+  Caption = 'OverByte ICS - Google Search JSON Client demo'
   ClientHeight = 334
   ClientWidth = 645
   Color = clBtnFace
@@ -75,7 +75,6 @@ object GoogleSearchJsonClientForm: TGoogleSearchJsonClientForm
   end
   object HttpCli1: THttpCli
     LocalAddr = '0.0.0.0'
-    Proxy = 'intsrv02'
     ProxyPort = '80'
     Agent = 'Mozilla/4.0 (compatible; ICS)'
     Accept = 'image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, */*'
