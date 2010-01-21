@@ -1300,6 +1300,17 @@ Delphi\Internet\OverbyteIcsDemoTemplate.dpr
 Delphi\Internet\OverbyteIcsDemoTemplate1.pas
 Delphi\Internet\OverbyteIcsDemoTemplate1.dfm
 
+Delphi\Internet\OverbyteIcsRestDemo.dpr
+Delphi\Internet\OverbyteIcsRestDemo.dproj
+Delphi\Internet\OverbyteIcsRestDemo.res
+Delphi\Internet\OverbyteIcsRestDemo1.dfm
+Delphi\Internet\OverbyteIcsRestDemo1.pas
+
+Delphi\Internet\OverbyteIcsRestJsonClientDemo.dpr
+Delphi\Internet\OverbyteIcsRestJsonClientDemo.dproj
+Delphi\Internet\OverbyteIcsRestJsonClientDemo.res
+Delphi\Internet\OverbyteIcsRestJsonClientDemo1.pas
+Delphi\Internet\OverbyteIcsRestJsonClientDemo1.dfm
 
 Delphi\SslInternet\SslCerts\IcsSslBuildCerts.bat
 Delphi\SslInternet\SslCerts\openssl.conf
