@@ -79,6 +79,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure GoogleGetButtonClick(Sender: TObject);
     procedure YahooGetButtonClick(Sender: TObject);
+    procedure ZoomComboBoxChange(Sender: TObject);
   private
     FIniFileName  : String;
     FInitialized  : Boolean;
@@ -140,6 +141,8 @@ begin
         DisplayMemo.Height := IniFile.ReadInteger(SectionData, KeyDisplayHeight, 50);
         IniFile.Destroy;
         DisplayMemo.Clear;
+        // We need an API key to access Google services.
+        // It is free of charge, just ask one at Google web site.
         if FGoogleApiKey = '' then begin
             Display('Google API key not found in INI file');
             FGoogleApiKey := Trim(InputBox('Enter your Google API key',
@@ -158,6 +161,8 @@ begin
             DisplayMemo.Clear;
             Display('Google API key is "' + FGoogleApiKey + '"');
         end;
+        // We need an API key to access Yahoo services.
+        // It is free of charge, just ask one at Yahoo web site.
         if FYahooApiKey = '' then begin
             Display('Yahoo API key not found in INI file');
             FYahooApiKey := Trim(InputBox('Enter your Yahoo API key',
@@ -191,6 +196,43 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TRestDemoForm.FormClose(Sender: TObject; var Action: TCloseAction);
+var
+    IniFile : TIniFile;
+begin
+    IniFile := TIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.WriteString(SectionData, KeyYahooLocation, LocationEdit.Text);
+        IniFile.WriteInteger(SectionData, KeyYahooZoom, ZoomComboBox.ItemIndex);
+        IniFile.WriteInteger(SectionData, KeyDisplayHeight, DisplayMemo.Height);
+    finally
+        IniFile.Destroy;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TRestDemoForm.Display(Msg : String);
+begin
+    DisplayMemo.Lines.BeginUpdate;
+    try
+        if DisplayMemo.Lines.Count > 200 then begin
+            while DisplayMemo.Lines.Count > 200 do
+                DisplayMemo.Lines.Delete(0);
+        end;
+        DisplayMemo.Lines.Add(Msg);
+    finally
+        DisplayMemo.Lines.EndUpdate;
+        SendMessage(DisplayMemo.Handle, EM_SCROLLCARET, 0, 0);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TRestDemoForm.GoogleGetButtonClick(Sender: TObject);
 const
     Zero : byte = 0;
@@ -208,11 +250,17 @@ begin
         for Item := 0 to AddressListBox.Items.Count - 1 do begin
             DataStream.Clear;
             Display(AddressListBox.Items[Item]);
+            // Doc: http://code.google.com/intl/fr-BE/apis/maps/documentation/geocoding/
             HttpCli1.URL := 'http://maps.google.com/maps/geo?' +
                             'q=' + UrlEncode(AddressListBox.Items[Item]) +
                             '&output=csv&key=' + UrlEncode(FGoogleApiKey);
             HttpCli1.RcvdStream := DataStream;
-            HttpCli1.Get;
+            try
+                HttpCli1.Get;
+            except
+                on E:Exception do Display('Failed. ' +
+                                          E.ClassName + ': ' + E.Message);
+            end;
             if HttpCli1.StatusCode <> 200 then begin
                 Display('  => Failed ' + IntToStr(HttpCli1.StatusCode) + ' ' +
                         HttpCli1.ReasonPhrase);
@@ -257,6 +305,7 @@ begin
         Image1.Picture := nil;
         DataStream.Clear;
         Display('Searching ' + LocationEdit.Text);
+        // Documentation: http://developer.yahoo.com/maps/rest/V1/
         HttpCli1.URL := 'http://api.local.yahoo.com/MapsService/V1/mapImage?' +
                         '&location=' + UrlEncode(LocationEdit.Text) +
                         '&zoom=' + ZoomComboBox.Text +
@@ -309,36 +358,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TRestDemoForm.FormClose(Sender: TObject; var Action: TCloseAction);
-var
-    IniFile : TIniFile;
+procedure TRestDemoForm.ZoomComboBoxChange(Sender: TObject);
 begin
-    IniFile := TIniFile.Create(FIniFileName);
-    IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-    IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-    IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-    IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
-    IniFile.WriteString(SectionData, KeyYahooLocation, LocationEdit.Text);
-    IniFile.WriteInteger(SectionData, KeyYahooZoom, ZoomComboBox.ItemIndex);
-    IniFile.WriteInteger(SectionData, KeyDisplayHeight, DisplayMemo.Height);
-    IniFile.Destroy;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TRestDemoForm.Display(Msg : String);
-begin
-    DisplayMemo.Lines.BeginUpdate;
-    try
-        if DisplayMemo.Lines.Count > 200 then begin
-            while DisplayMemo.Lines.Count > 200 do
-                DisplayMemo.Lines.Delete(0);
-        end;
-        DisplayMemo.Lines.Add(Msg);
-    finally
-        DisplayMemo.Lines.EndUpdate;
-        SendMessage(DisplayMemo.Handle, EM_SCROLLCARET, 0, 0);
-    end;
+    YahooGetButtonClick(nil);
 end;
 
 
