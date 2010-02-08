@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      7.06
+Version:      7.07
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -73,6 +73,8 @@ Sept 1, 2009 V7.05 Angus added TriggerHeadDocument, can not ignore HEAD
                      creating virtual pages
 Feb 05, 2010 V7.06 F. Piette added overloaded AnswerPage to get template from
                    resource.
+Feb 08, 2010 V7.07 F. Piette fixed a bug introduced in 7.06 with ResType
+                   (Need to be PChar instead of PAnsiChar).
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -206,7 +208,7 @@ type
             const Status   : String;    // if empty, default to '200 OK'
             const Header   : String;    // Do not use Content-Length nor Content-Type
             const ResName  : String;    // Resource name
-            const ResType  : PAnsiChar; // Resource type
+            const ResType  : PChar;     // Resource type
             UserData       : TObject;
             Tags           : array of const); overload;
         procedure AnswerStream(const Status   : String;
@@ -1558,7 +1560,7 @@ procedure TUrlHandler.AnswerPage(
     const Status   : String;    // if empty, default to '200 OK'
     const Header   : String;    // Do not use Content-Length nor Content-Type
     const ResName  : String;    // Resource name
-    const ResType  : PAnsiChar; // Resource type
+    const ResType  : PChar;     // Resource type
     UserData       : TObject;
     Tags           : array of const);
 begin

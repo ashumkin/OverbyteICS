@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.25
+Version:      7.26
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -287,6 +287,8 @@ Feb 05, 2010 7.25 FPiette made StreamReadStrA, StreamWriteA and VarrecToString
              public.
              Added overloaded HtmlPageProducer to support template located
              in resource and in stream in adding to the existing file template.
+Feb 08, 2010 V7.26 F. Piette fixed a bug introduced in 7.25 with ResType
+                   (Need to be PChar instead of PAnsiChar).
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -719,7 +721,7 @@ type
                                const Status   : String;
                                const Header   : String;
                                const ResName  : String;    // Template resource name
-                               const ResType  : PAnsiChar; // Template resource type
+                               const ResType  : PChar;     // Template resource type
                                UserData       : TObject;
                                Tags           : array of const); overload; virtual;
         procedure   AnswerStream(var   Flags    : THttpGetFlag;
@@ -755,7 +757,7 @@ type
                                            Tags: array of const;
                                            DestStream: TStream); overload; virtual;
         procedure HtmlPageProducerToStream(const ResName : String;
-                                           const ResType : PAnsiChar;
+                                           const ResType : PChar;
                                            UserData: TObject;
                                            Tags: array of const;
                                            DestStream: TStream); overload; virtual;
@@ -1360,7 +1362,7 @@ function HtmlPageProducer(const HtmlFileName : String;
                           UserData           : TObject;
                           DestStream         : TStream) : Boolean; overload;
 function HtmlPageProducer(const ResName      : String;
-                          const ResType      : PAnsiChar;
+                          const ResType      : PChar;
                           Tags               : array of const;
                           RowDataGetter      : PTableRowDataGetter;
                           UserData           : TObject;
@@ -2687,7 +2689,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.HtmlPageProducerToStream(
     const ResName : String;
-    const ResType : PAnsiChar;
+    const ResType : PChar;
     UserData      : TObject;
     Tags          : array of const;
     DestStream    : TStream);
@@ -2728,7 +2730,7 @@ procedure THttpConnection.AnswerPage(
     const Status   : String;
     const Header   : String;
     const ResName  : String;
-    const ResType  : PAnsiChar;
+    const ResType  : PChar;
     UserData       : TObject;
     Tags           : array of const);
 begin
@@ -4896,7 +4898,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function HtmlPageProducer(
     const ResName      : String;
-    const ResType      : PAnsiChar;
+    const ResType      : PChar;
     Tags               : array of const;
     RowDataGetter      : PTableRowDataGetter;
     UserData           : TObject;
