@@ -289,6 +289,8 @@ Feb 05, 2010 7.25 FPiette made StreamReadStrA, StreamWriteA and VarrecToString
              in resource and in stream in adding to the existing file template.
 Feb 08, 2010 V7.26 F. Piette fixed a bug introduced in 7.25 with ResType
                    (Need to be PChar instead of PAnsiChar).
+                   TRL fixed HtmlPageProducerFromMemory which added an extra
+                   empty line and passed the wrong length to HandleTableRow.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -4703,7 +4705,8 @@ begin
             Q := SearchTableRowsEnd(P + J + 1, Cnt - J - 1);
             if Q = nil then
                 Q := P + Cnt;
-            HandleTableRow(TagParams, P + J + 1, Q - P - J,
+            //Feb 08, 2010 TRL the row to handle was 1 char too long
+            HandleTableRow(TagParams, P + J + 1, Q - P - J - 1,
                            RowDataGetter, UserData, DestStream);
             Cnt := P + Cnt - Q;
             P := Q;
@@ -4718,7 +4721,8 @@ begin
         Inc(P, J);
         Dec(Cnt, J);
     end;
-    StreamWriteLnA(DestStream, '');
+//    Feb 08, 2010 TRL no need to add extra line.
+//    StreamWriteLnA(DestStream, '');
     Result := TRUE;
 end;
 
