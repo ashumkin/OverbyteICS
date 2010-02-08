@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TSysLogServer class encapsulate the server side of the SysLog
               protocol as described in RFC3164.
 Creation:     September 2009
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -38,6 +38,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Feb 08, 2010 V1.01 F. Piette used SYSLOG_NILVALUE instead of '-'. Tested
+                   this value for hostname and process which can be nil.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -500,16 +502,22 @@ begin
                   'SysLog message has missing space after date ("' +
                   String(RawMessage) + '"');
     SkipSpaces(RawMessage, Index);
-    DecodedMessage.HostName := GetWord(RawMessage, Index);
+    if RawMessage[Index] = SYSLOG_NILVALUE then
+        DecodedMessage.HostName := ''
+    else
+        DecodedMessage.HostName := GetWord(RawMessage, Index);
     SkipSpaces(RawMessage, Index);
-    DecodedMessage.Process := GetWord(RawMessage, Index);
+    if RawMessage[Index] = SYSLOG_NILVALUE then
+        DecodedMessage.Process := ''
+    else
+        DecodedMessage.Process := GetWord(RawMessage, Index);
     SkipSpaces(RawMessage, Index);
     if Index > Length(RawMessage) then
         raise ESysLogParseException.Create(
                   'SysLog message too short ("' +
                   String(RawMessage) + '"');
 
-    if RawMessage[Index] = '-' then begin
+    if RawMessage[Index] = SYSLOG_NILVALUE then begin
         DecodedMessage.PID := 0;
         Inc(Index);
     end

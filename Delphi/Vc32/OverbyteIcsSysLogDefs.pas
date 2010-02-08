@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Common definitions for TSysLogClient and TSysLogServer classes.
               See RFC3164 for reference.
 Creation:     September 2009
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -38,6 +38,9 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Feb 08, 2010 V1.01 F. Piette renamed NILVALUE to SYSLOG_NILVALUE it here from
+                   the client component so that it can be used from server
+                   component.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -110,6 +113,9 @@ const
                     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
 
+const
+    // The next constant is specific to RFC 5424
+    SYSLOG_NILVALUE  = '-';          // Empty value
 
 implementation
 

@@ -5,7 +5,7 @@ Description:  TSysLogClient class encapsulate the client side of the SysLog
               protocol as described in RFC3164 and RFC5424 but UTF-8 encoding
               is not supported.
 Creation:     September 2009
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -39,6 +39,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Feb 08, 2010 V1.01 F. Piette moved NILVALUE to SysLogDefs so that it can be
+                   used from client and server components.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -109,7 +111,6 @@ implementation
 const
     // The next constants are specific to RFC 5424
     SYSLOGVER = 1;            // Version
-    NILVALUE  = '-';          // Empty value
     BOM       = #$EF#$BB#$BF; // Begin of UTF-8 string
 
 
@@ -172,11 +173,11 @@ begin
                      [Year, Month, Day, Hour, Minute, Second, MilliSec,
                       TimeZoneBias]);
         if FMsgID = '' then
-            SMsgID := NILVALUE
+            SMsgID := SYSLOG_NILVALUE
         else
             SMsgID := FMsgID;
         if FStructData = '' then
-            SStructData := NILVALUE
+            SStructData := SYSLOG_NILVALUE
         else begin
             SStructData := FStructData;
             if (Length(SStructData) < 2) or
