@@ -92,6 +92,7 @@ begin
         BackObj.InStream  := FStream;
         BackObj.OutStream := Nil ;        // not used
         BackObj.MainObj := Self;
+        BackObj.ProgressCallback :=  nil;
     //use our own function for reading
         strm.avail_in := Strm_in_func (BackObj, PByte(strm.next_in));
         strm.next_out := @BackObj.Window;  // buffer

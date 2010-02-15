@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.05
+Version:      7.06
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -11,7 +11,7 @@ Credit:       This component was based on a freeware from by Andreas
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2009 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -418,6 +418,8 @@ Sep 17, 2009 V7.04 Arno added property Timeout, works only with synchronous
              methods!
 Dec 02, 2009 V7.05 Bjornar found a HTTPS POST bug with proxy basic
              authentication that added two Content-Length header lines.
+Feb 15, 2010 V7.06 Yuri Semenov fixed a bug with content coding and chunked
+             transfer encoding.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -495,8 +497,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 705;
-    CopyRight : String   = ' THttpCli (c) 1997-2009 F. Piette V7.05 ';
+    HttpCliVersion       = 706;
+    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.06 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -2555,6 +2557,19 @@ begin
 {$IFDEF UseBandwidthControl}
             if (httpoBandwidthControl in FOptions) and Assigned(FBandwidthTimer)
             then FBandwidthTimer.Enabled := FALSE;
+{$ENDIF}
+{$IFDEF UseContentCoding} {V7.06}
+            FContentCodingHnd.Complete;
+        {$IFNDEF NO_DEBUG_LOG}
+            if CheckLogOptions(loProtSpecInfo) then begin
+                if Assigned(FRcvdStream) and (FContentEncoding <> '') then begin
+                    DebugLog(loProtSpecInfo, FContentEncoding +
+                             ' content uncompressed from ' +
+                             IntToStr(FContentLength) + ' bytes to ' +
+                             IntToStr(FRcvdStream.Size) + ' bytes');
+                end;
+            end;
+        {$ENDIF}
 {$ENDIF}
             TriggerDocEnd;
             if {(FResponseVer = '1.0') or (FRequestVer = '1.0') or }
