@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.06
+Version:      7.07
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -420,6 +420,12 @@ Dec 02, 2009 V7.05 Bjornar found a HTTPS POST bug with proxy basic
              authentication that added two Content-Length header lines.
 Feb 15, 2010 V7.06 Yuri Semenov fixed a bug with content coding and chunked
              transfer encoding.
+Feb 25, 2010 V7.07 Fix by Bjørnar Nielsen: TSslHttpCli didn't work when used
+             against Websense-Content_Gateway (http://www.websense.com) and 
+             some others. The problem was that this (and some other proxies too)
+             answer 200 OK to notify client that connection to remote server 
+             is established. Usually proxies use 200 OK and an error text when
+             something is wrong. In that case Content-Length is not 0.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -497,8 +503,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 706;
-    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.06 ';
+    HttpCliVersion       = 707;
+    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.07 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -793,6 +799,8 @@ type
         procedure SocketSessionConnected(Sender : TObject; ErrCode : Word); virtual;
         procedure SocketDataSent(Sender : TObject; ErrCode : Word); virtual;
         procedure SocketDataAvailable(Sender: TObject; ErrCode: Word); virtual;
+        function  StartsWithText(Source : TBytes; Find : PAnsiChar) : Boolean; {Bjornar}
+        function  ContainsText(Source : TBytes; Find : PAnsiChar) : Boolean; {Bjornar}
         procedure LocationSessionClosed(Sender: TObject; ErrCode: Word); virtual;
         procedure DoRequestAsync(Rq : THttpRequest); virtual;
         procedure DoRequestSync(Rq : THttpRequest); virtual;
@@ -1820,7 +1828,7 @@ begin
                                         [FStatusCode, Ord(FProxyAuthNTLMState),
                                         Ord(FAuthNTLMState)]));
     end;
-{$ENDIF}    
+{$ENDIF}
 end;
 {$ENDIF}
 
@@ -3624,19 +3632,25 @@ begin
         { "HTTP/1.0 200 OK<CRLF>header lines<CRLF><CRLF>document"       }
         { If connection success we receive                              }
         { "HTTP/1.0 200 Connection established<CRLF><CRLF>"             }
+        { Some proxies return HTTP/1.0 200 OK. We must also check for   } {Bjornar}
+        { Content-Length, since a proxy returns header only as reply to } {Bjornar}
+        { CONNECT request.                                              } {Bjornar}
     {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loProtSpecInfo) then  { V1.91 } { replaces $IFDEF DEBUG_OUTPUT  }
             DebugLog(loProtSpecInfo, 'Proxy connected: "' + PAnsiChar(FReceiveBuffer) + '"');
     {$ENDIF}
         FProxyConnected := TRUE;
-        if (
-           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.0 200'), 12) = 0) or
-           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.1 200'), 12) = 0) or
-           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.0  200'), 13) = 0) or // M$ Proxy Server 2.0
-           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.1  200'), 13) = 0)    // M$ Proxy Server 2.0 not tested ??
-           ) and not
-           ((StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.1 200 OK'), 15) = 0) or
-           (StrLIComp(PAnsiChar(FReceiveBuffer), AnsiString('HTTP/1.0 200 OK'), 15) = 0)) then
+        if ( {Bjornar - Start}
+           (StartsWithText(FReceiveBuffer, 'HTTP/1.0 200') or
+           StartsWithText(FReceiveBuffer,'HTTP/1.1 200') or
+           StartsWithText(FReceiveBuffer, 'HTTP/1.0  200') or //M$ Proxy Server 2.0
+           StartsWithText(FReceiveBuffer, 'HTTP/1.1  200')) //M$ Proxy Server 2.0 not tested ??
+           and not
+           ((StartsWithText(FReceiveBuffer, 'HTTP/1.1 200 OK') or
+           StartsWithText(FReceiveBuffer, 'HTTP/1.0 200 OK')) and
+           ContainsText(FReceiveBuffer, 'Content-Length:') and
+           not ContainsText(FReceiveBuffer, 'Content-Length: 0'))
+           ) then {Bjornar - End}
         begin
             { We have a connection to remote host thru proxy, we can start }
             { SSL handshake                                                }
@@ -3772,6 +3786,26 @@ begin
         end;
     end;
 end;
+
+
+{Bjornar - Start}
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpCli.StartsWithText(Source : TBytes; Find : PAnsiChar) : Boolean;
+begin
+    Result := FALSE;
+    if (StrLIComp(PAnsiChar(Source), Find, Length(Find)) = 0) then
+       Result := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpCli.ContainsText(Source : TBytes; Find : PAnsiChar) : Boolean;
+begin
+    Result := FALSE;
+    if (StrPos(PAnsiChar(Source), Find) <> nil) then
+      Result := TRUE;
+end;
+{Bjornar - End}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
