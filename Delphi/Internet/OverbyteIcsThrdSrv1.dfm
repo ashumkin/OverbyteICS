@@ -1,9 +1,9 @@
 object TcpSrvForm: TTcpSrvForm
   Left = 241
   Top = 152
+  Width = 389
+  Height = 282
   Caption = 'ThrdSrvForm'
-  ClientHeight = 248
-  ClientWidth = 381
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -34,7 +34,6 @@ object TcpSrvForm: TTcpSrvForm
       'DisplayMemo')
     ScrollBars = ssBoth
     TabOrder = 1
-    ExplicitHeight = 200
   end
   object WSocketServer1: TWSocketServer
     LineMode = False

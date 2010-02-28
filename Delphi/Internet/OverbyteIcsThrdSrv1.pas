@@ -2,7 +2,7 @@
 
 Author:       François Piette
 Creation:     Sep 02, 2001
-Version:      1.02
+Version:      1.03
 Description:  Basic TCP server showing how to use TWSocketServer and
               TWSocketClient components with threads.
               This demo is mostly the same as TcpSrv demo but use a thread to
@@ -13,7 +13,7 @@ Description:  Basic TCP server showing how to use TWSocketServer and
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2001-2007 by François PIETTE
+Legal issues: Copyright (C) 2001-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -44,6 +44,7 @@ Legal issues: Copyright (C) 2001-2007 by François PIETTE
 History:
 Feb 24, 2002 V1.01 Wilfried Mestdagh <wilfried@mestdagh.biz> added ThreadDetach
 Jun 20, 2004 V1.02 Fixed BannerToBusy error (BannerTooBusy).
+Feb 28, 2010 V1.03 Arno Garrels fixed a deadlock.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -62,8 +63,9 @@ uses
 
 const
   ThrdSrvVersion = 102;
-  CopyRight      = ' ThrdSrv (c) 2001-2007 by François PIETTE. V1.02';
+  CopyRight      = ' ThrdSrv (c) 2001-2010 by François PIETTE. V1.03';
   WM_APPSTARTUP  = WM_USER + 1;
+  WM_LOGMSG      = WM_USER + 2;
 
 type
   TDisplayProc  = procedure (const Msg : String) of object;
@@ -73,16 +75,12 @@ type
   { events are processed in the thread's context.                           }
   { Remember that multithreading requires synchronization, specially when   }
   { updating GUI or accessing shared data.                                  }
-  { TClientThread uses OnDisplay event to display data on the application   }
-  { main form. Synchronization is automatically done.                       }
   {$M+}       { Needed for Published to take effect }
   TClientThread = class(TThread)
   private
       FWSocket        : TWSocket;             { Reference to client socket  }
-      FMsg            : String;               { Message to be displayed     }
       FOnDisplay      : TDisplayProc;         { Event variable              }
       FThreadAttached : Boolean;              { TRUE once socket attached   }
-      procedure DisplayMsg;                   { Synchronized procedure      }
   public
       procedure Execute; override;            { Main method                 }
       procedure Display(const Msg : String);  { Takes care of synchroniz.   }
@@ -124,6 +122,8 @@ type
       var CanClose: Boolean);
     procedure WSocketServer1ClientCreate(Sender: TObject;
       Client: TWSocketClient);
+  protected
+    procedure WmLogMessage(var Msg: TMessage); message WM_LOGMSG;
   private
     FIniFileName  : String;
     FInitialized  : Boolean;
@@ -161,6 +161,9 @@ const
     KeyWidth           = 'Width';
     KeyHeight          = 'Height';
 
+var
+    GLogList     : TStringList;
+    LogCritSect  : TRTLCriticalSection;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTcpSrvForm.FormCreate(Sender: TObject);
@@ -273,6 +276,24 @@ begin
     PostMessage(Handle, WM_NULL, 0, 0);
 end;
 {$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TTcpSrvForm.WmLogMessage(var Msg: TMessage);
+var
+    I : Integer;
+begin
+    EnterCriticalSection(LogCritSect);
+    try
+        if GLogList.Count > 0 then begin
+            for I := 0 to GLogList.Count -1 do
+                Display(GLogList[I]);
+            GLogList.Clear;
+        end;    
+    finally
+        LeaveCriticalSection(LogCritSect);
+    end;
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -507,27 +528,30 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This procedure is called from client thread and must display a message    }
 { on the GUI (main application form). As we are in a thread, we can't       }
-{ simply call something that act on the GUI, we MUST use synchronize to ask }
-{ main thread to update the GUI.                                            }
+{ simply call something that act on the GUI, we add the message to a        }
+{ TStringList instance and notify the main thread by posting a custom       }
+{ message.                                                                  }
 procedure TClientThread.Display(const Msg: String);
 begin
-    { Synchronized procedure have no parameter, we must use a variable      }
-    FMsg := Msg;
-    { Then synchronize the procedure (which will use FMsg)                  }
-    Synchronize(DisplayMsg);
+    { We protect access to the list using a critical section }
+    EnterCriticalSection(LogCritSect);
+    try
+        GLogList.Add(Msg);
+    finally
+        LeaveCriticalSection(LogCritSect);
+    end;
+    PostMessage(TcpSrvForm.Handle, WM_LOGMSG, 0, 0);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Never call this procedure directly, always call Synchronize(DisplayMsg)   }
-procedure TClientThread.DisplayMsg;
-begin
-    if Assigned(FOnDisplay) then
-        FOnDisplay(FMsg);
-end;
+initialization
+  InitializeCriticalSection(LogCritSect);
+  GLogList := TStringList.Create;
 
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
+finalization
+  GLogList.Free;
+  DeleteCriticalSection(LogCritSect);
+  
 end.
 
