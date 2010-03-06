@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.32
+Version:      7.33
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -99,6 +99,8 @@ Sep 24, 2009 V7.31 Arno added TIcsIntegerList and IcsBufferToHex.
              section. Added fast functions to swap byte order: IcsSwap16,
              IcsSwap16Buf, IcsSwap32, IcsSwap32Buf and IcsSwap64Buf.
 Dec 15, 2009 V7.32 Arno added typedef PInt64 for CB 2006 and CB2007.
+Mar 06, 2010 V7.33 Arno changed IcsGetWideCharCount, not every code page ID
+             supports flag "MB_ERR_INVALID_CHARS" with MultibyteToWideChar().
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -755,6 +757,7 @@ const
 var
     I     : Integer;
     Bytes : PByte;
+    Flags : DWORD;
 begin
     Bytes := @Buffer;
     case BufferCodePage of
@@ -788,14 +791,44 @@ begin
             end;
         else
             FailedByteCount := 0;
-            Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+            Flags := MB_ERR_INVALID_CHARS;
+            Result := MultiByteToWideChar(BufferCodePage, Flags,
                                           PAnsiChar(Bytes), BufferSize, nil, 0);
+
+            { Not every code page ID supports flag MB_ERR_INVALID_CHARS. }
+            { Depends on Windows version as well, from current MS-docs:  }
+
+            { For the code pages listed below, dwFlags must be set to 0. }
+            { Otherwise, the function fails with ERROR_INVALID_FLAGS.
+                * 50220
+                * 50221
+                * 50222
+                * 50225
+                * 50227
+                * 50229
+                * 57002 through 57011
+                * 65000 (UTF-7)
+                * 42 (Symbol)
+              Note  For UTF-8 or code page 54936
+              (GB18030, starting with Windows Vista), dwFlags must be
+              set to either 0 or MB_ERR_INVALID_CHARS. Otherwise, the
+              function fails with ERROR_INVALID_FLAGS. }
+
+            { Do you get this? I don't }
+
+            if (Result = 0) and
+               (GetLastError = ERROR_INVALID_FLAGS) then
+            begin
+                Flags := 0;
+                Result := MultiByteToWideChar(BufferCodePage, Flags,
+                                          PAnsiChar(Bytes), BufferSize, nil, 0);
+            end;
             while (Result = 0) and
                   (GetLastError = ERROR_NO_UNICODE_TRANSLATION) and
                   (FailedByteCount < BufferSize) do
             begin
                 Inc(FailedByteCount);
-                Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+                Result := MultiByteToWideChar(BufferCodePage, Flags,
                         PAnsiChar(Bytes), BufferSize - FailedByteCount, nil, 0);
             end;
     end;
