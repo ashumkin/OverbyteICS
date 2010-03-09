@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.32
+Version:      7.33
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -99,6 +99,10 @@ Sep 24, 2009 V7.31 Arno added TIcsIntegerList and IcsBufferToHex.
              section. Added fast functions to swap byte order: IcsSwap16,
              IcsSwap16Buf, IcsSwap32, IcsSwap32Buf and IcsSwap64Buf.
 Dec 15, 2009 V7.32 Arno added typedef PInt64 for CB 2006 and CB2007.
+Mar 06, 2010 V7.33 Arno fixed IcsGetWideCharCount, MultiByteToWideChar() does
+             not support flag "MB_ERR_INVALID_CHARS" with all code pages.
+             Fixed some ugly bugs in UTF-8 helper functions too. Added
+             IsUtf8LeadByte() and IcsUtf8Size().
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -206,7 +210,7 @@ type
     function  IcsBufferToUnicode(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; RaiseFailedBytes: Boolean = FALSE): UnicodeString; overload;
     { Returns the number of WideChars, and the number of not translated bytes at the end of the source buffer }
     { BufferCodePage includes Ansi as well as Unicode code page IDs }
-    function  IcsGetWideCharCount(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; out FailedByteCount: Integer): Integer;
+    function  IcsGetWideCharCount(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; out InvalidEndByteCount: Integer): Integer;
     { Returns a Unicode string, ByteCount and CharCount must match, no length checks are done }
     { BufferCodePage includes Ansi as well as Unicode code page IDs }
     function  IcsGetWideChars(const Buffer; BufferSize: Integer; BufferCodePage: LongWord; Chars: PWideChar; CharCount: Integer): Integer;
@@ -232,6 +236,8 @@ type
     function  CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord = CP_ACP): Boolean;
     { This is a weak check, it does not detect whether it's a valid UTF-8 byte }  
     function  IsUtf8TrailByte(const B: Byte): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IsUtf8LeadByte(const B: Byte): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsUtf8Size(const LeadByte: Byte): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$IFNDEF COMPILER12_UP}
     function  IsLeadChar(Ch: WideChar): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ENDIF}
@@ -379,6 +385,7 @@ const
     DefaultFailChar : AnsiChar  = '?';
     {$EXTERNALSYM CP_UTF8}
     CP_UTF8             = Windows.CP_UTF8;
+    MAX_UTF8_SIZE       = 4;
     IcsPathDelimW       : WideChar  = '\';
     IcsDriveDelimW      : WideChar  = ':';
     IcsPathDriveDelimW  : PWideChar = '\:';
@@ -745,16 +752,58 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Result is the number of WideChars, FailedByteCount returns the number       }
-{ of not translated bytes at the end of the buffer                            }
+{ Result is the number of translated WideChars, InvalidEndByteCount returns   }
+{ the number of untranslated bytes at the end of the source buffer only       }
+{ (if any). If there were invalid byte sequences somewhere else they may be   }
+{ translated/counted or not depending on the OS version and code page.        }
 { BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be    }
 function IcsGetWideCharCount(const Buffer; BufferSize: Integer;
-  BufferCodePage: LongWord; out FailedByteCount: Integer): Integer;
+  BufferCodePage: LongWord; out InvalidEndByteCount: Integer): Integer;
+
+{$IFNDEF COMPILER12_UP}
 const
-    MB_ERR_INVALID_CHARS  = $00000008;  // Missing in Window.pas (D7)
+    MB_ERR_INVALID_CHARS  = $00000008;  // Missing in Windows.pas
+{$ENDIF}
+    
+    function GetMbcsInvalidEndBytes(const EndBuf: PAnsiChar): Integer;
+    var
+        P : PAnsiChar;
+        Utf8Size : Integer;
+    begin
+        { If last byte equals NULL this function always returns "0"           }
+        if INT_PTR(@Buffer) < INT_PTR(EndBuf) then
+        begin
+            { Try to get a pointer to the last lead byte, see comment in      }
+            { IcsStrPrevChar()                                                }
+            P := IcsStrPrevChar(@Buffer, EndBuf, BufferCodePage);
+            Result := INT_PTR(EndBuf) - INT_PTR(P);
+            if (Result > 0) and (BufferCodePage = CP_UTF8) then
+            begin
+                Utf8Size := IcsUtf8Size(Byte(P^));
+                if (Utf8Size > 0) and (Utf8Size < Result) then
+                begin { Looks like we got a complete and a trunkated sequence }
+                    if (Utf8Size = 1) { should always translate } or
+                       (MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+                                            P, Utf8Size, nil, 0) > 0) then
+                    begin
+                        Inc(P, Utf8Size);
+                        Dec(Result, Utf8Size);
+                    end;
+                end;
+            end;
+            if (Result > 0) and
+               (MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+                           P, Result, nil, 0) > 0) then
+                Result := 0;
+        end
+        else
+            Result := 0;
+    end;
+
 var
     I     : Integer;
     Bytes : PByte;
+    LastErr : LongWord;
 begin
     Bytes := @Buffer;
     case BufferCodePage of
@@ -762,12 +811,12 @@ begin
         CP_UTF16Be  :
             begin
                 Result := BufferSize div SizeOf(WideChar);
-                FailedByteCount := BufferSize mod SizeOf(WideChar);
+                InvalidEndByteCount := BufferSize mod SizeOf(WideChar);
             end;
         CP_UTF32    :
             begin
                 Result := BufferSize div SizeOf(UCS4Char);
-                FailedByteCount := BufferSize mod SizeOf(UCS4Char);
+                InvalidEndByteCount := BufferSize mod SizeOf(UCS4Char);
                 for I := 1 to Result do
                 begin
                     if PLongWord(Bytes)^ > $10000 then
@@ -778,7 +827,7 @@ begin
         CP_UTF32Be  :
             begin
                 Result := BufferSize div SizeOf(UCS4Char);
-                FailedByteCount := BufferSize mod SizeOf(UCS4Char);
+                InvalidEndByteCount := BufferSize mod SizeOf(UCS4Char);
                 for I := 1 to Result do
                 begin
                     if IcsSwap32(PLongWord(Bytes)^) > $10000 then
@@ -787,16 +836,42 @@ begin
                 end;
             end;
         else
-            FailedByteCount := 0;
+            InvalidEndByteCount := 0;
             Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
                                           PAnsiChar(Bytes), BufferSize, nil, 0);
-            while (Result = 0) and
-                  (GetLastError = ERROR_NO_UNICODE_TRANSLATION) and
-                  (FailedByteCount < BufferSize) do
+            { Not every code page supports flag MB_ERR_INVALID_CHARS.         }
+            { Depends on the Windows version as well, see SDK-docs.           }
+            { However mbtowc's doc is not correct regarding older Windows.    }
+            { Some tests with UTF-8 showed that in W2K SP4 and XP SP3 mbtowc  }
+            { happily takes this flag and seems to skip invalid source bytes  }
+            { silently if they are NOT at the end of the source buffer. If    }
+            { they are at the end mbtowc fails as documented. Other MBCS seem }
+            { to work as documented (tested 932 only). Windows Vista seems to }
+            { work as documented too.                                         }
+            if Result = 0 then
             begin
-                Inc(FailedByteCount);
-                Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
-                        PAnsiChar(Bytes), BufferSize - FailedByteCount, nil, 0);
+                LastErr := GetLastError;
+                if LastErr = ERROR_INVALID_FLAGS then
+                    { Try again with flags "0", nothing else can be done      }
+                    Result := MultiByteToWideChar(BufferCodePage, 0,
+                                          PAnsiChar(Bytes), BufferSize, nil, 0)
+                else if LastErr = ERROR_NO_UNICODE_TRANSLATION then
+                begin
+                    { There's some invalid bytes but we don't know where in  }
+                    { the source buffer. Try to get the number of            }
+                    { untranslated bytes at the end of the source buffer     }
+                    {(if any). It won't work with all code pages correctly.  }
+                    { According to Mrs. Kaplan, code pages 932, 936, 949,    }
+                    { 950, and 1361 are supported. UTF-8 support is an ICS   }
+                    { home-grown routine.                                    }
+                    InvalidEndByteCount := GetMbcsInvalidEndBytes(
+                                              PAnsiChar(Bytes) + BufferSize);
+                    { Then call mbtowc with a shorter source buffer and flag }
+                    { "0".                                                   }
+                    Result := MultiByteToWideChar(BufferCodePage, 0,
+                        PAnsiChar(Bytes), BufferSize - InvalidEndByteCount,
+                        nil, 0);
+                end;
             end;
     end;
 end;
@@ -868,7 +943,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be }
+{ BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be    }
 function IcsBufferToUnicode(const Buffer; BufferSize: Integer;
   BufferCodePage: LongWord; out FailedByteCount: Integer): UnicodeString;
 var
@@ -1373,7 +1448,14 @@ begin
     Len := Length(Str);
     if Len > 0 then begin
         Len := WideCharToMultiByte(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, @B);
-        Result := (not B) and (Len > 0);
+        { MS-docs: For the CP_UTF7 and CP_UTF8 settings for CodePage, parameter }
+        { lpUsedDefaultChar must be set to NULL. Otherwise, the function fails  }
+        { with ERROR_INVALID_PARAMETER.                                         }
+        if (Len = 0) and (GetLastError = ERROR_INVALID_PARAMETER) then
+            Result := WideCharToMultiByte(ACodePage, 0, Pointer(Str),
+                                          Len, nil, 0, nil, nil) > 0
+        else
+            Result := (not B) and (Len > 0);
     end
     else
         Result := TRUE;
@@ -1381,10 +1463,32 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Returns size of a UTF-8 byte sequence calculated from the UTF-8 lead byte   }
+{ Returns "0" if LeadByte is not valid UTF-8 lead byte.                       }
+function IcsUtf8Size(const LeadByte: Byte): Integer;
+begin
+    case LeadByte of
+        $00..$7F : Result := 1;
+        $C2..$DF : Result := 2;
+        $E0..$EF : Result := 3;
+        $F0..$F4 : Result := 4;
+    else
+        Result := 0; // Invalid lead byte
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsUtf8LeadByte(const B: Byte): Boolean;
+begin
+    Result := (B < $80) or (B in [$C2..$F4]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsUtf8TrailByte(const B: Byte): Boolean;
 begin
-    Result := (B and $C0 <> $C0) and
-              (B and $80 = $80) or (B and $C0 = $80);
+    Result := B in [$80..$BF];
 end;
 
 
@@ -1583,60 +1687,39 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ The return value is a pointer to the preceding character in the string, or  }
-{ to the first character in the string if the Current parameter equals the    }
-{ Start parameter.                                                            }
+{ The return value is a pointer to the preceding character in the string,   }
+{ or to the first character in the string if the Current parameter equals   }
+{ the Start parameter.                                                      }
 function IcsCharPrevUtf8(const Start, Current: PAnsiChar): PAnsiChar;
 var
-    Ch   : Byte;
-    Cnt  : Integer;
-    Size : Integer;
+    Cnt : Integer;
 begin
+    Cnt := 0;
     Result := Current;
-    Cnt    := 0;
-    while (INT_PTR(Result) > INT_PTR(Start)) do
+    while (INT_PTR(Result) > INT_PTR(Start)) and (Cnt < MAX_UTF8_SIZE) do
     begin
         Dec(Result);
+        if IsUtf8LeadByte(Byte(Result^)) then
+            Break;
         Inc(Cnt);
-        Ch := Byte(Result^);
-        case Ch of
-            $00..$7F: Size := 1; //
-            $C2..$DF: Size := 2; // 110x xxxx C0 - DF
-            $E0..$EF: Size := 3; // 1110 xxxx E0 - EF
-            $F0..$F7: Size := 4; // 1111 0xxx F0 - F7 // outside traditional UNICODE
-         //   $F8..$FB: Size := 5; // 1111 10xx F8 - FB // outside UTF-16
-         //   $FC..$FD: Size := 6; // 1111 110x FC - FD // outside UTF-16
-        else
-            Size := 0; // Illegal leading character.
-        end;
-        if (Size = Cnt) then
-            Exit
-        else if (Size > 0) and (Size <> Cnt) then
-           Cnt := 0;
     end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsCharNextUtf8(const Str: PAnsiChar): PAnsiChar;
+var
+    Cnt : Integer;
 begin
     Result := Str;
     if (Result = nil) or (Result^ = #0) then
         Exit;
-    if (Byte(Result^) and $C0) = $C0 then       // UTF-8 start byte
+    for Cnt := 1 to MAX_UTF8_SIZE do
     begin
         Inc(Result);
-        while (Byte(Result^) and $C0) = $80 do
-            Inc(Result);
-    end
-    else if (Byte(Result^) and $80) = $80 then  // UTF-8 trail byte
-    begin
-        Inc(Result);
-        while (Byte(Result^) and $C0) = $80 do
-            Inc(Result);
-    end
-    else                                        // US-ASCII
-        Inc(Result);
+        if (Result^ = #0) or IsUtf8LeadByte(Byte(Result^)) then
+            Break;
+    end;
 end;
 
 
@@ -1646,7 +1729,18 @@ begin
     if ACodePage = CP_UTF8 then
         Result := IcsCharNextUtf8(Str)
     else
-        Result := CharNextExA(Word(ACodePage), Str, 0); //CharNextExA doesn't work with UTF-8
+        Result := CharNextExA(Word(ACodePage), Str, 0);
+        { From Mitch Kaplan's blog                                        }
+        { http://blogs.msdn.com/michkap/archive/2007/04/19/2190207.aspx): }
+        { Neither CharNextExA nor CharPrevExA are broken in any version   }
+        { of Windows, but neither one was designed with UTF-8 in mind.    }
+        {...                                                              }
+        { It is completely dependent on the behavior of IsDBCSLeadByteEx, }
+        { which is an NLS function that is (for obvious reasons) only     }
+        { dealing with East Asian, DBCS code page.                        }
+
+        { Comment: Poor design isn't it? IsDBCSLeadByteEx validates lead  }
+        { byte values only in code pages 932, 936, 949, 950, and 1361.    }
 end;
 
 
@@ -1656,7 +1750,8 @@ begin
     if ACodePage = CP_UTF8 then
         Result := IcsCharPrevUtf8(Start, Current)
     else
-        Result := CharPrevExA(Word(ACodePage), Start, Current, 0); //CharPrevExA doesn't work with UTF-8
+        Result := CharPrevExA(Word(ACodePage), Start, Current, 0);
+        { Read comment in IcsStrNextChar                                  }
 end;
 
 
