@@ -4,7 +4,7 @@ Author:       François PIETTE
 Creation:     April 11, 2009
 Description:  This source is part of WebAppServer demo application.
               The purpose is defin the session data used by the application.
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -38,6 +38,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Apr 19, 2010 V1.01 Angus, removed GSessionDataCount which duplicates same
+                          variable in OverbyteIcsWebSession
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -81,8 +83,8 @@ type
                                             write FConfigHasLogo;
     end;
 
-var
-    GSessionDataCount : Integer;
+//var
+//    GSessionDataCount : Integer;
 
 implementation
 

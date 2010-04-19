@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  Classes to handle session for THttpAppSrv and MidWare.
 Creation:     Dec 20, 2003
-Version:      1.00
+Version:      1.01
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list midware@elists.org or twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -36,6 +36,9 @@ Legal issues: Copyright (C) 1998-2009 by François PIETTE
                  distribution and must be added to the product documentation.
 
 Updates:
+Apr 19, 2010 V1.01 Angus, stop MaxAge (SessionTimeout) being restored with saved
+                      session data since it can never then be changed
+                   Added SessionDataCount so client can use it, only set by AssignName
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -69,10 +72,14 @@ type
     TWebSessions = class;
 
     TWebSessionData = class(TComponent)
+    private
+        FSessionDataCount: integer;  // V1.01 Angus 17 Apr 2010 keep counter so client can use it
     public
         constructor Create(AOwner : TComponent); override;
         destructor  Destroy; override;
         procedure   AssignName; virtual;
+    published
+        property SessionDataCount: integer read FSessionDataCount write FSessionDataCount;
     end;
 
     PWebSession = ^TWebSession;
@@ -193,7 +200,7 @@ implementation
 var
     GSessionID        : Integer    = 0;
     GSessionDataCount : Integer    = 0;
-    GSignature        : AnsiString = 'WebSessions V1.00' + #13#10#26;
+    GSignature        : AnsiString = 'WebSessions V1.01' + #13#10#26;
 threadvar
     LockCount  : Integer;
 
@@ -1038,6 +1045,7 @@ var
     I, J             : Integer;
     CName            : String;
     OldDeleteSession : TDeleteSessionEvent;
+    OldMaxAge        : Integer;
 begin
     if Src.Size = 0 then
         Exit;
@@ -1053,6 +1061,7 @@ begin
     // when we are in the load process (the file is opened).
     OldDeleteSession := OnDeleteSession;
     OnDeleteSession  := nil;
+    OldMaxAge := MaxAge ; // V1.01 Angus 17 Apr 2010 keep MaxAge since it about to read from file
     try
         // Delete all existing data
         Clear;
@@ -1063,18 +1072,23 @@ begin
     finally
         OnDeleteSession := OldDeleteSession;
     end;
+    MaxAge := OldMaxAge ; // V1.01 Angus 17 Apr 2010 restore MaxAge
 
     // Update the global counters according to what was loaded
     for I := Count - 1 downto 0 do begin
         if Sessions[I].Session > GSessionID then
             GSessionID := Sessions[I].Session;
         if Assigned(Sessions[I].SessionData) then begin
-            CName := Sessions[I].SessionData.Name;
-            J := Length(CName);
-//          while (J > 0) and (CName[J] in ['0'..'9']) do
-            while (J > 0) and IsCharInSysCharSet(CName[J], ['0'..'9']) do
-                Dec(J);
-            J := StrToInt(Copy(CName, J + 1, 10));
+            if  Sessions[I].SessionData.SessionDataCount > 0 then // V1.01 Angus 17 Apr 2010 might be available as integer
+                J :=  Sessions[I].SessionData.SessionDataCount
+            else begin
+                CName := Sessions[I].SessionData.Name;
+                J := Length(CName);
+//              while (J > 0) and (CName[J] in ['0'..'9']) do
+                while (J > 0) and IsCharInSysCharSet(CName[J], ['0'..'9']) do
+                    Dec(J);
+                J := StrToInt(Copy(CName, J + 1, 10));
+            end;
             if J > GSessionDataCount then
                 GSessionDataCount := J;
         end;
@@ -1110,6 +1124,7 @@ end;
 procedure TWebSessionData.AssignName;
 begin
     Name := CompName(ClassName, GSessionDataCount);
+    SessionDataCount := GSessionDataCount;  // V1.01 Angus 17 Apr 2010 keep counter
 end;
 
 

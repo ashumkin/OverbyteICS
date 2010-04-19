@@ -8,7 +8,7 @@ Description:  This source is part of WebAppServer demo application.
               never passed thru the connection. A hash code is use to avoid
               passing the password and offering the highest possible security.
               This implement a "challenge/response" algorithm.
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -42,6 +42,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Apr 19, 2010 V1.01 Angus, removed GSessionDataCount which duplicates same
+                          variable in OverbyteIcsWebSession
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -85,9 +87,10 @@ var
     Headers       : String;
 begin
     if not ValidateSession then begin
-        Inc(GSessionDataCount);
+//        Inc(GSessionDataCount);
         MySessionData := TAppSrvSessionData.Create(nil);
-        MySessionData.Name := 'MySessionData' + IntToStr(GSessionDataCount);
+//        MySessionData.Name := 'MySessionData' + IntToStr(GSessionDataCount);
+        MySessionData.AssignName;  // Angus
         Headers       := NO_CACHE + CreateSession('', 0, MySessionData);
     end
     else begin
