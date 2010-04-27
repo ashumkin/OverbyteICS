@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.33
+Version:      7.34
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -103,6 +103,10 @@ Mar 06, 2010 V7.33 Arno fixed IcsGetWideCharCount, MultiByteToWideChar() does
              not support flag "MB_ERR_INVALID_CHARS" with all code pages.
              Fixed some ugly bugs in UTF-8 helper functions too. Added
              IsUtf8LeadByte() and IcsUtf8Size().
+Apr 26, 2010 V7.34 Arno removed some Windows dependencies. Charset conversion
+             functions optionally may use GNU iconv library (LGPL) by explicitly
+		    defining conditional "USE_ICONV".  			 
+			 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -138,7 +142,16 @@ interface
 {$ENDIF}
 
 uses
+{$IFDEF MSWINDOWS}
     Windows,
+  {$IFDEF USE_ICONV}
+    OverbyteIcsIconv,
+  {$ENDIF}
+{$ENDIF}
+{$IFDEF POSIX}
+    PosixBase, PosixSysTypes, PosixIconv,
+    PosixErrno, PosixUnistd, PosixStdio,
+{$ENDIF}
     Classes,
     SysUtils,
     RtlConsts,
@@ -155,12 +168,68 @@ type
   (*$HPPEMIT '{' *)
   (*$HPPEMIT '  typedef __int64* PInt64;' *)
   (*$HPPEMIT '}' *)
-
 {$ENDIF}
 
+{$IFNDEF COMPILER15_UP}
+    PLongBool     =  ^LongBool;
+{$ENDIF}
+    TIcsDbcsLeadBytes = TSysCharset;
+    
+const
+    { From Win 7 GetCPInfoEx() DBCS lead bytes }
+    ICS_LEAD_BYTES_932   : TIcsDbcsLeadBytes = [#$81..#$9F, #$E0..#$FC];              // (ANSI/OEM - Japanese Shift-JIS) DBCS Lead Bytes: 81..9F E0..FC
+    ICS_LEAD_BYTES_936_949_950 : TIcsDbcsLeadBytes = [#$81..#$FE];                    // (ANSI/OEM - Simplified Chinese GBK) DBCS Lead Bytes: 81..FE
+    //ICS_LEAD_BYTES_949   = LEAD_BYTES_936;                                          // (ANSI/OEM - Korean) DBCS Lead Bytes: 81..FE
+    //ICS_LEAD_BYTES_950   = LEAD_BYTES_936;                                          // (ANSI/OEM - Traditional Chinese Big5) DBCS Lead Bytes: 81..FE
+    ICS_LEAD_BYTES_1361  : TIcsDbcsLeadBytes = [#$84..#$D3, #$D8..#$DE, #$E0..#$F9];  // (Korean - Johab) DBCS Lead Bytes: 84..D3 D8..DE E0..F9
+    ICS_LEAD_BYTES_10001 : TIcsDbcsLeadBytes = [#$81..#$9F, #$E0..#$FC];              // (MAC - Japanese) DBCS Lead Bytes: 81..9F E0..FC
+    ICS_LEAD_BYTES_10002 : TIcsDbcsLeadBytes = [#$81..#$FC];                          // (MAC - Traditional Chinese Big5) DBCS Lead Bytes: 81..FC
+    ICS_LEAD_BYTES_10003 : TIcsDbcsLeadBytes = [#$A1..#$AC, #$B0..#$C8, #$CA..#$FD];  // (MAC - Korean) DBCS Lead Bytes: A1..AC B0..C8 CA..FD
+    ICS_LEAD_BYTES_10008 : TIcsDbcsLeadBytes = [#$A1..#$A9, #$B0..#$F7];              // (MAC - Simplified Chinese GB 2312) DBCS Lead Bytes: A1..A9 B0..F7
+    ICS_LEAD_BYTES_20000 : TIcsDbcsLeadBytes = [#$A1..#$FE];                          // (CNS - Taiwan) DBCS Lead Bytes: A1..FE
+    ICS_LEAD_BYTES_20001 : TIcsDbcsLeadBytes = [#$81..#$84, #$91..#$D8, #$DF..#$FC];  // (TCA - Taiwan) DBCS Lead Bytes: 81..84 91..D8 DF..FC
+    ICS_LEAD_BYTES_20002 : TIcsDbcsLeadBytes = [#$81..#$AF, #$DD..#$FE];              // (Eten - Taiwan) DBCS Lead Bytes: 81..AF DD..FE
+    ICS_LEAD_BYTES_20003 : TIcsDbcsLeadBytes = [#$81..#$84, #$87..#$87, #$89..#$E8, #$F9..#$FB]; // (IBM5550 - Taiwan) DBCS Lead Bytes: 81..84 87..87 89..E8 F9..FB
+    ICS_LEAD_BYTES_20004 : TIcsDbcsLeadBytes = [#$A1..#$FE];                          // (TeleText - Taiwan) DBCS Lead Bytes: A1..FE
+    ICS_LEAD_BYTES_20005 : TIcsDbcsLeadBytes = [#$8D..#$F5, #$F9..#$FC];              // (Wang - Taiwan) DBCS Lead Bytes: 8D..F5 F9..FC
+    ICS_LEAD_BYTES_20261 : TIcsDbcsLeadBytes = [#$C1..#$CF];                          // (T.61) DBCS Lead Bytes: C1..CF
+    ICS_LEAD_BYTES_20932 : TIcsDbcsLeadBytes = [#$8E..#$8E, #$A1..#$FE];              // (JIS X 0208-1990 & 0212-1990) DBCS Lead Bytes: 8E..8E A1..FE
+    ICS_LEAD_BYTES_20936 : TIcsDbcsLeadBytes = [#$A1..#$A9, #$B0..#$F7];              // (Simplified Chinese GB2312) DBCS Lead Bytes: A1..A9 B0..F7
+    ICS_LEAD_BYTES_51949 : TIcsDbcsLeadBytes = [#$A1..#$AC, #$B0..#$C8, #$CA..#$FD];  // (EUC-Korean) DBCS Lead Bytes: A1..AC B0..C8 CA..FD
+
+const
+{$IFNDEF MSWINDOWS}
+    CP_ACP                          = 0;
+    CP_UTF7                         = 65000;
+    CP_UTF8                         = 65001;
+
+    ERROR_INVALID_FLAGS             = 1004;
+    ERROR_NO_UNICODE_TRANSLATION    = 1113;
+    ERROR_INVALID_PARAMETER         = 87;
+    ERROR_INSUFFICIENT_BUFFER       = 122;
+    MB_ERR_INVALID_CHARS            = $00000008;
+    WC_ERR_INVALID_CHARS            = $80;
+{$ELSE}
+  {$IFNDEF COMPILER12_UP}
+    {$EXTERNALSYM MB_ERR_INVALID_CHARS}
+    MB_ERR_INVALID_CHARS            = $00000008;  // Missing in Windows.pas
+    {$IFDEF COMPILER11_UP} {$EXTERNALSYM WC_ERR_INVALID_CHARS} {$ENDIF}
+    WC_ERR_INVALID_CHARS            = $80;        // Missing in Windows.pas
+  {$ENDIF}
+{$ENDIF}
+    { Unicode code page ID }
+    CP_UTF16      = 1200;
+    CP_UTF16Be    = 1201;
+    CP_UTF32      = 12000;
+    CP_UTF32Be    = 12001;
+
+type
     EIcsStringConvertError = class(Exception);
     TCharsetDetectResult = (cdrAscii, cdrUtf8, cdrUnknown);
 
+{$IFDEF COMPILER12_UP}
+    TIcsSearchRecW = SysUtils.TSearchRec;
+{$ELSE}
     TIcsSearchRecW = record
         Time        : Integer;
         Size        : Integer;
@@ -170,7 +239,9 @@ type
         FindHandle  : THandle;
         FindData    : TWin32FindDataW;
     end;
+{$ENDIF}
 
+{$IFDEF MSWINDOWS}
     TUnicode_String = record
         Length        : Word;
         MaximumLength : Word;
@@ -179,8 +250,13 @@ type
     PUnicode_String = ^TUnicode_String;
 
     TRtlCompareUnicodeString = function(String1, String2: PUnicode_String; CaseInSensitive: Boolean): LongInt; stdcall;
+{$ENDIF}
 
+{$IFNDEF COMPILER12_UP}
     TIcsFileStreamW = class(THandleStream)
+{$ELSE}
+    TIcsFileStreamW = class(TFileStream)
+{$ENDIF}    
     private
         FFileName: UnicodeString;
     public
@@ -191,7 +267,24 @@ type
         destructor  Destroy; override;
         property    FileName: UnicodeString read FFileName;
     end;
-
+{$IFDEF USE_ICONV}
+const
+    ICONV_UNICODE     = 'UTF-16LE';
+    function IcsIconvNameFromCodePage(CodePage: LongWord): AnsiString;
+{$ENDIF}
+    function  IcsWcToMb(CodePage: LongWord; Flags: Cardinal;
+                        WStr: PWideChar; WStrLen: Integer; MbStr: PAnsiChar;
+                        MbStrLen: Integer; DefaultChar: PAnsiChar;
+                        UsedDefaultChar: PLongBool): Integer;
+    function  IcsMbToWc(CodePage: LongWord; Flags: Cardinal;
+                        MbStr: PAnsiChar; MbStrLen: Integer; WStr: PWideChar;
+                        WStrLen: Integer): Integer;
+    function  IcsGetDefaultWindowsUnicodeChar(CodePage: LongWord): WideChar; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsGetDefaultWindowsAnsiChar(CodePage: LongWord): AnsiChar; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    procedure IcsGetAcp(var CodePage: LongWord);
+    function  IcsIsDBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsIsDBCSLeadByte(Ch: AnsiChar; CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsIsMBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiString; overload;
     function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
@@ -312,7 +405,6 @@ type
     function IcsStrLenW(Str: PWideChar): Cardinal;
     function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsAnsiCompareFileNameW(const Utf8S1, Utf8S2: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
-    function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
     function IcsDirExistsW(const FileName: PWideChar): Boolean; overload;
     function IcsDirExistsW(const FileName: UnicodeString): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsDirExistsW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -324,12 +416,14 @@ type
     function IcsExcludeTrailingPathDelimiterW(const S: UnicodeString): UnicodeString;
     function IcsExtractLastDir (const Path: RawByteString): RawByteString ; overload;   // angus
     function IcsExtractLastDir (const Path: UnicodeString): UnicodeString ; overload;   // angus
+{$IFDEF MSWINDOWS}
     function IcsFileGetAttrW(const FileName: UnicodeString): Integer; overload;
     function IcsFileGetAttrW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer; overload;
     function IcsFileSetAttrW(const Utf8FileName: UTF8String; Attr: Integer): Integer;  {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+{$ENDIF}
     function IcsDeleteFileW(const FileName: UnicodeString): Boolean; overload;
-    function IcsDeleteFileW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsDeleteFileW(const Utf8FileName: UTF8String): Boolean; overload;
     function IcsRenameFileW(const OldName, NewName: UnicodeString): Boolean; overload;
     function IcsRenameFileW(const Utf8OldName, Utf8NewName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsForceDirectoriesW(Dir: UnicodeString): Boolean; overload;
@@ -344,9 +438,12 @@ type
     function IcsFileExistsW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
+{$IFDEF MSWINDOWS}
     // NT4 and better
+    function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
     function  RtlCompareUnicodeString(String1 : PUNICODE_STRING;
         String2 : PUNICODE_STRING; CaseInsensitive : BOOLEAN): LongInt; stdcall;
+{$ENDIF}
 
 type
     TIcsIntegerList = class(TObject)
@@ -368,32 +465,577 @@ type
         property    Count: Integer read GetCount;
         property    First: Integer read GetFirst;
         property    Last : Integer read GetLast;
-        property    Items[Index: Integer] : Integer   read  GetItem
-                                                      write SetItem; default;
+        property    Items[Index: Integer] : Integer read  GetItem
+                                                    write SetItem; default;
     end;
-    
-const
-    { Unicode code page ID }
-    CP_UTF16      = 1200;
-    CP_UTF16Be    = 1201;
-    CP_UTF32      = 12000;
-    CP_UTF32Be    = 12001;
 
 implementation
 
 const
     DefaultFailChar : AnsiChar  = '?';
-    {$EXTERNALSYM CP_UTF8}
-    CP_UTF8             = Windows.CP_UTF8;
     MAX_UTF8_SIZE       = 4;
-    IcsPathDelimW       : WideChar  = '\';
-    IcsDriveDelimW      : WideChar  = ':';
-    IcsPathDriveDelimW  : PWideChar = '\:';
-    IcsPathSepW         : WideChar  = ';';
 
+    IcsPathDelimW       : WideChar  = {$IFDEF MSWINDOWS} '\'; {$ELSE} '/'; {$ENDIF}
+    IcsPathSepW         : WideChar  = {$IFDEF MSWINDOWS} ';'; {$ELSE} ':'; {$ENDIF}
+    IcsPathDriveDelimW  : PWideChar = {$IFDEF MSWINDOWS} '\:';{$ELSE} '/'; {$ENDIF}
+    IcsPathDelimA       : AnsiChar  = {$IFDEF MSWINDOWS} '\'; {$ELSE} '/'; {$ENDIF}
+{$IFDEF MSWINDOWS}
+    IcsDriveDelimW      : WideChar  =  ':';
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}
 var
     hNtDll : THandle = 0;
     _RtlCompareUnicodeString : Pointer = nil;
+{$ENDIF}
+
+{$IFDEF USE_ICONV}
+type
+    TCpAlias = record
+        C : LongWord;
+        A : AnsiString;
+    end;
+
+const
+    { Sorted by CP-ID for binary search, probably some mappings are incorrect }
+    IconvCodepageMapping : array [0..44] of TCpAlias = (
+
+    (C : 1200;        A : 'UTF-16LE'),
+    (C : 1201;        A : 'UTF-16BE'),
+
+    (C : 10000;       A : 'MAC'),         { MAC Roman; Western European (Mac) }
+
+    (C : 10004;       A : 'MACARABIC'),   { Arabic (Mac) }
+    (C : 10005;       A : 'MACHEBREW'),   { Hebrew (Mac) }
+    (C : 10006;       A : 'MACGREEK'),    { Greek (Mac) }
+    (C : 10007;       A : 'MACCYRILLIC'), { Cyrillic (Mac) }
+    (C : 10010;       A : 'MACROMANIA'),  { Romanian (Mac) }
+    (C : 10017;       A : 'MACUKRAINE'),  { Ukrainian (Mac) }
+    (C : 10021;       A : 'MACTHAI'),     { Thai (Mac) }
+    (C : 10029;       A : 'MACCENTRALEUROPE'), { MAC Latin 2; Central European (Mac) }
+    (C : 10079;       A : 'MACICELAND'),  { Icelandic (Mac) }
+    (C : 10081;       A : 'MACTURKISH'),  { Turkish (Mac) }
+    (C : 10082;       A : 'MACCROATIAN'), { Croatian (Mac) }
+
+    (C : 12000;       A : 'UTF-32LE'),
+    (C : 12001;       A : 'UTF-32BE'),
+
+    (C : 20127;       A : 'US-ASCII'),
+    (C : 20866;       A : 'KOI8-R'),   { Russian (KOI8-R); Cyrillic (KOI8-R) }
+
+    (C : 20932;       A : 'EUC-JP'),   { Japanese (JIS 0208-1990 and 0121-1990) }
+
+    (C : 21866;       A : 'KOI8-U'),   { Ukrainian (KOI8-U); Cyrillic (KOI8-U) }
+
+    (C : 28591;       A : 'iso-8859-1'), { ISO 8859-1 Latin 1; Western European (ISO) }
+    (C : 28592;       A : 'iso-8859-2'), { ISO 8859-2 Central European; Central European (ISO) }
+    (C : 28593;       A : 'iso-8859-3'), { ISO 8859-3 Latin 3 }
+    (C : 28594;       A : 'iso-8859-4'), { ISO 8859-4 Baltic }
+    (C : 28595;       A : 'iso-8859-5'), { ISO 8859-5 Cyrillic }
+    (C : 28596;       A : 'iso-8859-6'), { ISO 8859-6 Arabic }
+    (C : 28597;       A : 'iso-8859-7'), { ISO 8859-7 Greek }
+    (C : 28598;       A : 'iso-8859-8'), { ISO 8859-8 Hebrew; Hebrew (ISO-Visual) }
+    (C : 28599;       A : 'iso-8859-9'), { ISO 8859-9 Turkish }
+    (C : 28603;       A : 'iso-8859-13'), { ISO 8859-13 Estonian }
+    (C : 28605;       A : 'iso-8859-15'), { ISO 8859-15 Latin 9 }
+    (C : 38598;       A : 'iso-8859-8-i'), { ISO 8859-8 Hebrew; Hebrew (ISO-Logical) }
+
+    (C : 50220;       A : 'iso-2022-jp'), { ? ISO 2022 Japanese with no halfwidth Katakana; Japanese (JIS) }
+    (C : 50221;       A : 'iso-2022-jp'), { ? ISO 2022 Japanese with halfwidth Katakana; Japanese (JIS-Allow 1 byte Kana) }
+    (C : 50222;       A : 'iso-2022-jp'), { ? ISO 2022 Japanese JIS X 0201-1989; Japanese (JIS-Allow 1 byte Kana - SO/SI) }
+
+    (C : 50225;       A : 'iso-2022-kr'), { ISO 2022 Korean }
+    (C : 50227;       A : 'iso-2022-cn'), { ISO 2022 Simplified Chinese; Chinese Simplified (ISO 2022) }
+    (C : 50229;       A : 'ISO-2022-CN-EXT'), { ? ISO 2022 Traditional Chinese }
+
+    (C : 51932;       A : 'euc-jp'), { EUC Japanese }
+    (C : 51936;       A : 'EUC-CN'), { EUC Simplified Chinese; Chinese Simplified (EUC) }
+    (C : 51949;       A : 'euc-kr'), { EUC Korean }
+
+    (C : 52936;       A : 'hz-gb-2312'), { HZ-GB2312 Simplified Chinese; Chinese Simplified (HZ) }
+    (C : 54936;       A : 'GB18030'), { Windows XP and later: GB18030 Simplified Chinese (4 byte); Chinese Simplified (GB18030) }
+
+    (C : 65000;       A : 'UTF-7'),
+    (C : 65001;       A : 'UTF-8')
+    );
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIconvNameFromCodePage(CodePage: LongWord): AnsiString;
+var
+    L, H, I: Integer;
+begin
+    if CodePage = CP_ACP then
+        IcsGetAcp(CodePage);
+    { Quick pre-check }
+    if not ((CodePage >= 1250) and (CodePage <= 1258)) then
+    begin
+        { Binary search ? }
+        L := 0;
+        H := High(IconvCodepageMapping);
+        while L <= H do
+        begin
+            I := (L + H) shr 1;
+            if IconvCodepageMapping[I].C < CodePage then
+                L := I + 1
+            else begin
+                H := I - 1;
+                if IconvCodepageMapping[I].C = CodePage then
+                begin
+                    Result := IconvCodepageMapping[I].A;
+                    Exit;
+                end;
+            end;
+        end;
+    end;
+    Str(CodePage, Result);
+    Result := 'CP' + Result;
+end;
+{$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetDefaultWindowsUnicodeChar(CodePage: LongWord): WideChar;
+begin
+    case CodePage of
+        932,   // (ANSI/OEM - Japanese Shift-JIS) DBCS Lead Bytes: 81..9F E0..FC UnicodeDefaultChar: 0x30FB
+        50220..50222, 51932, { Actually the same as for 932 with both MultiByteToWideChar and MLang.dll.}
+        10001, // (MAC - Japanese) DBCS Lead Bytes: 81..9F E0..FC UnicodeDefaultChar: 0x30FB
+        20932: // (JIS X 0208-1990 & 0212-1990) DBCS Lead Bytes: 8E..8E A1..FE UnicodeDefaultChar: 0x30FB
+            Result := #$30FB;
+    else
+        if {$IFDEF MSWINDOWS} (Win32MajorVersion >= 6) and {$ENDIF}
+           ((CodePage = 65000) or (CodePage = 65001)) then
+            Result := #$FFFD
+        else
+            Result := #$003F;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetDefaultWindowsAnsiChar(CodePage: LongWord): AnsiChar;
+begin
+    case CodePage of
+        37, 500, 875, 1026, 1140, 1141, 1142, 1143, 1144, 1145, 1147, 1149,
+        20273, 20277, 20278, 20280, 20284, 20285, 20290, 20297, 20420, 20423,
+        20424, 20833, 20838, 20871, 20880, 20905, 20924, 21025, 21027
+          : Result := #$6F;
+    else
+        Result := #$3F;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
+{$IFNDEF USE_ICONV}
+function  IcsWcToMb(CodePage: LongWord; Flags: Cardinal; WStr: PWideChar;
+  WStrLen: Integer; MbStr: PAnsiChar; MbStrLen: Integer; DefaultChar: PAnsiChar;
+  UsedDefaultChar: PLongBool): Integer;
+begin
+    Result := WideCharToMultibyte(CodePage, Flags, WStr, WStrLen, MbStr,
+                                  MbStrLen, DefaultChar, PBool(UsedDefaultChar));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  IcsMbToWc(CodePage: LongWord; Flags: Cardinal; MbStr: PAnsiChar;
+  MbStrLen: Integer; WStr: PWideChar; WStrLen: Integer): Integer;
+begin
+    Result := MultiByteToWideChar(CodePage, Flags, MbStr, MbStrLen, WStr, WStrLen);
+end;
+{$ENDIF}
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF USE_ICONV}
+function StrByteCountUtf16(Utf16Str: PWord): Integer;
+var
+    BeginP : Pointer;
+begin
+    if Utf16Str <> nil then
+    begin
+        BeginP := Utf16Str;
+        while Utf16Str^ <> $0000 do
+            Inc(Utf16Str);
+        Result := INT_PTR(Utf16Str) - INT_PTR(BeginP);
+    end
+    else
+        Result := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsWcToMb(CodePage: LongWord; Flags: Cardinal; WStr: PWideChar;
+  WStrLen: Integer; MbStr: PAnsiChar; MbStrLen: Integer; DefaultChar: PAnsiChar;
+  UsedDefaultChar: PLongBool): Integer;
+var
+    CntOnly : Boolean;
+    SBuf: array [0..255] of Byte;
+    DstBytesLeft, SrcBytesLeft, CntSize : Integer;
+    SrcPtr, DstPtr : Pointer;
+    Ctx: iconv_t;
+begin
+    Result := 0;
+{$IFDEF MSWINDOWS}
+    if not Load_Iconv then
+    begin
+        SetLastError(ERROR_INVALID_PARAMETER);
+        Exit;
+    end;
+{$ENDIF}
+    Ctx := iconv_open(PAnsiChar(IcsIconvNameFromCodePage(CodePage)), ICONV_UNICODE);
+    if Ctx = iconv_t(-1) then
+    begin
+        SetLastError(ERROR_INVALID_PARAMETER);
+        Exit;
+    end;
+    try
+        SrcPtr := WStr;
+        SrcBytesLeft := WStrLen * SizeOf(WideChar);
+        if SrcBytesLeft < 0 then
+            SrcBytesLeft := StrByteCountUtf16(PWord(SrcPtr));
+        CntSize := 0;
+        if MbStrLen <= 0 then
+        begin
+            CntOnly := TRUE;
+            DstBytesLeft := SizeOf(SBuf);
+            DstPtr := @SBuf;
+        end
+        else begin
+            CntOnly := FALSE;
+            DstBytesLeft := MbStrLen;
+            DstPtr  := MbStr;
+        end;
+        if UsedDefaultChar <> nil then
+            UsedDefaultChar^ := FALSE;
+        SetLastError(0);
+        while True do
+        begin
+            Result := iconv(Ctx, @SrcPtr, @SrcBytesLeft, @DstPtr, @DstBytesLeft);
+            if Result <> -1 then
+            begin
+                { Write the shift sequence and reset shift state }
+                if (SrcPtr <> nil) {and ((Csc.CharSetType = ictMbcs) or (Csc.CodePage = CP_UTF7))} then
+                    SrcPtr := nil
+                else
+                    Break;
+            end
+            else begin
+                case Errno of
+                    E2BIG: { There is not sufficient room at *outbuf }
+                        if CntOnly then
+                        begin
+                            { Save stack buffer size and rewind }
+                            Inc(CntSize, SizeOf(SBuf));
+                            DstPtr := @SBuf;
+                            DstBytesLeft := SizeOf(SBuf);
+                        end
+                        else begin
+                            SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                            DstBytesLeft := MbStrLen;
+                            Break;
+                        end;
+                    EILSEQ: { An invalid byte sequence has been encountered in the input }
+                        begin
+                            if (Flags and WC_ERR_INVALID_CHARS) = WC_ERR_INVALID_CHARS then
+                            begin
+                                Result := 0;
+                                SetLastError(ERROR_NO_UNICODE_TRANSLATION);
+                                Exit;
+                            end;
+                            Inc(INT_PTR(SrcPtr), SizeOf(WideChar));
+                            Dec(SrcBytesLeft, SizeOf(WideChar));
+                            if not CntOnly then
+                            begin
+                                if DefaultChar = nil then
+                                    PAnsiChar(DstPtr)^ := IcsGetDefaultWindowsAnsiChar(CodePage)
+                                else
+                                    PAnsiChar(DstPtr)^ :=  DefaultChar^;
+                            end;
+                            if UsedDefaultChar <> nil then
+                                UsedDefaultChar^ := TRUE;
+                            Inc(INT_PTR(DstPtr), 1);
+                            Dec(DstBytesLeft, 1);
+                        end;
+                    EINVAL : { An incomplete sequence has been encountered in the input }
+                        begin
+                            { Write the shift sequence and reset shift state }
+                            if (SrcPtr <> nil) {and
+                              ((Csc.CharSetType = ictMbcs) or (Csc.CodePage = CP_UTF7))} then
+                                SrcPtr := nil
+                            else begin
+                                if (Flags and WC_ERR_INVALID_CHARS) = WC_ERR_INVALID_CHARS then
+                                begin
+                                    Result := 0;
+                                    SetLastError(ERROR_NO_UNICODE_TRANSLATION);
+                                    Exit;
+                                end
+                                else
+                                    Break;
+                            end;
+                        end;
+                else
+                    Result := 0;
+                    SetLastError(ERROR_INVALID_PARAMETER);
+                    Exit;
+                end;
+            end;
+        end;
+        if CntOnly then
+            Result := CntSize + SizeOf(SBuf) - DstBytesLeft
+        else
+            Result := MbStrLen - DstBytesLeft;
+
+    finally
+        iconv_close(Ctx);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsMbToWc(CodePage: LongWord; Flags: Cardinal; MbStr: PAnsiChar;
+  MbStrLen: Integer; WStr: PWideChar; WStrLen: Integer): Integer;
+var
+    CntOnly : Boolean;
+    SBuf: array [0..255] of Byte;
+    DstBytesLeft, SrcBytesLeft, CntSize: Integer;
+    SrcPtr, DstPtr : Pointer;
+    Ctx: iconv_t;
+    //LastBad: Pointer;
+begin
+    Result := 0;
+{$IFDEF MSWINDOWS}
+    if not Load_Iconv then
+    begin
+        SetLastError(ERROR_INVALID_PARAMETER);
+        Exit;
+    end;
+{$ENDIF}
+    Ctx := iconv_open(ICONV_UNICODE, PAnsiChar(IcsIconvNameFromCodePage(CodePage)));
+    if Ctx = iconv_t(-1) then
+    begin
+        SetLastError(ERROR_INVALID_PARAMETER);
+        Exit;
+    end;
+    try
+        //LastBad := nil;
+        SrcPtr := MbStr;
+        SrcBytesLeft := MbStrLen;
+        if SrcBytesLeft < 0 then
+            SrcBytesLeft := StrLen(MbStr) + 1;
+        CntSize := 0;
+        if WStrLen <= 0 then
+        begin
+            CntOnly := TRUE;
+            DstBytesLeft := SizeOf(SBuf);
+            DstPtr := @SBuf;
+        end
+        else begin
+            CntOnly := FALSE;
+            DstBytesLeft := WStrLen * SizeOf(WideChar);
+            DstPtr := WStr;
+        end;
+        SetLastError(0);
+        while True do
+        begin
+            Result := iconv(Ctx, @SrcPtr, @SrcBytesLeft, @DstPtr, @DstBytesLeft);
+            if Result <> -1 then
+                Break
+            else begin
+                case Errno of
+                    E2BIG: { There is not sufficient room at *outbuf }
+                        if CntOnly then
+                        begin
+                            { Save stack buffer size and rewind }
+                            Inc(CntSize, SizeOf(SBuf));
+                            DstPtr := @SBuf;
+                            DstBytesLeft := SizeOf(SBuf);
+                        end
+                        else begin
+                            Result := 0;
+                            SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                            Break;
+                        end;
+                    EILSEQ: { An invalid byte sequence has been encountered in the input }
+                        if Flags and MB_ERR_INVALID_CHARS = MB_ERR_INVALID_CHARS then
+                        begin
+                            Result := 0;
+                            SetLastError(ERROR_NO_UNICODE_TRANSLATION);
+                            Exit;
+                        end
+                        else begin
+                            if {(LastBad <> SrcPtr) and} (CodePage <> CP_UTF7) then
+                            begin
+                                PWideChar(DstPtr)^ := IcsGetDefaultWindowsUnicodeChar(CodePage);
+                                Inc(INT_PTR(DstPtr), SizeOf(WideChar));
+                                Dec(DstBytesLeft, SizeOf(WideChar));
+                            end;
+                            if IcsIsDBCSLeadByte(PAnsiChar(SrcPtr)^, CodePage) then
+                            begin
+                                Inc(INT_PTR(SrcPtr), 2);
+                                Dec(SrcBytesLeft, 2);
+                            end
+                            else begin
+                                Inc(INT_PTR(SrcPtr), 1);
+                                Dec(SrcBytesLeft, 1);
+                            end;
+                            //LastBad := SrcPtr;
+                        end;
+                    EINVAL : { An incomplete multibyte sequence has been encountered in the input }
+                        if Flags and MB_ERR_INVALID_CHARS = MB_ERR_INVALID_CHARS then
+                        begin
+                            Result := 0;
+                            SetLastError(ERROR_NO_UNICODE_TRANSLATION);
+                            Exit;
+                        end
+                        else
+                            Break;
+                else
+                    Result := 0;
+                    SetLastError(ERROR_INVALID_PARAMETER);
+                    Exit;
+                end;
+            end;
+        end;
+        if CntOnly then
+            Result := (CntSize + SizeOf(SBuf) - DstBytesLeft) div SizeOf(WideChar)
+        else
+            Result := WStrLen - (DstBytesLeft div SizeOf(WideChar));
+    finally
+        iconv_close(Ctx);
+    end;
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF COMPILER12_UP}
+var
+    DefaultAnsiCodePage : LongWord = 0;
+{$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsGetAcp(var CodePage: LongWord);
+begin
+{$IFNDEF COMPILER12_UP}
+    if DefaultAnsiCodePage = 0 then
+        DefaultAnsiCodePage := Windows.GetACP;
+    CodePage := DefaultAnsiCodePage;
+{$ELSE}
+    CodePage := System.DefaultSystemCodePage;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIsDBCSCodePage(CodePage: LongWord): Boolean;
+begin
+    { From Win 7 }
+    case CodePage of
+        932,   // (ANSI/OEM - Japanese Shift-JIS) DBCS Lead Bytes: 81..9F E0..FC UnicodeDefaultChar:30FB
+        936,   // (ANSI/OEM - Simplified Chinese GBK) DBCS Lead Bytes: 81..FE
+        949,   // (ANSI/OEM - Korean) DBCS Lead Bytes: 81..FE
+        950,   // (ANSI/OEM - Traditional Chinese Big5) DBCS Lead Bytes: 81..FE
+        1361,  // (Korean - Johab) DBCS Lead Bytes: 84..D3 D8..DE E0..F9
+        {
+        10001, // (MAC - Japanese) DBCS Lead Bytes: 81..9F E0..FC UnicodeDefaultChar:30FB
+        10002, // (MAC - Traditional Chinese Big5) DBCS Lead Bytes: 81..FC
+        10003, // (MAC - Korean) DBCS Lead Bytes: A1..AC B0..C8 CA..FD
+        }
+        10001..10003,
+        10008, // (MAC - Simplified Chinese GB 2312) DBCS Lead Bytes: A1..A9 B0..F7
+        {
+        20000, // (CNS - Taiwan) DBCS Lead Bytes: A1..FE
+        20001, // (TCA - Taiwan) DBCS Lead Bytes: 81..84 91..D8 DF..FC
+        20002, // (Eten - Taiwan) DBCS Lead Bytes: 81..AF DD..FE
+        20003, // (IBM5550 - Taiwan) DBCS Lead Bytes: 81..84 87..87 89..E8 F9..FB
+        20004, // (TeleText - Taiwan) DBCS Lead Bytes: A1..FE
+        20005, // (Wang - Taiwan) DBCS Lead Bytes: 8D..F5 F9..FC
+        }
+        20000..20005,
+        20261, // (T.61) DBCS Lead Bytes: C1..CF
+        20932, // (JIS X 0208-1990 & 0212-1990) DBCS Lead Bytes: 8E..8E A1..FE UnicodeDefaultChar: 30FB
+        20936, // (Simplified Chinese GB2312) DBCS Lead Bytes: A1..A9 B0..F7
+        51949: // (EUC-Korean) DBCS Lead Bytes: A1..AC B0..C8 CA..FD
+            Result := TRUE;
+    else
+        Result := FALSE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIsDBCSLeadByte(Ch: AnsiChar; CodePage: LongWord): Boolean;
+begin
+    case CodePage of
+        932   : Result := Ch in ICS_LEAD_BYTES_932;
+        936,
+        949,
+        950   : Result := Ch in ICS_LEAD_BYTES_936_949_950;
+        1361  : Result := Ch in ICS_LEAD_BYTES_1361;
+        10001 : Result := Ch in ICS_LEAD_BYTES_10001;
+        10002 : Result := Ch in ICS_LEAD_BYTES_10002;
+        10003 : Result := Ch in ICS_LEAD_BYTES_10003;
+        10008 : Result := Ch in ICS_LEAD_BYTES_10008;
+        20000 : Result := Ch in ICS_LEAD_BYTES_20000;
+        20001 : Result := Ch in ICS_LEAD_BYTES_20001;
+        20002 : Result := Ch in ICS_LEAD_BYTES_20002;
+        20003 : Result := Ch in ICS_LEAD_BYTES_20003;
+        20004 : Result := Ch in ICS_LEAD_BYTES_20004;
+        20005 : Result := Ch in ICS_LEAD_BYTES_20005;
+        20261 : Result := Ch in ICS_LEAD_BYTES_20261;
+        20932 : Result := Ch in ICS_LEAD_BYTES_20932;
+        20936 : Result := Ch in ICS_LEAD_BYTES_20936;
+        51949 : Result := Ch in ICS_LEAD_BYTES_51949;
+    else
+        Result := FALSE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIsMBCSCodePage(CodePage: LongWord): Boolean;
+begin
+    { Reminder: MBCS do not support MBTOWC flag "MB_ERR_INVALID_CHARS" }
+    case CodePage of
+        {
+        50220, // (ISO-2022 Japanese with no halfwidth Katakana) MBCS Max Size: 5
+        50221, // (ISO-2022 Japanese with halfwidth Katakana) MBCS Max Size: 5
+        50222, // (ISO-2022 Japanese JIS X 0201-1989) MBCS Max Size: 5
+        }
+        50220..50222,  // 7-Bit
+        50225, // (ISO-2022 Korean) MBCS Max Size: 5 7-Bit
+        50227, // (ISO-2022 Simplified Chinese) MBCS Max Size: 5 7-Bit
+        50229, // (ISO-2022 Traditional Chinese) MBCS Max Size: 5 7-Bit
+
+        51932, // (euc-jp  EUC Japanese MBCS Max Size: 3 // ** MLang.Dll only **  8-Bit
+        52936, // (HZ-GB2312 Simplified Chinese) MBCS Max Size: 5  7-Bit
+        54936, // (GB18030 Simplified Chinese) MBCS Max Size: 4   8-Bit
+
+
+        //65000  // (UTF-7) MBCS Max Size: 5 UnicodeDefaultChar: FFFD, 003F XP 7-Bit
+        //65001  // (UTF-8) MBCS Max Size: 4 UnicodeDefaultChar: FFFD, 003F XP 8-Bit
+
+        {
+        57002, // (ISCII - Devanagari) MBCS Max Size: 4
+        57003, // (ISCII - Bengali) MBCS Max Size: 4
+        57004, // (ISCII - Tamil) MBCS Max Size: 4
+        57005, // (ISCII - Telugu) MBCS Max Size: 4
+        57006, // (ISCII - Assamesisch) MBCS Max Size: 4
+        57007, // (ISCII - Oriya) MBCS Max Size: 4
+        57008, // (ISCII - Kannada) MBCS Max Size: 4
+        57009, // (ISCII - Malayalam) MBCS Max Size: 4
+        57010, // (ISCII - Gujarati) MBCS Max Size: 4
+        57011  // (ISCII - Punjabi (Gurmukhi)) MBCS Max Size: 4
+        }
+        57002..57011 : Result := TRUE;   // 8-Bit
+    else
+        Result := FALSE;
+    end;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsUsAscii(const Str: RawByteString): Boolean;
@@ -454,15 +1096,17 @@ end;
 { Converts an UnicodeString to an AnsiString.                                 }
 function UnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord; SetCodePage: Boolean = False): RawByteString;
 var
-    Len : Integer;
+    Len, Len2 : Integer;
 begin
     Len := Length(Str);
     if Len > 0 then begin
-        Len := WideCharToMultiByte(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, nil);
+        Len := IcsWcToMb(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, nil);
         SetLength(Result, Len);
         if Len > 0 then begin
-            WideCharToMultiByte(ACodePage, 0, Pointer(Str), Length(Str),
+            Len2 := IcsWcToMb(ACodePage, 0, Pointer(Str), Length(Str),
                                 Pointer(Result), Len, nil, nil);
+            if Len2 <> Len then // May happen, very rarely
+                SetLength(Result, Len2);                    
         {$IFDEF COMPILER12_UP}
             if SetCodePage and (ACodePage <> CP_ACP) then
                 PWord(INT_PTR(Result) - 12)^ := ACodePage;
@@ -485,15 +1129,21 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function AnsiToUnicode(const Str: PAnsiChar; ACodePage: LongWord): UnicodeString;
 var
-    Len : Integer;
+    Len, Len2 : Integer;
 begin
     if (Str <> nil) then begin
-        Len := MultiByteToWideChar(ACodePage, 0, Str,
-                                   -1, nil, 0);
+        Len := IcsMbToWc(ACodePage, 0, Str, -1, nil, 0);
         if Len > 1 then begin // counts the null-terminator
             SetLength(Result, Len - 1);
-            MultiByteToWideChar(ACodePage, 0, Str, -1,
+            Len2 := IcsMbToWc(ACodePage, 0, Str, -1,
                                 Pointer(Result), Len);
+            if Len2 <> Len then  // May happen, very rarely
+            begin
+                if Len2 > 0 then
+                    SetLength(Result, Len2 - 1)
+                else
+                    Result := '';
+            end;
         end
         else
             Result := '';
@@ -507,16 +1157,22 @@ end;
 function UnicodeToAnsi(const Str: PWideChar; ACodePage: LongWord;
   SetCodePage: Boolean = False): RawByteString;
 var
-    Len : Integer;
+    Len, Len2 : Integer;
 begin
     if (Str <> nil) then begin
-        Len := WideCharToMultibyte(ACodePage, 0, Str, -1,
-                                   nil, 0, nil, nil);
+        Len := IcsWcToMb(ACodePage, 0, Str, -1, nil, 0, nil, nil);
         if Len > 1 then begin // counts the null-terminator
             SetLength(Result, Len - 1);
-            WideCharToMultibyte(ACodePage, 0, Str, -1,
+            Len2 := IcsWcToMb(ACodePage, 0, Str, -1,
                                 Pointer(Result), Len,
                                 nil, nil);
+            if Len2 <> Len then // May happen, very rarely
+            begin
+                if Len2 > 0 then
+                    SetLength(Result, Len2 - 1)
+                else
+                    Result := '';
+            end;
         {$IFDEF COMPILER12_UP}
             if SetCodePage and (ACodePage <> CP_ACP) then
                 PWord(INT_PTR(Result) - 12)^ := ACodePage;
@@ -533,16 +1189,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function AnsiToUnicode(const Str: RawByteString; ACodePage: LongWord): UnicodeString;
 var
-    Len : Integer;
+    Len, Len2 : Integer;
 begin
     Len := Length(Str);
     if Len > 0 then begin
-        Len := MultiByteToWideChar(ACodePage, 0, Pointer(Str),
+        Len := IcsMbToWc(ACodePage, 0, Pointer(Str),
                                    Len, nil, 0);
         SetLength(Result, Len);
         if Len > 0 then
-            MultiByteToWideChar(ACodePage, 0, Pointer(Str), Length(Str),
+        begin
+            Len2 := IcsMbToWc(ACodePage, 0, Pointer(Str), Length(Str),
                                 Pointer(Result), Len);
+            if Len2 <> Len then // May happen, very rarely
+                SetLength(Result, Len2);
+        end;
     end
     else
         Result := '';
@@ -759,11 +1419,6 @@ end;
 { BufferCodePage may include CP_UTF16, CP_UTF16Be, CP_UTF32 and CP_UTF32Be    }
 function IcsGetWideCharCount(const Buffer; BufferSize: Integer;
   BufferCodePage: LongWord; out InvalidEndByteCount: Integer): Integer;
-
-{$IFNDEF COMPILER12_UP}
-const
-    MB_ERR_INVALID_CHARS  = $00000008;  // Missing in Windows.pas
-{$ENDIF}
     
     function GetMbcsInvalidEndBytes(const EndBuf: PAnsiChar): Integer;
     var
@@ -783,7 +1438,7 @@ const
                 if (Utf8Size > 0) and (Utf8Size < Result) then
                 begin { Looks like we got a complete and a trunkated sequence }
                     if (Utf8Size = 1) { should always translate } or
-                       (MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+                       (IcsMbToWc(BufferCodePage, MB_ERR_INVALID_CHARS,
                                             P, Utf8Size, nil, 0) > 0) then
                     begin
                         Inc(P, Utf8Size);
@@ -792,7 +1447,7 @@ const
                 end;
             end;
             if (Result > 0) and
-               (MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+               (IcsMbToWc(BufferCodePage, MB_ERR_INVALID_CHARS,
                            P, Result, nil, 0) > 0) then
                 Result := 0;
         end
@@ -837,7 +1492,7 @@ begin
             end;
         else
             InvalidEndByteCount := 0;
-            Result := MultiByteToWideChar(BufferCodePage, MB_ERR_INVALID_CHARS,
+            Result := IcsMbToWc(BufferCodePage, MB_ERR_INVALID_CHARS,
                                           PAnsiChar(Bytes), BufferSize, nil, 0);
             { Not every code page supports flag MB_ERR_INVALID_CHARS.         }
             { Depends on the Windows version as well, see SDK-docs.           }
@@ -853,8 +1508,8 @@ begin
                 LastErr := GetLastError;
                 if LastErr = ERROR_INVALID_FLAGS then
                     { Try again with flags "0", nothing else can be done      }
-                    Result := MultiByteToWideChar(BufferCodePage, 0,
-                                          PAnsiChar(Bytes), BufferSize, nil, 0)
+                    Result := IcsMbToWc(BufferCodePage, 0,
+                                        PAnsiChar(Bytes), BufferSize, nil, 0)
                 else if LastErr = ERROR_NO_UNICODE_TRANSLATION then
                 begin
                     { There's some invalid bytes but we don't know where in  }
@@ -868,7 +1523,7 @@ begin
                                               PAnsiChar(Bytes) + BufferSize);
                     { Then call mbtowc with a shorter source buffer and flag }
                     { "0".                                                   }
-                    Result := MultiByteToWideChar(BufferCodePage, 0,
+                    Result := IcsMbToWc(BufferCodePage, 0,
                         PAnsiChar(Bytes), BufferSize - InvalidEndByteCount,
                         nil, 0);
                 end;
@@ -936,7 +1591,7 @@ begin
             end;
 
         else
-           Result := MultiByteToWideChar(BufferCodePage, 0, @Buffer,
+           Result := IcsMbToWc(BufferCodePage, 0, @Buffer,
                                          BufferSize, Chars, CharCount);
     end;
 end;
@@ -1129,10 +1784,10 @@ begin
             Result := Result + AStream.Write(Str^, cLen * 2);
         end
         else begin // Charset conversion
-            Len := WideCharToMultibyte(ACodePage, 0, Pointer(Str), cLen,
+            Len := IcsWcToMb(ACodePage, 0, Pointer(Str), cLen,
                                        nil, 0, nil, nil);
             if Len <= SizeOf(SBuf) then begin
-                Len := WideCharToMultibyte(ACodePage, 0, Pointer(Str), cLen,
+                Len := IcsWcToMb(ACodePage, 0, Pointer(Str), cLen,
                                            @SBuf, Len, nil, nil);
                 if (Len > 0) then begin
                     if Bom <> nil then
@@ -1143,7 +1798,7 @@ begin
             else begin
                 GetMem(HBuf, Len);
                 try
-                    Len := WideCharToMultibyte(ACodePage, 0, Pointer(Str), cLen,
+                    Len := IcsWcToMb(ACodePage, 0, Pointer(Str), cLen,
                                                HBuf, Len, nil, nil);
                     if (Len > 0) then begin
                         if Bom <> nil then
@@ -1383,7 +2038,7 @@ begin
         Result := Str;
         Exit;
     end;
-    dLen := MultibyteToWideChar(SrcCodePage, 0, Pointer(Str), sLen, nil, 0);
+    dLen := IcsMbToWc(SrcCodePage, 0, Pointer(Str), sLen, nil, 0);
     if dLen = 0 then
     begin
         Result := '';
@@ -1398,14 +2053,16 @@ begin
         FreeFlag := FALSE;
         P := SBuf;
     end;
-    dLen := MultibyteToWideChar(SrcCodePage, 0, Pointer(Str), sLen, P, dLen);
+    dLen := IcsMbToWc(SrcCodePage, 0, Pointer(Str), sLen, P, dLen);
     if dLen > 0 then
     begin
-        sLen := WideCharToMultiByte(DstCodePage, 0, P, dLen, nil, 0, nil, nil);
+        sLen := IcsWcToMb(DstCodePage, 0, P, dLen, nil, 0, nil, nil);
         SetLength(Result, sLen);
         if sLen > 0 then
         begin
-            WideCharToMultiByte(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
+            dLen := IcsWcToMb(DstCodePage, 0, P, dLen, Pointer(Result), sLen, nil, nil);
+            if dLen <> sLen then
+                SetLength(Result, dLen);
         {$IFDEF COMPILER12_UP}
             if DstCodePage <> CP_ACP then
                 PWord(INT_PTR(Result) - 12)^ := DstCodePage;
@@ -1443,16 +2100,16 @@ end;
 function CheckUnicodeToAnsi(const Str: UnicodeString; ACodePage: LongWord = CP_ACP): Boolean;
 var
     Len : Integer;
-    B   : Bool;
+    B   : LongBool;
 begin
     Len := Length(Str);
     if Len > 0 then begin
-        Len := WideCharToMultiByte(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, @B);
+        Len := IcsWcToMb(ACodePage, 0, Pointer(Str), Len, nil, 0, nil, @B);
         { MS-docs: For the CP_UTF7 and CP_UTF8 settings for CodePage, parameter }
         { lpUsedDefaultChar must be set to NULL. Otherwise, the function fails  }
         { with ERROR_INVALID_PARAMETER.                                         }
         if (Len = 0) and (GetLastError = ERROR_INVALID_PARAMETER) then
-            Result := WideCharToMultiByte(ACodePage, 0, Pointer(Str),
+            Result := IcsWcToMb(ACodePage, 0, Pointer(Str),
                                           Len, nil, 0, nil, nil) > 0
         else
             Result := (not B) and (Len > 0);
@@ -1598,91 +2255,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsUtf8Valid(const Str: RawByteString): Boolean;
 begin
-    //Result := IsUtf8Valid(Pointer(Str), Length(Str));
     Result := CharSetDetect(Pointer(Str), Length(Str)) <> cdrUnknown;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsUtf8Valid(const Buf: Pointer; Len: Integer): Boolean;
-{var
-    PEndBuf   : PByte;
-    PBuf      : PByte;
-    Byte2Mask : Byte;
-    Ch        : Byte;
-    Trailing  : Integer; // trailing (continuation) bytes to follow }
 begin
     Result := CharSetDetect(Buf, Len) <> cdrUnknown;
-   (* PBuf        := Buf;
-    PEndBuf     := Pointer(INT_PTR(Buf) + Len);
-    Byte2Mask   := $00;
-    Trailing    := 0;
-    while (PBuf <> PEndBuf) do
-    begin
-        Ch := PBuf^;
-        Inc(INT_PTR(PBuf));
-        if Trailing <> 0 then
-        begin
-            if Ch and $C0 = $80 then // Does trailing byte follow UTF-8 format?
-            begin
-                if (Byte2Mask <> 0) then // Need to check 2nd byte for proper range?
-                    if Ch and Byte2Mask <> 0 then // Are appropriate bits set?
-                        Byte2Mask := 0
-                    else begin
-                        Result := False;
-                        Exit;
-                    end;
-                Dec(Trailing);
-            end
-            else begin
-                Result := False;
-                Exit;
-            end;
-        end
-        else begin
-            if Ch and $80 = 0 then
-                Continue                      // valid 1 byte UTF-8
-            else if Ch and $E0 = $C0 then     // valid 2 byte UTF-8
-            begin
-                if Ch and $1E <> 0 then       // Is UTF-8 byte in proper range?
-                    Trailing := 1
-                else begin
-                    Result := False;
-                    Exit;
-                end;
-            end
-            else if Ch and $F0 = $E0 then     // valid 3 byte UTF-8
-            begin
-                if Ch and $0F = 0 then        // Is UTF-8 byte in proper range?
-                    Byte2Mask := $20;         // If not set mask to check next byte
-                Trailing := 2;
-            end
-            else if Ch and $F8 = $F0 then     // valid 4 byte UTF-8
-            begin
-                if Ch and $07 = 0 then        // Is UTF-8 byte in proper range?
-                    Byte2Mask := $30;         // If not set mask to check next byte
-                Trailing := 3;
-            end
-          { 4 byte is the maximum today, see ISO 10646, so let's break here }
-          { else if Ch and $FC = $F8 then     // valid 5 byte UTF-8
-            begin
-                if Ch and $03 = 0 then        // Is UTF-8 byte in  proper range?
-                    Byte2Mask := $38;         // If not set mask to check next byte
-                Trailing := 4;
-            end
-            else if Ch and $FE = $FC then     // valid 6 byte UTF-8
-            begin
-                if ch and $01 = 0 then        // Is UTF-8 byte in proper range?
-                    Byte2Mask := $3C;         // If not set mask to check next byte
-                Trailing := 5;
-            end}
-            else begin
-                Result := False;
-                Exit;
-            end;
-        end;
-    end;// while
-    Result := Trailing = 0; *)
 end;
 
 
@@ -1696,7 +2276,7 @@ var
 begin
     Cnt := 0;
     Result := Current;
-    while (INT_PTR(Result) > INT_PTR(Start)) and (Cnt < MAX_UTF8_SIZE) do
+    while (Result > Start) and (Cnt < MAX_UTF8_SIZE) do
     begin
         Dec(Result);
         if IsUtf8LeadByte(Byte(Result^)) then
@@ -1724,11 +2304,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsStrNextChar(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): PAnsiChar;
+{ This doesn't work with stateful charsets like true MBCS. Such as          }
+{ iso-2022-xy or UTF-7                                                      }
+function IcsStrNextChar(const Str: PAnsiChar;
+  ACodePage: LongWord = CP_ACP): PAnsiChar;
 begin
+    if ACodePage = CP_ACP then
+        IcsGetAcp(ACodePage);
     if ACodePage = CP_UTF8 then
         Result := IcsCharNextUtf8(Str)
     else
+       (*
         Result := CharNextExA(Word(ACodePage), Str, 0);
         { From Mitch Kaplan's blog                                        }
         { http://blogs.msdn.com/michkap/archive/2007/04/19/2190207.aspx): }
@@ -1741,29 +2327,52 @@ begin
 
         { Comment: Poor design isn't it? IsDBCSLeadByteEx validates lead  }
         { byte values only in code pages 932, 936, 949, 950, and 1361.    }
+       *)
+        if (Str <> nil) and (Str^ <> #0) then
+        begin
+            if IcsIsDBCSLeadByte(Str^, ACodePage) and
+              (PAnsiChar(Str + 2)^ <> #0) then
+                Result := Str + 2
+            else
+                Result := Str + 1;
+        end
+        else
+            Result := Str;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsStrPrevChar(const Start, Current: PAnsiChar; ACodePage: LongWord = CP_ACP): PAnsiChar;
+function IcsStrPrevChar(const Start, Current: PAnsiChar;
+  ACodePage: LongWord = CP_ACP): PAnsiChar;
 begin
+    if ACodePage = CP_ACP then
+        IcsGetAcp(ACodePage);
     if ACodePage = CP_UTF8 then
         Result := IcsCharPrevUtf8(Start, Current)
-    else
-        Result := CharPrevExA(Word(ACodePage), Start, Current, 0);
-        { Read comment in IcsStrNextChar                                  }
+    else begin
+        Result := Current;
+        if Result - 1 >= Start then
+        begin
+            Dec(Result);
+            if (Result - 1 >= Start) and
+               IcsIsDBCSLeadByte(PAnsiChar(Result - 1)^, ACodePage) then
+                Dec(Result);
+        end;
+    end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsStrCharLength(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): Integer;
+function IcsStrCharLength(const Str: PAnsiChar;
+  ACodePage: LongWord = CP_ACP): Integer;
 begin
     Result := INT_PTR(IcsStrNextChar(Str, ACodePage)) - INT_PTR(Str);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: LongWord = CP_ACP): Integer;
+function IcsNextCharIndex(const S: RawByteString; Index: Integer;
+  ACodePage: LongWord = CP_ACP): Integer;
 begin
     Assert((Index > 0) and (Index <= Length(S)));
     Result := Index + 1;
@@ -2010,15 +2619,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure IcsFindCloseW(var F: TIcsSearchRecW);
 begin
+{$IFDEF COMPILER12_UP}
+    SysUtils.FindClose(F);
+{$ELSE}
     if F.FindHandle <> INVALID_HANDLE_VALUE then
     begin
         Windows.FindClose(F.FindHandle);
         F.FindHandle := INVALID_HANDLE_VALUE;
     end;
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF COMPILER12_UP}
 function IcsFindMatchingFileW(var F: TIcsSearchRecW): Integer;
 var
     LocalFileTime : TFileTime;
@@ -2032,19 +2646,36 @@ begin
             Exit;
         end;
         FileTimeToLocalFileTime(FindData.ftLastWriteTime, LocalFileTime);
-        FileTimeToDosDateTime(LocalFileTime, LongRec(Time).Hi,
-        LongRec(Time).Lo);
+        FileTimeToDosDateTime(LocalFileTime, LongRec(Time).Hi, LongRec(Time).Lo);
         Size := FindData.nFileSizeLow;
         Attr := FindData.dwFileAttributes;
         Name := FindData.cFileName;
     end;
     Result := 0;
 end;
+{$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsFindNextW(var F: TIcsSearchRecW): Integer;
+begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FindNext(F);
+{$ELSE}
+    if FindNextFileW(F.FindHandle, F.FindData) then
+        Result := IcsFindMatchingFileW(F)
+    else
+        Result := GetLastError;
+{$ENDIF}
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFindFirstW(const Path: UnicodeString; Attr: Integer;
   var  F: TIcsSearchRecW): Integer;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.FindFirst(Path, Attr, F);
+{$ELSE}
 const
     faSpecial = faHidden or faSysFile or faDirectory;
 begin
@@ -2056,6 +2687,7 @@ begin
         if Result <> 0 then IcsFindCloseW(F);
     end else
         Result := GetLastError;
+{$ENDIF}
 end;
 
 
@@ -2068,30 +2700,33 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsFindNextW(var F: TIcsSearchRecW): Integer;
-begin
-    if FindNextFileW(F.FindHandle, F.FindData) then
-        Result := IcsFindMatchingFileW(F)
-    else
-        Result := GetLastError;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsCreateDirW(const Dir: UnicodeString): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.CreateDir(Dir);
+{$ELSE}
     Result := CreateDirectoryW(PWideChar(Dir), nil);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsCreateDirW(const Utf8Dir: UTF8String): Boolean; overload;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.CreateDir(Utf8Dir);
+{$ELSE}
     Result := CreateDirectoryW(PWideChar(AnsiToUnicode(Utf8Dir, CP_UTF8)), nil);
+{$ENDIF}
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsForceDirectoriesW(Dir: UnicodeString): Boolean;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ForceDirectories(Dir);
+{$ELSE}
 var
     E: EInOutError;
 begin
@@ -2105,43 +2740,62 @@ begin
     Dir := IcsExcludeTrailingPathDelimiterW(Dir);
     if (Length(Dir) < 3) or IcsDirExistsW(Dir)
         or (IcsExtractFilePathW(Dir) = Dir) then Exit;
-  Result := IcsForceDirectoriesW(IcsExtractFilePathW(Dir)) and IcsCreateDirW(Dir);
+    Result := IcsForceDirectoriesW(IcsExtractFilePathW(Dir)) and IcsCreateDirW(Dir);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsForceDirectoriesW(Utf8Dir: UTF8String): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.ForceDirectories(Utf8Dir);
+{$ELSE}
     Result := IcsForceDirectoriesW(AnsiToUnicode(Utf8Dir, CP_UTF8));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsDirExistsW(const FileName: PWideChar): Boolean;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.DirectoryExists(UnicodeString(FileName));
+{$ELSE}
 var
     Res : DWord;
 begin
     Res := GetFileAttributesW(FileName);
     Result := (Res <> INVALID_HANDLE_VALUE) and
               ((Res and FILE_ATTRIBUTE_DIRECTORY) <> 0);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsDirExistsW(const FileName: UnicodeString): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.DirectoryExists(FileName);
+{$ELSE}
     Result := IcsDirExistsW(PWideChar(FileName));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsDirExistsW(const Utf8FileName: UTF8String): Boolean; overload;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.DirectoryExists(Utf8FileName);
+{$ELSE}
     Result := IcsDirExistsW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function RtlCompareUnicodeString(String1, String2: PUnicode_String;
   CaseInSensitive: Boolean): LongInt; stdcall;
 begin
@@ -2200,13 +2854,17 @@ begin
     end;
     Result := Str1Length - Str2Length;
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsAnsiCompareFileNameW(const S1, S2: UnicodeString): Integer;
 begin
+{$IFDEF MSWINDOWS}
     Result := IcsStrCompOrdinalW(PWideChar(S1), Length(S1), PWideChar(S2),
                              Length(S2), True);
+{$ELSE}
+    Result := SysUtils.AnsiCompareFileName(S1, S2);
+{$ENDIF}
 end;
 
 
@@ -2214,7 +2872,7 @@ end;
 function IcsAnsiCompareFileNameW(const Utf8S1, Utf8S2: UTF8String): Integer;
 begin
     Result := IcsAnsiCompareFileNameW(AnsiToUnicode(Utf8S1, CP_UTF8),
-                                      AnsiToUnicode(Utf8S2, CP_UTF8))
+                                      AnsiToUnicode(Utf8S2, CP_UTF8));
 end;
 
 
@@ -2272,16 +2930,25 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ExtractFilePath(FileName);
+{$ELSE}
 var
     I: Integer;
 begin
     I := IcsLastDelimiterW(IcsPathDriveDelimW, FileName);
     Result := Copy(FileName, 1, I);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFileDirW(const FileName: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ExtractFileDir(FileName);
+{$ELSE}
 var
     I: Integer;
 begin
@@ -2290,11 +2957,16 @@ begin
     (not IcsIsDelimiterW(IcsPathDriveDelimW, FileName, I - 1)) then
       Dec(I);
     Result :=Copy(FileName, 1, I);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFileDriveW(const FileName: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ExtractFileDrive(FileName);
+{$ELSE}
 var
     I, J: Integer;
     Len : Integer;
@@ -2320,21 +2992,31 @@ begin
     end
     else
         Result := '';
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFileNameW(const FileName: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ExtractFileName(FileName);
+{$ELSE}
 var
     I: Integer;
 begin
     I := IcsLastDelimiterW(IcsPathDriveDelimW, FileName);
     Result := Copy(FileName, I + 1, MaxInt);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFileExtW(const FileName: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ExtractFileExt(FileName);
+{$ELSE}
 const
     Delim : PWideChar = '.\:';
 var
@@ -2345,37 +3027,47 @@ begin
         Result := Copy(FileName, I, MaxInt)
     else
         Result := '';
+{$ENDIF}
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractNameOnlyW(FileName: UnicodeString): UnicodeString; // angus
 var
-  I: Integer;
+    I: Integer;
 
-  function IsPathSep (Ch: WideChar): Boolean;
-  begin
-    Result := (Ch = IcsPathDelimW) or (Ch = IcsDriveDelimW) or (Ch = '.');
-  end;
+    function IsPathSep (Ch: WideChar): Boolean;
+    begin
+        Result := (Ch = IcsPathDelimW)
+          {$IFDEF MSWINDOWS} or (Ch = IcsDriveDelimW) {$ENDIF} or (Ch = '.');
+    end;
 
 begin
-  FileName := IcsExtractFileNameW (FileName);  // remove path
-  I := Length(FileName);
-  while (I > 0) and not (IsPathSep (FileName[I])) do Dec(I);  // find .
-  if (I = 0) or (FileName[I] <> '.') then I := MaxInt;
-  Result := Copy(FileName, 1, I - 1) ;
+    FileName := IcsExtractFileNameW (FileName);  // remove path
+    I := Length(FileName);
+    while (I > 0) and not (IsPathSep (FileName[I])) do Dec(I);  // find .
+    if (I = 0) or (FileName[I] <> '.') then I := MaxInt;
+    Result := Copy(FileName, 1, I - 1) ;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsChangeFileExtW(const FileName, Extension: UnicodeString): UnicodeString;  // angus
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ChangeFileExt(FileName, Extension);
+{$ELSE}
 const
     Delim : PWideChar = '.\:';
 var
-  I: Integer;
+    I: Integer;
 begin
-  I := IcsLastDelimiterW(Delim, Filename);
-  if (I = 0) or (FileName[I] <> '.') then I := MaxInt;
-  Result := Copy(FileName, 1, I - 1) + Extension;
+    I := IcsLastDelimiterW(Delim, Filename);
+    if (I = 0) or (FileName[I] <> '.') then I := MaxInt;
+    Result := Copy(FileName, 1, I - 1) + Extension;
+{$ENDIF}
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrLenW(Str: PWideChar): Cardinal;
@@ -2395,6 +3087,10 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExpandFileNameW(const FileName: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.ExpandFileName(FileName);
+{$ELSE}
 var
     Name: PWideChar;
     Buf: array[0..MAX_PATH - 1] of WideChar;
@@ -2406,34 +3102,46 @@ begin
     end
     else
         Result := '';
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsIncludeTrailingPathDelimiterW(const S : UnicodeString): UnicodeString;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.IncludeTrailingPathDelimiter(S);
+{$ELSE}
     if (Length(S) > 0) and (S[Length(S)] <> IcsPathDelimW) then
         Result := S + IcsPathDelimW
     else
         Result := S;
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExcludeTrailingPathDelimiterW(const S : UnicodeString): UnicodeString;
 begin
-   Result := S;
-   if (Length(S) > 0) and (S[Length(S)] = IcsPathDelimW) then
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.ExcludeTrailingPathDelimiter(S);
+{$ELSE}
+    Result := S;
+    if (Length(S) > 0) and (S[Length(S)] = IcsPathDelimW) then
         SetLength(Result, Length(Result) -1);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsDeleteFileW(const FileName: UnicodeString): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.DeleteFile(FileName);
+{$ELSE}
     Result := Windows.DeleteFileW(PWideChar(FileName));
+{$ENDIF}
 end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractLastDir (const Path: RawByteString): RawByteString ;    // angus
@@ -2441,9 +3149,9 @@ var
     I, Len: integer;
 begin
     Len := Length (Path);
-    if Path [Len] = '\' then Dec (Len) ;
+    if Path [Len] = IcsPathDelimA then Dec (Len) ;
     for I := Len downto 1 do begin
-        if Path [I] = '\' then begin
+        if Path [I] = IcsPathDelimA then begin
             Result := Copy (Path, I + 1, Len - I);
             exit;
         end;
@@ -2458,9 +3166,9 @@ var
     I, Len: integer;
 begin
     Len := Length (Path);
-    if Path [Len] = '\' then Dec (Len) ;
+    if Path [Len] = IcsPathDelimW then Dec (Len) ;
     for I := Len downto 1 do begin
-        if Path [I] = '\' then begin
+        if Path [I] = IcsPathDelimW then begin
             Result := Copy (Path, I + 1, Len - I);
             exit;
         end;
@@ -2472,74 +3180,116 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsDeleteFileW(const Utf8FileName: UTF8String): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.DeleteFile(Utf8FileName);
+{$ELSE}
     Result := Windows.DeleteFileW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function IcsFileGetAttrW(const FileName: UnicodeString): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileGetAttr(FileName);
+{$ELSE}
     Result := GetFileAttributesW(PWideChar(FileName));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileGetAttrW(const Utf8FileName: UTF8String): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileGetAttr(Utf8FileName);
+{$ELSE}
     Result := GetFileAttributesW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileSetAttrW(const FileName: UnicodeString; Attr: Integer): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileSetAttr(FileName, Attr);
+{$ELSE}
     Result := 0;
     if not SetFileAttributesW(PWideChar(FileName), Attr) then
         Result := GetLastError;
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileSetAttrW(const Utf8FileName: UTF8String; Attr: Integer): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileSetAttr(Utf8FileName, Attr);
+{$ELSE}
     Result := 0;
     if not SetFileAttributesW(PWideChar(AnsiToUnicode(Utf8FileName, CP_UTF8)), Attr) then
         Result := GetLastError;
+{$ENDIF}
 end;
+{$ENDIF MSWINDOWS}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileCreateW(const FileName: UnicodeString): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileCreate(FileName);
+{$ELSE}
     Result := Integer(CreateFileW(PWideChar(FileName),
                                   GENERIC_READ or GENERIC_WRITE,
                                   0, nil, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileCreateW(const Utf8FileName: UTF8String): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileCreate(Utf8FileName);
+{$ELSE}
     Result := IcsFileCreateW(AnsiToUnicode(Utf8FileName, CP_UTF8));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileCreateW(const FileName: UnicodeString; Rights: LongWord): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileCreate(FileName, Rights);
+{$ELSE}
     Result := IcsFileCreateW(FileName);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileCreateW(const Utf8FileName: UTF8String; Rights: LongWord): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileCreate(Utf8FileName, Rights);
+{$ELSE}
     Result := IcsFileCreateW(AnsiToUnicode(Utf8FileName, CP_UTF8));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileOpenW(const FileName: UnicodeString; Mode: LongWord): Integer;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.FileOpen(FileName, Mode);
+{$ELSE}
 const
     AccessMode: array[0..2] of LongWord = (
                                             GENERIC_READ,
@@ -2559,6 +3309,7 @@ begin
                       AccessMode[Mode and 3],
                       ShareMode[(Mode and $F0) shr 4], nil, OPEN_EXISTING,
                       FILE_ATTRIBUTE_NORMAL, 0));
+{$ENDIF}
 end;
 
 
@@ -2566,41 +3317,65 @@ end;
 
 function IcsFileOpenW(const Utf8FileName: UTF8String; Mode: LongWord): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileOpen(Utf8FileName, Mode);
+{$ELSE}
     Result := IcsFileOpenW(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsRemoveDirW(const Dir: UnicodeString): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.RemoveDir(Dir);
+{$ELSE}
     Result := RemoveDirectoryW(PWideChar(Dir));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsRemoveDirW(const Utf8Dir: UTF8String): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.RemoveDir(Utf8Dir);
+{$ELSE}
     Result := RemoveDirectoryW(PWideChar(AnsiToUnicode(Utf8Dir, CP_UTF8)));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsRenameFileW(const OldName, NewName: UnicodeString): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.RenameFile(OldName, NewName);
+{$ELSE}
     Result := MoveFileW(PWideChar(OldName), PWideChar(NewName));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsRenameFileW(const Utf8OldName, Utf8NewName: UTF8String): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.RenameFile(Utf8OldName, Utf8NewName);
+{$ELSE}
     Result := MoveFileW(PWideChar(AnsiToUnicode(Utf8OldName, CP_UTF8)),
                         PWideChar(AnsiToUnicode(Utf8NewName, CP_UTF8)));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileAgeW(const FileName: UnicodeString): Integer;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.FileAge(FileName);
+{$ELSE}
 var
     Handle        : THandle;
     FindData      : TWin32FindDataW;
@@ -2618,49 +3393,72 @@ begin
         end;
     end;
     Result := -1;
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileAgeW(const Utf8FileName: UTF8String): Integer;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileAge(Utf8FileName);
+{$ELSE}
     Result := IcsFileAgeW(AnsiToUnicode(Utf8FileName, CP_UTF8));
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileExistsW(const FileName: UnicodeString): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileExists(FileName);
+{$ELSE}
     Result := IcsFileAgeW(FileName) <> -1;
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsFileExistsW(const Utf8FileName: UTF8String): Boolean;
 begin
+{$IFDEF COMPILER12_UP}
+    Result := SysUtils.FileExists(Utf8FileName);
+{$ELSE}
     Result := IcsFileAgeW(Utf8FileName) <> -1;
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Note: despite the name, this is a full Unicode function changing non-ANSI characters }
 function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.AnsiLowerCase(S);
+{$ELSE}
 var
-  Len: Integer;
+    Len: Integer;
 begin
     Len := Length(S);
     SetString(Result, PWideChar(S), Len);
     if Len > 0 then CharLowerBuffW(Pointer(Result), Len);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Note: despite the name, this is a full Unicode function changing non-ANSI characters }
 function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;
+{$IFDEF COMPILER12_UP}
+begin
+    Result := SysUtils.AnsiUpperCase(S);
+{$ELSE}
 var
-  Len: Integer;
+    Len: Integer;
 begin
     Len := Length(S);
     SetString(Result, PWideChar(S), Len);
     if Len > 0 then CharUpperBuffW(Pointer(Result), Len);
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2670,7 +3468,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsFileStreamW.Create(const FileName: UnicodeString; Mode: Word);
 begin
+{$IFDEF COMPILER12_UP}
+    inherited Create(FileName, Mode);
+    FFileName := FileName;
+{$ELSE}
     Create(Filename, Mode, 0);
+{$ENDIF}
 end;
 
 
@@ -2678,6 +3481,10 @@ end;
 constructor TIcsFileStreamW.Create(const FileName: UnicodeString; Mode: Word;
   Rights: Cardinal);
 begin
+{$IFDEF COMPILER12_UP}
+    inherited Create(FileName, Mode, Rights);
+    FFileName := FileName;
+{$ELSE}
     if Mode = fmCreate then
     begin
         inherited Create(IcsFileCreateW(FileName));
@@ -2707,13 +3514,19 @@ begin
         {$ENDIF}
     end;
     FFileName := FileName;
+{$ENDIF}
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String;
   Mode: Word);
 begin
+{$IFDEF COMPILER12_UP}
+    inherited Create(Utf8FileName, Mode);
+    FFileName := FileName;
+{$ELSE}
     Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, 0);
+{$ENDIF}
 end;
 
 
@@ -2721,15 +3534,22 @@ end;
 constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String; Mode: Word;
   Rights: Cardinal);
 begin
+{$IFDEF COMPILER12_UP}
+    inherited Create(Utf8FileName, Mode, Rights);
+    FFileName := FileName;
+{$ELSE}
     Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, Rights);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TIcsFileStreamW.Destroy;
 begin
+{$IFNDEF COMPILER12_UP}
     if Integer(FHandle) >= 0 then
         FileClose(FHandle);
+{$ENDIF}
     inherited Destroy;
 end;
 

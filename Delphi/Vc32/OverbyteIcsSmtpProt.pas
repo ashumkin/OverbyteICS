@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.29
+Version:      7.30
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -377,6 +377,8 @@ Jul 16, 2009 V7.27  Arno added property XMailer, the string may contain a place
 Jul 31, 2009 V7.28  Arno enlarged send buffer size to 2048 byte see const
                     SMTP_SND_BUF_SIZE declared in MimeUtils.pas.
 Aug 12, 2009 V7.29  Bjørnar Nielsen found a bug with conditional define NO_ADV_MT.
+Apr 26, 2010 V7.30  Arno fixed some errors with MIME inline encoding, added
+                    support for UTF-7 and other stateful and MBCS. 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -442,8 +444,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 729;
-  CopyRight : String = ' SMTP component (c) 1997-2009 Francois Piette V7.29 ';
+  SmtpCliVersion     = 730;
+  CopyRight : String = ' SMTP component (c) 1997-2010 Francois Piette V7.30 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -455,6 +457,8 @@ type
                                  smtpEncQuotedPrintable, smtpEncBase64);   {AG}
 
     TSmtpHeaderLines = class(TStringList)                                  {AG}
+    private
+        procedure AddFoldedHeader(const Hdr: String);
     protected
         FAllow8Bit          : Boolean;
         FDefaultEncoding    : TSmtpDefaultEncoding;
@@ -1320,11 +1324,11 @@ end;
 procedure TSmtpHeaderLines.SetCodePage(const Value: LongWord);
 begin
     { Currently we do not support UTF-7 header lines!! } 
-    if Value = CP_UTF7 then begin
+    {if Value = CP_UTF7 then begin
         FCodePage := CP_UTF8;
         FCharSet  := 'utf-8';
     end
-    else
+    else}
         FCodePage := Value;
 end;
 
@@ -1333,11 +1337,11 @@ end;
 procedure TSmtpHeaderLines.SetCharSet(const Value: String);
 begin
     { Currently we do not support UTF-7 header lines!! } 
-    if CompareText('utf-7', Value) = 0 then begin
+    {if CompareText('utf-7', Value) = 0 then begin
         FCodePage := CP_UTF8;
         FCharSet  := 'utf-8';
     end    
-    else
+    else}
         FCharSet := Value;
 end;
 
@@ -1386,22 +1390,32 @@ begin
         if Length(S) = 0 then
             Continue;
         Addr := ParseEmail(S, Alias);
-        if Length(Alias) > 0 then begin
-            {$IFDEF UNICODE}
-                AStr := UnicodeToAnsi(Alias, FCodePage);
-            {$ELSE}
-                if FConvertToCharset and (IcsSystemCodePage <> FCodePage) then
-                    AStr := ConvertCodepage(Alias, IcsSystemCodePage,
+        if Length(Alias) > 0 then
+        begin
+          {$IFDEF UNICODE}
+            AStr := UnicodeToAnsi(Alias, FCodePage);
+          {$ELSE}
+            if FConvertToCharset and (IcsSystemCodePage <> FCodePage) then
+                AStr := ConvertCodepage(Alias, IcsSystemCodePage,
                                              FCodePage)
+            else
+                AStr := Alias;
+          {$ENDIF}
+            if (not Allow8Bit) and (NeedsEncoding(AStr) or (FCodePage = CP_UTF7)) then
+            begin
+                { Special case for some special MBCS incl. UTF-7 }
+                if (IcsIsMBCSCodePage(FCodePage) or (FCodePage = CP_UTF7))
+               {$IFNDEF UNICODE} and FConvertToCharset {$ENDIF} then
+                    Alias := String(EncodeMbcsInline(FCodePage, FCharset,
+                                FEncType, PChar(Alias), Length(Alias),
+                                FFoldLines, SmtpDefaultLineLength - Length(HdrName)))
                 else
-                    AStr := Alias;
-            {$ENDIF}
-            if (not Allow8Bit) and NeedsEncoding(AStr) then
-                Alias := String(HdrEncodeInLine(AStr, SpecialsRFC822,
+                    Alias := String(HdrEncodeInLine(AStr, SpecialsRFC822,
                                          AnsiChar(FEncType),
                                          AnsiString(FCharset),
                                          SmtpDefaultLineLength - Length(HdrName),
-                                         FFoldLines, FCodePage, FIsMultiByteCP))
+                                         FFoldLines, FCodePage, FIsMultiByteCP));
+            end
             else begin
                 Alias := String(AStr);
                 { We have to quote some specials}
@@ -1434,31 +1448,61 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpHeaderLines.AddFoldedHeader(const Hdr: String);
+var
+    I, J : Integer;
+begin
+    J := 1;
+    for I := 1 to Length(Hdr) do
+    begin
+        if Hdr[I] = #13 then
+        begin
+            Add(Copy(Hdr, J, I - J));
+            J := I + 2;
+        end;
+    end;
+    if J < Length(Hdr) then
+        Add(Copy(Hdr, J, MaxInt));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpHeaderLines.AddHdr(
     const HdrName : String;
     HdrBody       : String);
 var
     ABody : AnsiString;
 begin
-    {$IFDEF UNICODE}
-        ABody := UnicodeToAnsi(HdrBody, FCodePage);
-    {$ELSE}
-        if FConvertToCharset and (FCodePage <> IcsSystemCodePage) then
-            ABody := ConvertCodepage(HdrBody, IcsSystemCodePage, FCodePage)
-        else
-            ABody := HdrBody;
-    {$ENDIF}
+{$IFDEF UNICODE}
+    ABody := UnicodeToAnsi(HdrBody, FCodePage);
+{$ELSE}
+    if FConvertToCharset and (FCodePage <> IcsSystemCodePage) then
+        ABody := ConvertCodepage(HdrBody, IcsSystemCodePage, FCodePage)
+    else
+        ABody := HdrBody;
+{$ENDIF}
 
     if FAllow8Bit and (not FFoldLines) then
         Add(HdrName + String(ABody))
-    else if (not Allow8Bit) then begin
-        if  NeedsEncoding(ABody) then
-            Add(HdrName + String(HdrEncodeInLine(ABody,
+    else if not Allow8Bit then begin
+        if  NeedsEncoding(ABody) or (FCodePage = CP_UTF7) then
+        begin
+            { Special case for some special MBCS incl. UTF-7 }
+            if (IcsIsMBCSCodePage(FCodePage) or (FCodePage = CP_UTF7))
+                {$IFNDEF UNICODE} and FConvertToCharset {$ENDIF} then
+                AddFoldedHeader(HdrName + String(EncodeMbcsInline(FCodePage,
+                                        FCharset, FEncType,
+                                        PChar(HdrBody), Length(HdrBody),
+                                        FFoldLines,
+                                        SmtpDefaultLineLength - Length(HdrName))))
+            else
+                AddFoldedHeader(HdrName + String(HdrEncodeInLine(ABody,
                                           SpecialsRFC822,
                                           AnsiChar(FEncType),
                                           AnsiString(FCharset),
                                           SmtpDefaultLineLength - Length(HdrName),
                                           FFoldLines, FCodePage, IsMultiByteCP)))
+        end
         else if FFoldLines then
             FoldHdrLine(Self, AnsiString(HdrName) + ABody,
                         FCodePage, FIsMultiByteCP)
@@ -1511,6 +1555,7 @@ begin
         FCurrentIdx     := 1;
         FWrapText       := WrapText;
         NeedsEnc        := OverbyteIcsMimeUtils.NeedsEncoding(FText);
+
         if (not NeedsEnc) and (DefaultEncoding = smtpEnc8bit) then
             FTransferEncoding := smtpEnc7bit
         else if NeedsEnc and Allow8Bit and (DefaultEncoding = smtpEnc7bit) then
@@ -1520,6 +1565,10 @@ begin
             FTransferEncoding := smtpEncQuotedPrintable
         else
             FTransferEncoding := DefaultEncoding;
+        { Special case with special MBCS }
+        if (FTransferEncoding in [smtpEnc7bit, smtpEnc8bit]) and
+           (IcsIsMBCSCodePage(FCodePage) or (FCodePage = CP_UTF7)) then
+            FTransferEncoding := smtpEncQuotedPrintable;
     end
     else begin
         FWrapText         := FALSE;
@@ -3920,9 +3969,23 @@ begin
             else
                 sLine := sFileName;
         {$ENDIF}
-        if (not FHdrLines.Allow8bit) and NeedsEncoding(sLine) then begin
+        if (not FHdrLines.Allow8bit) and
+           (NeedsEncoding(sLine) or (FHdrLines.CodePage = CP_UTF7)) then begin
            { Length of (#9'filename=""') equals 12 }
-            sLine := HdrEncodeInline(sLine,
+            { Special case for some special MBCS incl. UTF-7 }
+            if (IcsIsMBCSCodePage(FHdrLines.CodePage) or (FHdrLines.CodePage = CP_UTF7))
+               {$IFNDEF UNICODE} and (FHdrLines.ConvertToCharset) {$ENDIF} then
+
+                sLine :=  EncodeMbcsInline(FHdrLines.CodePage,
+                                           FHdrLines.CharSet,
+                                           FHdrLines.EncType,
+                                           PChar(sFileName),
+                                           Length(sFileName),
+                                           FHdrLines.FoldLines,
+                                           SmtpDefaultLineLength  - 12 - 1)
+
+            else
+                sLine := HdrEncodeInline(sLine,
                                      SpecialsRFC822,
                                      AnsiChar(FHdrLines.EncType),
                                      AnsiString(FHdrLines.CharSet),
@@ -4698,16 +4761,32 @@ begin
                         FsAnsiFileName := FsFileName;
                 {$ENDIF}
                     { We may not fold lines since otherwise line numbers would change }
-                    if (not FHdrLines.Allow8Bit) and NeedsEncoding(FsAnsiFileName) then
+                    if (not FHdrLines.Allow8Bit) and
+                       (NeedsEncoding(FsAnsiFileName) or
+                       (FHdrLines.CodePage = CP_UTF7)) then
                     begin
-                        FsAnsiFileName := HdrEncodeInline(FsAnsiFileName,
-                                                        SpecialsRFC822,
-                                                        AnsiChar(FHdrLines.EncType),
-                                                        AnsiString(FHdrLines.CharSet),
-                                                        MaxInt,
-                                                        FALSE,
-                                                        FHdrLines.CodePage,
-                                                        FHdrLines.IsMultiByteCP);
+                        { Special case for some special MBCS incl. UTF-7 }
+                        if (IcsIsMBCSCodePage(FHdrLines.CodePage) or
+                           (FHdrLines.CodePage = CP_UTF7))
+                           {$IFNDEF UNICODE} and FHdrLines.ConvertToCharset {$ENDIF} then
+
+                            FsAnsiFileName := EncodeMbcsInline(
+                                                      FHdrLines.CodePage,
+                                                      FHdrLines.CharSet,
+                                                      FHdrLines.EncType,
+                                                      PChar(FsFileName),
+                                                      Length(FsFileName),
+                                                      FALSE,
+                                                      MaxInt)
+                        else
+                            FsAnsiFileName := HdrEncodeInline(FsAnsiFileName,
+                                                     SpecialsRFC822,
+                                                     AnsiChar(FHdrLines.EncType),
+                                                     AnsiString(FHdrLines.CharSet),
+                                                     MaxInt,
+                                                     FALSE,
+                                                     FHdrLines.CodePage,
+                                                     FHdrLines.IsMultiByteCP);
                     end;
                     StrPCopy(PAnsiChar(MsgLine), 'Content-Type: ' + AnsiString(FsContentType) +
                                       ';' + #13#10#9 + 'name="' + FsAnsiFileName + '"');

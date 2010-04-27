@@ -57,14 +57,21 @@ uses
   System.Runtime.InteropServices;
 {$ENDIF}
 {$IFDEF WIN32}
-  Windows, Messages, Classes, SysUtils;
+  Windows, Messages,
 {$ENDIF}
+ Classes, SysUtils;
 
 const
   OverbyteIcsTypesVersion = 103;
   CopyRight : String      = ' OverbyteIcsTypes (c) 2004-2009 F. Piette V1.03 ';
 
 type
+{$IFDEF COMPILER11_UP} // D2007 and better
+  TBytes                    = SysUtils.TBytes;
+{$ELSE} // D7 - D2006
+  TBytes                    = array of Byte;
+{$ENDIF}
+
 {$IFDEF CLR}
   Exception           = Borland.Delphi.System.Exception;
   THandle             = Integer;
@@ -147,10 +154,13 @@ type
     lpszClass      : IntPtr;
     dwExStyle      : DWORD;
   end;
+{$ENDIF}
 
+{$IFDEF POSIX}
+  INT_PTR                   = NativeInt;
+{$ENDIF}
 
-{$ELSE}
-
+{$IFDEF WIN32}
   {$IFDEF COMPILER14_UP} // D2010 and better
       {$EXTERNALSYM HANDLE_PTR}
       HANDLE_PTR                = Windows.HANDLE_PTR;
@@ -160,8 +170,6 @@ type
   {$ENDIF}
 
   {$IFDEF COMPILER11_UP} // D2007 and better
-      TBytes                    = SysUtils.TBytes;
-
       {$EXTERNALSYM INT_PTR}
       INT_PTR                   = Windows.INT_PTR;
       {$EXTERNALSYM LONG_PTR}
@@ -173,8 +181,6 @@ type
       {$EXTERNALSYM DWORD_PTR}
       DWORD_PTR                 = Windows.DWORD_PTR;
   {$ELSE} // D7 - D2006
-      TBytes                    = array of Byte;
-
       // From BaseTsd.h
       {$EXTERNALSYM INT_PTR}
       INT_PTR                   = Integer;
@@ -244,7 +250,7 @@ type
   {$EXTERNALSYM LRESULT}
   LRESULT                   = Windows.LRESULT;
   {$EXTERNALSYM short}
-  Short                     = Windows.Short; 
+  Short                     = Windows.Short;
 {$ENDIF}
 
   LOWORD = Word;

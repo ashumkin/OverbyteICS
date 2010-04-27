@@ -23,7 +23,7 @@
 			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
 			<DCC_Description>Overbyte ICS Design-Time Package Delphi 2009</DCC_Description>
 			<DesignOnlyPackage>true</DesignOnlyPackage>
-			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\OverbyteIcsD2009Design.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName></DCC_DependencyCheckOutputName>
 			<GenPackage>true</GenPackage>
 			<GenDll>true</GenDll>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>

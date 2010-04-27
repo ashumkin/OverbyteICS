@@ -86,7 +86,7 @@ begin
 {$IF RTLVersion >= 18}
     { Built-in memory leak detection and display since BDS2006 }
     { This is useful for debugging, however a bit slower.      }
-    ReportMemoryLeaksOnShutdown = DebugHook <> 0;
+    ReportMemoryLeaksOnShutdown := DebugHook <> 0;
 {$IFEND}
     DisplayMemo.Clear;
     FIniFile := TIcsIniFile.Create(OverbyteIcsIniFiles.GetIcsIniFileName);
@@ -119,10 +119,10 @@ end;
 procedure TTemplateForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
     try
-        IniFile.WriteInteger(SectionWindow, KeyTop,         Top);
-        IniFile.WriteInteger(SectionWindow, KeyLeft,        Left);
-        IniFile.WriteInteger(SectionWindow, KeyWidth,       Width);
-        IniFile.WriteInteger(SectionWindow, KeyHeight,      Height);
+        IniFile.WriteInteger(SectionWindow,   KeyTop,         Top);
+        IniFile.WriteInteger(SectionWindow,   KeyLeft,        Left);
+        IniFile.WriteInteger(SectionWindow,   KeyWidth,       Width);
+        IniFile.WriteInteger(SectionWindow,   KeyHeight,      Height);
         IniFile.UpdateFile;
     except
         on E: Exception do

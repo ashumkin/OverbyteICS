@@ -37,9 +37,9 @@
 			<BCC_IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(BCC_IncludePath)</BCC_IncludePath>
 			<BRCC_IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(BRCC_IncludePath)</BRCC_IncludePath>
 			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-			<DCC_IncludePath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;C:\Dokumente und Einstellungen\Peter Peterson\Eigene Dateien\Borland Studio Projects;D:\ICSV6\Delphi\Vc32;$(DCC_IncludePath)</DCC_IncludePath>
+			<DCC_IncludePath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;$(DCC_IncludePath)</DCC_IncludePath>
 			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
-			<DCC_UnitSearchPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;C:\Dokumente und Einstellungen\Peter Peterson\Eigene Dateien\Borland Studio Projects;D:\ICSV6\Delphi\Vc32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<OutputExt>bpl</OutputExt>
 			<DynamicRTL>true</DynamicRTL>
 			<DCC_AdditionalSwitches> -LUDesignIde</DCC_AdditionalSwitches>

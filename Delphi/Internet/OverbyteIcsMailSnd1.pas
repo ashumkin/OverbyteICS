@@ -388,6 +388,7 @@ begin
     Application.OnException := ExceptionHandler;
     DisplayMemo.Clear;
     FIniFileName := GetIcsIniFileName;
+    IcsCharsetComboBox1.IncludeList := IcsCharsetComboBox1.IncludeList + [UTF_7];
 {$IFDEF DELPHI10_UP}
     // BDS2006 has built-in memory leak detection and display
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
@@ -558,10 +559,12 @@ begin
     { This demonstrates how to add a line to the message header             }
     { Just detect one of the header lines and add text at the end of this   }
     { line. Use #13#10 to form a new line.                                  }
-    { Here we check for the From: header line and add a Comments: line      }
-    { Cast properly in order to call the right overload in D2009            }
+    { Here we check for the X-Mailer: header line and add a Comments: line  }
+    { Cast properly in order to call the right overload in D2009. Note that }
+    { long header lines can be folded, inserting into folded lines leads    }
+    { to a brocken header.                                                  }
     if (StrLen(PAnsiChar(Msg)) > 0) and
-       (StrLIComp(PAnsiChar(Msg), PAnsiChar('From:'), 5) = 0) then
+       (StrLIComp(PAnsiChar(Msg), PAnsiChar('X-Mailer:'), 9) = 0) then
         StrCat(PAnsiChar(Msg), PAnsiChar(#13#10'Comments: This is a test'));
 end;
 

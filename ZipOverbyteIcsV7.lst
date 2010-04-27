@@ -178,6 +178,9 @@ Delphi\vc32\OverbyteIcsSysLogServer.dcr
 Delphi\vc32\OverbyteIcsConApp.pas
 Delphi\vc32\OverbyteIcsWSocketTS.pas
 Delphi\vc32\OverbyteIcsWSocketTS.dcr
+Delphi\vc32\OverbyteIcsCsc.pas
+Delphi\vc32\OverbyteIcsMLang.pas
+Delphi\vc32\OverbyteIcsIconv.pas
 
 Delphi\vc32\ZOBJ123\adler32.obj
 Delphi\vc32\ZOBJ123\compress.obj

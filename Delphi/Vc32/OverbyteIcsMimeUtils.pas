@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.19
+Version:      7.21
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -97,7 +97,11 @@ May 30, 2009 V7.18  A. Garrels fixed a bug in IcsWrapTextEx that could truncate
 Jul 31, 2009 V7.19  A. Garrels enlarged base64 encoded data chunks. Especially
                     SSL benefits from this change, less CPU use and 6 times
                     faster sends of base64 encoded file attachments.
-
+Mar 19, 2010 V7.20  A. Garrels added the same fix of V7.18 to the Unicode version
+                    of IcsWrapTextEx. Fixed a bug with MBCS and Base64 encoding.
+Apr 26, 2010 V7.21  Arno added EncodeMbcsInline() that handles UTF-7 and some
+                    other stateful and MBCS. Fixed a bug with folding and MIME
+                    inline encoding.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -144,12 +148,15 @@ uses
 {$ENDIF}
     SysUtils, // For the LeadChar and Exception
     Classes,
+    Math,
     OverbyteIcsUtils,
     OverbyteIcsLibrary,
+    OverbyteIcsCsc,
     OverbyteIcsCharsetUtils;
+
 const
-    TMimeUtilsVersion = 719;
-    CopyRight : String = ' MimeUtils (c) 2003-2009 F. Piette V7.19 ';
+    TMimeUtilsVersion = 721;
+    CopyRight : String = ' MimeUtils (c) 2003-2010 F. Piette V7.21 ';
 
     SmtpDefaultLineLength = 76; // without CRLF
     SMTP_SND_BUF_SIZE     = 2048;
@@ -342,6 +349,20 @@ function FoldString(const Input   : UnicodeString;
 
 { Calculates Base64 grow including CRLFs }
 function CalcBase64AttachmentGrow(FileSize: Int64): Int64;
+function EncodeMbcsInline(CodePage        : LongWord;
+                          const Charset   : String;
+                          EncType         : Char;
+                          Body            : PWideChar;
+                          Len             : Integer;
+                          DoFold          : Boolean;
+                          MaxLen          : Integer): AnsiString; overload;
+function EncodeMbcsInline(CodePage        : LongWord;
+                          const Charset   : String;
+                          EncType         : Char;
+                          Body            : PAnsiChar;
+                          Len             : Integer;
+                          DoFold          : Boolean;
+                          MaxLen          : Integer): AnsiString; overload;
 
 implementation
 
@@ -895,12 +916,16 @@ end;
 {$IFNDEF CLR}
 function Base64Encode(const Input : PAnsiChar; Len: Integer) : AnsiString;
 var
-    Count : Integer;    
+    Count : Integer;
     I     : Integer;
 begin
-    Count  := 0;
-    I      := 0;    
-    SetLength(Result, ((Len + 2) div 3) * 4);
+    Count := 0;
+    I := Len;
+    while (I mod 3) > 0 do
+        Inc(I);
+    I := (I div 3) * 4;
+    SetLength(Result, I);
+    I := 0;
     while Count < Len do begin
         Inc(I);
         Result[I] := Base64OutA[(Byte(Input[Count]) and $FC) shr 2];
@@ -932,7 +957,7 @@ begin
         end;
         Inc(Count, 3);
     end;
-    SetLength(Result, I);
+    //SetLength(Result, I);
 end;
 {$ENDIF}
 
@@ -1178,6 +1203,49 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Works with DBCS and UTF-8 only                                            }
+function B64SafeMaxIndex(CP: LongWord; const S: RawbyteString;    {AG}
+  Index: Integer; MaxBytes: Integer): Integer;
+var
+    P    : PAnsiChar;
+    L    : Integer;
+    ChL  : Integer;
+    TL   : Integer;
+    B64L : Integer;
+begin
+    L := Length(S);
+    if (Index > 0) and (Index <= L) then
+    begin
+        P := PAnsiChar(S) + (Index - 1);
+        TL  := 0;
+        ChL := 0;
+        while TRUE do
+        begin
+            Inc(P, ChL);
+            ChL := IcsStrCharLength(P, CP);
+            if (ChL <= 0) then
+                Break;
+            Inc(TL, ChL);
+            B64L := TL;
+            while B64L mod 3 > 0 do
+                Inc(B64L);
+            B64L := (B64L div 3) * 4;
+            if B64L > MaxBytes then
+            begin
+                Dec(TL, ChL);
+                Break;
+            end
+            else if B64L = MaxBytes then
+                Break;
+        end;
+        Result := Index + TL;
+    end
+    else
+        Result := Index;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Similar to Base64Encode, returns just a coded line                        }
 function Base64EncodeEx(
     const Input   : RawByteString;
@@ -1191,24 +1259,29 @@ var
     NextCharIdx : Integer;
 begin
     Len := Length(Input);
-    I   := 0;
+
+    if IsMultibyteCP then
+    begin
+        NextCharIdx := B64SafeMaxIndex(CodePage, Input, cPos, MaxCol);
+        if NextCharIdx > cPos then
+        begin
+            Result := Base64Encode(PAnsiChar(Input) + (cPos - 1),
+                                   NextCharIdx - cPos);
+            cPos := NextCharIdx;
+        end;
+        Exit;
+    end;
+
+    I := 0;
     SetLength(Result, MaxCol + 3);
     while (cPos <= Len) do begin
         Inc(I);
 
-        if IsMultibyteCP then begin
-            NextCharIdx := IcsNextCharIndex(Input, cPos, CodePage);
-            if ((NextCharIdx - cPos) * 3 + I > MaxCol) then
-            begin
-                Dec(I);
-                Break;
-            end;
-        end
-        else if (I > MaxCol) then begin
+        if (I > MaxCol) then begin
             Dec(I);
             Break;
         end;
-        
+
         Result[I] := Base64OutA[(Byte(Input[cPos]) and $FC) shr 2];
         if (cPos + 1) <= Len  then begin
             Inc(I);
@@ -1457,8 +1530,8 @@ begin
             else
                 Result := Copy(Line, LinePos, BreakPos - LinePos + 1);
             if (not IsCharInSysCharSet(CurChar, QuoteChars)) or
-               (ExistingBreak) then begin
-                if cPos <= LineLen then begin
+               ExistingBreak then begin
+                if (cPos <= LineLen) and (BreakPos + 1 = cPos) then begin
                     if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
                         if not ExistingBreak then begin
                             { Break due to one of the breaking chars found and CRLF follows }
@@ -1578,6 +1651,7 @@ function HdrEncodeInLine(const Input    : RawByteString;     { V7.13 was Ansi }
                          IsMultiByteCP  : Boolean = FALSE): RawByteString;
 const
     Suffix    = '?=';
+    SuffixLen = 2;
     LineBreak = #13#10#09;
     Pad       = '=';
 var
@@ -1587,6 +1661,7 @@ var
     Prefix,
     Res         : AnsiString;
     NextCharIdx : Integer;
+    OldCharIdx  : Integer;
 begin
     Result := '';
     if DoFold and (MaxCol < 25) then
@@ -1638,26 +1713,48 @@ begin
     end
     else begin
         { Base64 }
-        { taken from function B64Encode and modified slightly }
+        { taken from function B64Encode and modified slightly     }
+
         if not DoFold then
             MaxCol := 1022;
 
-        Res    := Res + Prefix;
-        LenRes := Length(Prefix) + 2;
+        { Make MaxCol 2 bytes smaller. Just to be sure to not get }
+        { wrapped later on with default line length.              }
+        Dec(MaxCol, 2);
+
+        LenRes := Length(Prefix) + SuffixLen;
+
+        if IsMultibyteCP then
+        begin
+            NextCharIdx := lPos;
+            OldCharIdx  := lPos;
+            MaxCol := MaxCol - LenRes; // sub decoration-length
+            while NextCharIdx <= Len do
+            begin
+                NextCharIdx := B64SafeMaxIndex(CodePage, Input,
+                                                         OldCharIdx, MaxCol);
+                if NextCharIdx > OldCharIdx then
+                begin
+                    Res := Res + Prefix +
+                           Base64Encode(PAnsiChar(Input) + (OldCharIdx - 1),
+                                        NextCharIdx - OldCharIdx) + Suffix;
+                    if NextCharIdx <= Len then
+                        Res := Res + LineBreak;
+                    OldCharIdx := NextCharIdx;
+                end
+                else
+                    Break;
+            end;
+            Result := Res;
+            Exit;
+        end;
+
+        Res := Res + Prefix;
 
         while lPos <= Len do begin
-            if IsMultibyteCP then
-            begin
-                NextCharIdx := IcsNextCharIndex(Input, lPos, CodePage);
-                if ((NextCharIdx - lPos) * 4 + LenRes > MaxCol) then
-                begin
-                    Res := Res + Suffix + LineBreak {#13#10#09} + Prefix;
-                    LenRes := Length(Prefix) + 2;
-                end;
-            end
-            else if (LenRes + 4 > MaxCol) then begin
+            if (LenRes + 4 > MaxCol) then begin
                 Res := Res + Suffix + LineBreak {#13#10#09} + Prefix;
-                LenRes := Length(Prefix) + 2;
+                LenRes := Length(Prefix) + SuffixLen;
             end;
             Res := Res + Base64OutA[(Byte(Input[lPos]) and $FC) shr 2];
             if (lPos + 1) <= Len  then begin
@@ -2014,5 +2111,240 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function EncodeMbcsInline(
+  CodePage        : LongWord;
+  const Charset   : String;
+  EncType         : Char;
+  Body            : PWideChar;
+  Len             : Integer;
+  DoFold          : Boolean;
+  MaxLen          : Integer): AnsiString;
+var
+    Suffix  : AnsiString;
+    Prefix  : AnsiString;
+    TempStr : AnsiString;
+    DecoLen, CurMaxLen, BodyLen, QPGrow, LineCnt : Integer;
+    P       : PWideChar;
+    QPChars : TSysCharSet;
+    Csc     : TIcsCsc;
+    DoQP    : Boolean;
+
+    function GetQPGrow(Str: PAnsiChar; Len: Integer; var NeedsQP: Boolean): Integer;
+    var
+        C: AnsiChar;
+        I : Integer;
+    begin
+        NeedsQP:= FALSE;
+        Result := 0;
+        for I := 1 to Len do begin
+            C := Str^;
+            if (C in QPChars) then
+            begin
+                if C <> #$20 then
+                    Inc(Result, 2);
+                NeedsQP := TRUE;
+            end;
+            Inc(Str);
+        end;
+    end;
+
+    function EncQP(const S: RawByteString) : AnsiString;
+    const
+        HexTable : array[0..15] of AnsiChar =
+          ('0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F');
+    var
+        SLen, I : Integer;
+        SrcPtr, DstPtr : PAnsiChar;
+        C : AnsiChar;
+    begin
+        SLen := Length(S);
+        SrcPtr := PAnsiChar(S);
+        SetLength(Result, SLen + QPGrow);
+        DstPtr := PAnsiChar(Result);
+        for I := 1 to SLen do begin
+            C := SrcPtr^;
+            if C in QPChars then begin
+                if C = #$20 then
+                    DstPtr^ := '_'
+                else begin
+                    DstPtr^ := '=';
+                    Inc(DstPtr);
+                    DstPtr^ := HexTable[(Ord(C) shr 4) and 15];
+                    Inc(DstPtr);
+                    DstPtr^ := HexTable[Ord(C) and 15];
+                end;    
+            end
+            else
+                DstPtr^ := C;
+
+            Inc(SrcPtr);
+            Inc(DstPtr);
+        end;
+    end;
+
+    function ConvertClosestTempStr(var FromValue: Integer;
+        const AMax: Integer): Integer;
+    var
+        L, H, I, CurLen, LQPGrow: Integer;
+        LTmp : AnsiString;
+        LNeedsQP : Boolean;
+    begin
+        { Trial and error, encode and see if result-length matches }
+        if FromValue <= AMax then
+        begin
+            LQPGrow := 0;
+            LNeedsQP:= FALSE;
+            {CurLen := IcsWcToMb(CodePage, 0, P, FromValue, nil, 0, nil, nil);
+            SetLength(LTmp, CurLen);
+            CurLen := IcsWcToMb(CodePage, 0, P, FromValue, Pointer(LTmp),
+                                CurLen, nil, nil);}
+
+            CurLen := Csc.FromWc(0, P, FromValue * SizeOf(WideChar), nil, 0);
+            SetLength(LTmp, CurLen);
+            CurLen := Csc.FromWc(0, P, FromValue * SizeOf(WideChar), Pointer(LTmp), CurLen);
+
+            SetLength(LTmp, CurLen);
+            if (CurLen > 0) and (CurLen <= AMax) then
+            begin
+                if EncType = 'Q' then begin
+                    LQPGrow := GetQPGrow(PAnsiChar(LTmp), CurLen, LNeedsQP);
+                    Inc(CurLen, LQPGrow);
+                end
+                else if (EncType = 'B') then begin
+                    { Calculate Base64 length }
+                    while CurLen mod 3 > 0 do
+                        Inc(CurLen);
+                    CurLen := (CurLen div 3) * 4;
+                end;
+            end;
+            if CurLen <= AMax then begin
+                Result := CurLen;
+                QPGrow := LQPGrow;
+                TempStr := LTmp;
+                DoQP := LNeedsQP;
+                Exit;
+            end;
+        end;
+
+        { The encoded string was too long. Use some kind of       }
+        { "binary-closest-match-search" to avoid too many trials. }
+
+        L := 1;
+        H := Min(FromValue, AMax);
+        FromValue  := H;
+        Result     := 0;
+        LQPGrow    := 0;
+        LNeedsQP   := FALSE;
+
+        while L <= H do begin
+            I := (L + H) shr 1;
+            {CurLen := IcsWcToMb(CodePage, 0, P, I, nil, 0, nil, nil);
+            SetLength(LTmp, CurLen);
+            CurLen := IcsWcToMb(CodePage, 0, P, I, Pointer(LTmp),
+                                CurLen, nil, nil);}
+            CurLen := Csc.FromWc(0, P, I * SizeOf(WideChar), nil, 0);
+            SetLength(LTmp, CurLen);
+            CurLen := Csc.FromWc(0, P, I * SizeOf(WideChar), Pointer(LTmp), CurLen);
+
+            SetLength(LTmp, CurLen);
+            if CurLen > 0 then begin
+                if EncType = 'Q' then begin
+                    LQPGrow := GetQPGrow(PAnsiChar(LTmp), CurLen, LNeedsQP);
+                    Inc(CurLen, LQPGrow);
+                end
+                else if (EncType = 'B') then begin
+                    { Calculate Base64 length }
+                    while CurLen mod 3 > 0 do
+                        Inc(CurLen);
+                    CurLen := (CurLen div 3) * 4;
+                end;
+            end;
+            if CurLen <= AMax then begin
+                FromValue  := I;
+                Result     := CurLen;
+                QPGrow     := LQPGrow;
+                DoQP       := LNeedsQP;
+                TempStr    := LTmp;
+                if (CurLen = AMax) {or (CurLen + 1 = AMax) or
+                   (CurLen + 2 = AMax)} then
+                    Break;
+                L := I + 1;
+            end
+            else
+                H := I - 1;
+        end;
+    end;
+
+begin
+    Suffix  := '?=';
+    Prefix  := '=?' + _LowerCase(AnsiString(CharSet)) + '?' + AnsiChar(EncType) + '?';
+    DecoLen := Length(Prefix) + Length(Suffix);
+    BodyLen := Len;
+    P       := Body;
+    LineCnt := 1;
+    if not DoFold then
+        MaxLen := 1022;
+    Dec(MaxLen, 4);
+    QPChars := SpecialsRFC822 + QuotedCharSet + [#0..#31, #127..#255];
+    CurMaxLen := MaxLen - DecoLen;
+    Csc := TIcsCsc.Create(CodePage);
+    try
+        while BodyLen > 0 do
+        begin
+            DoQP := FALSE;
+            if ConvertClosestTempStr(BodyLen, CurMaxLen) = 0 then
+                Exit;
+            if (EncType = 'Q') and DoQP then
+            begin
+                TempStr := EncQP(TempStr);
+                QPGrow := 0;
+            end
+            else if (EncType = 'B') then
+                TempStr := Base64Encode(TempStr);
+
+            if LineCnt = 1 then
+                Result := Prefix + TempStr + Suffix
+            else
+                Result := Result + #13#10#9 + Prefix + TempStr + Suffix;
+            Inc(LineCnt);
+            Inc(P, BodyLen);
+            Dec(Len, BodyLen);
+            BodyLen := Len;
+        end;
+    finally
+        Csc.Free;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function EncodeMbcsInline(
+  CodePage        : LongWord;
+  const Charset   : String;
+  EncType         : Char;
+  Body            : PAnsiChar;
+  Len             : Integer;
+  DoFold          : Boolean;
+  MaxLen          : Integer): AnsiString;
+var
+    Pu  : PWideChar;
+    Res : Integer;
+begin
+    Res := IcsMbToWc(IcsSystemCodePage, 0, Body, Len, nil, 0);
+    GetMem(Pu, Res * SizeOf(WideChar));
+    try
+        Res := IcsMbToWc(IcsSystemCodePage, 0, Body, Len, Pu, Res);
+        if Res > 0 then
+            Result := EncodeMbcsInline(CodePage, Charset, EncType, Pu, Res,
+                                       DoFold, MaxLen)
+        else
+            Result := '';
+    finally
+        FreeMem(Pu);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 end.

@@ -117,6 +117,9 @@ contains
   OverbyteIcsTimeList in 'OverbyteIcsTimeList.pas',
   OverbyteIcsCharsetComboBox in 'OverbyteIcsCharsetComboBox.pas',
   OverbyteIcsThreadTimer in 'OverbyteIcsThreadTimer.pas',
-  OverbyteIcsWSocketTS in 'OverbyteIcsWSocketTS.pas';
+  OverbyteIcsWSocketTS in 'OverbyteIcsWSocketTS.pas',
+  OverbyteIcsMLang in 'OverbyteIcsMLang.pas',
+  OverbyteIcsIconv in 'OverbyteIcsIconv.pas',
+  OverbyteIcsCsc in 'OverbyteIcsCsc.pas';
 
 end.
