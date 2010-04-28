@@ -2054,9 +2054,10 @@ begin
     Len := Length(S);
     Assert((Index > 0) and (Index <= Len));
     Result := Index;
-    SeqSize := GetNextCodePointSize(PAnsiChar(S) + Index - 1, Len - Index + 1);
+    SeqSize := GetNextCodePointSize(PAnsiChar(S) + Index - 1, Len - Index + 1,
+                                    Flags);
     if SeqSize > 0 then
-        Inc(Result, SeqSize)    
+        Inc(Result, SeqSize)
     else if (SeqSize = ICS_ERR_EINVAL) and (ncfSkipEINVAL in Flags) then
         Inc(Result, Len - Index + 1);
 end;
@@ -2073,12 +2074,14 @@ begin
     Assert((Index > 0) and (Index <= Len));
     Result := Index;
     SeqSize := GetNextCodePointSize(PWideChar(S) + Index - 1,
-                                    (Len - Index + 1) * SizeOf(WideChar));
+                                    (Len - Index + 1) * SizeOf(WideChar),
+                                    Flags);
     if SeqSize > 0 then
         Inc(Result, SeqSize div SizeOf(WideChar))    
     else if (SeqSize = ICS_ERR_EINVAL) and (ncfSkipEINVAL in Flags) then
         Inc(Result, (Len - Index + 1));
 end;
+
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
