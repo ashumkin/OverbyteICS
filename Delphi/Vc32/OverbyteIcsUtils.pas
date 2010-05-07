@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.34
+Version:      7.35
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -106,7 +106,7 @@ Mar 06, 2010 V7.33 Arno fixed IcsGetWideCharCount, MultiByteToWideChar() does
 Apr 26, 2010 V7.34 Arno removed some Windows dependencies. Charset conversion
              functions optionally may use GNU iconv library (LGPL) by explicitly
 		    defining conditional "USE_ICONV".  			 
-			 
+May 07, 2010 V7.35 Arno added IcsIsSBCSCodepage.			 
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -149,8 +149,8 @@ uses
   {$ENDIF}
 {$ENDIF}
 {$IFDEF POSIX}
-    PosixBase, PosixSysTypes, PosixIconv,
-    PosixErrno, PosixUnistd, PosixStdio,
+    PosixSysTypes, PosixIconv, PosixErrno,
+    PosixUnistd, PosixStdio,
 {$ENDIF}
     Classes,
     SysUtils,
@@ -285,6 +285,7 @@ const
     function  IcsIsDBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsIsDBCSLeadByte(Ch: AnsiChar; CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsIsMBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsIsSBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiString; overload;
     function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
@@ -1031,6 +1032,137 @@ begin
         57011  // (ISCII - Punjabi (Gurmukhi)) MBCS Max Size: 4
         }
         57002..57011 : Result := TRUE;   // 8-Bit
+    else
+        Result := FALSE;
+    end;
+end;
+
+
+function IcsIsSBCSCodePage(CodePage: LongWord): Boolean;
+begin
+    case CodePage of
+        {
+        1250  (ANSI - Mitteleuropa)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1251  (ANSI - Kyrillisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1252  (ANSI - Lateinisch I)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1253  (ANSI - Griechisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1254  (ANSI - Türkisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1255  (ANSI - Hebräisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1256  (ANSI - Arabisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1257  (ANSI - Baltisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        1258  (ANSI/OEM - Vietnam)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        }
+        1250..1258,
+        20127, // (US-ASCII)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        21866, // (Ukrainisch - KOI8-U)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        {
+        28591 (ISO 8859-1 Lateinisch I)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28592 (ISO 8859-2 Mitteleuropa)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28593 (ISO 8859-3 Lateinisch 3)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28594 (ISO 8859-4 Baltisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28595 (ISO 8859-5 Kyrillisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28596 (ISO 8859-6 Arabisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28597 (ISO 8859-7 Griechisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28598 (ISO 8859-8 Hebräisch: Visuelle Sortierung)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        28599 (ISO 8859-9 Lateinisch 5)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        }
+        28591..28599,
+        28605, // (ISO 8859-15 Lateinisch 9)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        38598, // (ISO 8859-8 Hebräisch: Logische Sortierung)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        20866, // (Russisch - KOI8)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+
+        37,   // (IBM EBCDIC - USA/Kanada)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        437,  // (OEM - Vereinigte Staaten)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        500,  // (IBM EBCDIC - International)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        708,  // (Arabisch - ASMO)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        720,  // (Arabisch- Transparent ASMO)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        737,  // (OEM - Griechisch 437G)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        775,  // (OEM - Baltisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        850,  // (OEM - Multilingual Lateinisch I)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        852,  // (OEM - Lateinisch II)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        855,  // (OEM - Kyrillisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        857,  // (OEM - Türkisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        858,  // (OEM - Multilingual Lateinisch I + Euro)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        {
+        860   (OEM - Portugisisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        861   (OEM - Isländisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        862   (OEM - Hebräisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        863   (OEM - Französch (Kanada))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        864   (OEM - Arabisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        865   (OEM - Nordisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        866   (OEM - Russisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        }
+        860..866,
+        869,  // (OEM - Modernes Griechisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        //874,  // (ANSI/OEM - Thai)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        874..875,  // (IBM EBCDIC - Modernes Griechisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1026, // (IBM EBCDIC - Türkisch (Lateinisch-5))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        {
+        1140  (IBM EBCDIC - USA/Kanada (37 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1141  (IBM EBCDIC - Deutschland (20273 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1142  (IBM EBCDIC - Dänemark/Norwegen (20277 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1143  (IBM EBCDIC - Finnland/Schweden (20278 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1144  (IBM EBCDIC - Italien (20280 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1145  (IBM EBCDIC - Lateinamerika/Spanien (20284 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        }
+        1140..1145,
+        1147, // (IBM EBCDIC - Frankreich (20297 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        1149, // (IBM EBCDIC - Isländisch (20871 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+
+
+        10000, // (MAC - Roman)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        {
+        10004 (MAC - Arabisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10005 (MAC - Hebräisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10006 (MAC - Griechisch I)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10007 (MAC - Kyrillisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        }
+        10004..10007,
+        10010, // (MAC - Rumänisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10017, // (MAC - Ukrainisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10021, // (MAC - Thai)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10029, // (MAC - Lateinisch II)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10079, // (MAC - Isländisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10081, // (MAC - Türkisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        10082, // (MAC - Kroatisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        {
+        20105 (IA5 IRV Internationales Alphabet Nr. 5)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        20106 (IA5 Deutsch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        20107 (IA5 Swedisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        20108 (IA5 Norwegisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        }
+        20105..20108,
+
+        20269, // (ISO 6937 Akzent ohne Zwischenraum)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:003F
+        20273, // (IBM EBCDIC - Deutschland)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        {
+        20277 (IBM EBCDIC - Dänemark/Norwegen)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20278 (IBM EBCDIC - Finnland/Schweden)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        }
+        20277..20278,
+        20280, // (IBM EBCDIC - Italien)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        {
+        20284, // (IBM EBCDIC - Lateinamerika/Spanien)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20285, // (IBM EBCDIC - Großbritannien)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        }
+        20284..20285,
+        20290, // (IBM EBCDIC - Japanisch (erweitertes Katakana))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20297, // (IBM EBCDIC - Frankreich)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20420, // (IBM EBCDIC - Arabisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        {
+        20423, // (IBM EBCDIC - Griechisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20424, // (IBM EBCDIC - Hebräisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        }
+        20423..20424,
+        20833, // (IBM EBCDIC - erweitertes Koreanisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20838, // (IBM EBCDIC - Thai)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20871, // (IBM EBCDIC - Isländisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20880, // (IBM EBCDIC - Kyrillisch (Russisch))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20905, // (IBM EBCDIC - Türkisch)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        20924, // (IBM EBCDIC - Lateinisch-1/Offenes System (1047 + Euro))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        21025, // (IBM EBCDIC - Kyrillisch (Serbisch, Bulgarisch))	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        21027 // (Ext Alpha Kleinbuchstaben)	SBCS Size: 1	UnicodeDefaultChar: 003F	DefaultChar:006F
+        : Result := TRUE;
     else
         Result := FALSE;
     end;

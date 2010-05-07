@@ -14,7 +14,7 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      V7.10
+Version:      V7.12
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -86,6 +86,7 @@ Nov 18, 2009 V7.11 Added MimeCharsetToCodePageEx(), MimeCharsetToCodePageExDef()
                    and IcsIsValidCodePageID(). All take new Unicode code page IDs
                    into account. Such as CP_UTF16, CP_UTF16Be, CP_UTF32 and
                    CP_UTF32Be.
+May 07, 2010 v7.12 Should be POSIX-ready. 
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try
@@ -270,8 +271,17 @@ unit OverbyteIcsCharsetUtils;
 interface
 
 uses
-    Windows, Sysutils, Classes, Contnrs,
-    OverbyteIcsLibrary;
+{$IFDEF MSWINDOWS}
+    Windows,
+  {$IFDEF USE_ICONV}
+    OverbyteIcsIconv,
+  {$ENDIF}
+{$ENDIF}
+{$IFDEF POSIX}
+    PosixSysTypes, PosixIconv, PosixErrno,
+{$ENDIF}
+    Sysutils, Classes, Contnrs,
+    OverbyteIcsUtils;
 
 const
     MAX_CODEPAGE          = High(WORD);
@@ -504,6 +514,7 @@ function  IsValidAnsiCodePage(ACodePage: LongWord): Boolean;
 { Same as IsValidAnsiCodePage except it takes Unicode code page IDs into account }
 function  IcsIsValidCodePageID(ACodePage: LongWord): Boolean;
 function  IsSingleByteCodePage(ACodePage: LongWord): Boolean;
+{$IFDEF MSWINDOWS}
 procedure GetSystemCodePageList(AOwnsObjectList : TObjectList);
 function  AnsiCodePageFromLocale(ALcid: LCID): LongWord;
 function  OemCodePageFromLocale(ALcid: LCID): LongWord;
@@ -511,6 +522,7 @@ function  GetThreadAnsiCodePage: LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  GetThreadOemCodePage: LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  GetUserDefaultAnsiCodePage: LongWord; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  GetUserDefaultOemCodePage: LongWord;  {$IFDEF USE_INLINE} inline; {$ENDIF}
+{$ENDIF}
 {$IFNDEF COMPILER12_UP}
 {$EXTERNALSYM GetCPInfoExA}
 function  GetCPInfoExA(CodePage: UINT; dwFlags: DWORD; var lpCPInfoEx: CPINFOEXA): BOOL; stdcall;
@@ -524,8 +536,11 @@ procedure GetMimeCharsetList(Items: TStrings; IncludeList: TMimeCharsets; ClearI
 
 var
     IcsSystemCodePage     : LongWord;
+{$IFDEF MSWINDOWS}
     IcsSystemMaxCharSize  : Integer;
+{$ENDIF}
     IcsSystemIsSingleByte : Boolean;
+
 
 implementation
 
@@ -615,35 +630,62 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsValidAnsiCodePage(ACodePage: LongWord): Boolean;
+{$IFDEF USE_ICONV}
+var
+    CpName : AnsiString;
+    Cd     : iconv_t;
+begin
+    if (ACodePage = CP_UTF16) or (ACodePage = CP_UTF16Be) or
+       (ACodePage = CP_UTF32) or (ACodePage = CP_UTF32Be) then
+    begin
+        Result := FALSE;
+        Exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    if Load_Iconv then
+    begin
+  {$ENDIF}
+        CpName := IcsIconvNameFromCodePage(ACodePage);
+        Cd := iconv_open(ICONV_UNICODE, PAnsiChar(CpName));
+        if Cd = iconv_t(-1) then
+            Result := FALSE
+        else begin
+            iconv_close(Cd);
+            Result := TRUE;
+        end;
+  {$IFDEF MSWINDOWS}
+    end
+    else
+        Result := FALSE;
+  {$ENDIF}
+{$ELSE USE_ICONV}
 var
     Info : _CpInfo;
 begin
     Result := GetCPInfo(ACodePage, Info);
+{$ENDIF}
 end;
+
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsIsValidCodePageID(ACodePage: LongWord): Boolean;
 begin
-    Result := (ACodePage = 1200) or (ACodePage = 1201) or
-              (ACodePage = 12000) or (ACodePage = 12001) or 
+    Result := (ACodePage = CP_UTF16) or (ACodePage = CP_UTF16Be) or
+              (ACodePage = CP_UTF32) or (ACodePage = CP_UTF32Be) or
                IsValidAnsiCodePage(ACodePage);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsSingleByteCodePage(ACodePage: LongWord): Boolean;
-var
-    Info : _CpInfo;
 begin
-    if not GetCPInfo(ACodePage, Info) then
-        raise Exception.Create('Codepage "' + IntToStr(ACodePage) +
-                               '" is no valid Ansi codepage');
-    Result := Info.MaxCharSize = 1;
+    Result := IcsIsSBCSCodePage(ACodePage);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function AnsiCodePageFromLocale(ALcid: LCID): LongWord;
 var
     Buf : array [0..5] of Char;
@@ -727,7 +769,7 @@ begin
         CPList := nil;
     end;
 end;
-
+{$ENDIF MSWINDOWS}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { http://www.iana.org/assignments/character-sets }
@@ -870,7 +912,7 @@ var
 begin
     if Length(AMimeCharSetString) > 0 then
     begin
-        S := _LowerCase(AMimeCharSetString);
+        S := LowerCase(AMimeCharSetString);
         for I := Low(CharsetInfos) to High(CharsetInfos) do
         begin
             Len := Length(CharsetInfos[I].MimeName);
@@ -1020,15 +1062,19 @@ end;
 procedure InitializeCharsetInfos;
 var
     I    : Integer;
-    Info : _CpInfo;
     Cs   : TMimeCharSet;
+{$IFDEF MSWINDOWS}
+    Info : _CpInfo;
+{$ENDIF}
 begin
     //--
-    IcsSystemCodePage := GetAcp;
+    IcsGetAcp(IcsSystemCodePage);
+{$IFDEF MSWINDOWS}
     IcsSystemMaxCharSize := 1;
     if GetCPInfo(IcsSystemCodePage, Info) then
         IcsSystemMaxCharSize := Info.MaxCharSize;
-    IcsSystemIsSingleByte := IcsSystemMaxCharSize = 1;
+{$ENDIF}
+    IcsSystemIsSingleByte := IcsIsSBCSCodepage(IcsSystemCodePage);
     //--
 
     SetLength(CharsetInfos, Ord(CS_LAST_ITEM));

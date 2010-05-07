@@ -9,6 +9,8 @@ Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
               
 History:
+May 07 2010  1.01 Made it compatible with C++Builder, removed declaration of
+             size_t to OverbyteIcsTypes.pas
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsIconv;
@@ -16,72 +18,84 @@ unit OverbyteIcsIconv;
 interface
 
 uses
-    Windows;
+    Windows,
+    SysUtils,
+    OverbyteIcsTypes;
 
 const
-  {$IFDEF MSWINDOWS}
-      libiconv        = 'iconv.dll';
-      libmsvcrt       = 'msvcrt.dll';
-      E2BIG           =  7;
-      EINVAL          = 22;
-      EILSEQ          = 42;
-  {$ELSE}
-  {$ENDIF}
+    {$EXTERNALSYM E2BIG}
+    E2BIG           =  7;
+    {$EXTERNALSYM EINVAL}
+    EINVAL          = 22;
+    {$EXTERNALSYM EILSEQ}
+    EILSEQ          = 42;
 
 type
-    cint      = LongInt;
-    pcint     = ^cint;
     iconv_t   = Pointer;
-    piconv_t  = ^iconv_t;
-    size_t    = LongWord;
-    psize_t   = ^size_t;
+    Piconv_t  = ^iconv_t;
 
-{$IFNDEF BCB}
-    function Errno: cint; overload;
-    procedure Errno(Err: cint); overload;
-{$ENDIF}
-    function iconv(cd: iconv_t; InBuf: PPAnsiChar; InBytesLeft: psize_t;
-      OutBuf: PPAnsiChar; OutBytesLeft: psize_t): size_t;
+    function Errno: Longint; overload;
+    procedure Errno(Err: Longint); overload;
+
+    function iconv(cd: iconv_t; InBuf: PPAnsiChar; InBytesLeft: Psize_t;
+      OutBuf: PPAnsiChar; OutBytesLeft: Psize_t): size_t;
     function iconv_open(ToCode: PAnsiChar; FromCode: PAnsiChar): iconv_t;
     function iconv_close(cd: iconv_t): Integer;
     function Load_Iconv: Boolean;
 
 implementation
 
+const
+    libiconv        = 'iconv.dll';
+    libmsvcrt       = 'msvcrt.dll';
+
 type
-    TIconv = function(cd: iconv_t; InBuf: PPAnsiChar; InBytesLeft: psize_t;
-       OutBuf: PPAnsiChar; OutBytesLeft: psize_t): size_t; cdecl;
+    TIconv = function(cd: iconv_t; InBuf: PPAnsiChar; InBytesLeft: Psize_t;
+       OutBuf: PPAnsiChar; OutBytesLeft: Psize_t): size_t; cdecl;
     TIconvOpen = function(ToCode: PAnsiChar; FromCode: PAnsiChar): iconv_t; cdecl;
     TIconvClose = function(cd: iconv_t): Integer; cdecl;
-
+    TGetErrnoLocation = function: PLongint; cdecl;
 var
     hIconvLib       : HMODULE = 0;
     fptrIconv       : TIconv = nil;
     fptrIconvOpen   : TIconvOpen = nil;
     fptrIconvClose  : TIconvClose = nil;
+    hMsvcrt         : HMODULE = 0;
+    fptrGetErrnoLocation : TGetErrnoLocation = nil;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF BCB}
-function GetErrnoLocation: pcint; cdecl; external libmsvcrt name '_errno';
+function GetErrnoLocation: PLongint;
+begin
+    if not Assigned(fptrGetErrnoLocation) then
+    begin
+        hMsvcrt := LoadLibrary(libmsvcrt);
+        if hMsvcrt = 0 then
+            RaiseLastOSError;
+        fptrGetErrnoLocation := GetProcAddress(hMsvcrt, '_errno');
+        if not Assigned(fptrGetErrnoLocation) then
+             RaiseLastOSError;
+    end;
+    Result := fptrGetErrnoLocation;
+end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function Errno: cint;
+function Errno: Longint;
 begin
     Result := GetErrnoLocation^;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure Errno(Err: cint);
+procedure Errno(Err: Longint);
 begin
     GetErrnoLocation^ := Err;
 end;
-{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function iconv(cd: iconv_t; InBuf: PPAnsiChar; InBytesLeft: psize_t;
-  OutBuf: PPAnsiChar; OutBytesLeft: psize_t): size_t;
+function iconv(cd: iconv_t; InBuf: PPAnsiChar; InBytesLeft: Psize_t;
+  OutBuf: PPAnsiChar; OutBytesLeft: Psize_t): size_t;
 begin
     Result := fptrIconv(cd, InBuf, InBytesLeft, OutBuf, OutBytesLeft);
 end;

@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.03
+Version:      1.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -41,7 +41,7 @@ Apr 10, 2009 Arno changed TBytes to an alias of SysUtils.TBytes in D2007 and
              better. Added alias EAbort.
 Dec 03, 2009 Arno added some of the polymorphic integer types from
              Windows.pas/BaseTsd.h.
-
+May 07, 2010 Arno added a few declarations.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTypes;
@@ -157,10 +157,15 @@ type
 {$ENDIF}
 
 {$IFDEF POSIX}
-  INT_PTR                   = NativeInt;
+    INT_PTR                   = NativeInt;
 {$ENDIF}
 
 {$IFDEF WIN32}
+
+  {$EXTERNALSYM size_t}
+  size_t                    = LongWord;
+  Psize_t                   = ^size_t;
+
   {$IFDEF COMPILER14_UP} // D2010 and better
       {$EXTERNALSYM HANDLE_PTR}
       HANDLE_PTR                = Windows.HANDLE_PTR;

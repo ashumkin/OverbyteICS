@@ -1610,7 +1610,7 @@ begin
             { Multi-byte codepoints do not have to be preserved }
             { so IsMultiByteCP is always FALSE here.            }
             Result := Base64EncodeEx(FText, SmtpDefaultLineLength, FCurrentIdx,
-                                     FCodepage, FAlSE);
+                                     FCodepage, FALSE);
     end; {case}
 
     if FCurrentIdx > Length(FText) then
@@ -2940,12 +2940,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SetCharset(const Value: String);
 begin
-    FCharSet := _LowerCase(Value);
+    FCharSet := _LowerCase(Trim(Value));
     { If empty set the default system codepage }
     if Length(FCharSet) = 0 then begin
         FCodePage   := IcsSystemCodePage;
         FCharSet    := CodePageToMimeCharsetString(FCodePage);
-        FIsMultiByteCP := not IsSingleByteCodePage(FCodePage);
+        FIsMultiByteCP := not IcsIsSBCSCodePage(FCodePage);
     end
     else begin
         if not MimeCharsetToCodePage(FCharSet, FCodePage) then
@@ -2953,11 +2953,11 @@ begin
             { Set default system codepage and charset }
             FCodePage := IcsSystemCodePage;
             FCharSet  := CodePageToMimeCharsetString(FCodePage);
-            FIsMultiByteCP := not IsSingleByteCodePage(FCodePage);
+            FIsMultiByteCP := not IcsIsSBCSCodePage(FCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
         end
         else
-            FIsMultiByteCP := not IsSingleByteCodePage(FCodePage);
+            FIsMultiByteCP := not IcsIsSBCSCodePage(FCodePage);
     end;
 end;
 
@@ -4490,24 +4490,24 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
 begin
-    FHtmlCharSet := _LowerCase(Value);
+    FHtmlCharSet := _LowerCase(Trim(Value));
     { If empty set the default system codepage }
     if Length(FHtmlCharSet) = 0 then begin
         FHtmlCodePage := IcsSystemCodePage;
-        FHtmlCharSet  := CodePageToMimeCharsetString(FHtmlCodePage);
-        FHtmlIsMultiByteCP := not IsSingleByteCodePage(FHtmlCodePage);
+        FHtmlCharSet := CodePageToMimeCharsetString(FHtmlCodePage);
+        FHtmlIsMultiByteCP := not IcsIsSBCSCodePage(FHtmlCodePage);
     end
     else begin
-        if not MimeCharsetToCodePage(FHtmlCharset, FHtmlCodePage) then
+        if not MimeCharsetToCodePage(FHtmlCharSet, FHtmlCodePage) then
         begin
             { Set default system codepage and charset }
             FHtmlCodePage := IcsSystemCodePage;
-            FHtmlCharset  := CodePageToMimeCharsetString(FHtmlCodePage);
-            FHtmlIsMultiByteCP := not IsSingleByteCodePage(FHtmlCodePage);
+            FHtmlCharSet  := CodePageToMimeCharsetString(FHtmlCodePage);
+            FHtmlIsMultiByteCP := not IcsIsSBCSCodePage(FHtmlCodePage);
             raise SmtpException.Create('Charset "' + Value + '" is not supported');
         end
         else
-            FHtmlIsMultiByteCP := not IsSingleByteCodePage(FHtmlCodePage);
+            FHtmlIsMultiByteCP := not IcsIsSBCSCodePage(FHtmlCodePage);
     end;
 end;
 

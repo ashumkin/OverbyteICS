@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.07
+Version:      1.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -70,6 +70,8 @@ Dec 20, 2009 A.Garrels added plenty of stuff. Some is not yet used some is, like
              Server Name Indication (SNI) and an option to let OpenSSL use the
              default Delphi memory manager (both needs to be turned on in
              OverbyteIcsSslDefs.inc).
+May 07, 2010 A. Garrels moved declaration of size_t to OverbyteIcsTypes,
+             changed user type CRYPTO_dynlock_value to use TRTLCriticalSection.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -97,22 +99,28 @@ interface
 {$IFDEF USE_SSL}
 
 uses
-    Windows, SysUtils, OverbyteIcsSSLEAY;
+{$IFDEF MSWINDOWS}
+    OverbyteIcsTypes, // size_t
+    Windows,
+{$ENDIF}
+{$IFDEF POSIX}
+    PosixSysTypes,
+{$ENDIF}
+    SysUtils, SyncObjs,
+    OverbyteIcsSSLEAY;
 
 const
-    IcsLIBEAYVersion   = 107;
-    CopyRight : String = ' IcsLIBEAY (c) 2003-2009 F. Piette V1.07 ';
+    IcsLIBEAYVersion   = 109;
+    CopyRight : String = ' IcsLIBEAY (c) 2003-2010 F. Piette V1.09 ';
 
 type
-    size_t = LongWord; // x86
-    
     EIcsLibeayException = class(Exception);
 
     TStatLockLockCallback = procedure(Mode : Integer; N : Integer; const _File : PAnsiChar; Line : Integer); cdecl;
     TStatLockIDCallback   = function : Longword; cdecl;
 
-    TCRYPTO_dynlock_value_st = packed record
-        Mutex : THandle;
+    TCRYPTO_dynlock_value_st = record
+        Mutex : TRTLCriticalSection;
     end;
     PCRYPTO_dynlock_value = ^TCRYPTO_dynlock_value_st;
     CRYPTO_dynlock_value  = TCRYPTO_dynlock_value_st;
@@ -120,7 +128,7 @@ type
     TDynLockCreateCallback  = function(const _file : PAnsiChar; Line: Integer): PCRYPTO_dynlock_value; cdecl;
     TDynLockLockCallback    = procedure(Mode : Integer; L : PCRYPTO_dynlock_value; _File : PAnsiChar; Line: Integer); cdecl;
     TDynLockDestroyCallback = procedure(L : PCRYPTO_dynlock_value; _File : PAnsiChar; Line: Integer); cdecl;
-
+   
 const
     V_ASN1_UNIVERSAL                    = $00;
     V_ASN1_APPLICATION                  = $40;
