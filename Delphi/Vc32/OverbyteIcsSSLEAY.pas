@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.04
+Version:      1.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2008 by François PIETTE
+Legal issues: Copyright (C) 2003-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -58,6 +58,9 @@ Jun 30, 2008 A.Garrels made some changes to prepare code for Unicode.
 Aug 02, 2008 Still one PChar caught in one of the records.
 Dec 20, 2009 A.Garrels added plenty of stuff. Some is not yet used some is, like
              Server Name Indication (SNI).
+May 08, 2010 A. Garrels added two declarations required to support
+             Open SSL 0.9.8n.
+             
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -89,8 +92,8 @@ uses
     Windows, SysUtils, OverbyteIcsUtils;
 
 const
-    IcsSSLEAYVersion   = 104;
-    CopyRight : String = ' IcsSSLEAY (c) 2003-2009 F. Piette V1.04 ';
+    IcsSSLEAYVersion   = 105;
+    CopyRight : String = ' IcsSSLEAY (c) 2003-2010 F. Piette V1.05 ';
 
     EVP_MAX_IV_LENGTH                 = 16;       { 03/02/07 AG }
     EVP_MAX_BLOCK_LENGTH              = 32;       { 11/08/07 AG }
@@ -692,6 +695,8 @@ const
     SSL_CTRL_SET_SESS_CACHE_MODE                = 44;
     SSL_CTRL_GET_SESS_CACHE_MODE                = 45;
 
+    SSL_CTRL_GET_RI_SUPPORT                     = 76; { 0.9.8n }    
+
     SSL_OP_MICROSOFT_SESS_ID_BUG                = $00000001;
     SSL_OP_NETSCAPE_CHALLENGE_BUG               = $00000002;
     SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG     = $00000008;
@@ -723,6 +728,11 @@ const
 
     // As server, disallow session resumption on renegotiation
     SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION  = $00010000;
+
+    // Permit unsafe legacy renegotiation { 0.9.8n }
+    // which can be set with SSL_CTX_set_options(). This is really
+    // not recommended unless you know what you are doing.
+    SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION    = $00040000;
 
     SSL_OP_SINGLE_DH_USE                        = $00100000;
     SSL_OP_EPHEMERAL_RSA                        = $00200000;
@@ -971,7 +981,7 @@ function  f_SSL_CTX_add_extra_chain_cert(Ctx: PSSL_CTX; Cert: PX509): Longword; 
 
 {$IFDEF BEFORE_OSSL_098E}
 //procedure f_SSL_session_get_id(Ses: PSSL_SESSION; var SessID: Pointer; var IdLen: Integer);
-function f_SSL_SESSION_get_id(const Ses: PSSL_SESSION; var IdLen: LongInt): PAnsiChar;
+function  f_SSL_SESSION_get_id(const Ses: PSSL_SESSION; var IdLen: LongInt): PAnsiChar;
 procedure f_SSL_CTX_sess_set_new_cb(Ctx: PSSL_CTX; CB: TNew_session_cb);
 procedure f_SSL_CTX_sess_set_get_cb(Ctx: PSSL_CTX; CB: TGet_session_cb);
 procedure f_SSL_CTX_sess_set_remove_cb(Ctx: PSSL_CTX; CB: TRemove_session_cb);

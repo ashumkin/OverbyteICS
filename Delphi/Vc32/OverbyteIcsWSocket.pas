@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.37
+Version:      7.38
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2009 by François PIETTE
+Legal issues: Copyright (C) 1996-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -748,6 +748,9 @@ Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It
                    now takes an AnsiString buffer. Since this method is highly
                    deprecated it's also marked as "deprecated". Do not use it
                    in new applications.
+May 08, 2010 V7.38 Arno Garrels added support for OpenSSL 0.9.8n. Read comments
+                   in OverbyteIcsLIBEAY.pas for details.
+
 
 }
 
@@ -855,8 +858,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 737;
-  CopyRight    : String     = ' TWSocket (c) 1996-2009 Francois Piette V7.37 ';
+  WSocketVersion            = 738;
+  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.38 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1782,7 +1785,8 @@ type
                    sslOpt_NETSCAPE_CA_DN_BUG,
                    //sslOP_NO_TICKET,
                    sslOpt_NO_SESSION_RESUMPTION_ON_RENEGOTIATION, // 12/09/05
-                   sslOpt_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
+                   sslOpt_NETSCAPE_DEMO_CIPHER_CHANGE_BUG,
+                   sslOpt_ALLOW_UNSAFE_LEGACY_RENEGOTIATION);  // Since OSSL 0.9.8n
     TSslOptions = set of TSslOption;
 
     TSslSessCacheMode = (//sslSESS_CACHE_OFF,
@@ -2113,6 +2117,7 @@ type
         FSslCipher                  : String;
         FSslTotalBits               : Integer;
         FSslSecretBits              : Integer;
+        FSslSupportsSecureRenegotiation : Boolean;
         FMsg_WM_TRIGGER_DATASENT    : UINT;
         FMsg_WM_SSL_ASYNCSELECT     : UINT;
         FMsg_WM_RESET_SSL           : UINT;
@@ -10718,7 +10723,8 @@ const
             SSL_OP_PKCS1_CHECK_2,
             SSL_OP_NETSCAPE_CA_DN_BUG,
             SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION,
-            SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
+            SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG,
+            SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION); // Since OSSL 0.9.8n
 
   SslIntSessCacheModes: array[TSslSessCacheMode] of Integer =     { V7.30 }
             (SSL_SESS_CACHE_CLIENT,
@@ -14329,6 +14335,31 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsSslRenegotiationDisallowed(Obj: TCustomSslWSocket): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+    Result :=
+     { In OSSL v0.9.8L and v0.9.8m renegotiation support was disabled   }
+     { due to renegotiation vulnerability of the SSL protocol.          }
+     ICS_SSL_NO_RENEGOTIATION or // v0.9.8L and v0.9.8m
+     (
+        (ICS_OPENSSL_VERSION_NUMBER >= OSSL_VER_0908N) and
+        (
+          { In v0.9.8n renegotiation support was re-enabled and RFC5746 }
+          { implemented but require the extension as needed.            }
+          { It's also possible to enable unsafe legacy renegotiation    }
+          { explicitly by setting option                                }
+          { sslOpt_ALLOW_UNSAFE_LEGACY_RENEGOTIATION                    }
+
+          { The SSL-connection doesn't support secure renegotiations.   }
+          (not Obj.FSslSupportsSecureRenegotiation) and
+          { Unsafe legacy renegotiation is not set.                     }
+          (f_SSL_get_options(Obj.FSsl) and SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION = 0)
+        )
+     );
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure InfoCallBack(const ssl: PSSL; Where: Integer; Ret: Integer); cdecl;
 var
 {$IFNDEF NO_DEBUG_LOG}
@@ -14394,7 +14425,9 @@ begin
             if (Where and SSL_CB_HANDSHAKE_START) <> 0 then begin
                 Obj.FInHandshake   := TRUE;
                 Inc(Obj.FHandShakeCount);
-                if ICS_SSL_NO_RENEGOTIATION and (Obj.FHandShakeCount > 1) then
+                if (Obj.FHandShakeCount > 1) and
+                    IsSslRenegotiationDisallowed(Obj) then
+                //if ICS_SSL_NO_RENEGOTIATION and (Obj.FHandShakeCount > 1) then
                     Obj.CloseDelayed;
                 if Obj.FHandShakeCount > 1 then
                     Obj.FSslInRenegotiation := TRUE;
@@ -14584,13 +14617,15 @@ var
     TmpInt  : Integer;
     Ver     : Integer;
     Pen     : Integer;
+    NoReneg : Boolean;
 begin
     Result := FALSE;
     if FSslEnable and Assigned(FSsl) then begin
-        TmpInt := f_SSL_state(FSsl);
-        Ver    := f_SSL_version(FSsl);
-        Pen    := f_SSL_renegotiate_pending(FSsl);
-        if ICS_SSL_NO_RENEGOTIATION or
+        TmpInt  := f_SSL_state(FSsl);
+        Ver     := f_SSL_version(FSsl);
+        Pen     := f_SSL_renegotiate_pending(FSsl);
+        NoReneg := IsSslRenegotiationDisallowed(Self);
+        if NoReneg or
             not ((TmpInt = SSL_ST_OK) and
                  (Ver >= SSL3_VERSION) and
                  (Pen = 0)) then begin
@@ -14599,9 +14634,9 @@ begin
                 DebugLog(loSslErr,
                          _Format('%s ! Cannot start re-negotiation  State ' +
                                 '%d Version (0x%x) RenegotiatePending %d ' +
-                                'NO_RENEGOTIATION %d %d',
+                                'NO_RENEGOTIATION %d HSocket %d',
                                 [_IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2),
-                                TmpInt, Ver, Pen, Ord(ICS_SSL_NO_RENEGOTIATION),
+                                TmpInt, Ver, Pen, Ord(NoReneg),
                                 FHSocket]));
             end;
 {$ENDIF}
@@ -15093,6 +15128,7 @@ begin
     FNetworkError            := 0;
     FSslState                := sslNone;
     FHandShakeCount          := 0;
+    FSslSupportsSecureRenegotiation := FALSE;
 
     if Assigned(FSsl) then // Avoids sending a shutdown notify on freeing the SSL
         f_SSL_set_shutdown(FSsl, SSL_SENT_SHUTDOWN);
@@ -15706,6 +15742,7 @@ begin
     FreePeerCert            := FALSE;
     FSslCertChain.X509Class := FX509Class;
     if (ErrCode = 0) and Assigned(FSsl) then begin
+        FSslSupportsSecureRenegotiation := f_SSL_get_secure_renegotiation_support(FSsl) = 1;
         FSslVersion       := String(f_SSL_get_version(FSsl));
         FSslVersNum       := f_SSL_version(FSsl);
         Cipher            := f_SSL_get_current_cipher(FSsl);
