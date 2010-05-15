@@ -22,7 +22,7 @@
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
 			<Defines>USE_SSL;$(Defines)</Defines>
-			<LinkPackageStatics>rtl.lib;vcl.lib;OverbyteIcsCB2009Run.lib</LinkPackageStatics>
+			<LinkPackageStatics>rtl.lib;vcl.lib;OverbyteIcsCB2010Run.lib</LinkPackageStatics>
 			<ILINK_Description>Overbyte ICS Design-Time Package C++ Builder 2010</ILINK_Description>
 			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
 			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
@@ -44,7 +44,7 @@
 			<DynamicRTL>true</DynamicRTL>
 			<DCC_AdditionalSwitches> -LUDesignIde</DCC_AdditionalSwitches>
 			<ILINK_WinAppType>Package</ILINK_WinAppType>
-			<AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2009Run.lib</AllPackageLibs>
+			<AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2010Run.lib</AllPackageLibs>
 			<BCC_GenerateMultithreaded>true</BCC_GenerateMultithreaded>
 			<DCC_ObjPath>D:\ICSV6\Delphi\Vc32;$(DCC_ObjPath)</DCC_ObjPath>
 			<BCC_Defines>NO_STRICT;$(BCC_Defines)</BCC_Defines>
