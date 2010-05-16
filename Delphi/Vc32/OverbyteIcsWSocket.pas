@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.38
+Version:      7.39
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -750,6 +750,7 @@ Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It
                    in new applications.
 May 08, 2010 V7.38 Arno Garrels added support for OpenSSL 0.9.8n. Read comments
                    in OverbyteIcsLIBEAY.pas for details.
+May 16, 2010 V7.39 Arno Garrels reenabled check for nil in WMAsyncGetHostByName.
 
 
 }
@@ -858,8 +859,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 738;
-  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.38 ';
+  WSocketVersion            = 739;
+  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.39 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -6398,10 +6399,10 @@ begin
 {$IFDEF WIN32}
     if ErrCode = 0 then begin
         Phe := PHostent(@FDnsLookupBuffer);
-        //if phe <> nil then begin
+        if phe <> nil then begin
             GetIpList(Phe, FDnsResultList);
             FDnsResult := FDnsResultList.Strings[0];
-        //end;
+        end;
     end;
 {$ENDIF}
     TriggerDnsLookupDone(ErrCode);
