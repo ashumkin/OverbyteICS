@@ -1056,7 +1056,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   FreeMsgHandlers; override;
     procedure   AllocateSocketHWnd; virtual;
     procedure   DeallocateSocketHWnd; virtual;
-    procedure   SocketError(sockfunc: String);
+    procedure   SocketError(sockfunc: String; LastError: Integer = 0);
     procedure   WMASyncSelect(var msg: TMessage);
     procedure   WMAsyncGetHostByName(var msg: TMessage);
     procedure   WMAsyncGetHostByAddr(var msg: TMessage);
@@ -7323,14 +7323,24 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.CancelDnsLookup;
+var
+    RetVal: Integer;
 begin
     if FDnsLookupHandle = 0 then
         Exit;
-    if WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle) <> 0 then begin
+    if FSocketFamily = sfIPv4 then
+        RetVal := WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
+    else
+        RetVal := WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
+    if RetVal <> 0 then begin
         FDnsLookupHandle := 0;
-        SocketError('WSACancelAsyncRequest');
+        if FSocketFamily = sfIPv4 then
+            SocketError('WSACancelAsyncRequest')
+        else { WSocket_Synchronized_IcsCancelAsyncRequest returns the last error }
+            SocketError('WSACancelAsyncRequest', RetVal);
         Exit;
     end;
+
     FDnsLookupHandle := 0;
 
 {$IFDEF WIN32}
@@ -8862,12 +8872,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SocketError(sockfunc: String);
+procedure TCustomWSocket.SocketError(sockfunc: String; LastError: Integer = 0);
 var
     Error  : Integer;
     Line   : String;
 begin
-    Error := WSocket_Synchronized_WSAGetLastError;
+    if LastError = 0 then
+        Error := WSocket_Synchronized_WSAGetLastError
+    else
+        Error := LastError;
 {    Line  := 'Error '+ IntToStr(Error) + ' in function ' + sockfunc +
              #13#10 + WSocketErrorDesc(Error);  }
     Line  := WSocketErrorDesc(Error) + ' (#' + _IntToStr(Error) +
