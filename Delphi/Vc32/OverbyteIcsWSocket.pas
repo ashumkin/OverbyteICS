@@ -2483,7 +2483,7 @@ function  WSocketGetHostByName(Name : AnsiString) : PHostEnt;
 {$ENDIF}
 function  LocalHostName : AnsiString;
 function  LocalIPList(const ASocketFamily: TSocketFamily = sfIPv4) : TStrings;
-procedure GetLocalIPList(var AIPList: TStrings; const ASocketFamily: TSocketFamily = sfIPv4);
+procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = sfIPv4);
 function  WSocketResolveIp(IpAddr : AnsiString) : AnsiString;
 function  WSocketResolveHost(InAddr : AnsiString) : TInAddr; overload;
 procedure WSocketResolveHost(const AHostName: string; var AAddr: TSockAddrIn6;
@@ -8586,7 +8586,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure GetLocalIPList(var AIPList: TStrings; const ASocketFamily: TSocketFamily);
+procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily);
 begin
     _EnterCriticalSection(CritSecIpList);
     try
