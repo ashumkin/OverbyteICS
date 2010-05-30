@@ -1022,6 +1022,7 @@ OverbyteIcsZlibHigh,     { V2.102 }
     OverbyteIcsUtils,
     OverbyteIcsLibrary,
     OverbyteIcsOneTimePw,  { V2.113 }
+    OverbyteIcsWinSock,
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
@@ -1827,8 +1828,6 @@ function LookupFTPReq (const RqType: TFtpRequest): String;    { V2.113 angus }
 function LookupFtpState (const FtpState: TFtpState): String;  { V2.113 angus }
 
 implementation
-
-uses WinSock;
 
 {$IFNDEF WIN32}
 const

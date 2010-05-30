@@ -71,6 +71,7 @@ type
     Label2: TLabel;
     LocalPortEdit: TEdit;
     AnyPortCheckBox: TCheckBox;
+    IPv6CheckBox: TCheckBox;
     procedure FormShow(Sender: TObject);
     procedure SendButtonClick(Sender: TObject);
     procedure AnyPortCheckBoxClick(Sender: TObject);
@@ -157,7 +158,16 @@ end;
 procedure TMainForm.SendButtonClick(Sender: TObject);
 begin
     WSocket.Proto      := 'udp';
-    WSocket.Addr       := '255.255.255.255';     { That's a broadcast  ! }
+    if IPv6CheckBox.Checked then begin
+        WSocket.SocketFamily := sfIPv6;
+        WSocket.Addr         := 'ffff::1';            { That's a broadcast  ! }
+        WSocket.LocalAddr    := '::0';
+    end    
+    else begin
+        WSocket.SocketFamily := sfIPv4;
+        WSocket.Addr         := '255.255.255.255';     { That's a broadcast  ! }
+        WSocket.LocalAddr    := '0.0.0.0';
+    end;
     WSocket.Port       := PortEdit.Text;
     WSocket.LocalPort  := LocalPortEdit.Text;
     { UDP is connectionless. Connect will just open the socket }

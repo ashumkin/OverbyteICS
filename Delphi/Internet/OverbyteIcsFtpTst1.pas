@@ -103,7 +103,7 @@ interface
 
 uses
   Windows, SysUtils, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls, WinSock,
+  Forms, Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls, OverbyteIcsWinSock,
   OverByteIcsUtils, OverByteIcsFtpCli,  OverbyteIcsFtpSrvT,
   OverByteIcsWSocket, OverbyteIcsWndControl;
 

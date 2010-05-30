@@ -5,7 +5,7 @@ Author:       Francois Piette
               Contact address <arno.garrels@gmx.de>
 Description:  WinSock2 API subset for Delphi.
 Creation:     October 2006
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -52,6 +52,8 @@ unit OverbyteIcsWinsock2;
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
+{$H+}           { Use long strings                    }
+{$J+}           { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
@@ -70,104 +72,49 @@ unit OverbyteIcsWinsock2;
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
-{$IFDEF COMPILER2_UP}{ Not for Delphi 1                 }
-    {$H+}         { Use long strings                    }
-    {$J+}         { Allow typed constant to be modified }
-{$ENDIF}
-{$IFDEF BCB3_UP}
+{$IFDEF BCB}
     {$ObjExportAll On}
-{$ENDIF}
-
-{ If NO_ADV_MT is defined, then there is less multithread code compiled.    }
-{$IFDEF DELPHI1}
-    {$DEFINE NO_ADV_MT}
 {$ENDIF}
 
 interface
 
 uses
-{$IFDEF CLR}
-  System.Text,
-  System.Runtime.InteropServices,
-  //Borland.VCL.Classes,
-{$ENDIF}
-{$IFDEF WIN32}
   SysUtils,
-{$IFDEF BCB}
-  Windows, Winsock,
-{$ENDIF}
-{$ENDIF}
+  Windows,
+  OverbyteIcsWinSock,  // Socket API headers 
   OverbyteIcsLibrary,
   OverbyteIcsTypes,
-  OverbyteIcsWinsock,
   OverbyteIcsWSocket; 
 
 const
-    WSocket2Version             = 100;
-    
+    WSocket2Version             = 101;
+
     {$EXTERNALSYM SIO_GET_INTERFACE_LIST}
     SIO_GET_INTERFACE_LIST      = $4004747F;
-    {$EXTERNALSYM IFF_UP}
-    IFF_UP                      = $00000001;
-    {$EXTERNALSYM IFF_BROADCAST}
-    IFF_BROADCAST               = $00000002;
-    {$EXTERNALSYM IFF_LOOPBACK}
-    IFF_LOOPBACK                = $00000004;
-    {$EXTERNALSYM IFF_POINTTOPOINT}
-    IFF_POINTTOPOINT            = $00000008;
-    {$EXTERNALSYM IFF_MULTICAST}
-    IFF_MULTICAST               = $00000010;
-
 type
-    {$EXTERNALSYM sockaddr}
-    sockaddr = record
-        sa_family   : u_short;                // address family
-        sa_data     : array [0..13] of Char;  // up to 14 bytes of direct address
-    end;
-
-    //{$EXTERNALSYM in6_addr}
-    in6_addr = record
-    case Integer of
-        0: (Byte     : array [0..15] of u_char);
-        1: (Word     : array [0..7]  of u_short);
-        2: (s6_bytes : array [0..15] of u_char);
-        3: (s6_addr  : array [0..15] of u_char);
-        4: (s6_words : array [0..7]  of u_short);
-    end;
-    TIn6Addr = in6_addr;
-    PIn6Addr = ^in6_addr;
-
-    //{$EXTERNALSYM sockaddr_in6_old}
-    sockaddr_in6_old = record
+    TSockAddrIn6Old = record
         sin6_family   : short;    // AF_INET6
         sin6_port     : u_short;  // Transport level port number
         sin6_flowinfo : u_long;   // IPv6 flow information
-        sin6_addr     : in6_addr; // IPv6 address
+        sin6_addr     : TIn6Addr; // IPv6 address
     end;
-    TSockAddrIn6Old = sockaddr_in6_old;
-    PSockAddrIn6Old = ^sockaddr_in6_old;
+    PSockAddrIn6Old = ^TSockAddrIn6Old;
 
-    //{$EXTERNALSYM sockaddr_gen}
-    sockaddr_gen = record
+    TSockAddrGen = record
     case Integer of
         0: (Address    : sockaddr);
-        1: (AddressIn  : sockaddr_in);
-        2: (AddressIn6 : sockaddr_in6_old);
+        1: (AddressIn  : TSockAddrIn);
+        2: (AddressIn6 : TSockAddrIn6Old);
     end;
-    TSockAddrGen = sockaddr_gen;
-    PSockAddrGen = ^sockaddr_gen;
+    PSockAddrGen = ^TSockAddrGen;
 
-    //{$EXTERNALSYM _INTERFACE_INFO}
-    _INTERFACE_INFO = record
+    TInterfaceInfo = record
         iiFlags            : u_long;        // Interface flags
-        iiAddress          : sockaddr_gen;  // Interface address
-        iiBroadcastAddress : sockaddr_gen;  // Broadcast address
-        iiNetmask          : sockaddr_gen;  // Network mask
+        iiAddress          : TSockAddrGen;  // Interface address
+        iiBroadcastAddress : TSockAddrGen;  // Broadcast address
+        iiNetmask          : TSockAddrGen;  // Network mask
     end;
-    //{$EXTERNALSYM INTERFACE_INFO}
-    INTERFACE_INFO = _INTERFACE_INFO;
-    TInterfaceInfo = INTERFACE_INFO;
-    PInterfaceInfo = ^INTERFACE_INFO;
+    PInterfaceInfo = ^TInterfaceInfo;
 
  // Winsock2 utilities //
     TInterfaceList = class(TList)
@@ -419,3 +366,4 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 end.
+

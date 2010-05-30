@@ -1,9 +1,9 @@
 object MainForm: TMainForm
   Left = 158
   Top = 169
-  Width = 365
-  Height = 149
   Caption = 'UdpListener'
+  ClientHeight = 115
+  ClientWidth = 357
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -83,17 +83,6 @@ object MainForm: TMainForm
     ShowHint = True
     TabOrder = 3
     Text = 'SenderEdit'
-    OnChange = SenderEditChange
-    OnExit = SenderEditExit
-  end
-  object AnyServerCheckBox: TCheckBox
-    Left = 296
-    Top = 32
-    Width = 49
-    Height = 17
-    Caption = 'Any'
-    TabOrder = 4
-    OnClick = AnyServerCheckBoxClick
   end
   object WSocket: TWSocket
     LineMode = False

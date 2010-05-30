@@ -49,8 +49,8 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics,
-  Controls, Forms, Dialogs, OverbyteIcsWSocket, Winsock, StdCtrls,
-  OverbyteIcsWndControl;
+  Controls, Forms, Dialogs, OverbyteIcsWSocket, StdCtrls,
+  OverbyteIcsWinsock, OverbyteIcsWndControl;
 
 type
   TServerForm = class(TForm)

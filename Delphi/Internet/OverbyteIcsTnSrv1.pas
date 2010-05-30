@@ -57,8 +57,8 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, OverbyteIcsWSocket, WinSock, StdCtrls, OverbyteIcsTnSrv2,
-  OverbyteIcsWndControl;
+  Forms, Dialogs, OverbyteIcsWSocket, StdCtrls, OverbyteIcsTnSrv2,
+  OverbyteIcsWinSock, OverbyteIcsWndControl;
 
 const
   TnSrvVersion = 126;

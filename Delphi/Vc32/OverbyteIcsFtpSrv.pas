@@ -447,11 +447,13 @@ uses
     OverByteIcsSSLEAY,
 {$ENDIF}
     SysUtils, Classes,
+(* Icke
 {$IFDEF WIN32}
 {$IFDEF BCB}
     Winsock,
 {$ENDIF}
 {$ENDIF}
+*)
     OverbyteIcsStreams,
     {$I OverbyteIcsZlib.inc}
     OverbyteIcsZlibHigh,

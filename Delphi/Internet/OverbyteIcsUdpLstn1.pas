@@ -57,7 +57,8 @@ interface
 
 uses
   WinTypes, Messages, SysUtils, Classes, Controls, Forms, StdCtrls,
-  OverbyteIcsIniFiles, WinSock, OverbyteIcsWSocket, OverbyteIcsWndControl;
+  OverbyteIcsIniFiles, OverbyteIcsWinSock, OverbyteIcsWSocket,
+  OverbyteIcsWndControl;
 
 const
   UdpLstnVersion     = 204;
@@ -74,22 +75,18 @@ type
     Label1: TLabel;
     Label2: TLabel;
     SenderEdit: TEdit;
-    AnyServerCheckBox: TCheckBox;
     procedure StartButtonClick(Sender: TObject);
     procedure WSocketDataAvailable(Sender: TObject; Error: Word);
     procedure WSocketSessionConnected(Sender: TObject; Error: Word);
     procedure StopButtonClick(Sender: TObject);
     procedure WSocketSessionClosed(Sender: TObject; Error: Word);
     procedure FormShow(Sender: TObject);
-    procedure AnyServerCheckBoxClick(Sender: TObject);
-    procedure SenderEditChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure SenderEditExit(Sender: TObject);
   private
     FIniFileName   : String;
     FInitialized   : Boolean;
-    FSenderAddr    : TInAddr;
+    FSenderAddr    : TSockAddrIn6;
   end;
 
 var
@@ -142,7 +139,6 @@ begin
         InfoLabel.Caption          := 'Click on Start button';
         StartButton.Enabled        := TRUE;
         StopButton.Enabled         := FALSE;
-        AnyServerCheckBox.Checked  := (Trim(SenderEdit.Text) = '0.0.0.0');
     end;
 end;
 
@@ -170,18 +166,28 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMainForm.StartButtonClick(Sender: TObject);
 begin
-    FSenderAddr               := WSocketResolveHost(AnsiString(SenderEdit.Text));
-    if FSenderAddr.S_addr = htonl(INADDR_LOOPBACK) then begin
-        { Replace loopback address by real localhost IP addr }
-        FSenderAddr           := WSocketResolveHost(LocalHostName);
+    WSocketResolveHost(SenderEdit.Text, FSenderAddr, WSocket.SocketFamily);
+    if (FSenderAddr.sin6_family = AF_INET) then begin
+        if PSockAddr(@FSenderAddr).sin_addr.S_addr = WSocket_htonl(INADDR_LOOPBACK) then
+            { Replace loopback address by real localhost IP addr }
+            PSockAddr(@FSenderAddr).sin_addr := WSocketResolveHost(LocalHostName);
+        WSocket.SocketFamily      := sfIPv4;
+        WSocket.Addr              := ICS_ANY_HOST_V4;
+    end
+    else if (FSenderAddr.sin6_family = AF_INET6) then begin
+        if IN6_IS_ADDR_LOOPBACK(@FSenderAddr.sin6_addr) then
+            { Replace loopback address by real localhost IP addr }
+            WSocketResolveHost(LocalHostName, FSenderAddr, WSocket.SocketFamily);
+        WSocket.SocketFamily      := sfIPv6;
+        WSocket.Addr              := ICS_ANY_HOST_V6;
+        WSocket.MultiCast         := TRUE;
+        WSocket.MultiCastAddrStr  := ICS_BROADCAST_V6;
     end;
     WSocket.Proto             := 'udp';
-    WSocket.Addr              := '0.0.0.0';
     WSocket.Port              := PortEdit.Text;
     WSocket.Listen;
     PortEdit.Enabled          := FALSE;
     SenderEdit.Enabled        := FALSE;
-    AnyServerCheckBox.Enabled := FALSE;
 end;
 
 
@@ -190,19 +196,35 @@ procedure TMainForm.WSocketDataAvailable(Sender: TObject; Error: Word);
 var
     Buffer : array [0..1023] of AnsiChar;
     Len    : Integer;
-    Src    : TSockAddrIn;
+    Src    : TSockAddrIn6;
     SrcLen : Integer;
 begin
-    SrcLen := SizeOf(Src);
-    Len    := WSocket.ReceiveFrom(@Buffer, SizeOf(Buffer), Src, SrcLen);
-    if Len >= 0 then begin
-        if (FSenderAddr.S_addr = INADDR_ANY) or
-           (FSenderAddr.S_addr = Src.Sin_addr.S_addr) then begin
-            Buffer[Len] := #0;
-            DataAvailableLabel.Caption := IntToStr(atoi(DataAvailableLabel.caption) + 1) +
-                                          '  ' + String(StrPas(inet_ntoa(Src.sin_addr))) +
-                                          ':'  + IntToStr(ntohs(Src.sin_port)) +
+    if FSenderAddr.sin6_family = AF_INET then begin
+        SrcLen := SizeOf(TSockAddrIn);
+        Len    := WSocket.ReceiveFrom(@Buffer, SizeOf(Buffer), PSockAddr(@Src)^, SrcLen);
+        if Len >= 0 then begin
+            if (PSockAddr(@FSenderAddr).sin_addr.S_addr = INADDR_ANY) or
+               (PSockAddr(@FSenderAddr).sin_addr.S_addr = PSockAddr(@Src).Sin_addr.S_addr) then begin
+                Buffer[Len] := #0;
+                DataAvailableLabel.Caption := IntToStr(atoi(DataAvailableLabel.caption) + 1) +
+                                          '  ' + String(WSocket_inet_ntoa(PSockAddr(@Src).sin_addr)) +
+                                          ':'  + IntToStr(WSocket_ntohs(PSockAddr(@Src).sin_port)) +
                                           '--> ' + String(StrPas(Buffer));
+            end;
+        end;
+    end
+    else begin
+        SrcLen := SizeOf(src);
+        Len    := WSocket.ReceiveFrom(@Buffer, SizeOf(Buffer), PSockAddr(@Src)^, SrcLen);
+        if Len >= 0 then begin
+            if IN6ADDR_ISANY(@FSenderAddr) or
+               IN6_ADDR_EQUAL(@FSenderAddr.sin6_addr, @Src.sin6_addr) then begin
+                Buffer[Len] := #0;
+                DataAvailableLabel.Caption := IntToStr(atoi(DataAvailableLabel.caption) + 1) +
+                                          '  ' + WSocketIPv6ToStr(PIcsIPv6Address(@Src.sin6_addr)^) +
+                                          ':'  + IntToStr(WSocket_ntohs(PSockAddr(@Src).sin_port)) +
+                                          '--> ' + String(StrPas(Buffer));
+            end;
         end;
     end;
 end;
@@ -225,7 +247,6 @@ begin
     StopButton.Enabled        := FALSE;
     PortEdit.Enabled          := TRUE;
     SenderEdit.Enabled        := TRUE;
-    AnyServerCheckBox.Enabled := TRUE;
     WSocket.Close;
 end;
 
@@ -237,39 +258,11 @@ begin
     StopButton.Enabled         := FALSE;
     PortEdit.Enabled           := TRUE;
     SenderEdit.Enabled         := TRUE;
-    AnyServerCheckBox.Enabled  := TRUE;
     InfoLabel.Caption          := 'Disconnected';
     DataAvailableLabel.Caption := '';
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMainForm.AnyServerCheckBoxClick(Sender: TObject);
-begin
-    if AnyServerCheckBox.Checked then
-        SenderEdit.Text := '0.0.0.0'
-    else begin
-        ActiveControl := SenderEdit;
-        SenderEdit.SelectAll;
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMainForm.SenderEditChange(Sender: TObject);
-begin
-    AnyServerCheckBox.Checked := (Trim(SenderEdit.Text) = '0.0.0.0');
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMainForm.SenderEditExit(Sender: TObject);
-begin
-    AnyServerCheckBox.Checked := (Trim(SenderEdit.Text) = '0.0.0.0');
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 end.
 

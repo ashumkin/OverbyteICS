@@ -334,6 +334,7 @@ function  _IntToHex(Value: Integer; Digits: Integer): String;
 {#$EXTERNALSYM StrToInt}
 function  _StrToInt(const S: String): Integer;
 function  _StrToInt64(const S: String): Int64;
+function  _StrToIntDef(const S: String; ADefault: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 
 function  _StrPas(const P : PAnsiChar) : AnsiString; {$IFDEF COMPILER12_UP} overload;
 function  _StrPas(const P : PWideChar) : UnicodeString; overload;
@@ -460,60 +461,64 @@ function  _Now: TDateTime;
 function  _StringReplace(const S: String; const OldPattern: String;
     const NewPattern: String; Flags: TReplaceFlags): String;
 {#$EXTERNALSYM GetTimeZoneInformation}
-function  _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD; stdcall;
+function  _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
 {#$EXTERNALSYM GetWindowLong}
-function  _GetWindowLong(H: HWND; nIndex: Integer): Longint; stdcall;
+function  _GetWindowLong(H: HWND; nIndex: Integer): Longint;
 {#$EXTERNALSYM DefWindowProc}
-function  _DefWindowProc(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT; stdcall;
+function  _DefWindowProc(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
 {#$EXTERNALSYM GetCurrentThreadId}
-function  _GetCurrentThreadId: DWORD; stdcall;
+function  _GetCurrentThreadId: DWORD;
 {#$EXTERNALSYM GetMessage}
 function  _GetMessage(var lpMsg: TMsg; H: HWND;
-                     wMsgFilterMin, wMsgFilterMax: UINT): BOOL; stdcall;
+                     wMsgFilterMin, wMsgFilterMax: UINT): BOOL;
 {#$EXTERNALSYM TranslateMessage}
-function  _TranslateMessage(const lpMsg: TMsg): BOOL; stdcall;
+function  _TranslateMessage(const lpMsg: TMsg): BOOL;
 {#$EXTERNALSYM DispatchMessage}
-function  _DispatchMessage(const lpMsg: TMsg): LongInt; stdcall;
+function  _DispatchMessage(const lpMsg: TMsg): LongInt;
 {#$EXTERNALSYM PeekMessage}
 function  _PeekMessage(var lpMsg: TMsg; H: HWND;
-               wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL; stdcall;
+               wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL;
 {#$EXTERNALSYM PostMessage}
-function  _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): BOOL; stdcall;
+function  _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): BOOL;
+function  _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
 {#$EXTERNALSYM EnterCriticalSection}
-procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall;
+procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 {#$EXTERNALSYM LeaveCriticalSection}
-procedure _LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall;
+procedure _LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 {#$EXTERNALSYM InitializeCriticalSection}
-procedure _InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall;
+procedure _InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 {#$EXTERNALSYM DeleteCriticalSection}
-procedure _DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection); stdcall;
+procedure _DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 {#$EXTERNALSYM GetClassInfo}
 function  _GetClassInfo(hInstance: HINST; lpClassName: PChar;
-                       var lpWndClass: TWndClass): BOOL; stdcall;
+                       var lpWndClass: TWndClass): BOOL;
 {#$EXTERNALSYM RegisterClass}
-function _RegisterClass(const lpWndClass: TWndClass): ATOM; stdcall;
+function _RegisterClass(const lpWndClass: TWndClass): ATOM;
 {#$EXTERNALSYM UnregisterClass}
-function _UnregisterClass(lpClassName: PChar; hInstance: HINST): BOOL; stdcall;
+function _UnregisterClass(lpClassName: PChar; hInstance: HINST): BOOL;
 {#$EXTERNALSYM CreateWindowEx}
 function _CreateWindowEx(dwExStyle: DWORD; lpClassName: PChar;
   lpWindowName: PChar; dwStyle: DWORD; X, Y, nWidth, nHeight: Integer;
   hWndParent: HWND; h_Menu: HMENU; hInstance: HINST; lpParam: Pointer): HWND;
 {#$EXTERNALSYM DestroyWindow}
-function _DestroyWindow(H: HWND): BOOL; stdcall;
+function _DestroyWindow(H: HWND): BOOL;
 {#$EXTERNALSYM SetWindowLong}
-function _SetWindowLong(H: HWND; nIndex: Integer; dwNewLong: Longint): Longint; stdcall;
+function _SetWindowLong(H: HWND; nIndex: Integer; dwNewLong: Longint): Longint;
 {#$EXTERNALSYM WM_USER}
-function _LoadLibrary(lpLibFileName: PChar): HMODULE; stdcall;
+function _LoadLibrary(lpLibFileName: PChar): HMODULE;
 {#$EXTERNALSYM LoadLibrary}
-function _FreeLibrary(hLibModule: HMODULE): BOOL; stdcall;
+function _FreeLibrary(hLibModule: HMODULE): BOOL;
 {#$EXTERNALSYM GetProcAddress}
-function _GetProcAddress(hModule: HMODULE; lpProcName: LPCSTR): FARPROC; stdcall;
+function _GetProcAddress(hModule: HMODULE; lpProcName: LPCSTR): FARPROC;
 {#$EXTERNALSYM GetTickCount}
-function _GetTickCount: DWORD; stdcall;
+function _GetTickCount: DWORD;
 {#$EXTERNALSYM Sleep}
-procedure _Sleep(dwMilliseconds: DWORD); stdcall;
+procedure _Sleep(dwMilliseconds: DWORD);
 {#$EXTERNALSYM Sleep}
-function _GetACP: Cardinal; stdcall;
+function _GetACP: Cardinal;
+procedure _OutputDebugString(lpOutputString: PChar);
+function _IsWindow(hWnd: HWND): BOOL;
+procedure _GetSystemInfo(var lpSystemInfo: TSystemInfo);
 
 {$IFNDEF NOFORMS}
 {$EXTERNALSYM Application}
@@ -944,6 +949,11 @@ begin
     Result := SysUtils.StrToInt64(S);
 end;
 
+function  _StrToIntDef(const S: String; ADefault: Integer): Integer;
+begin
+    Result := SysUtils.StrToIntDef(S, ADefault);
+end;
+
 function _StrPas(const P : PAnsiChar) : AnsiString; // Unicode change
 begin
     Result := SysUtils.StrPas(P);
@@ -1361,7 +1371,7 @@ begin
     Result := SysUtils.StringReplace(S, OldPattern, NewPattern, Flags);
 end;
 
-function _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD; stdcall;
+function _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
 begin
      Result := Windows.GetTimeZoneInformation(lpTimeZoneInformation);
 end;
@@ -1526,6 +1536,11 @@ begin
     Result := Windows.PostMessage(H, Msg, ParamW, ParamL);
 end;
 
+function _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
+begin
+    Result := Windows.SendMessage(H, Msg, ParamW, ParamL);
+end;
+
 procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 begin
     Windows.EnterCriticalSection(lpCriticalSection);
@@ -1553,7 +1568,7 @@ begin
     Result := Windows.GetClassInfo(hInstance, lpClassName, lpWndClass);
 end;
 
-function _RegisterClass(const lpWndClass: TWndClass): ATOM; stdcall;
+function _RegisterClass(const lpWndClass: TWndClass): ATOM;
 begin
     Result := Windows.RegisterClass(lpWndClass);
 end;
@@ -1607,9 +1622,24 @@ begin
     Windows.Sleep(dwMilliseconds);
 end;
 
-function _GetACP: Cardinal; stdcall;
+function _GetACP: Cardinal;
 begin
     Result := Windows.GetACP;
+end;
+
+procedure _OutputDebugString(lpOutputString: PChar);
+begin
+    Windows.OutputDebugString(lpOutputString);
+end;
+
+function _IsWindow(hWnd: HWND): BOOL;
+begin
+    Result := Windows.IsWindow(hWnd);
+end;
+
+procedure _GetSystemInfo(var lpSystemInfo: TSystemInfo);
+begin
+    Windows.GetSystemInfo(lpSystemInfo);
 end;
 
 {$IFNDEF NOFORMS}

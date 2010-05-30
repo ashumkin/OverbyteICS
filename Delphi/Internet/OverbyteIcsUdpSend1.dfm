@@ -1,8 +1,8 @@
 object MainForm: TMainForm
-  Left = 163
-  Top = 178
+  Left = 156
+  Top = 209
   Width = 392
-  Height = 154
+  Height = 161
   Caption = 'Udp Sender (Broadcast)'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -75,12 +75,22 @@ object MainForm: TMainForm
     TabOrder = 4
     OnClick = AnyPortCheckBoxClick
   end
+  object IPv6CheckBox: TCheckBox
+    Left = 256
+    Top = 100
+    Width = 57
+    Height = 17
+    Alignment = taLeftJustify
+    Caption = 'IPv6'
+    TabOrder = 5
+  end
   object WSocket: TWSocket
     LineMode = False
     LineLimit = 65536
     LineEnd = #13#10
     LineEcho = False
     LineEdit = False
+    SocketFamily = sfAny
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'
     LocalPort = '0'

@@ -13,7 +13,8 @@ unit OverbyteIcsConSrv1S;
 interface
 
 uses
-  Messages, Windows, SysUtils, Classes, OverbyteIcsWSocket, WinSock, OverbyteIcsConSrv1C;
+  Messages, Windows, SysUtils, Classes, OverbyteIcsWSocket,
+  OverByteIcsWinSock, OverbyteIcsConSrv1C;
 
 type
     // TServerObject handle all clients sessions

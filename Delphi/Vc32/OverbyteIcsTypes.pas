@@ -226,6 +226,8 @@ type
   TStrings                  = Classes.TStrings;
   {$EXTERNALSYM TStringList}
   TStringList               = Classes.TStringList;
+  {$EXTERNALSYM TThread}
+  TThread                   = Classes.TThread;
   {$EXTERNALSYM TOperation}
   TOperation                = Classes.TOperation;
   {$EXTERNALSYM TListNotification}
@@ -256,6 +258,8 @@ type
   LRESULT                   = Windows.LRESULT;
   {$EXTERNALSYM short}
   Short                     = Windows.Short;
+  {$EXTERNALSYM TSystemInfo}
+  TSystemInfo               = Windows.TSystemInfo;
 {$ENDIF}
 
   LOWORD = Word;

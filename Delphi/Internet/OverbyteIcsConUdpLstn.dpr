@@ -61,7 +61,7 @@ uses
   Classes,
   OverbyteIcsConApp in '..\Vc32\OverbyteIcsConApp.pas',
   OverbyteIcsWSocket,
-  WinSock;
+  OverbyteIcsWinSock;
 
 // WinSock functions
 

@@ -181,6 +181,11 @@ Delphi\vc32\OverbyteIcsWSocketTS.dcr
 Delphi\vc32\OverbyteIcsCsc.pas
 Delphi\vc32\OverbyteIcsMLang.pas
 Delphi\vc32\OverbyteIcsIconv.pas
+Delphi\vc32\OverbyteIcsDotNetSockImpl.inc
+Delphi\vc32\OverbyteIcsDotNetSockTypes.inc
+Delphi\vc32\OverbyteIcsWinsockImpl.inc
+Delphi\vc32\OverbyteIcsWinsockTypes.inc
+
 
 Delphi\vc32\ZOBJ123\adler32.obj
 Delphi\vc32\ZOBJ123\compress.obj
@@ -196,7 +201,6 @@ Delphi\vc32\ZOBJ123\minigzip.obj
 Delphi\vc32\ZOBJ123\trees.obj
 Delphi\vc32\ZOBJ123\uncompr.obj
 Delphi\vc32\ZOBJ123\zutil.obj
-
 
 Install\D7Install.bpg
 Install\D2006Install.bdsgroup

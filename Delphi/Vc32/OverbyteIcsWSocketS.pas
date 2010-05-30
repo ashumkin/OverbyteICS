@@ -137,11 +137,13 @@ uses
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
+(*
 {$IFDEF WIN32}
 {$IFDEF BCB}
     Winsock,
 {$ENDIF}
 {$ENDIF}
+*)
     OverbyteIcsTypes,   OverbyteIcsLibrary,
     OverbyteIcsWSocket, OverbyteIcsWinsock;
 
