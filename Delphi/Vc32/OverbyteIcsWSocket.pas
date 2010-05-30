@@ -3765,7 +3765,6 @@ type
     FWndHandle    : HWND;
     FMsgID        : UINT;
     FSocketFamily : TSocketFamily;
-    FID           : Integer;
     FState        : TIcsAsyncDnsLookupRequestState;
     FReverse      : Boolean;
     FCanceled     : Boolean;
@@ -3778,13 +3777,13 @@ type
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AName: string): TIcsAsyncDnsLookupRequest; forward;
+  ASocketFamily: TSocketFamily; const AName: string): THandle; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 function WSocket_Synchronized_IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AAddr: string): TIcsAsyncDnsLookupRequest; forward;
+  ASocketFamily: TSocketFamily; const AAddr: string): THandle; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 function WSocket_Synchronized_IcsCancelAsyncRequest(
-  ARequest: TIcsAsyncDnsLookupRequest): Integer; forward;
+  ARequest: THandle): Integer; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 function WSocket_Synchronized_ResolveName(const AName: string;
   const AReverse: Boolean; const AFamily: TSocketFamily;
@@ -7358,8 +7357,7 @@ begin
         if FSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
-            WSocket_Synchronized_IcsCancelAsyncRequest(
-                                  TIcsAsyncDnsLookupRequest(FDnsLookupHandle));
+            WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
         FDnsLookupHandle := 0;
     end;
 
@@ -7426,12 +7424,11 @@ begin
                                   @FDnsLookupBuffer,
                                   SizeOf(FDnsLookupBuffer))
     else
-        FDnsLookupHandle   := THandle(
-                                  WSocket_Synchronized_IcsAsyncGetHostByName(
+        FDnsLookupHandle   :=     WSocket_Synchronized_IcsAsyncGetHostByName(
                                   FWindowHandle,
                                   FMsg_WM_ASYNCGETHOSTBYNAME,
                                   FSocketFamily,
-                                  _Trim(AHostName)));
+                                  _Trim(AHostName));
 
     if FDnsLookupHandle = 0 then begin
         RaiseException(String(HostName) + ': can''t start DNS lookup - ' +
@@ -7461,8 +7458,7 @@ begin
         if FSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
-            WSocket_Synchronized_IcsCancelAsyncRequest(
-                                  TIcsAsyncDnsLookupRequest(FDnsLookupHandle));
+            WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
         FDnsLookupHandle := 0;
     end;
 
@@ -7500,12 +7496,11 @@ begin
                             @FDnsLookupBuffer,
                             SizeOf(FDnsLookupBuffer))
     else
-        FDnsLookupHandle := THandle(
-                            WSocket_Synchronized_IcsAsyncGetHostByAddr(
+        FDnsLookupHandle := WSocket_Synchronized_IcsAsyncGetHostByAddr(
                             FWindowHandle,
                             FMsg_WM_ASYNCGETHOSTBYADDR,
                             FSocketFamily,
-                            _Trim(HostAddr)));
+                            _Trim(HostAddr));
 
     if FDnsLookupHandle = 0 then
         RaiseException(HostAddr + ': can''t start reverse DNS lookup - ' +
@@ -16419,10 +16414,10 @@ type
     procedure LockThreadList;
     procedure UnlockThreadList;
     function ExecAsync(AWnd: HWND; AMsgID: UINT; ASocketFamily: TSocketFamily;
-      const AName: string; AReverse: Boolean): TIcsAsyncDnsLookupRequest;
+      const AName: string; AReverse: Boolean): THandle;
     function GetNextRequest(AThread: TIcsAsyncDnsLookupThread): TIcsAsyncDnsLookupRequest;
     function RemoveRequest(AReq: TIcsAsyncDnsLookupRequest): Boolean;
-    function CancelAsyncRequest(ARequest: TIcsAsyncDnsLookupRequest): Integer;
+    function CancelAsyncRequest(ARequest: THandle): Integer;
     class function CpuCount: Integer;
   public
     constructor Create(const AMaxThreads: Integer);
@@ -16645,7 +16640,7 @@ function TIcsAsyncDnsLookup.ExecAsync(
     AMsgID        : UINT;
     ASocketFamily : TSocketFamily;
     const AName   : string;
-    AReverse      : Boolean): TIcsAsyncDnsLookupRequest;
+    AReverse      : Boolean): THandle;
 var
     Req    : TIcsAsyncDnsLookupRequest;
     Thread : TIcsAsyncDnsLookupThread;
@@ -16659,7 +16654,7 @@ begin
         Req.FSocketFamily := ASocketFamily;
         Req.FReverse      := AReverse;
         Req.FLookupName   := AName;
-        Req.FID           := FRqID;
+        //Req.FID           := FRqID;
         Inc(FRqID);
         FQueue.Add(Req);
     finally
@@ -16690,7 +16685,7 @@ begin
             Thread.Start;
         {$IFEND}
         end;
-        Result := Req;
+        Result := THandle(Req);
     finally
         UnlockThreadList;
     end;
@@ -16730,20 +16725,16 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsAsyncDnsLookup.CancelAsyncRequest(
-  ARequest: TIcsAsyncDnsLookupRequest): Integer;
+  ARequest: THandle): Integer;
 var
     I   : Integer;
     Req : TIcsAsyncDnsLookupRequest;
 begin
     LockQueue;
     try
-        I := FQueue.IndexOf(ARequest);
+        I := FQueue.IndexOf(Pointer(ARequest));
         if (I > -1) then
-        begin
-            Req := TIcsAsyncDnsLookupRequest(FQueue[I]);
-            if Req.FID <> ARequest.FID then
-                Req := nil;
-        end
+            Req := TIcsAsyncDnsLookupRequest(FQueue[I])
         else
             Req := nil;
 
@@ -16846,7 +16837,7 @@ begin
     LockQueue;
     try
         I := FQueue.IndexOf(AReq);
-        Result := (I > -1) and (TIcsAsyncDnsLookupRequest(FQueue[I]).FID = AReq.FID);
+        Result := (I > -1);
         if Result then
             FQueue.Delete(I);
     finally
@@ -16870,7 +16861,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AName: string): TIcsAsyncDnsLookupRequest;
+  ASocketFamily: TSocketFamily; const AName: string): THandle;
 begin
     Result := GAsyncDnsLookup.ExecAsync(AWnd, AMsgID, ASocketFamily, AName, FALSE);
 end;
@@ -16878,7 +16869,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AAddr: string): TIcsAsyncDnsLookupRequest;
+  ASocketFamily: TSocketFamily; const AAddr: string): THandle;
 begin
     Result := GAsyncDnsLookup.ExecAsync(AWnd, AMsgID, ASocketFamily, AAddr, TRUE);
 end;
@@ -16886,7 +16877,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsCancelAsyncRequest(
-  ARequest: TIcsAsyncDnsLookupRequest): Integer;
+  ARequest: THandle): Integer;
 begin
     Result := GAsyncDnsLookup.CancelAsyncRequest(ARequest);
 end;
