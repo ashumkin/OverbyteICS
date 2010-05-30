@@ -162,7 +162,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TDnsLookupForm.LocalIPButtonClick(Sender: TObject);
 begin
-     IPListMemo.Lines := LocalIPList;
+     IPListMemo.Lines := LocalIPList(TSocketFamily(SocketFamilyCombobox.ItemIndex));
      if LocalIPList.Count > 0 then
          HostEdit.Text := LocalIPList.Strings[0];
 end;
