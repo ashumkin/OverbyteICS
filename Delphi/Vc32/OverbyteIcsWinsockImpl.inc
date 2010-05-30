@@ -398,7 +398,7 @@ begin
                 GWs2DLLHandle      := 0;
                 FWSAIoctl          := nil;
                 if GWship6DllHandle <> 0 then begin
-                    FreeLibrary(GWs2DLLHandle);
+                    FreeLibrary(GWship6DllHandle);
                     GWship6DllHandle := 0;
                 end;
                 FGetAddrInfo       := nil;
