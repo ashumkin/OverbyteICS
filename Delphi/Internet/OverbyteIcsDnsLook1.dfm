@@ -3,7 +3,7 @@ object DnsLookupForm: TDnsLookupForm
   Top = 152
   BorderStyle = bsSingle
   Caption = 'DnsLookup - http://www.overbyte.be'
-  ClientHeight = 169
+  ClientHeight = 179
   ClientWidth = 416
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -24,15 +24,22 @@ object DnsLookupForm: TDnsLookupForm
   end
   object IPLabel: TLabel
     Left = 8
-    Top = 56
+    Top = 71
     Width = 36
     Height = 13
     Caption = 'IPLabel'
   end
+  object Label2: TLabel
+    Left = 8
+    Top = 48
+    Width = 63
+    Height = 13
+    Caption = 'SocketFamily'
+  end
   object HostEdit: TEdit
-    Left = 72
+    Left = 77
     Top = 16
-    Width = 161
+    Width = 156
     Height = 21
     TabOrder = 0
     Text = 'HostEdit'
@@ -58,7 +65,7 @@ object DnsLookupForm: TDnsLookupForm
   end
   object IPListMemo: TMemo
     Left = 8
-    Top = 80
+    Top = 90
     Width = 401
     Height = 81
     Lines.Strings = (
@@ -84,12 +91,30 @@ object DnsLookupForm: TDnsLookupForm
     TabOrder = 5
     OnClick = LocalIPButtonClick
   end
+  object SocketFamilyComboBox: TComboBox
+    Left = 77
+    Top = 44
+    Width = 157
+    Height = 21
+    Style = csDropDownList
+    ItemHeight = 13
+    ItemIndex = 0
+    TabOrder = 6
+    Text = 'sfAny'
+    Items.Strings = (
+      'sfAny'
+      'sfAnyIPv4'
+      'sfAnyIPv6'
+      'sfIPv4'
+      'sfIPv6')
+  end
   object WSocket1: TWSocket
     LineMode = False
     LineLimit = 65536
     LineEnd = #13#10
     LineEcho = False
     LineEdit = False
+    SocketFamily = sfIPv4
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'
     LocalPort = '0'

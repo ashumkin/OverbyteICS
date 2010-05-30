@@ -72,6 +72,8 @@ type
     IPListMemo: TMemo;
     ReverseLookupButton: TButton;
     LocalIPButton: TButton;
+    Label2: TLabel;
+    SocketFamilyComboBox: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure LookupButtonClick(Sender: TObject);
     procedure WSocket1DnsLookupDone(Sender: TObject; Error: Word);
@@ -106,6 +108,7 @@ begin
     CancelButton.Enabled := TRUE;      { Enable canceling                  }
     HostEdit.SelectAll;                { handy for the user                }
     ActiveControl   := HostEdit;       { he likes to have the cursor there }
+    WSocket1.SocketFamily := TSocketFamily(SocketFamilyCombobox.ItemIndex);
     IPLabel.Caption := 'Waiting for DNS...';
     IPListMemo.Clear;
     WSocket1.DnsLookup(HostEdit.Text); { Start DnsLookup                   }
@@ -120,6 +123,7 @@ begin
     CancelButton.Enabled := TRUE;      { Enable canceling                  }
     HostEdit.SelectAll;                { handy for the user                }
     ActiveControl   := HostEdit;       { he likes to have the cursor there }
+    WSocket1.SocketFamily := TSocketFamily(SocketFamilyCombobox.ItemIndex);
     IPLabel.Caption := 'Waiting for DNS...';
     IPListMemo.Clear;
     WSocket1.ReverseDnsLookup(HostEdit.Text); { Start DnsLookup                   }
