@@ -7334,10 +7334,7 @@ begin
         RetVal := WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
     if RetVal <> 0 then begin
         FDnsLookupHandle := 0;
-        if FSocketFamily = sfIPv4 then
-            SocketError('WSACancelAsyncRequest')
-        else { WSocket_Synchronized_IcsCancelAsyncRequest returns the last error }
-            SocketError('WSACancelAsyncRequest', RetVal);
+        SocketError('WSACancelAsyncRequest');
         Exit;
     end;
 
@@ -16777,15 +16774,20 @@ begin
             end
             else begin
                 if Req.FState = lrsAlready then
-                    Result := WSAEALREADY
+                begin
+                    Result := -1;
+                    SetLastError(WSAEALREADY);
+                end
                 else begin
                     Req.FCanceled := TRUE;
                     Result := 0;
                 end;
             end;
         end
-        else
-            Result := WSAEINVAL;
+        else begin
+            Result := -1;
+            SetLastError(WSAEINVAL);
+        end;
     finally
         UnlockQueue;
     end;
