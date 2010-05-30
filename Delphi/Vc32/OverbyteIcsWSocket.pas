@@ -2721,6 +2721,7 @@ type
 
 var
 //    GInitData         : TWSADATA;
+    CritSecIpList     : TRTLCriticalSection;
     IPList            : TStrings;
 {$IFDEF CLR}
     GWSAStartupCalled : Boolean = FALSE;
@@ -8601,62 +8602,67 @@ var
     LHostName     : string;
     Idx           : Integer;
 begin
-    IPList.Clear;
-    Result := IPList;
+    _EnterCriticalSection(CritSecIpList);
+    try
+        IPList.Clear;
+        Result := IPList;
 
-    if ASocketFamily = sfIPv4 then begin
-        phe  := WSocketGetHostByName(LocalHostName);
-        if phe <> nil then
-            GetIpList(Phe, IPList);
-    end
-    else begin
-        LHostName := string(LocalHostName);
-        FillChar(Hints, SizeOf(Hints), 0);
-        if ASocketFamily = sfIPv6 then
-            Hints.ai_family := AF_INET6
-        else if ASocketFamily = sfIPv4 then
-            Hints.ai_family := AF_INET;
-        AddrInfo := nil;
-        RetVal := WSocket_GetAddrInfo(PChar(LHostName), nil, @Hints, AddrInfo);
-        if RetVal <> 0 then
-            raise ESocketException.Create(
-                 'Winsock Resolve Host: Cannot convert host address ''' +
-                 LHostName + ''' - ' +
-                 GetWinsockErr(WSocket_Synchronized_WSAGetLastError));
-        try
-            AddrInfoNext := AddrInfo;
-            IDX := 0;
-            while AddrInfoNext <> nil do
-            begin
-                if AddrInfoNext.ai_family = AF_INET then
+        if ASocketFamily = sfIPv4 then begin
+            phe  := WSocketGetHostByName(LocalHostName);
+            if phe <> nil then
+                GetIpList(Phe, IPList);
+        end
+        else begin
+            LHostName := string(LocalHostName);
+            FillChar(Hints, SizeOf(Hints), 0);
+            if ASocketFamily = sfIPv6 then
+                Hints.ai_family := AF_INET6
+            else if ASocketFamily = sfIPv4 then
+                Hints.ai_family := AF_INET;
+            AddrInfo := nil;
+            RetVal := WSocket_GetAddrInfo(PChar(LHostName), nil, @Hints, AddrInfo);
+            if RetVal <> 0 then
+                raise ESocketException.Create(
+                    'Winsock Resolve Host: Cannot convert host address ''' +
+                    LHostName + ''' - ' +
+                    GetWinsockErr(WSocket_Synchronized_WSAGetLastError));
+            try
+                AddrInfoNext := AddrInfo;
+                IDX := 0;
+                while AddrInfoNext <> nil do
                 begin
-                    if ASocketFamily = sfAnyIPv4 then
+                    if AddrInfoNext.ai_family = AF_INET then
                     begin
-                        IPList.Insert(IDX,
-                        WSocketIPv4ToStr(AddrInfoNext^.ai_addr^.sin_addr.S_addr));
-                        Inc(IDX);
+                        if ASocketFamily = sfAnyIPv4 then
+                        begin
+                            IPList.Insert(IDX,
+                            WSocketIPv4ToStr(AddrInfoNext^.ai_addr^.sin_addr.S_addr));
+                            Inc(IDX);
+                        end
+                        else
+                            IPList.Add(
+                            WSocketIPv4ToStr(AddrInfoNext^.ai_addr^.sin_addr.S_addr));
                     end
-                    else
-                        IPList.Add(
-                        WSocketIPv4ToStr(AddrInfoNext^.ai_addr^.sin_addr.S_addr));
-                end
-                else if AddrInfoNext.ai_family = AF_INET6 then
-                begin
-                    if ASocketFamily = sfAnyIPv6 then
+                    else if AddrInfoNext.ai_family = AF_INET6 then
                     begin
-                        IPList.Insert(IDX,
-                        WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(AddrInfoNext)));
-                        Inc(IDX);
-                    end
-                    else
-                        IPList.Add(
-                        WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(AddrInfoNext)));
+                        if ASocketFamily = sfAnyIPv6 then
+                        begin
+                            IPList.Insert(IDX,
+                            WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(AddrInfoNext)));
+                            Inc(IDX);
+                        end
+                        else
+                            IPList.Add(
+                            WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(AddrInfoNext)));
+                    end;
+                    AddrInfoNext := AddrInfoNext.ai_next;
                 end;
-                AddrInfoNext := AddrInfoNext.ai_next;
+            finally
+                WSocket_FreeAddrInfo(AddrInfo);
             end;
-        finally
-            WSocket_FreeAddrInfo(AddrInfo);
         end;
+    finally
+        _LeaveCriticalSection(CritSecIpList);
     end;
 end;
 {$ENDIF}
@@ -16407,7 +16413,6 @@ type
     FMaxThreads  : Integer;
     FQueueLock   : TRTLCriticalSection;
     FThreadsLock : TRTLCriticalSection;
-    FRqID        : Integer;
     FDestroying  : Boolean;
     procedure LockQueue;
     procedure UnlockQueue;
@@ -16654,8 +16659,6 @@ begin
         Req.FSocketFamily := ASocketFamily;
         Req.FReverse      := AReverse;
         Req.FLookupName   := AName;
-        //Req.FID           := FRqID;
-        Inc(FRqID);
         FQueue.Add(Req);
     finally
         UnlockQueue;
@@ -16884,8 +16887,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 initialization
+    _InitializeCriticalSection(CritSecIpList);
     IPList     := TStringList.Create;
     GAsyncDnsLookup := TIcsAsyncDnsLookup.Create(TIcsAsyncDnsLookup.CpuCount); // more or less max. threads ?
 {$IFDEF USE_SSL}
@@ -16909,6 +16912,7 @@ finalization
         IPList.Free;
         IPList := nil;
     end;
+    _DeleteCriticalSection(CritSecIpList);
     _FreeAndNil(GAsyncDnsLookup);
 {$IFDEF USE_SSL}
     {$IFNDEF NO_SSL_MT}
