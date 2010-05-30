@@ -268,10 +268,10 @@ begin
 
     EnterCriticalSection(GWSockCritSect);
     try
-        if GWs2DLLHandle = 0 then begin
-            GWs2DLLHandle := LoadLibrary(GWs2DLLName);
-            if GWs2DLLHandle = 0 then
-                raise Exception.Create('Unable to load ' + GWs2DLLName +
+        if GWsDLLHandle = 0 then begin
+            GWsDLLHandle := LoadLibrary(GWsDLLName);
+            if GWsDLLHandle = 0 then
+                raise Exception.Create('Unable to load ' + GWsDLLName +
                               ' - ' + SysErrorMessage(GetLastError));
             LastError := WSAStartup(MAKEWORD(GReqVerLow, GReqVerHigh), GInitData);
             if LastError <> 0 then
@@ -281,10 +281,10 @@ begin
         if Length(ProcName) = 0 then
             Result := nil
         else begin
-            Result := GetProcAddress(GWs2DLLHandle, PAnsiChar(ProcName));
+            Result := GetProcAddress(GWsDLLHandle, PAnsiChar(ProcName));
             if Result = nil then
                 raise ESocketAPIException.Create('Procedure ' + String(ProcName) +
-                                              ' not found in ' + GWs2DLLName +
+                                              ' not found in ' + GWsDLLName +
                                    ' - ' + SysErrorMessage(GetLastError));
         end;
     finally
@@ -301,6 +301,11 @@ begin
         if GWs2DLLHandle = 0 then begin
                 GetProc('');
             GHasIPv6Func := FALSE;
+
+            GWs2DLLHandle := LoadLibrary(GWs2DLLName);
+            if GWs2DLLHandle = 0 then
+                raise Exception.Create('Unable to load ' + GWs2DLLName +
+                              ' - ' + SysErrorMessage(GetLastError));
             {
             if (Win32Platform <> VER_PLATFORM_WIN32_NT) or
                                                (Win32MajorVersion < 5) then
@@ -321,7 +326,7 @@ begin
         if Length(ProcName) = 0 then
             Result := nil
         else begin
-            Result := GetProcAddress(GWs2DLLHandle, PAnsiChar(ProcName));
+            Result := GetProcAddress(GWs2ProcHandle, PAnsiChar(ProcName));
             if Result = nil then
                 raise ESocketAPIException.Create('Procedure ' + String(ProcName) +
                                               ' not found in ' + GWs2DLLName +
