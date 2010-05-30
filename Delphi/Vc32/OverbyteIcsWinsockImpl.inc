@@ -321,7 +321,7 @@ begin
         if Length(ProcName) = 0 then
             Result := nil
         else begin
-            Result := GetProcAddress(GWs2ProcHandle, PAnsiChar(ProcName));
+            Result := GetProcAddress(GWs2DLLHandle, PAnsiChar(ProcName));
             if Result = nil then
                 raise ESocketAPIException.Create('Procedure ' + String(ProcName) +
                                               ' not found in ' + GWs2DLLName +
