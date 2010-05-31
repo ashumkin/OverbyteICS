@@ -1081,6 +1081,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetMultiCastAddrStr(const sMultiCastAddrStr: String);
     procedure   SetLocalPort(const sLocalPort : String);
     procedure   SetProto(sProto : String); virtual;
+    procedure   SetSocketFamily(const Value: TSocketFamily);
     function    GetRcvdCount : LongInt; virtual;
     procedure   SetBufSize(Value : Integer); virtual;
     function    GetBufSize: Integer; virtual;
@@ -1311,7 +1312,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property CounterClass : TWsocketCounterClass    read  FCounterClass
                                                     write SetCounterClass;
     property SocketFamily : TSocketFamily           read  FSocketFamily
-                                                    write FSocketFamily;
+                                                    write SetSocketFamily;
   end;
 
   TSocksState          = (socksData, socksNegociateMethods, socksAuthenticate, socksConnect);
@@ -2496,10 +2497,10 @@ procedure WSocketUnloadWinsock; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  WSocketIsDottedIP(const S : AnsiString) : Boolean;
 function  WSocketIPv4ToStr(const AIcsIPv4Addr: TIcsIPv4Address): string;
 function  WSocketIPv6ToStr(const AIcsIPv6Addr: TIcsIPv6Address): string;
-function  WSocketStrToIPv4(const S: string; var Success: Boolean): TIcsIPv4Address;
-function  WSocketStrToIPv6(const S: string; var Success: Boolean): TIcsIPv6Address;
+function  WSocketStrToIPv4(const S: string; out Success: Boolean): TIcsIPv4Address;
+function  WSocketStrToIPv6(const S: string; out Success: Boolean): TIcsIPv6Address;
 function  WSocketIsIPv4(const S: string): Boolean;
-function  WSocketIsIP(const S: string; var ASocketFamily: TSocketFamily): Boolean;
+function  WSocketIsIP(const S: string; out ASocketFamily: TSocketFamily): Boolean;
 
 { function  WSocketLoadWinsock : Boolean; 14/02/99 }
 
@@ -2852,7 +2853,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Byte order translated }
-function WSocketStrToIPv4(const S: string; var Success: Boolean): TIcsIPv4Address;
+function WSocketStrToIPv4(const S: string; out Success: Boolean): TIcsIPv4Address;
 var
     I          : Integer;
     DotCount   : Integer;
@@ -3008,7 +3009,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Byte order translated }
-function WSocketStrToIPv6(const S: string; var Success: Boolean): TIcsIPv6Address;
+function WSocketStrToIPv6(const S: string; out Success: Boolean): TIcsIPv6Address;
 const
     Colon       = ':';
 var
@@ -3111,7 +3112,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSocketIsIP(const S: string; var ASocketFamily: TSocketFamily): Boolean;
+function WSocketIsIP(const S: string; out ASocketFamily: TSocketFamily): Boolean;
 begin
     Result := WSocketIsIPv4(S);
     if Result then
@@ -7606,21 +7607,22 @@ begin
 begin
     FillChar(LocalSockName, Sizeof(LocalSockName), 0);
 {$ENDIF}
-    //SockNamelen                   := SizeOf(LocalSockName);
-    //LocalSockName.sin_family      := AF_INET;
-    //LocalSockName.sin_port        := WSocket_Synchronized_htons(FLocalPortNum);
-    //LocalSockName.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
-
-    WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FSocketFamily);
-    LocalSockName.sin6_port       := WSocket_Synchronized_htons(FLocalPortNum);
-    SockNamelen                   := SizeOfAddress(LocalSockName);
-
+    if FSocketFamily = sfIPv4 then begin
+        LocalSockName.sin6_family      := AF_INET;
+        LocalSockName.sin6_port        := WSocket_Synchronized_htons(FLocalPortNum);
+        PSockAddrIn(@LocalSockName)^.sin_addr.S_addr :=
+              WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
+    end
+    else begin
+        WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FSocketFamily);
+        LocalSockName.sin6_port := WSocket_Synchronized_htons(FLocalPortNum);
+    end;
+    SockNamelen := SizeOfAddress(LocalSockName);
     if WSocket_Synchronized_bind(HSocket, PSockAddrIn(@LocalSockName)^, SockNamelen) <> 0 then begin
         RaiseException('Bind socket failed - ' +
                        GetWinsockErr(WSocket_Synchronized_WSAGetLastError));  { V5.26 }
         Exit;
-    end;
-    SockNamelen := SizeOfAddress(LocalSockName);
+    end;    
     if WSocket_Synchronized_GetSockName(FHSocket, PSockAddrIn(@SockName)^, SockNamelen) <> 0 then begin
         RaiseException('Winsock get socket name failed - ' +
                        GetWinsockErr(WSocket_Synchronized_WSAGetLastError));  { V5.26 }
@@ -8585,12 +8587,16 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily);
 begin
+{$IFNDEF NO_ADV_MT}
     _EnterCriticalSection(CritSecIpList);
     try
+{$ENDIF}
          AIPList.Assign(LocalIPList(ASocketFamily));
+{$IFNDEF NO_ADV_MT}
     finally
         _LeaveCriticalSection(CritSecIpList);
     end;
+{$ENDIF}
 end;
 
 
@@ -8622,8 +8628,10 @@ var
     LHostName     : string;
     Idx           : Integer;
 begin
+{$IFNDEF NO_ADV_MT}
     _EnterCriticalSection(CritSecIpList);
     try
+{$ENDIF}
         IPList.Clear;
         Result := IPList;
 
@@ -8643,7 +8651,7 @@ begin
             RetVal := WSocket_GetAddrInfo(PChar(LHostName), nil, @Hints, AddrInfo);
             if RetVal <> 0 then
                 raise ESocketException.Create(
-                    'Winsock Resolve Host: Cannot convert host address ''' +
+                    'Winsock GetAddrInfo: Cannot convert host address ''' +
                     LHostName + ''' - ' +
                     GetWinsockErr(WSocket_Synchronized_WSAGetLastError));
             try
@@ -8681,9 +8689,11 @@ begin
                 WSocket_FreeAddrInfo(AddrInfo);
             end;
         end;
+{$IFNDEF NO_ADV_MT}
     finally
         _LeaveCriticalSection(CritSecIpList);
     end;
+{$ENDIF}
 end;
 {$ENDIF}
 
@@ -8921,6 +8931,17 @@ begin
         Value.FreeNotification(Self);
 end;
 {$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetSocketFamily(const Value: TSocketFamily);
+begin
+    if Value <> sfIPv4 then
+    { Will raise an exception if IPv6 API is not available }
+        FreeAddrInfo(nil);
+    { or should I silently set sfIPv4? }
+    FSocketFamily := Value;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.SetSocketRcvBufSize(BufSize : Integer);
@@ -16429,14 +16450,16 @@ end;
 type
   TIcsAsyncDnsLookupThread = class;
   { TIcsAsyncDnsLookup provides async name resolution with new API, IPv6 and IPv4 }
+  TIPv6ApiState = (iasUnchecked, iasNotAvailable, iasOK);
   TIcsAsyncDnsLookup = class(TObject)
   private
-    FThreads     : TList;
-    FQueue       : TList;
-    FMaxThreads  : Integer;
-    FQueueLock   : TRTLCriticalSection;
-    FThreadsLock : TRTLCriticalSection;
-    FDestroying  : Boolean;
+    FThreads      : TList;
+    FQueue        : TList;
+    FMaxThreads   : Integer;
+    FQueueLock    : TRTLCriticalSection;
+    FThreadsLock  : TRTLCriticalSection;
+    FDestroying   : Boolean;
+    FIPv6ApiState : TIPv6ApiState;
     procedure LockQueue;
     procedure UnlockQueue;
     procedure LockThreadList;
@@ -16446,6 +16469,7 @@ type
     function GetNextRequest(AThread: TIcsAsyncDnsLookupThread): TIcsAsyncDnsLookupRequest;
     function RemoveRequest(AReq: TIcsAsyncDnsLookupRequest): Boolean;
     function CancelAsyncRequest(ARequest: THandle): Integer;
+    function IsIPv6Api: Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     class function CpuCount: Integer;
   public
     constructor Create(const AMaxThreads: Integer);
@@ -16619,7 +16643,7 @@ begin
         try
             if not Request.FCanceled then
             try
-                FDnsResultList.Clear;
+                //FDnsResultList.Clear;
                 LRes := WSocket_ResolveName(
                                            Request.FLookupName,
                                            Request.FReverse,
@@ -16676,6 +16700,12 @@ var
 begin
     LockQueue;
     try
+        if not IsIPv6Api then
+        begin
+            Result := 0;
+            SetLastError(WSAVERNOTSUPPORTED);
+            Exit;
+        end;
         Req := TIcsAsyncDnsLookupRequest.Create;
         Req.FWndHandle    := AWnd;
         Req.FMsgID        := AMsgID;
@@ -16750,6 +16780,20 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsAsyncDnsLookup.IsIPv6Api: Boolean;
+begin
+    if FIPv6ApiState = iasUnchecked then
+    try
+        WSocket_FreeAddrInfo(nil);
+        FIPv6ApiState := iasOK;
+    except
+        FIPv6ApiState := iasNotAvailable;
+    end;
+    Result := FIPv6ApiState = iasOK;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsAsyncDnsLookup.CancelAsyncRequest(
   ARequest: THandle): Integer;
 var
@@ -16758,6 +16802,12 @@ var
 begin
     LockQueue;
     try
+        if not IsIPv6Api then
+        begin
+            Result := -1;
+            SetLastError(WSAVERNOTSUPPORTED);
+            Exit;
+        end;
         I := FQueue.IndexOf(Pointer(ARequest));
         if (I > -1) then
             Req := TIcsAsyncDnsLookupRequest(FQueue[I])

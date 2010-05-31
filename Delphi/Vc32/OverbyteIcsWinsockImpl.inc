@@ -9,8 +9,7 @@ var
   GWsDLLHandle      : HMODULE  = 0;
   GWs2DLLHandle     : HMODULE  = 0;
   GWship6DllHandle  : HMODULE  = 0;
-  GWs2ProcHandle    : HMODULE  = 0;
-  GHasIPv6Func      : Boolean  = FALSE;
+  GWs2IPv6ProcHandle: HMODULE  = 0;
   GInitData         : TWSADATA;
 
 type
@@ -296,37 +295,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetProc2(const ProcName : AnsiString) : Pointer;
 begin
+    Result := nil;
     EnterCriticalSection(GWSockCritSect);
     try
         if GWs2DLLHandle = 0 then begin
                 GetProc('');
-            GHasIPv6Func := FALSE;
-
             GWs2DLLHandle := LoadLibrary(GWs2DLLName);
             if GWs2DLLHandle = 0 then
                 raise Exception.Create('Unable to load ' + GWs2DLLName +
                               ' - ' + SysErrorMessage(GetLastError));
-            {
-            if (Win32Platform <> VER_PLATFORM_WIN32_NT) or
-                                               (Win32MajorVersion < 5) then
-                Exit;
-            }
-            GWs2ProcHandle := GWs2DLLHandle;
-            @FGetAddrInfo := GetProcAddress(GWs2ProcHandle,
-                {$IFDEF UNICODE}'GetAddrInfoW' {$ELSE} 'getaddrinfo' {$ENDIF});
-            if @FGetAddrInfo = nil then
-            begin
-                GWship6DllHandle := LoadLibrary(GWship6DLLname);
-                GWs2ProcHandle := GWship6DllHandle;
-                @FGetAddrInfo := GetProcAddress(GWs2ProcHandle,
-                {$IFDEF UNICODE}'GetAddrInfoW' {$ELSE} 'getaddrinfo' {$ENDIF});
-            end;
-            GHasIPv6Func := @FGetAddrInfo <> nil;
         end;
         if Length(ProcName) = 0 then
             Result := nil
         else begin
-            Result := GetProcAddress(GWs2ProcHandle, PAnsiChar(ProcName));
+            Result := GetProcAddress(GWs2DLLHandle, PAnsiChar(ProcName));
             if Result = nil then
                 raise ESocketAPIException.Create('Procedure ' + String(ProcName) +
                                               ' not found in ' + GWs2DLLName +
@@ -339,11 +321,43 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  IsSocketAPILoaded : Boolean;
+function GetProc3(const ProcName : AnsiString) : Pointer;
 begin
-    Result := GWs2DLLHandle <> 0;
+    Result := nil;
+    EnterCriticalSection(GWSockCritSect);
+    try
+        if GWs2IPv6ProcHandle = 0 then begin
+                GetProc2('');
+            GWs2IPv6ProcHandle := GWs2DLLHandle;
+            @FGetAddrInfo := GetProcAddress(GWs2IPv6ProcHandle,
+                {$IFDEF UNICODE}'GetAddrInfoW' {$ELSE} 'getaddrinfo' {$ENDIF});
+            if @FGetAddrInfo = nil then begin
+                GWship6DllHandle := LoadLibrary(GWship6DLLname);
+                if GWship6DllHandle = 0 then
+                    raise Exception.Create('Unable to load ' + GWship6DLLname +
+                              ' - ' + SysErrorMessage(GetLastError));
+            end;
+        end;
+        if Length(ProcName) = 0 then
+            Result := nil
+        else begin
+            Result := GetProcAddress(GWs2IPv6ProcHandle, PAnsiChar(ProcName));
+            if Result = nil then
+                raise ESocketAPIException.Create('Procedure ' + String(ProcName) +
+                                                 ' not found in ' + GWs2DLLName +
+                                ' - ' + SysErrorMessage(GetLastError));
+        end;
+    finally
+        LeaveCriticalSection(GWSockCritSect);
+    end;
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  IsSocketAPILoaded : Boolean;
+begin
+    Result := GWsDLLHandle <> 0;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Winsock is dynamically loaded and unloaded when needed. In some cases     }
@@ -396,6 +410,7 @@ begin
             if GWs2DLLHandle <> 0 then begin
                 FreeLibrary(GWs2DLLHandle);
                 GWs2DLLHandle      := 0;
+                GWs2IPv6ProcHandle := 0;
                 FWSAIoctl          := nil;
                 if GWship6DllHandle <> 0 then begin
                     FreeLibrary(GWship6DllHandle);
@@ -849,7 +864,7 @@ function GetAddrInfo(
     var Addrinfo: PAddrInfo): Integer;
 begin
     if @FGetAddrInfo = nil then
-        @FGetAddrInfo := GetProc2(
+        @FGetAddrInfo := GetProc3(
            {$IFDEF UNICODE}'GetAddrInfoW' {$ELSE} 'getaddrinfo' {$ENDIF});
     Result := FGetAddrInfo(NodeName, ServName, Hints, Addrinfo);
 end;
@@ -859,7 +874,7 @@ end;
 procedure FreeAddrInfo(ai: PAddrInfo);
 begin
     if @FFreeAddrInfo = nil then
-        @FFreeAddrInfo := GetProc2(
+        @FFreeAddrInfo := GetProc3(
               {$IFDEF UNICODE}'FreeAddrInfoW' {$ELSE} 'freeaddrinfo' {$ENDIF});
     FFreeAddrInfo(ai);
 end;
@@ -876,14 +891,13 @@ function GetNameInfo(
     flags   : Integer): Integer;
 begin
     if @FGetNameInfo = nil then
-        @FGetNameInfo := GetProc2(
+        @FGetNameInfo := GetProc3(
                  {$IFDEF UNICODE}'GetNameInfoW' {$ELSE} 'getnameinfo' {$ENDIF});
     Result := FGetNameInfo(addr, namelen, host, hostlen, serv, servlen, flags);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 { Macros }
 
 function IN6ADDR_ANY_INIT: TIn6Addr;
