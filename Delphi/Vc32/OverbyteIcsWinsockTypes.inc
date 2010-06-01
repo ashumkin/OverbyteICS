@@ -1007,7 +1007,7 @@ type
   TIPv6MReq = ipv6_mreq;
   PIPv6MReq = PIPV6_MREQ;
 
-
+(*
   PAddrInfo = ^TAddrInfo; // Should be one A and one W version (I'm too lazy)
   TAddrInfo = record
     ai_flags: Integer;    // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST.
@@ -1019,43 +1019,38 @@ type
     ai_addr: PSockAddr;   // Binary address.
     ai_next: PAddrInfo;   // Next structure in linked list.
   end;
-
-(*
-{$IFNDEF UNICODE}
-
-  {$EXTERNALSYM ADDRINFOA}
-  ADDRINFOA = record
-    ai_flags: Integer;        // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
-    ai_family: Integer;       // PF_xxx
-    ai_socktype: Integer;     // SOCK_xxx
-    ai_protocol: Integer;     // 0 or IPPROTO_xxx for IPv4 and IPv6
-    ai_addrlen: u_long;       // Length of ai_addr
-    ai_canonname: PAnsiChar;  // Canonical name for nodename
-    ai_addr: PSockAddr;       // Binary address
-    ai_next: PADDRINFOA;      // Next structure in linked list
-  end;
-  {$EXTERNALSYM PADDRINFOA}
-  PADDRINFOA = ^ADDRINFOA;
-  TAddrinfoa = ADDRINFOA;
-
-{$ELSE}
-
-  {$EXTERNALSYM addrinfoW}
-  addrinfoW = record
-    ai_flags: Integer;        // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
-    ai_family: Integer;       // PF_xxx
-    ai_socktype: Integer;     // SOCK_xxx
-    ai_protocol: Integer;     // 0 or IPPROTO_xxx for IPv4 and IPv6
-    ai_addrlen: u_long;       // Length of ai_addr
-    ai_canonname: PWideChar;  // Canonical name for nodename
-    ai_addr: PSockAddr;       // Binary address
-    ai_next: PADDRINFOW;      // Next structure in linked list
-  end;
-  {$EXTERNALSYM PADDRINFOW}
-  PADDRINFOW = ^addrinfoW;
-  TAddrinfow = addrinfoW;
-{$ENDIF}
 *)
+
+  PAddrInfoA = ^TAddrInfoA;
+  TAddrInfoA = record
+    ai_flags        : Integer;      // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
+    ai_family       : Integer;      // PF_xxx
+    ai_socktype     : Integer;      // SOCK_xxx
+    ai_protocol     : Integer;      // 0 or IPPROTO_xxx for IPv4 and IPv6
+    ai_addrlen      : u_int;        // Length of ai_addr
+    ai_canonname    : PAnsiChar;    // Canonical name for nodename
+    ai_addr         : PSOCKADDR;    // Binary address
+    ai_next         : PAddrInfoA;    // Next structure in linked list
+  end;
+
+  PAddrInfoW = ^TAddrInfoW;
+  TAddrInfoW = record
+    ai_flags        : Integer;      // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
+    ai_family       : Integer;      // PF_xxx
+    ai_socktype     : Integer;      // SOCK_xxx
+    ai_protocol     : Integer;      // 0 or IPPROTO_xxx for IPv4 and IPv6
+    ai_addrlen      : u_int;        // Length of ai_addr
+    ai_canonname    : PWideChar;    // Canonical name for nodename
+    ai_addr         : PSOCKADDR;    // Binary address
+    ai_next         : PAddrInfoW;   // Next structure in linked list
+  end;
+{$IFDEF UNICODE}
+  PAddrInfo = PAddrInfoW;
+  TAddrInfo = TAddrInfoW;
+{$ELSE}
+  PAddrInfo = PAddrInfoA;
+  TAddrInfo = TAddrInfoA;
+{$ENDIF}
 
 const
   {$EXTERNALSYM AI_PASSIVE}
@@ -1360,11 +1355,36 @@ function closesocket(s: TSocket): Integer;
 function bind(s: TSocket; var addr: TSockAddr; namelen: Integer): Integer;
 {$EXTERNALSYM accept}
 function accept(s: TSocket; addr: PSockAddr; addrlen: PInteger): TSocket;
-function GetAddrInfo(NodeName: PChar; ServName: PChar; Hints: PAddrInfo;
-                     var Addrinfo: PAddrInfo): Integer;
+
+function GetAddrInfoA(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PAddrInfoA;
+                     var AddrInfo: PAddrInfoA): Integer;
+function GetAddrInfoW(NodeName: PWideChar; ServName: PWideChar; Hints: PAddrInfoW;
+                     var AddrInfo: PAddrInfoW): Integer;
+{$IFDEF UNICODE}
+function GetAddrInfo(NodeName: PWideChar; ServName: PWideChar; Hints: PAddrInfoW;
+                     var AddrInfo: PAddrInfoW): Integer;
+{$ELSE}
+function GetAddrInfo(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PAddrInfoA;
+                     var AddrInfo: PAddrInfoA): Integer;
+{$ENDIF}
+procedure FreeAddrInfoA(ai: PAddrInfoA);
+procedure FreeAddrInfoW(ai: PAddrInfoW);
+{$IFDEF UNICODE}
+procedure FreeAddrInfo(ai: PAddrInfoW);
+{$ELSE}
 procedure FreeAddrInfo(ai: PAddrInfo);
-function GetNameInfo(addr: PSockAddr; namelen: Integer; host: PChar;
-   hostlen: DWORD; serv: PChar; servlen: DWORD; flags: Integer): Integer;
+{$ENDIF}
+function GetNameInfoA(addr: PSockAddr; namelen: Integer; host: PAnsiChar;
+   hostlen: DWORD; serv: PAnsiChar; servlen: DWORD; flags: Integer): Integer;
+function GetNameInfoW(addr: PSockAddr; namelen: Integer; host: PWideChar;
+   hostlen: DWORD; serv: PWideChar; servlen: DWORD; flags: Integer): Integer;
+{$IFDEF UNICODE}
+function GetNameInfo(addr: PSockAddr; namelen: Integer; host: PWideChar;
+   hostlen: DWORD; serv: PWideChar; servlen: DWORD; flags: Integer): Integer;
+{$ELSE}
+function GetNameInfo(addr: PSockAddr; namelen: Integer; host: PAnsiChar;
+   hostlen: DWORD; serv: PAnsiChar; servlen: DWORD; flags: Integer): Integer;
+{$ENDIF}
 
 { ICS Helpers }
 
@@ -1381,5 +1401,5 @@ procedure ForceLoadWinsock;
 procedure CancelForceLoadWinsock;
 procedure UnloadWinsock;
 function  SocketErrorDesc(ErrCode : Integer) : String;
-function  WinsockInfo : TWSADATA;
+function  WinsockAPIInfo : TWSADATA;
 function  IsSocketAPILoaded : Boolean;

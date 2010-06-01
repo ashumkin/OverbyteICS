@@ -3854,22 +3854,9 @@ end;
 {$IFDEF WIN32}
 function WinsockInfo : TWSADATA;
 begin
-    Result := OverbyteIcsWinsock.WinsockInfo;
-(*
-{    LoadWinsock(winsocket); 14/02/99 }
-    { Load winsock and initialize it as needed }
-    _EnterCriticalSection(GWSockCritSect);
-    try
-        WSocketGetProc('');
-        Result := GInitData;
-        { If no socket created, then unload winsock immediately }
-        if WSocketGCount <= 0 then
-            WSocketUnloadWinsock;
-    finally
-        _LeaveCriticalSection(GWSockCritSect);
-    end;
-*)
+    Result := OverbyteIcsWinsock.WinsockAPIInfo;
 end;
+
 {$ENDIF}
 
 
@@ -5580,16 +5567,12 @@ begin
     FSocketFamily       := sfIPv4;
     AssignDefaultValue;
 
-{$IFDEF COMPILER2_UP}
     _EnterCriticalSection(GWSockCritSect);
     try
-{$ENDIF}
         Inc(WSocketGCount);
-{$IFDEF COMPILER2_UP}
     finally
         _LeaveCriticalSection(GWSockCritSect);
     end;
-{$ENDIF}
 end;
 
 
@@ -5605,20 +5588,16 @@ begin
     if FState <> wsClosed then       { Close the socket if not yet closed }
         Close;
 
-{$IFDEF COMPILER2_UP}
     _EnterCriticalSection(GWSockCritSect);
     try
-{$ENDIF}
         Dec(WSocketGCount);
         if WSocketGCount <= 0 then begin
             WSocketUnloadWinsock;
 {           WSocketGCount := 0;  // it is set to 0 in WSocketUnloadWinsock }
         end;
-{$IFDEF COMPILER2_UP}
     finally
         _LeaveCriticalSection(GWSockCritSect);
     end;
-{$ENDIF}
 
     if Assigned(FBufHandler) then begin
         FBufHandler.Free;
@@ -6955,12 +6934,11 @@ begin
                 Hints.ai_family := AF_UNSPEC;} // = 0 anyway
             AddrInfo := nil;
             RetVal   := WSocket_Synchronized_GetAddrInfo(PChar(AHostName),
-                                                        nil, @Hints, AddrInfo);
+                                                         nil, @Hints, AddrInfo);
             if RetVal <> 0 then
                 raise ESocketException.Create(
                  'Winsock Resolve Host: Cannot convert host address ''' +
-                 AHostName + ''' - ' +
-                 GetWinsockErr(WSocket_Synchronized_WSAGetLastError));
+                 AHostName + ''' - ' + GetWinsockErr(RetVal));
             try
                 NextInfo := AddrInfo;
                 while NextInfo <> nil do
@@ -8652,8 +8630,7 @@ begin
             if RetVal <> 0 then
                 raise ESocketException.Create(
                     'Winsock GetAddrInfo: Cannot convert host address ''' +
-                    LHostName + ''' - ' +
-                    GetWinsockErr(WSocket_Synchronized_WSAGetLastError));
+                    LHostName + ''' - ' + GetWinsockErr(RetVal));
             try
                 AddrInfoNext := AddrInfo;
                 IDX := 0;
@@ -8937,7 +8914,7 @@ procedure TCustomWSocket.SetSocketFamily(const Value: TSocketFamily);
 begin
     if Value <> sfIPv4 then
     { Will raise an exception if IPv6 API is not available }
-        FreeAddrInfo(nil);
+        WSocket_Synchronized_FreeAddrInfo(nil);
     { or should I silently set sfIPv4? }
     FSocketFamily := Value;
 end;
@@ -16561,7 +16538,7 @@ begin
                         AResultList.Add(PChar(LHost));
                     end
                     else begin
-                        Result := WSAGetLastError;
+                        Result := WSAGetLastError;// Or just the RetVal.
                         Break;
                     end;
                 end
@@ -16698,11 +16675,11 @@ var
     Thread : TIcsAsyncDnsLookupThread;
     I      : Integer;
 begin
+    Result := 0;   
     LockQueue;
-    try
+    try        
         if not IsIPv6Api then
         begin
-            Result := 0;
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
         end;

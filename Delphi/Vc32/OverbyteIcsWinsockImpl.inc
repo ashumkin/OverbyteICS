@@ -88,13 +88,21 @@ type
                                        namelen: Integer): Integer; stdcall;
     TAccept                = function (s: TSocket; addr: PSockAddr;
                                        addrlen: PInteger): TSocket; stdcall;
-    TGetAddrInfo           = function(NodeName: PChar; ServName: PChar;
-                                      Hints: PAddrInfo;
-                                      var Addrinfo: PAddrInfo): Integer; stdcall;
-    TFreeAddrInfo          = procedure(ai: PAddrInfo); stdcall;
-    TGetNameInfo           = function(addr: PSockAddr; namelen: Integer;
-                                      host: PChar; hostlen: DWORD;
-                                      serv: PChar; servlen: DWORD;
+    TGetAddrInfoA          = function(NodeName: PAnsiChar; ServName: PAnsiChar;
+                                      Hints: PAddrInfoA;
+                                      var Addrinfo: PAddrInfoA): Integer; stdcall;
+    TGetAddrInfoW          = function(NodeName: PWideChar; ServName: PWideChar;
+                                      Hints: PAddrInfoW;
+                                      var Addrinfo: PAddrInfoW): Integer; stdcall;
+    TFreeAddrInfoA         = procedure(ai: PAddrInfoA); stdcall;
+    TFreeAddrInfoW         = procedure(ai: PAddrInfoW); stdcall;
+    TGetNameInfoA          = function(addr: PSockAddr; namelen: Integer;
+                                      host: PAnsiChar; hostlen: DWORD;
+                                      serv: PAnsiChar; servlen: DWORD;
+                                      flags: Integer): Integer; stdcall;
+    TGetNameInfoW          = function(addr: PSockAddr; namelen: Integer;
+                                      host: PWideChar; hostlen: DWORD;
+                                      serv: PWideChar; servlen: DWORD;
                                       flags: Integer): Integer; stdcall;
 var
    FWSAStartup            : TWSAStartup = nil;
@@ -133,9 +141,12 @@ var
    FCloseSocket           : TCloseSocket = nil;
    FBind                  : TBind = nil;
    FAccept                : TAccept = nil;
-   FGetAddrInfo           : TGetAddrInfo = nil;
-   FFreeAddrInfo          : TFreeAddrInfo = nil;
-   FGetNameInfo           : TGetNameInfo = nil;
+   FGetAddrInfoA          : TGetAddrInfoA = nil;
+   FGetAddrInfoW          : TGetAddrInfoW = nil;
+   FFreeAddrInfoA         : TFreeAddrInfoA = nil;
+   FFreeAddrInfoW         : TFreeAddrInfoW = nil;
+   FGetNameInfoA          : TGetNameInfoA = nil;
+   FGetNameInfoW          : TGetNameInfoW = nil;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -329,13 +340,13 @@ begin
         if GWs2IPv6ProcHandle = 0 then begin
                 GetProc2('');
             GWs2IPv6ProcHandle := GWs2DLLHandle;
-            @FGetAddrInfo := GetProcAddress(GWs2IPv6ProcHandle,
-                {$IFDEF UNICODE}'GetAddrInfoW' {$ELSE} 'getaddrinfo' {$ENDIF});
-            if @FGetAddrInfo = nil then begin
+            @FGetAddrInfoA := GetProcAddress(GWs2IPv6ProcHandle,'getaddrinfo');
+            if @FGetAddrInfoA = nil then begin
                 GWship6DllHandle := LoadLibrary(GWship6DLLname);
                 if GWship6DllHandle = 0 then
                     raise Exception.Create('Unable to load ' + GWship6DLLname +
                               ' - ' + SysErrorMessage(GetLastError));
+                GWs2IPv6ProcHandle := GWship6DllHandle;
             end;
         end;
         if Length(ProcName) = 0 then
@@ -416,9 +427,12 @@ begin
                     FreeLibrary(GWship6DllHandle);
                     GWship6DllHandle := 0;
                 end;
-                FGetAddrInfo       := nil;
-                FFreeAddrInfo      := nil;
-                FGetNameInfo       := nil;
+                FGetAddrInfoA      := nil;
+                FGetAddrInfoW      := nil;
+                FFreeAddrInfoA     := nil;
+                FFreeAddrInfoW     := nil;
+                FGetNameInfoA      := nil;
+                FGetNameInfoW      := nil;
             end;
             FreeLibrary(GWsDLLHandle);
             GWsDLLHandle           := 0;
@@ -467,7 +481,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WinsockInfo : TWSADATA;
+function WinsockAPIInfo : TWSADATA;
 begin
     { Load winsock and initialize it as needed }
     EnterCriticalSection(GWSockCritSect);
@@ -857,26 +871,112 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetAddrInfoA(
+    NodeName    : PAnsiChar;
+    ServName    : PAnsiChar;
+    Hints       : PAddrInfoA;
+    var Addrinfo: PAddrInfoA): Integer;
+begin
+    if @FGetAddrInfoA = nil then
+        @FGetAddrInfoA := GetProc3('getaddrinfo');
+    Result := FGetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetAddrInfoW(
+    NodeName    : PWideChar;
+    ServName    : PWideChar;
+    Hints       : PAddrInfoW;
+    var Addrinfo: PAddrInfoW): Integer;
+begin
+    if @FGetAddrInfoW = nil then
+        @FGetAddrInfoW := GetProc3('GetAddrInfoW');
+    Result := FGetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetAddrInfo(
     NodeName    : PChar;
     ServName    : PChar;
     Hints       : PAddrInfo;
     var Addrinfo: PAddrInfo): Integer;
 begin
-    if @FGetAddrInfo = nil then
-        @FGetAddrInfo := GetProc3(
-           {$IFDEF UNICODE}'GetAddrInfoW' {$ELSE} 'getaddrinfo' {$ENDIF});
-    Result := FGetAddrInfo(NodeName, ServName, Hints, Addrinfo);
+{$IFDEF UNICODE}
+    if @FGetAddrInfoW = nil then
+        @FGetAddrInfoW := GetProc3('GetAddrInfoW');
+    Result := FGetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
+{$ELSE}
+    if @FGetAddrInfoA = nil then
+        @FGetAddrInfoA := GetProc3('getaddrinfo');
+    Result := FGetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure FreeAddrInfoA(ai: PAddrInfoA);
+begin
+    if @FFreeAddrInfoA = nil then
+        @FFreeAddrInfoA := GetProc3('freeaddrinfo');
+    FFreeAddrInfoA(ai);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure FreeAddrInfoW(ai: PAddrInfoW);
+begin
+    if @FFreeAddrInfoW = nil then
+        @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
+    FFreeAddrInfoW(ai);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure FreeAddrInfo(ai: PAddrInfo);
 begin
-    if @FFreeAddrInfo = nil then
-        @FFreeAddrInfo := GetProc3(
-              {$IFDEF UNICODE}'FreeAddrInfoW' {$ELSE} 'freeaddrinfo' {$ENDIF});
-    FFreeAddrInfo(ai);
+{$IFDEF UNICODE}
+    if @FFreeAddrInfoW = nil then
+        @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
+    FFreeAddrInfoW(ai);
+{$ELSE}
+    if @FFreeAddrInfoA = nil then
+        @FFreeAddrInfoA := GetProc3('freeaddrinfo');
+    FFreeAddrInfoA(ai);
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetNameInfoA(
+    addr    : PSockAddr;
+    namelen : Integer;
+    host    : PAnsiChar;
+    hostlen : LongWord;
+    serv    : PAnsiChar;
+    servlen : LongWord;
+    flags   : Integer): Integer;
+begin
+    if @FGetNameInfoA = nil then
+        @FGetNameInfoA := GetProc3('getnameinfo');
+    Result := FGetNameInfoA(addr, namelen, host, hostlen, serv, servlen, flags);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function GetNameInfoW(
+    addr    : PSockAddr;
+    namelen : Integer;
+    host    : PWideChar;
+    hostlen : LongWord;
+    serv    : PWideChar;
+    servlen : LongWord;
+    flags   : Integer): Integer;
+begin
+    if @FGetNameInfoW = nil then
+        @FGetNameInfoW := GetProc3('GetNameInfoW');
+    Result := FGetNameInfoW(addr, namelen, host, hostlen, serv, servlen, flags);
 end;
 
 
@@ -890,14 +990,20 @@ function GetNameInfo(
     servlen : LongWord;
     flags   : Integer): Integer;
 begin
-    if @FGetNameInfo = nil then
-        @FGetNameInfo := GetProc3(
-                 {$IFDEF UNICODE}'GetNameInfoW' {$ELSE} 'getnameinfo' {$ENDIF});
-    Result := FGetNameInfo(addr, namelen, host, hostlen, serv, servlen, flags);
+{$IFDEF UNICODE}
+    if @FGetNameInfoW = nil then
+        @FGetNameInfoW := GetProc3('GetNameInfoW');
+    Result := FGetNameInfoW(addr, namelen, host, hostlen, serv, servlen, flags);
+{$ELSE}
+    if @FGetNameInfoA = nil then
+        @FGetNameInfoA := GetProc3('getnameinfo');
+    Result := FGetNameInfoA(addr, namelen, host, hostlen, serv, servlen, flags);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
 { Macros }
 
 function IN6ADDR_ANY_INIT: TIn6Addr;
