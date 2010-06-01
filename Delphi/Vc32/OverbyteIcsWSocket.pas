@@ -2485,7 +2485,8 @@ function  WSocketGetHostByName(Name : AnsiString) : PHostEnt;
 function  LocalHostName : AnsiString;
 function  LocalIPList(const ASocketFamily: TSocketFamily = sfIPv4) : TStrings;
 procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = sfIPv4);
-function  WSocketResolveIp(IpAddr : AnsiString) : AnsiString;
+function  WSocketResolveIp(const IpAddr : AnsiString;
+  const ASocketFamily: TSocketFamily = sfIPv4) : AnsiString;
 function  WSocketResolveHost(InAddr : AnsiString) : TInAddr; overload;
 procedure WSocketResolveHost(const AHostName: string; var AAddr: TSockAddrIn6;
                              const ASocketFamily: TSocketFamily); overload;
@@ -5368,18 +5369,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-(*
-function SizeOfAddress(const AAddr: TSockAddrIn): Integer; overload;
-    {$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-    if AAddr.sin_family = AF_INET6 then
-        Result := SizeOf(TSockAddrIn6)
-    else
-        Result := SizeOf(TSockAddrIn);
-end;
-*)
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.AssignDefaultValue;
 begin
     InitializeAddr(sin);
@@ -8056,7 +8045,7 @@ begin
                 if sin6.sin6_family = AF_INET6 then
                     FAddrFormat := PF_INET6
                 else
-                FAddrFormat := PF_INET;
+                    FAddrFormat := PF_INET;
             end;
 
         end;
@@ -8108,7 +8097,6 @@ begin
 
     case FType of
 {$IFDEF WIN32}
-{$IFDEF COMPILER2_UP}
     SOCK_RAW :
         begin
             if HasOption(FComponentOptions, wsoSIO_RCVALL) then begin
@@ -8129,7 +8117,6 @@ begin
             ChangeState(wsConnected);
             TriggerSessionConnectedSpecial(0);
         end;
-{$ENDIF}
 {$ENDIF}
     SOCK_DGRAM :
         begin
@@ -8229,7 +8216,6 @@ begin
 {$IFDEF CLR}
     FASocket := WSocket_Synchronized_accept(FHSocket, sin, len);
 {$ELSE}
-    { Delphi 3/4, Bcb 1/3/4 use pointers instead of var parameters }
     if FSocketFamily = sfIPv4 then
         FASocket := WSocket_Synchronized_Accept(FHSocket, @sin, @len)
     else
@@ -8489,7 +8475,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSocketResolveIp(IpAddr : AnsiString) : AnsiString;
+function WSocketResolveIp(
+    const IpAddr        : AnsiString;
+    const ASocketFamily : TSocketFamily = sfIPv4) : AnsiString;
 {$IFDEF CLR}
 var
     HostEntry    : THostEnt;
@@ -8510,7 +8498,7 @@ var
     Phe     : PHostEnt;
     ResList : TStringList;
 begin
-    if WSocketIsDottedIP(IpAddr) then begin
+    if ASocketFamily = sfIPv4 then begin
         phe := WSocketGetHostByAddr(IpAddr);
         if Phe = nil then
             Result := ''
@@ -8522,11 +8510,11 @@ begin
     else begin
         ResList := TStringList.Create;
         try
-            if (WSocket_ResolveName(string(IpAddr), TRUE, sfIPv6, ResList) <> 0) or
+            if (WSocket_ResolveName(string(IpAddr), TRUE, ASocketFamily, ResList) <> 0) or
                (ResList.Count = 0) then
             begin
                 Result := '';
-                raise ESocketException.Create('Winsock Get Host Addr: Invalid address.');
+                raise ESocketException.Create('WSocketResolveIp: Invalid address.');
             end
             else
                 Result := AnsiString(ResList[0]);
@@ -8569,7 +8557,7 @@ begin
     _EnterCriticalSection(CritSecIpList);
     try
 {$ENDIF}
-         AIPList.Assign(LocalIPList(ASocketFamily));
+        AIPList.Assign(LocalIPList(ASocketFamily));
 {$IFNDEF NO_ADV_MT}
     finally
         _LeaveCriticalSection(CritSecIpList);
@@ -16943,7 +16931,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 initialization
+{$IFNDEF NO_ADV_MT}
     _InitializeCriticalSection(CritSecIpList);
+{$ENDIF}
     IPList     := TStringList.Create;
     GAsyncDnsLookup := TIcsAsyncDnsLookup.Create(TIcsAsyncDnsLookup.CpuCount); // more or less max. threads ?
 {$IFDEF USE_SSL}
@@ -16967,7 +16957,9 @@ finalization
         IPList.Free;
         IPList := nil;
     end;
+{$IFNDEF NO_ADV_MT}
     _DeleteCriticalSection(CritSecIpList);
+{$ENDIF}
     _FreeAndNil(GAsyncDnsLookup);
 {$IFDEF USE_SSL}
     {$IFNDEF NO_SSL_MT}
