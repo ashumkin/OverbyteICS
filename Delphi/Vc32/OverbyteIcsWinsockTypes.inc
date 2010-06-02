@@ -1403,3 +1403,4 @@ procedure UnloadWinsock;
 function  SocketErrorDesc(ErrCode : Integer) : String;
 function  WinsockAPIInfo : TWSADATA;
 function  IsSocketAPILoaded : Boolean;
+function  IsIPv6APIAvailable: Boolean;

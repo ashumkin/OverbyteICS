@@ -365,10 +365,30 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  IsSocketAPILoaded : Boolean;
+function IsSocketAPILoaded : Boolean;
 begin
-    Result := GWsDLLHandle <> 0;
+    EnterCriticalSection(GWSockCritSect);
+    try
+        Result := GWsDLLHandle <> 0;
+    finally
+        LeaveCriticalSection(GWSockCritSect);
+    end;
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IsIPv6APIAvailable: Boolean;
+begin
+    { Winsock 2 is required }
+    Result := ((GReqVerHigh >= 2) and (GReqVerLow >= 2)) and
+    (
+        { Win XP or better too }
+        (Win32Platform = VER_PLATFORM_WIN32_NT) and
+        ((Win32MajorVersion > 5) or
+         ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1)))
+    );
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Winsock is dynamically loaded and unloaded when needed. In some cases     }
@@ -1193,7 +1213,6 @@ begin
     else
         Result := False;
 end;
-
 
     
 

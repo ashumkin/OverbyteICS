@@ -3359,6 +3359,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
   optval: PAnsiChar; optlen: Integer): Integer; overload;
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Result := OverbyteIcsWinsock.setsockopt(s, level, optname, optval, optlen);
     (*
@@ -3370,8 +3371,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer; var optval: TLinger;
-                            optlen: Integer): Integer; overload;
+function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
+  var optval: TLinger; optlen: Integer): Integer; overload;
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
     (*
@@ -3383,8 +3385,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer; var optval: ip_mreq;
-                            optlen: Integer): Integer; overload;
+function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
+  var optval: ip_mreq; optlen: Integer): Integer; overload;
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
     (*
@@ -3396,8 +3399,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer; var optval: Integer;
-                            optlen: Integer): Integer; overload;
+function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
+  var optval: Integer; optlen: Integer): Integer; overload;
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
     (*
@@ -3409,8 +3413,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer; var optval: TInAddr;
-                            optlen: Integer): Integer; overload;
+function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
+  var optval: TInAddr; optlen: Integer): Integer; overload;
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
     (*
@@ -3781,13 +3786,13 @@ type
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AName: string): THandle; forward;
+  const ASocketFamily: TSocketFamily; const AName: string): THandle; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 function WSocket_Synchronized_IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AAddr: string): THandle; forward;
+  const ASocketFamily: TSocketFamily; const AAddr: string): THandle; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 function WSocket_Synchronized_IcsCancelAsyncRequest(
-  ARequest: THandle): Integer; forward;
+  const ARequest: THandle): Integer; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 function WSocket_Synchronized_ResolveName(const AName: string;
   const AReverse: Boolean; const AFamily: TSocketFamily;
@@ -5645,7 +5650,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Not yet removed. Doesn't work any more since we use Winsock 2.2 only      }
 function TCustomWSocket.GetReqVerLow: BYTE;
 begin
     Result := GReqVerLow;
@@ -5653,7 +5657,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Not yet removed. Doesn't work any more since we use Winsock 2.2 only      }
 procedure TCustomWSocket.SetReqVerLow(const Value: BYTE);
 begin
     if GReqVerLow <> Value then begin
@@ -5666,7 +5669,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Not yet removed. Doesn't work any more since we use Winsock 2.2 only      }
 function TCustomWSocket.GetReqVerHigh: BYTE;
 begin
     Result := GReqVerHigh;
@@ -5674,7 +5676,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Not yet removed. Doesn't work any more since we use Winsock 2.2 only      }
 procedure TCustomWSocket.SetReqVerHigh(const Value: BYTE);
 begin
     if GReqVerHigh <> Value then begin
@@ -6921,6 +6922,7 @@ begin
                 Hints.ai_family := AF_INET6;
             {else
                 Hints.ai_family := AF_UNSPEC;} // = 0 anyway
+
             AddrInfo := nil;
             RetVal   := WSocket_Synchronized_GetAddrInfo(PChar(AHostName),
                                                          nil, @Hints, AddrInfo);
@@ -8900,11 +8902,20 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.SetSocketFamily(const Value: TSocketFamily);
 begin
-    if Value <> sfIPv4 then
-    { Will raise an exception if IPv6 API is not available }
-        WSocket_Synchronized_FreeAddrInfo(nil);
-    { or should I silently set sfIPv4? }
-    FSocketFamily := Value;
+    if Value <> FSocketFamily then begin
+        if Value <> sfIPv4 then begin
+            try
+                if not IsIPv6APIAvailable then
+                    raise ESocketException.Create(
+                     'SetSocketFamily: New API requires winsock 2.2 ' +
+                     'and Windows XP, property "SocketFamily" reset to "sfIPv4"');
+            except
+                FSocketFamily := sfIPv4;
+                Exit;
+            end;
+        end;
+        FSocketFamily := Value;
+    end;
 end;
 
 
@@ -16415,7 +16426,6 @@ end;
 type
   TIcsAsyncDnsLookupThread = class;
   { TIcsAsyncDnsLookup provides async name resolution with new API, IPv6 and IPv4 }
-  TIPv6ApiState = (iasUnchecked, iasNotAvailable, iasOK);
   TIcsAsyncDnsLookup = class(TObject)
   private
     FThreads      : TList;
@@ -16424,7 +16434,6 @@ type
     FQueueLock    : TRTLCriticalSection;
     FThreadsLock  : TRTLCriticalSection;
     FDestroying   : Boolean;
-    FIPv6ApiState : TIPv6ApiState;
     procedure LockQueue;
     procedure UnlockQueue;
     procedure LockThreadList;
@@ -16433,8 +16442,7 @@ type
       const AName: string; AReverse: Boolean): THandle;
     function GetNextRequest(AThread: TIcsAsyncDnsLookupThread): TIcsAsyncDnsLookupRequest;
     function RemoveRequest(AReq: TIcsAsyncDnsLookupRequest): Boolean;
-    function CancelAsyncRequest(ARequest: THandle): Integer;
-    function IsIPv6Api: Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function CancelAsyncRequest(AReq: THandle): Integer;
     class function CpuCount: Integer;
   public
     constructor Create(const AMaxThreads: Integer);
@@ -16482,10 +16490,10 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_ResolveName(
-    const AName      : string;
-    const AReverse   : Boolean;
-    const AFamily    : TSocketFamily;
-    AResultList      : TStrings): Integer;
+    const AName        : string;
+    const AReverse     : Boolean;
+    const AFamily      : TSocketFamily;
+    AResultList        : TStrings): Integer;
 var
     Hints     : TAddrInfo;
     AddrInfo  : PAddrInfo;
@@ -16502,6 +16510,7 @@ begin
         Hints.ai_family := AF_INET6;
     {else
         Hints.ai_family := AF_UNSPEC;}
+
     if AReverse then
         Hints.ai_flags := AI_NUMERICHOST;
 
@@ -16544,15 +16553,19 @@ begin
                             WSocketIPv4ToStr(NextInfo.ai_addr.sin_addr.S_addr));
                     end
                     else begin
-                        if AFamily = sfAnyIPv6 then
-                        begin
-                            AResultList.Insert(IDX,
-                            WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(NextInfo)));
-                            Inc(IDX);
-                        end
-                        else
-                            AResultList.Add(
-                            WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(NextInfo)));
+                        {if not IN6_IS_ADDR_LINKLOCAL(
+                             @PSockAddrIn6(NextInfo^.ai_addr)^.sin6_addr) then
+                        begin}
+                            if AFamily = sfAnyIPv6 then
+                            begin
+                                AResultList.Insert(IDX,
+                                WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(NextInfo)));
+                                Inc(IDX);
+                            end
+                            else
+                                AResultList.Add(
+                                WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(NextInfo)));
+                        //end;
                     end;
                 end;
             end;
@@ -16576,7 +16589,7 @@ begin
     try
 {$ENDIF}
         Result := WSocket_Synchronized_ResolveName(AName, AReverse, AFamily,
-                                                   AResultList);
+                                                  AResultList);
 {$IFNDEF NO_ADV_MT}
     finally
         SafeDecrementCount;
@@ -16608,7 +16621,6 @@ begin
         try
             if not Request.FCanceled then
             try
-                //FDnsResultList.Clear;
                 LRes := WSocket_ResolveName(
                                            Request.FLookupName,
                                            Request.FReverse,
@@ -16663,10 +16675,10 @@ var
     Thread : TIcsAsyncDnsLookupThread;
     I      : Integer;
 begin
-    Result := 0;   
+    Result := 0;
     LockQueue;
     try        
-        if not IsIPv6Api then
+        if not IsIPv6APIAvailable then
         begin
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
@@ -16745,35 +16757,21 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsAsyncDnsLookup.IsIPv6Api: Boolean;
-begin
-    if FIPv6ApiState = iasUnchecked then
-    try
-        WSocket_FreeAddrInfo(nil);
-        FIPv6ApiState := iasOK;
-    except
-        FIPv6ApiState := iasNotAvailable;
-    end;
-    Result := FIPv6ApiState = iasOK;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsAsyncDnsLookup.CancelAsyncRequest(
-  ARequest: THandle): Integer;
+  AReq: THandle): Integer;
 var
     I   : Integer;
     Req : TIcsAsyncDnsLookupRequest;
 begin
     LockQueue;
     try
-        if not IsIPv6Api then
+        if not IsIPv6APIAvailable then
         begin
             Result := -1;
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
         end;
-        I := FQueue.IndexOf(Pointer(ARequest));
+        I := FQueue.IndexOf(Pointer(AReq));
         if (I > -1) then
             Req := TIcsAsyncDnsLookupRequest(FQueue[I])
         else
@@ -16907,7 +16905,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AName: string): THandle;
+  const ASocketFamily: TSocketFamily; const AName: string): THandle;
 begin
     Result := GAsyncDnsLookup.ExecAsync(AWnd, AMsgID, ASocketFamily, AName, FALSE);
 end;
@@ -16915,7 +16913,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
-  ASocketFamily: TSocketFamily; const AAddr: string): THandle;
+  const ASocketFamily: TSocketFamily; const AAddr: string): THandle;
 begin
     Result := GAsyncDnsLookup.ExecAsync(AWnd, AMsgID, ASocketFamily, AAddr, TRUE);
 end;
@@ -16923,7 +16921,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_IcsCancelAsyncRequest(
-  ARequest: THandle): Integer;
+  const ARequest: THandle): Integer;
 begin
     Result := GAsyncDnsLookup.CancelAsyncRequest(ARequest);
 end;
