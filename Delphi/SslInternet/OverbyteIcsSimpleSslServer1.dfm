@@ -209,8 +209,8 @@ object SimpleSslServerForm: TSimpleSslServerForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     Banner = 'Welcome to TcpSrv'
     BannerTooBusy = 'Sorry, too many clients'
     MaxClients = 0

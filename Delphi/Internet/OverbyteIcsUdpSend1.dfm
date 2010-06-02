@@ -110,8 +110,8 @@ object MainForm: TMainForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDataSent = WSocketDataSent
     Left = 324
     Top = 16

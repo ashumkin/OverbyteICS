@@ -58,8 +58,8 @@ object ServerForm: TServerForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnSessionAvailable = SrvSocketSessionAvailable
     Left = 16
     Top = 8
@@ -90,8 +90,8 @@ object ServerForm: TServerForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnSessionClosed = CliSocketSessionClosed
     Left = 16
     Top = 56

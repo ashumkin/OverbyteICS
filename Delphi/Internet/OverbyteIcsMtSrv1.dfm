@@ -90,8 +90,8 @@ object ServerForm: TServerForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnSessionAvailable = ServerWSocketSessionAvailable
     Left = 216
     Top = 136

@@ -100,8 +100,8 @@ object CliForm: TCliForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDataAvailable = CliSocketDataAvailable
     OnSessionClosed = CliSocketSessionClosed
     Left = 40

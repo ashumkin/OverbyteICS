@@ -135,8 +135,8 @@ object RecvForm: TRecvForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnSessionAvailable = WSocket1SessionAvailable
     Left = 276
     Top = 60

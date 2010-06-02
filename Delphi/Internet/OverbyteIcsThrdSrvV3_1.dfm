@@ -107,8 +107,8 @@ object ThrdSrvForm: TThrdSrvForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnBgException = WSocketThrdServer1BgException
     Banner = 'Welcome to TcpSrv'
     BannerTooBusy = 'Sorry, too many clients'

@@ -80,8 +80,8 @@ object ClientForm: TClientForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDataAvailable = SocketDataAvailable
     OnSessionClosed = SocketSessionClosed
     Left = 8

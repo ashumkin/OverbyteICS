@@ -210,8 +210,8 @@ object SenderForm: TSenderForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDataAvailable = WSocket1DataAvailable
     OnDataSent = WSocket1DataSent
     OnSessionClosed = WSocket1SessionClosed

@@ -143,8 +143,8 @@ object TWSChatForm: TTWSChatForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnSessionAvailable = SrvWSocketSessionAvailable
     Left = 336
     Top = 56
@@ -174,8 +174,8 @@ object TWSChatForm: TTWSChatForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDataAvailable = CliWSocketDataAvailable
     OnSessionClosed = CliWSocketSessionClosed
     OnSessionConnected = CliWSocketSessionConnected
@@ -208,8 +208,8 @@ object TWSChatForm: TTWSChatForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     Left = 248
     Top = 112
   end

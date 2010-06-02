@@ -134,8 +134,8 @@ object DnsLookupForm: TDnsLookupForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDnsLookupDone = WSocket1DnsLookupDone
     Left = 208
     Top = 104

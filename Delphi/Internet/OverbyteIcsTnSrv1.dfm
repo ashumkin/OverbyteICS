@@ -98,8 +98,8 @@ object ServerForm: TServerForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnSessionClosed = SrvSocketSessionClosed
     OnSessionAvailable = SrvSocketSessionAvailable
     Left = 28
