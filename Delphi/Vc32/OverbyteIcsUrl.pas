@@ -264,6 +264,15 @@ begin
     Path := Copy(s, p, Length(s));
     s    := Copy(s, 1, p-1);
 
+    { IPv6 URL notation, for instance "[2001:db8::3]" }
+    p := Pos('[', s);
+    q := Pos(']', s);
+    if (p = 1) and (q > 1) then
+    begin
+        Host := Copy(s, 2, q - 2);
+        s := Copy(s, q + 1, Length(s));
+    end;
+
     p := Posn(':', s, -1);
     if p > Length(s) then
         p := 0;
@@ -271,18 +280,21 @@ begin
     if q > Length(s) then
         q := 0;
     if (p = 0) and (q = 0) then begin   { no user, password or port }
-        Host := s;
+        if Host = '' then
+            Host := s;
         Exit;
     end
     else if q < p then begin  { a port given }
         Port := Copy(s, p + 1, Length(s));
-        Host := Copy(s, q + 1, p - q - 1);
+        if Host = '' then
+            Host := Copy(s, q + 1, p - q - 1);
         if q = 0 then
             Exit; { no user, password }
         s := Copy(s, 1, q - 1);
     end
     else begin
-        Host := Copy(s, q + 1, Length(s));
+        if Host = '' then
+            Host := Copy(s, q + 1, Length(s));
         s := Copy(s, 1, q - 1);
     end;
     p := pos(':', s);

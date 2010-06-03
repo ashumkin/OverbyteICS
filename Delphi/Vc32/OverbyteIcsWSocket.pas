@@ -862,19 +862,22 @@ uses
   OverbyteIcsWndControl, OverbyteIcsWSockBuf,
   OverbyteIcsWinsock;
 
+type
+  { sfAny = Windows default preference, sfAnyIPv4 = IPv4 preference,            }
+  { sfAnyIPv6 = IPv6 preference, sfIPv4 = explicit IPv4, sfIPv6 = explicit IPv6 }
+  TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
+
 const
   WSocketVersion            = 739;
   CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.39 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
+  DefaultSocketFamily       = sfIPv4;
 
 type
   TIcsIPv6Address    = array [0..7] of Word;
   PIcsIPv6Address    = ^TIcsIPv6Address;
   TIcsIPv4Address    = Integer;
   PIcsIPv4Address    = ^TIcsIPv4Address;
-  { sfAny = Windows default preference, sfAnyIPv4 = IPv4 preference,            }
-  { sfAnyIPv6 = IPv6 preference, sfIPv4 = explicit IPv4, sfIPv6 = explicit IPv6 }
-  TSocketFamily      = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
   TWndMethod         = procedure(var Message: TMessage) of object;
   ESocketException   = class(Exception);
   TBgExceptionEvent  = procedure (Sender : TObject;
@@ -965,6 +968,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     FCounter            : TWSocketCounter;
     FCounterClass       : TWsocketCounterClass;
   protected
+    FCurSocketFamily    : TSocketFamily;
     FHSocket            : TSocket;
     FASocket            : TSocket;               { Accepted socket }
     FMsg_WM_ASYNCSELECT            : UINT;
@@ -1073,7 +1077,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 {$ENDIF}
     procedure   SetSendFlags(newValue : TSocketSendFlags);
     function    GetSendFlags : TSocketSendFlags;
-    procedure   SetAddr(InAddr : String);
+    procedure   SetAddr(const InAddr : String);
     procedure   SetCounterClass(const Value: TWSocketCounterClass);
     procedure   SetRemotePort(sPort : String); virtual;
     function    GetRemotePort : String;
@@ -2483,10 +2487,10 @@ function  WSocketGetHostByAddr(Addr : AnsiString) : PHostEnt;
 function  WSocketGetHostByName(Name : AnsiString) : PHostEnt;
 {$ENDIF}
 function  LocalHostName : AnsiString;
-function  LocalIPList(const ASocketFamily: TSocketFamily = sfIPv4) : TStrings;
-procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = sfIPv4);
+function  LocalIPList(const ASocketFamily: TSocketFamily = DefaultSocketFamily) : TStrings;
+procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = DefaultSocketFamily);
 function  WSocketResolveIp(const IpAddr : AnsiString;
-  const ASocketFamily: TSocketFamily = sfIPv4) : AnsiString;
+  const ASocketFamily: TSocketFamily = DefaultSocketFamily) : AnsiString;
 function  WSocketResolveHost(InAddr : AnsiString) : TInAddr; overload;
 procedure WSocketResolveHost(const AHostName: string; var AAddr: TSockAddrIn6;
                              const ASocketFamily: TSocketFamily); overload;
@@ -5379,6 +5383,7 @@ begin
     InitializeAddr(sin);
     InitializeAddr(sin6, FSocketFamily);
     FAddrFormat         := sin6.sin6_family;
+    FCurSocketFamily    := FSocketFamily;
     //sin.sin_family      := AF_INET;
     //sin.sin_port        := 0;
     //sin.sin_addr.S_addr := 0;
@@ -5396,7 +5401,11 @@ begin
     FProtoStr           := 'tcp';
     FType               := SOCK_STREAM;
     FLocalPortStr       := ICS_ANY_PORT;
-    FLocalAddr          := ICS_ANY_HOST_V4;
+    
+    if FCurSocketFamily = sfIPv6 then
+        FLocalAddr := ICS_ANY_HOST_V6
+    else
+        FLocalAddr := ICS_ANY_HOST_V4;
 
     FLingerOnOff        := wsLingerOn;
     FLingerTimeout      := 0;
@@ -5558,7 +5567,7 @@ begin
     FAddrStr            := '';
     FPortStr            := '';
     FCounterClass       := TWSocketCounter;
-    FSocketFamily       := sfIPv4;
+    FSocketFamily       := DefaultSocketFamily;
     AssignDefaultValue;
 
     _EnterCriticalSection(GWSockCritSect);
@@ -6023,7 +6032,7 @@ begin
 { MoulinCnt := (MoulinCnt + 1) and 3; }
 { Write('S', Moulin[MoulinCnt], #13); }
     if FType = SOCK_DGRAM then begin
-        if FSocketFamily = sfIPv4 then
+        if FCurSocketFamily = sfIPv4 then
             Result := WSocket_Synchronized_SendTo(FHSocket, Data, Len, FSendFlags,
                                                   sin, SizeOf(sin))
         else
@@ -6647,7 +6656,7 @@ begin
 {$ENDIF}
 {$IFDEF WIN32}
     if ErrCode = 0 then begin
-        if FSocketFamily = sfIPv4 then begin
+        if FCurSocketFamily = sfIPv4 then begin
             Phe := PHostent(@FDnsLookupBuffer);
             if phe <> nil then begin
                 GetIpList(Phe, FDnsResultList);
@@ -6688,7 +6697,7 @@ begin
             FDnsResult := Marshal.PtrToStringAnsi(HostEntry.h_name);
 {$ENDIF}
 {$IFDEF WIN32}
-        if FSocketFamily = sfIPv4 then begin
+        if FCurSocketFamily = sfIPv4 then begin
             Phe := PHostent(@FDnsLookupBuffer);
             if phe <> nil then begin
                 //SetLength(FDnsResult, _StrLen(Phe^.h_name));
@@ -6791,7 +6800,7 @@ begin
     FLocalAddr := _Trim(sLocalAddr);
     if FLocalAddr = '' then
     begin
-        if FSocketFamily = sfIPv6 then
+        if FCurSocketFamily = sfIPv6 then
             FLocalAddr := ICS_ANY_HOST_V6
         else
             FLocalAddr := ICS_ANY_HOST_V4;
@@ -6848,7 +6857,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.SetAddr(InAddr : String);
+procedure TCustomWSocket.SetAddr(const InAddr : String);
+var
+    LSocketFamily: TSocketFamily;
 begin
     if FAddrAssigned and (FAddrStr = InAddr) then
         Exit;
@@ -6864,6 +6875,23 @@ begin
         FAddrAssigned := FALSE;
         Exit;
     end;
+
+    { If the address is either a valid IPv4 or IPv6 address }
+    { change current internal SocketFamily.                 }
+    if WSocketIsIP(FAddrStr, LSocketFamily) and
+       (LSocketFamily <> FCurSocketFamily) then
+    begin
+        if (LSocketFamily = sfIPv4) then
+            FCurSocketFamily := sfIPv4
+        else begin
+            if OverbyteIcsWinsock.IsIPv6APIAvailable then
+                FCurSocketFamily := sfIPv6
+            else
+                FCurSocketFamily := sfIPv4;
+        end;
+    end
+    else
+        FCurSocketFamily := FSocketFamily;
 
     FAddrResolved       := FALSE;
     FAddrAssigned       := TRUE;
@@ -7298,7 +7326,7 @@ var
 begin
     if FDnsLookupHandle = 0 then
         Exit;
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         RetVal := WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
     else
         RetVal := WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
@@ -7333,7 +7361,7 @@ begin
 
     { Cancel any pending lookup }
     if FDnsLookupHandle <> 0 then begin
-        if FSocketFamily = sfIPv4 then
+        if FCurSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
             WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
@@ -7345,7 +7373,7 @@ begin
 
     HostName := AnsiString(AHostName);
 
-    if (FSocketFamily <> sfIPv6) and
+    if (FCurSocketFamily <> sfIPv6) and
        WSocketIsDottedIP(Hostname) then begin   { 28/09/2002 }
         IPAddr.S_addr := WSocket_Synchronized_inet_addr(PAnsiChar(HostName));
         if IPAddr.S_addr <> u_long(INADDR_NONE) then begin
@@ -7356,7 +7384,7 @@ begin
         end;
     end;
 
-    if (FSocketFamily <> sfIPv4) then
+    if (FCurSocketFamily <> sfIPv4) then
     begin
         IPv6Addr := WSocketStrToIPv6(_Trim(AHostName), Success);
         if Success then
@@ -7395,7 +7423,7 @@ begin
     end;
 {$ENDIF}
 {$IFDEF WIN32}
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         FDnsLookupHandle   := WSocket_Synchronized_WSAAsyncGetHostByName(
                                   FWindowHandle,
                                   FMsg_WM_ASYNCGETHOSTBYNAME,
@@ -7406,7 +7434,7 @@ begin
         FDnsLookupHandle   :=     WSocket_Synchronized_IcsAsyncGetHostByName(
                                   FWindowHandle,
                                   FMsg_WM_ASYNCGETHOSTBYNAME,
-                                  FSocketFamily,
+                                  FCurSocketFamily,
                                   _Trim(AHostName));
 
     if FDnsLookupHandle = 0 then begin
@@ -7434,7 +7462,7 @@ begin
     end;
     { Cancel any pending lookup }
     if FDnsLookupHandle <> 0 then begin
-        if FSocketFamily = sfIPv4 then
+        if FCurSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
             WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
@@ -7444,7 +7472,7 @@ begin
     FDnsResult := '';
     FDnsResultList.Clear;
 
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         lAddr := WSocket_Synchronized_inet_addr(PAnsiChar(AnsiString(HostAddr)));
 
     if FWindowHandle = 0 then
@@ -7467,7 +7495,7 @@ begin
     end;
 {$ENDIF}
 {$IFDEF WIN32}
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         FDnsLookupHandle := WSocket_Synchronized_WSAAsyncGetHostByAddr(
                             FWindowHandle,
                             FMsg_WM_ASYNCGETHOSTBYADDR,
@@ -7478,7 +7506,7 @@ begin
         FDnsLookupHandle := WSocket_Synchronized_IcsAsyncGetHostByAddr(
                             FWindowHandle,
                             FMsg_WM_ASYNCGETHOSTBYADDR,
-                            FSocketFamily,
+                            FCurSocketFamily,
                             _Trim(HostAddr));
 
     if FDnsLookupHandle = 0 then
@@ -7576,14 +7604,14 @@ begin
 begin
     FillChar(LocalSockName, Sizeof(LocalSockName), 0);
 {$ENDIF}
-    if FSocketFamily = sfIPv4 then begin
+    if FCurSocketFamily = sfIPv4 then begin
         LocalSockName.sin6_family      := AF_INET;
         LocalSockName.sin6_port        := WSocket_Synchronized_htons(FLocalPortNum);
         PSockAddrIn(@LocalSockName)^.sin_addr.S_addr :=
               WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
     end
     else begin
-        WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FSocketFamily);
+        WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FCurSocketFamily);
         LocalSockName.sin6_port := WSocket_Synchronized_htons(FLocalPortNum);
     end;
     SockNamelen := SizeOfAddress(LocalSockName);
@@ -7739,7 +7767,7 @@ begin
         if not FPortResolved then begin
             { The next line will trigger an exception in case of failure }
             FPortNum       := WSocket_Synchronized_ResolvePort(AnsiString(FPortStr), AnsiString(FProtoStr));
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 sin.sin_port   := WSocket_Synchronized_htons(FPortNum)
             else
                 sin6.sin6_port := WSocket_Synchronized_htons(FPortNum);
@@ -7754,14 +7782,14 @@ begin
 
         if not FAddrResolved then begin
             { The next line will trigger an exception in case of failure }
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr
             else
-                WSocket_Synchronized_ResolveHost(FAddrStr, sin6, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FAddrStr, sin6, FCurSocketFamily);
 
             FAddrResolved := TRUE;
 
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 FAddrFormat := PF_INET
             else begin
                 if sin6.sin6_family = AF_INET6 then
@@ -7854,7 +7882,7 @@ begin
                 end;
             end;
             if (FLocalAddr <> ICS_ANY_HOST_V4) and (FLocalAddr <> ICS_ANY_HOST_V6) then begin                      { RK }
-                WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, FCurSocketFamily);
                 //laddr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).S_addr;
                 if FAddrFormat = PF_INET then
                     iStatus := WSocket_Synchronized_SetSockOpt(FHSocket,
@@ -7884,9 +7912,9 @@ begin
         end;
         //if sin.sin_addr.S_addr = u_long(INADDR_BROADCAST) then begin
         if (
-           (FSocketFamily = sfIPv4) and (sin.sin_addr.S_addr = u_long(INADDR_BROADCAST))
+           (FCurSocketFamily = sfIPv4) and (sin.sin_addr.S_addr = u_long(INADDR_BROADCAST))
            ) or
-           (FSocketFamily <> sfIPv4) and
+           (FCurSocketFamily <> sfIPv4) and
            (
            ((FAddrFormat = PF_INET6) and IN6_IS_ADDR_MULTICAST(@sin6.sin6_addr)) or
            ((FAddrFormat = PF_INET)  and (PSockAddr(@sin6)^.sin_addr.S_addr = u_long(INADDR_BROADCAST)))
@@ -7942,7 +7970,7 @@ begin
     else begin
 {$IFNDEF NO_DEBUG_LOG}
        if CheckLogOptions(loWsockInfo) then  { V5.21 } { replaces $IFDEF DEBUG_OUTPUT  }
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 DebugLog(loWsockInfo, 'TWSocket will connect to ' +
                   WSocket_Synchronized_inet_ntoa(sin.sin_addr) + ':' +
                   _IntToStr(WSocket_Synchronized_ntohs(sin.sin_port)))
@@ -7951,7 +7979,7 @@ begin
                   WSocketIPv6ToStr(PIcsIpv6Address(@sin6.sin6_addr)^) + ':' +
                   _IntToStr(WSocket_Synchronized_ntohs(sin6.sin6_port)));
 {$ENDIF}
-        if FSocketFamily = sfIPv4 then
+        if FCurSocketFamily = sfIPv4 then
             iStatus := WSocket_Synchronized_Connect(FHSocket, sin, SizeOf(sin))
         else
             iStatus := WSocket_Synchronized_Connect(FHSocket, PSockAddr(@sin6)^,
@@ -8026,7 +8054,7 @@ begin
             { The next line will trigger an exception in case of failure }
             FPortNum       := WSocket_Synchronized_ResolvePort(
                                   AnsiString(FPortStr), AnsiString(FProtoStr));
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 sin.sin_port := WSocket_Synchronized_htons(FPortNum)
             else
                 sin6.sin6_port := WSocket_Synchronized_htons(FPortNum);
@@ -8035,13 +8063,13 @@ begin
 
         if not FAddrResolved then begin
             { The next line will trigger an exception in case of failure }
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr
             else
-                WSocket_Synchronized_ResolveHost(FAddrStr, sin6, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FAddrStr, sin6, FCurSocketFamily);
             FAddrResolved := TRUE;
 
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 FAddrFormat := PF_INET
             else begin
                 if sin6.sin6_family = AF_INET6 then
@@ -8084,7 +8112,7 @@ begin
             end;
         end;
     end;
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         iStatus := WSocket_Synchronized_bind(FHSocket, sin,  SizeOf(sin))
     else
         iStatus := WSocket_Synchronized_bind(FHSocket, PSockAddr(@sin6)^,
@@ -8211,14 +8239,14 @@ begin
         Result := INVALID_SOCKET;
         Exit;
     end;
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         len := SizeOf(sin)
     else
         len := SizeOfAddress(sin6);
 {$IFDEF CLR}
     FASocket := WSocket_Synchronized_accept(FHSocket, sin, len);
 {$ELSE}
-    if FSocketFamily = sfIPv4 then
+    if FCurSocketFamily = sfIPv4 then
         FASocket := WSocket_Synchronized_Accept(FHSocket, @sin, @len)
     else
         FASocket := WSocket_Synchronized_Accept(FHSocket, @sin6, @len);
@@ -8479,7 +8507,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocketResolveIp(
     const IpAddr        : AnsiString;
-    const ASocketFamily : TSocketFamily = sfIPv4) : AnsiString;
+    const ASocketFamily : TSocketFamily = DefaultSocketFamily) : AnsiString;
 {$IFDEF CLR}
 var
     HostEntry    : THostEnt;
@@ -8553,7 +8581,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily);
+procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = DefaultSocketFamily);
 begin
 {$IFNDEF NO_ADV_MT}
     _EnterCriticalSection(CritSecIpList);
@@ -8569,7 +8597,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function LocalIPList(const ASocketFamily: TSocketFamily) : TStrings;
+function LocalIPList(const ASocketFamily: TSocketFamily = DefaultSocketFamily) : TStrings;
 {$IFDEF CLR}
 var
     HostEntry    : THostEnt;
@@ -9112,7 +9140,7 @@ begin
     try
         if not FPortResolved then begin
             { The next line will trigger an exception in case of failure }
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 sin.sin_port := WSocket_Synchronized_htons(
                                 WSocket_Synchronized_ResolvePort(
                                 AnsiString(FSocksPort), AnsiString(FProtoStr)))
@@ -9125,10 +9153,10 @@ begin
 
         if not FAddrResolved then begin
             { The next line will trigger an exception in case of failure }
-            if FSocketFamily = sfIPv4 then
+            if FCurSocketFamily = sfIPv4 then
                 sin.sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FSocksServer)).s_addr
             else
-                WSocket_Synchronized_ResolveHost(FSocksServer, sin6, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FSocksServer, sin6, FCurSocketFamily);
             FAddrResolved       := TRUE;
         end;
         { The next line will trigger an exception in case of failure }

@@ -589,6 +589,7 @@ type
         FMsg_WM_HTTP_SET_READY    : UINT;
         FMsg_WM_HTTP_LOGIN        : UINT;
         FCtrlSocket           : TWSocket;
+        FSocketFamily         : TSocketFamily;
         //FWindowHandle         : HWND;
         FMultiThreaded        : Boolean;
         FState                : THttpState;
@@ -1062,6 +1063,8 @@ type
         property OnBeforeAuth        : THttpBeforeAuthEvent
                                                      read  FOnBeforeAuth
                                                      write FOnBeforeAuth;
+        property SocketFamily        : TSocketFamily read  FSocketFamily
+                                                     write FSocketFamily;
     end;
 
 { You must define USE_SSL so that SSL code is included in the component.   }
@@ -1354,6 +1357,7 @@ begin
     FLocationChangeMaxCount        := 5;  {  V1.90 }
     FLocationChangeCurCount        := 0;  {  V1.90 }
     FTimeOut                       := 30;
+    FSocketFamily                  := DefaultSocketFamily;
 end;
 
 
@@ -2004,6 +2008,11 @@ begin
     StateChange(httpDnsLookup);
     FCtrlSocket.LocalAddr := FLocalAddr; {bb}
     try
+        FCtrlSocket.SocketFamily := FSocketFamily;
+        { The setter of TCustomWSocket.Addr sets the correct internal     }
+        { SocketFamily in case a host name is either a valid IPv6 or IPv4 }
+        { address.                                                        }
+        FCtrlSocket.Addr := FHostName;
         FCtrlSocket.DnsLookup(FHostName);
     except
         on E: Exception do begin
