@@ -66,6 +66,7 @@ uses
   Messages,
   SysUtils,
   Classes,
+  OverbyteIcsWinsock,
   OverbyteIcsHttpProt,
   OverbyteIcsWSocket;
 
@@ -254,7 +255,7 @@ procedure DLLHandler(Reason: Integer);
 begin
     if Reason = DLL_PROCESS_DETACH then begin
 //      MessageBox(0, PChar('Reason = ' + IntToStr(Reason)), 'DLLHandler', MB_OK);
-        WSocketCancelForceLoadWinsock;
+        OverbyteIcsWinsock.CancelForceLoadWinsock;
         //WSocketUnregisterClass;  // 27/04/2002
     end;
 end;
@@ -263,6 +264,6 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 begin
 //  MessageBox(0, PChar('DLL Init ' + IntToStr(WSocketGCount)), 'DLL', MB_OK);
-    WSocketForceLoadWinsock;
+    OverbyteIcsWinsock.ForceLoadWinsock;
     DLLProc := @DLLHandler;
 end.

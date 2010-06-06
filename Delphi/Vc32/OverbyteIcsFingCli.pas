@@ -94,6 +94,7 @@ type
         procedure   Abort;
     protected
         FWSocket            : TWSocket;
+        FSocketFamily       : TSocketFamily;
         FQuery              : String;
         FQueryDoneFlag      : Boolean;
         FOnSessionConnected : TSessionConnected;
@@ -105,6 +106,8 @@ type
         procedure WSocketSessionClosed(Sender: TObject; Error: Word);
         procedure TriggerQueryDone(Error: Word);
     published
+        property SocketFamily : TSocketFamily           read  FSocketFamily
+                                                        write FSocketFamily;
         property Query : String                         read  FQuery
                                                         write FQuery;
         property OnSessionConnected : TSessionConnected read  FOnSessionConnected
@@ -122,6 +125,7 @@ constructor TFingerCli.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
     FWSocket                    := TWSocket.Create(Self);
+    FSocketFamily               := FWSocket.SocketFamily;
     FWSocket.OnSessionConnected := WSocketSessionConnected;
     FWSocket.OnDataAvailable    := WSocketDataAvailable;
     FWSocket.OnSessionClosed    := WSocketSessionClosed;
@@ -151,6 +155,8 @@ begin
     if Length(Host) <= 0 then
          raise Exception.CreateFmt('TFingerCli, Invalid Host in query: %s', [FQuery]);
     FQueryDoneFlag := FALSE;
+    FWSocket.SocketFamily := FSocketFamily;
+    FWSocket.Addr := Host;
     FWSocket.DnsLookup(Host);
 end;
 

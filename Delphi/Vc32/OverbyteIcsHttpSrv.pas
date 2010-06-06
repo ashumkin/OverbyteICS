@@ -904,6 +904,7 @@ type
         FWSocketServer            : TWSocketServer;
         FPort                     : String;
         FAddr                     : String;
+        FSocketFamily             : TSocketFamily;
         FMaxClients               : Integer;              {DAVID}
         FClientClass              : THttpConnectionClass;
         FDocDir                   : String;
@@ -1036,6 +1037,8 @@ type
         { available interfaces                                        }
         property Addr          : String          read  FAddr
                                                  write SetAddr;
+        property SocketFamily  : TSocketFamily   read  FSocketFamily
+                                                 write FSocketFamily;
         property MaxClients    : Integer         read  FMaxClients   {DAVID}
                                                  write FMaxClients;
         { Where all documents are stored. Default to c:\wwwroot }
@@ -1486,8 +1489,9 @@ begin
 {$ENDIF}
     FClientClass    := THttpConnection;
     FOptions        := [];
-    FAddr           := '0.0.0.0';
+    FAddr           := ICS_ANY_HOST_V4;
     FPort           := '80';
+    FSocketFamily   := DefaultSocketFamily;
     FMaxClients     := 0;                {DAVID}
     FListenBacklog  := 5; {Bjørnar}
     FDefaultDoc     := 'index.html';
@@ -1576,6 +1580,7 @@ begin
     FWSocketServer.Banner             := '';
     FWSocketServer.Proto              := 'tcp';
     FWSocketServer.Port               := FPort;
+    FWSocketServer.SocketFamily       := FSocketFamily;
     FWSocketServer.Addr               := FAddr;
     FWSocketServer.MaxClients         := FMaxClients;    {DAVID}
     FWSocketServer.ListenBacklog      := FListenBacklog; {Bjørnar}

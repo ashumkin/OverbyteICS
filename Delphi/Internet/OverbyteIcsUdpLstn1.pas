@@ -166,6 +166,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMainForm.StartButtonClick(Sender: TObject);
 begin
+    WSocket.Addr := SenderEdit.Text;
     WSocketResolveHost(SenderEdit.Text, FSenderAddr, WSocket.SocketFamily);
     if (FSenderAddr.sin6_family = AF_INET) then begin
         if PSockAddr(@FSenderAddr).sin_addr.S_addr = WSocket_htonl(INADDR_LOOPBACK) then
@@ -177,7 +178,7 @@ begin
     else if (FSenderAddr.sin6_family = AF_INET6) then begin
         if IN6_IS_ADDR_LOOPBACK(@FSenderAddr.sin6_addr) then
             { Replace loopback address by real localhost IP addr }
-            WSocketResolveHost(LocalHostName, FSenderAddr, WSocket.SocketFamily);
+            WSocketResolveHost(string(LocalHostName), FSenderAddr, WSocket.SocketFamily);
         WSocket.SocketFamily      := sfIPv6;
         WSocket.Addr              := ICS_ANY_HOST_V6;
         WSocket.MultiCast         := TRUE;

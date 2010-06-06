@@ -630,6 +630,7 @@ type
     protected
         FWSocket             : TWSocket;     { Underlaying socket          }
         FHost                : String;       { SMTP server hostname or IP  }
+        FSocketFamily        : TSocketFamily;
         FLocalAddr           : String; {bb}  { Local Address for mulithome }
         FPort                : String;       { Should be 'smtp'            }
         FSignOn              : String;       { Used for the 'HELO' command }
@@ -937,6 +938,8 @@ type
                                                      write SetWrapMsgMaxLineLen;
         property XMailer : String                    read  FXMailer
                                                      write FXMailer;
+        property SocketFamily : TSocketFamily        read  FSocketFamily
+                                                     write FSocketFamily;
     end;
 
     { Descending component adding MIME (file attach) support }
@@ -1723,6 +1726,7 @@ begin
     FWSocket.Name            := ClassName + '_Socket' + IntToStr(SafeWSocketGCount);
 {$ENDIF}
     FWSocket.OnSessionClosed := WSocketSessionClosed;
+    FSocketFamily            := DefaultSocketFamily;
     FState                   := smtpReady;
     FRcptName                := TStringList.Create;
     FMailMessage             := TStringList.Create;
@@ -1731,7 +1735,7 @@ begin
     FCodePage                := IcsSystemCodePage;
     FCharSet                 := CodePageToMimeCharsetString(FCodePage);
     FAuthType                := smtpAuthNone;
-    FLocalAddr               := '0.0.0.0';
+    FLocalAddr               := ICS_ANY_HOST_V4;
     SetContentType(smtpPlainText);
     FShareMode               := fmShareDenyWrite;
     FHdrPriority             := smtpPriorityNone;
@@ -3226,6 +3230,8 @@ begin
     StateChange(smtpDnsLookup);
     FWSocket.OnDataSent      := nil;
     FWSocket.OnDnsLookupDone := WSocketDnsLookupDone;
+    FWSocket.SocketFamily    := FSocketFamily;
+    FWSocket.Addr            := FHost;
     FWSocket.DnsLookup(FHost);
 end;
 

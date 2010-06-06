@@ -1133,6 +1133,7 @@ type
   protected
     FHostName           : String;
     FPort               : String;
+    FSocketFamily       : TSocketFamily;
     FCodePage           : LongWord;
     FSystemCodepage     : LongWord; { AG 7.02 }
     FDataPortRangeStart : DWORD;  {JT}
@@ -1350,6 +1351,7 @@ type
     function    OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
     procedure   CreateLocalFileStream;         { V2.113 }
     function    CreateSocket: TWSocket; virtual;   { V7.08 }
+    property    SocketFamily: TSocketFamily read FSocketFamily write FSocketFamily;
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
@@ -1712,6 +1714,7 @@ type
     property BandwidthLimit;                                       { V2.106 }
     property BandwidthSampling;                                    { V2.106 }
 {$ENDIF}
+    property SocketFamily;
   end;
 
 { You must define USE_SSL so that SSL code is included in the component.   }
@@ -2103,9 +2106,10 @@ begin
     FProxyServer        := '';    { Should Socks properties be set to '' as well? }
     FSocksServer        := '';
     FOptions            := [ftpAcceptLF];
-    FLocalAddr          := '0.0.0.0'; {bb}
+    FLocalAddr          := ICS_ANY_HOST_V4;
     FKeepAliveSecs      := 0; {V2.107 for control socket only }
     FClientIdStr        := ftpClientId; {V2.113 string sent for CLNT command }
+    FSocketFamily       := DefaultSocketFamily;
     FControlSocket      := CreateSocket;   { V7.08 was  TWSocket.Create(Self); }
     FControlSocket.OnSessionConnected := ControlSocketSessionConnected;
     FControlSocket.OnDataAvailable    := ControlSocketDataAvailable;
@@ -2616,7 +2620,7 @@ begin
     FMLSTFacts           := '';   { V2.90 supported MLST facts }
     FSupportedExtensions := [];   { V2.94 supported extensions }
     FLangSupport         := '';   { V7.01 supported languages }
-
+    FControlSocket.SocketFamily := FSocketFamily;
 { angus V7.00 always set proxy and SOCKS options before opening socket  }
     FControlSocket.SocksAuthentication := socksNoAuthentication;
     case FConnectionType of
@@ -2636,9 +2640,15 @@ begin
     StateChange(ftpDnsLookup);
     case FConnectionType of
         ftpDirect, ftpSocks4, ftpSocks4A, ftpSocks5:
-              FControlSocket.DnsLookup(FHostName);
+            begin
+                FControlSocket.Addr := FHostName;
+                FControlSocket.DnsLookup(FHostName);
+            end;
         ftpProxy:
-              FControlSocket.DnsLookup(FProxyServer);
+            begin
+                FControlSocket.Addr := FProxyServer;
+                FControlSocket.DnsLookup(FProxyServer);
+            end;
     end;
 end;
 
@@ -2775,7 +2785,10 @@ begin
         end;
     end;
 
-    if FPassive and (FStatusCode = 227) then begin
+    if FPassive and
+      (((FControlSocket.CurrentSocketFamily = sfIPv4) and (FStatusCode = 227)) or
+       ((FControlSocket.CurrentSocketFamily = sfIPv6) and (FStatusCode = 229))) then
+    begin    
         StateChange(ftpPasvReady);               { 19.09.2002 }
         FPasvResponse := FLastResponse;
     end;
@@ -3329,6 +3342,7 @@ begin
     CreateLocalFileStream;
     ExecAsync(ftpXCmlsdAsync, 'XCMLSD ' + FHostFileName, [200,250], nil);
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.AbortAsync;
@@ -4801,6 +4815,8 @@ var
     TargetPort : WORD;    { 10/30/99 }
     TargetIP   : String;
     NewPos     : TFtpBigInt;           { V2.108 }
+    Delim      : Char;
+    DelimCnt, N: Integer;
 begin
     if not FConnected then begin
         HandleError(FGetCommand + ': not connected');
@@ -4907,21 +4923,47 @@ begin
     end;
 
     if FPassive then begin
-        Temp := FPasvResponse;
-        Delete(Temp, 1, Pos('(', Temp));
+        FDataSocket.SocketFamily := FControlSocket.CurrentSocketFamily;
+        if FControlSocket.CurrentSocketFamily = sfIPv4 then
+        begin
+            Temp := FPasvResponse;
+            Delete(Temp, 1, Pos('(', Temp));
 
-        TargetIP := '';
-        for I := 1 to 4 do begin
-            TargetIP := TargetIP + Copy(Temp, 1, Pos(',', Temp) - 1) + '.';
+            TargetIP := '';
+            for I := 1 to 4 do begin
+                TargetIP := TargetIP + Copy(Temp, 1, Pos(',', Temp) - 1) + '.';
+                Delete(Temp, 1, Pos(',', Temp));
+            end;
+            TargetIP := Copy(TargetIP, 1, Length(TargetIP) - 1);
+
+            TargetPort := StrToInt(Copy(Temp, 1, Pos(',', Temp) - 1)) * 256;
             Delete(Temp, 1, Pos(',', Temp));
+            TargetPort := TargetPort + StrToInt(Copy(Temp, 1, Pos(')', Temp) - 1));
+
+            DataSocketGetInit(_IntToStr(TargetPort), TargetIP);
+        end
+        else begin  { EPSV IPv6 }
+            { Response like: "Entering Extended Passive Mode (|||6446|)" }
+            Delim := #0; DelimCnt := 0; Temp := '0'; N := 1;
+            TargetIP := WSocketIPv6ToStr(PIcsIPv6Address(@FControlSocket.sin6.sin6_addr)^);
+            for I := 1 to Length(FPasvResponse) do
+            begin
+                if FPasvResponse[I] = '(' then
+                    Delim := FPasvResponse[I + 1]
+                else if FPasvResponse[I] = Delim then
+                begin
+                    Inc(DelimCnt);
+                    if DelimCnt = 3 then
+                        N := I + 1
+                    else if DelimCnt = 4 then
+                    begin
+                        Temp := Copy(FPasvResponse, N, (I - N));
+                        Break;
+                    end;
+                end;
+            end;
+            DataSocketGetInit(Temp, TargetIP);
         end;
-        TargetIP := Copy(TargetIP, 1, Length(TargetIP) - 1);
-
-        TargetPort := StrToInt(Copy(Temp, 1, Pos(',', Temp) - 1)) * 256;
-        Delete(Temp, 1, Pos(',', Temp));
-        TargetPort := TargetPort + StrToInt(Copy(Temp, 1, Pos(')', Temp) - 1));
-
-        DataSocketGetInit(_IntToStr(TargetPort), TargetIP);
 
 {$IFNDEF NO_DEBUG_LOG}                                                { 2.104 }
         __DataSocket := FDataSocket;    { V2.107 }
@@ -5326,7 +5368,7 @@ end;
 procedure TCustomFtpCli.PortAsync;
 var
     Msg          : String;
-    saddr        : TSockAddrIn;
+    saddr        : TSockAddrIn6;
     saddrlen     : Integer;
     DataPort     : DWORD;  { 10/30/99 }
     IPAddr       : TInAddr;
@@ -5334,7 +5376,10 @@ var
 begin
     { Makes the data socket listening for data connection }
     FDataSocket.Proto              := 'tcp';
-    FDataSocket.Addr               := '0.0.0.0';  { INADDR_ANY }
+    if FControlSocket.CurrentSocketFamily = sfIPv6 then
+        FDataSocket.Addr := ICS_ANY_HOST_V6
+    else
+        FDataSocket.Addr := ICS_ANY_HOST_V4;
     FDataSocket.Port               := AnsiChar('0');        { IPPORT_ANY }
     FDataSocket.OnSessionAvailable := nil;
     FDataSocket.OnSessionClosed    := nil;
@@ -5355,8 +5400,8 @@ begin
             FDataSocket.Listen;
             { Get the port number as assigned by Windows }
             saddrLen  := SizeOf(saddr);
-            FDataSocket.GetSockName(saddr, saddrLen);
-            DataPort  := WSocket_ntohs(saddr.sin_port);
+            FDataSocket.GetSockName(PSockAddrIn(@saddr)^, saddrLen);
+            DataPort  := WSocket_ntohs(saddr.sin6_port);
         end
         else begin
             { We use a data port range. Check if the range is valid }
@@ -5399,14 +5444,25 @@ begin
 
     { Get our IP address from our control socket }
     saddrlen := SizeOf(saddr);
-    FControlSocket.GetSockName(saddr, saddrlen);
-    IPAddr   := saddr.sin_addr;
+    FControlSocket.GetSockName(PSockAddrIn(@saddr)^, saddrlen);
+    IPAddr   := PSockAddrIn(@saddr).sin_addr;
 
     { Strange behaviour of PWS (FrontPage 97 Web Server for W95) }
     { which do not like effective address when localhost is used }
-    if FPassive then
-        Msg := 'PASV'
+    if FPassive then begin
+        if saddr.sin6_family = AF_INET6 then
+            Msg := 'EPSV'
+        else
+            Msg := 'PASV';
+    end
     else begin
+        if saddr.sin6_family = AF_INET6 then
+        begin
+            Msg := 'EPRT |2|' +
+                   WSocketIPv6ToStr(PIcsIPv6Address(@saddr.sin6_addr)^) +
+                   '|' + IntToStr(DataPort) + '|';
+        end
+        else
         if FControlSocket.sin.sin_addr.s_addr = WSocket_htonl($7F000001) then
             Msg := Format('PORT 127,0,0,1,%d,%d',
                           [HiByte(DataPort),
@@ -5423,7 +5479,10 @@ begin
 
     FByteCount := 0;
     FFctPrv    := ftpFctPort;
-    ExecAsync(ftpPortAsync, Msg, [200, 227], nil);
+    if saddr.sin6_family = AF_INET6 then
+        ExecAsync(ftpPortAsync, Msg, [200, 229], nil)
+    else
+        ExecAsync(ftpPortAsync, Msg, [200, 227], nil);
 end;
 
 

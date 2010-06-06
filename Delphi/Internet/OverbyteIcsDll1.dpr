@@ -66,6 +66,7 @@ uses
   Messages,
   SysUtils,
   Classes,
+  OverbyteIcsWinsock,
   OverbyteIcsWSocket;
 
 const

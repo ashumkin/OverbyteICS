@@ -67,6 +67,9 @@ initialization
     InitializeCriticalSection(GWSockCritSect);
     in6addr_any := IN6ADDR_ANY_INIT;
     in6addr_loopback := IN6ADDR_LOOPBACK_INIT;
+{$IFDEF STILL_NEEDS_CHECK}
+    IN6ADDR_V4MAPPEDPREFIX_INIT(@in6addr_v4mappedprefix);
+{$ENDIF}
 
 finalization
     DeleteCriticalSection(GWSockCritSect);
@@ -78,5 +81,6 @@ finalization
 {$ENDIF}
 
 end.
+
 
 

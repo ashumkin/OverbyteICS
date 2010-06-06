@@ -1,3 +1,4 @@
+{$MINENUMSIZE 4}
 {.$IFNDEF NO_WINSOCK_2}
     (*$HPPEMIT '#include <winsock2.h>'*)
     (*$HPPEMIT '#include <Ws2ipdef.h>'*)
@@ -267,7 +268,7 @@ type
           sin_addr: TInAddr;
           sin_zero: array[0..7] of AnsiChar);
       1: (sa_family: u_short;
-          sa_data: array[0..13] of AnsiChar)
+          sa_data: array[0..13] of AnsiChar);
   end;
   TSockAddrIn = sockaddr_in;
   
@@ -285,8 +286,36 @@ const
   WSADESCRIPTION_LEN     =   256;
   {$EXTERNALSYM WSASYS_STATUS_LEN}
   WSASYS_STATUS_LEN      =   128;
-
+{$IFDEF STILL_NEEDS_CHECK}
+  {$EXTERNALSYM IN4ADDR_BROADCAST}
+  IN4ADDR_BROADCAST = INADDR_BROADCAST;
+{$ENDIF}
 type
+{$IFDEF STILL_NEEDS_CHECK}
+{ Scope ID definition }
+  PScopeLevel = ^TScopeLevel;
+  {$EXTERNALSYM SCOPE_LEVEL}
+  SCOPE_LEVEL              = (
+    ScopeLevelInterface    = 1,
+    ScopeLevelLink         = 2,
+    ScopeLevelSubnet       = 3,
+    ScopeLevelAdmin        = 4,
+    ScopeLevelSite         = 5,
+    ScopeLevelOrganization = 8,
+    ScopeLevelGlobal       = 14,
+    ScopeLevelCount        = 16
+  );
+  TScopeLevel = SCOPE_LEVEL;
+
+  {$EXTERNALSYM PSCOPE_ID}
+  PSCOPE_ID = ^SCOPE_ID;
+  {$EXTERNALSYM SCOPE_ID}
+  SCOPE_ID = record
+      Value: ULONG; // Dummy actually a record with C bitfields
+  end;
+  TScopeID = SCOPE_ID;
+  PScopeID = PSCOPE_ID;
+{$ENDIF}
   PWSAData = ^TWSAData;
   {$EXTERNALSYM WSAData}
   WSAData = record // !!! also WSDATA
@@ -993,7 +1022,13 @@ type
     sin6_port:     u_short;     // Transport level port number
     sin6_flowinfo: u_long;      // IPv6 flow information
     sin6_addr:     TInAddr6;    // IPv6 address
+{$IFDEF STILL_NEEDS_CHECK}
+    case integer of
+      0: (sin6_scope_id: u_long);      // Set of interfaces for a scope.
+      1: (sin6_scope_struct: SCOPE_ID);
+{$ELSE}
     sin6_scope_id: u_long;      // Scope Id: IF number for link-local SITE id for site-local
+{$ENDIF}
   end;
   TSockAddrIn6 = sockaddr_in6;
 
@@ -1113,7 +1148,7 @@ type
      sa_data     : array [0..13] of AnsiChar;  // up to 14 bytes of direct address
   end;  
 
-  {$EXTERNALSYM IN6_ADDR} 
+  {$EXTERNALSYM IN6_ADDR}
   IN6_ADDR = record
     case Integer of
         0: (Byte     : array [0..15] of u_char);
@@ -1134,7 +1169,10 @@ var
   in6addr_any: TIn6Addr;
   {$EXTERNALSYM in6addr_loopback}
   in6addr_loopback: TIn6Addr;
-
+{$IFDEF STILL_NEEDS_CHECK}
+  {$EXTERNALSYM in6addr_v4mappedprefix}
+  in6addr_v4mappedprefix: TIn6Addr;
+{$ENDIF}
 const
 //
 // Options to use with [gs]etsockopt at the IPPROTO_IPV6 level.
@@ -1210,7 +1248,7 @@ procedure IN6ADDR_SETLOOPBACK(sa: PSockAddrIn6); {$IFDEF USE_INLINE}inline;{$END
 function  IN6ADDR_ISANY(sa: PSockAddrIn6): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$EXTERNALSYM IN6ADDR_ISLOOPBACK} 
 function  IN6ADDR_ISLOOPBACK(sa: PSockAddrIn6): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
-{$EXTERNALSYM IN6_ADDR_EQUAL} 
+{$EXTERNALSYM IN6_ADDR_EQUAL}
 function  IN6_ADDR_EQUAL(const a: PIn6Addr; const b: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$EXTERNALSYM IN6_IS_ADDR_UNSPECIFIED} 
 function  IN6_IS_ADDR_UNSPECIFIED(const a: PIn6Addr): Boolean;{$IFDEF USE_INLINE}inline;{$ENDIF}
@@ -1220,8 +1258,12 @@ function  IN6_IS_ADDR_LOOPBACK(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}i
 function  IN6_IS_ADDR_MULTICAST(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$EXTERNALSYM IN6_IS_ADDR_LINKLOCAL} 
 function  IN6_IS_ADDR_LINKLOCAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
-{$EXTERNALSYM IN6_IS_ADDR_SITELOCAL} 
+{$EXTERNALSYM IN6_IS_ADDR_SITELOCAL}
 function  IN6_IS_ADDR_SITELOCAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$IFDEF STILL_NEEDS_CHECK}
+{$EXTERNALSYM IN6_IS_ADDR_GLOBAL}
+function IN6_IS_ADDR_GLOBAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$ENDIF}
 {$EXTERNALSYM IN6_IS_ADDR_V4MAPPED} 
 function  IN6_IS_ADDR_V4MAPPED(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$EXTERNALSYM IN6_IS_ADDR_V4COMPAT} 
@@ -1234,8 +1276,50 @@ function  IN6_IS_ADDR_MC_LINKLOCAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLI
 function  IN6_IS_ADDR_MC_SITELOCAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$EXTERNALSYM IN6_IS_ADDR_MC_ORGLOCAL} 
 function  IN6_IS_ADDR_MC_ORGLOCAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
-{$EXTERNALSYM IN6_IS_ADDR_MC_GLOBAL} 
+{$EXTERNALSYM IN6_IS_ADDR_MC_GLOBAL}
 function  IN6_IS_ADDR_MC_GLOBAL(const a: PIn6Addr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+
+{ Microsoft-specific IPv4 definitions. }
+{$IFDEF STILL_NEEDS_CHECK}
+{$EXTERNALSYM IN4_CLASSA}
+function IN4_CLASSA(a: u_long): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_CLASSB}
+function IN4_CLASSB(a: u_long): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_CLASSC}
+function IN4_CLASSC(a: u_long): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_CLASSD}
+function IN4_CLASSD(a: u_long): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_MULTICAST}
+function IN4_MULTICAST(a: u_long): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_BROADCAST}
+function IN4_IS_ADDR_BROADCAST(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_MULTICAST}
+function IN4_IS_ADDR_MULTICAST(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_MC_LINKLOCAL}
+function IN4_IS_ADDR_MC_LINKLOCAL(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_MC_ADMINLOCAL}
+function IN4_IS_ADDR_MC_ADMINLOCAL(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_MC_SITELOCAL}
+function IN4_IS_ADDR_MC_SITELOCAL(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_LINKLOCAL}
+function IN4_IS_ADDR_LINKLOCAL(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_IS_ADDR_LOOPBACK}
+function IN4_IS_ADDR_LOOPBACK(const a: PInAddr): Boolean; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM Ipv4UnicastAddressScope}
+function Ipv4UnicastAddressScope(const Address: PAnsiChar): TScopeLevel; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM Ipv4MulticastAddressScope}
+function Ipv4MulticastAddressScope(const Address: PAnsiChar): TScopeLevel; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM Ipv4AddressScope}
+function Ipv4AddressScope(const Address: PAnsiChar): TScopeLevel; {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN4_UNCANONICALIZE_SCOPE_ID}
+procedure IN4_UNCANONICALIZE_SCOPE_ID(const Address: PInAddr; ScopeId: PScopeID); {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN6ADDR_V4MAPPEDPREFIX_INIT}
+procedure IN6ADDR_V4MAPPEDPREFIX_INIT(a6: PIn6Addr); {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN6_SET_ADDR_V4MAPPED}
+procedure IN6_SET_ADDR_V4MAPPED(a6: PIn6Addr; const a4: PInAddr); {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$EXTERNALSYM IN6ADDR_SETV4MAPPED}
+procedure IN6ADDR_SETV4MAPPED(a6: PSockAddrIn6; const a4: PInAddr; scope: SCOPE_ID; port: u_short); {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$ENDIF}
 
 const
 {$EXTERNALSYM IOC_UNIX}
@@ -1404,3 +1488,10 @@ function  SocketErrorDesc(ErrCode : Integer) : String;
 function  WinsockAPIInfo : TWSADATA;
 function  IsSocketAPILoaded : Boolean;
 function  IsIPv6APIAvailable: Boolean;
+
+{ Record TScopeID includes bitfields, these are helper functions }
+function  ScopeIdGetLevel(const AScopeId: ULONG): ULONG;
+function  ScopeIdGetZone(const AScopeId: ULONG): ULONG;
+procedure ScopeIdSetLevel(var AScopeId: ULONG; const ALevel: ULONG);
+procedure ScopeIdSetZone(var AScopeId: ULONG; const AZone: ULONG);
+function  MakeScopeId(const AZone: ULONG; const ALevel: ULONG): ULONG;

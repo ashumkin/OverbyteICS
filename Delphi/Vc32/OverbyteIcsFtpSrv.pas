@@ -541,14 +541,16 @@ const
     ftpcHOST      = 53;   {angus Added HOST type           }
     ftpcREIN      = 54;   {angus Added REIN type           }
     ftpcLANG      = 55;   {angus Added LANG type           }
+    ftpcEPRT      = 56;
+    ftpcEPSV      = 57;
 {$IFNDEF USE_SSL}
-    ftpcLast      = 55;   {angus used to dimension FCmdTable}
+    ftpcLast      = 57;   {angus used to dimension FCmdTable}
 {$ELSE}
-    ftpcAUTH      = 56;
-    ftpcCCC       = 57;
-    ftpcPBSZ      = 58;   {V1.45}
-    ftpcPROT      = 59;
-    ftpcLast      = 59;
+    ftpcAUTH      = 58;
+    ftpcCCC       = 59;
+    ftpcPBSZ      = 60;   {V1.45}
+    ftpcPROT      = 61;
+    ftpcLast      = 61;
 {$ENDIF}
 
 type
@@ -601,7 +603,6 @@ type
                      ftpZStateImmDecon, ftpZStateImmComp});         { angus V1.54 }
     TListType        = (ListTypeName,
                         ListTypeUnix, ListTypeFacts);    { angus V1.54 same as Server }
-
 type
     EFtpCtrlSocketException = class(Exception);
     TFtpCtrlState = (ftpcInvalid, ftpcWaitingUserCode, ftpcWaitingPassword,
@@ -663,6 +664,7 @@ type
         FOptions           : TFtpOptions;    { AG 7.02 }
         FCodePage          : LongWord;       { AG 7.02 }
         FCurrentCodePage   : LongWord;       { AG 7.02 }
+        FEpsvAllArgReceived: Boolean;
         procedure TriggerSessionConnected(Error : Word); override;
         function  TriggerDataAvailable(Error : Word) : boolean; override;
         procedure TriggerCommand(CmdBuf : PAnsiChar; CmdLen : Integer); virtual; { AG 7.02 }
@@ -943,6 +945,7 @@ type
     TFtpServer = class(TIcsWndControl)
     protected
         FAddr                   : String;
+        FSocketFamily           : TSocketFamily;
         FPort                   : String;
         FListenBackLog          : Integer;
         FBanner                 : String;
@@ -1442,6 +1445,14 @@ type
                               var Keyword : TFtpString;
                               var Params  : TFtpString;
                               var Answer  : TFtpString); virtual;
+        procedure CommandEPRT(Client      : TFtpCtrlSocket;
+                              var Keyword : TFtpString;
+                              var Params  : TFtpString;
+                              var Answer  : TFtpString); virtual;
+        procedure CommandEPSV(Client      : TFtpCtrlSocket;
+                              var Keyword : TFtpString;
+                              var Params  : TFtpString;
+                              var Answer  : TFtpString); virtual;
 
     public
         SrvFileModeRead   : Word;   { angus V1.57 }
@@ -1480,6 +1491,9 @@ type
 {$ENDIF}
         property  Addr                   : String     read  FAddr
                                                       write FAddr;
+        property  SocketFamily           : TSocketFamily
+                                                      read  FSocketFamily
+                                                      write FSocketFamily;
         property  Port                   : String     read  FPort
                                                       write FPort;
         property  ListenBackLog          : Integer    read  FListenBackLog
@@ -1814,6 +1828,7 @@ const
     msgCmdUnknown     = '500 ''%s'': command not understood.';
     msgLoginFailed    = '530 Login incorrect.';
     msgNotLogged      = '530 Please login with USER and PASS.';
+    msgEPSVALLDeny    = '501 %s command not allowed after EPSV ALL.';
     msgNoUser         = '503 Login with USER first.';
     msgLogged         = '230 User %s logged in.';
     msgPassRequired   = '331 Password required for %s.';
@@ -1824,6 +1839,7 @@ const
     msgQuit           = '221 Goodbye.';
     msgPortSuccess    = '200 Port command successful.';
     msgPortFailed     = '501 Invalid PORT command.';
+    msgInvalidProto   = '522 Network protocol not supported, use (%s).';
     msgStorDisabled   = '501 Permission Denied'; {'500 Cannot STOR.';}
     msgStorSuccess    = '150 Opening data connection for %s.';
     msgStorFailed     = '501 Cannot STOR. %s';
@@ -1872,6 +1888,7 @@ const
     msgAborOk         = '225 ABOR command successful.';
     msgPasvLocal      = '227 Entering Passive Mode (127,0,0,1,%d,%d).';
     msgPasvRemote     = '227 Entering Passive Mode (%d,%d,%d,%d,%d,%d).';
+    msgEPSVOk         = '229 Entering Extended Passive Mode (|||%d|)';
     msgPasvExcept     = '500 PASV exception: ''%s''.';
     msgSizeOk         = '213 %d';
     msgSizeDisabled   = '501 Permission Denied';
@@ -2089,7 +2106,8 @@ begin
 {$ENDIF}
 
     FPort               := 'ftp';
-    FAddr               := '0.0.0.0';
+    FSocketFamily       := DefaultSocketFamily;
+    FAddr               := ICS_ANY_HOST_V4;
     FBanner             := msgDftBanner;
     FListenBackLog      := 5;
     FOptions            := [ftpsThreadRecurDirs, ftpsSiteXmlsd, ftpsCwdCheck, ftpsCdupHome] ;   { angus V7.02 }
@@ -2181,6 +2199,8 @@ begin
     AddCommand('HOST', CommandHOST);      { angus V7.01 }
     AddCommand('REIN', CommandREIN);      { angus V7.01 }
     AddCommand('LANG', CommandLANG);      { angus V7.01 }
+    AddCommand('EPRT', CommandEprt);
+    AddCommand('EPSV', CommandEpsv);
 end;
 
 
@@ -2339,6 +2359,7 @@ begin
         Exit;             { Server is already running }
     FSocketServer.Port              := Port;
     FSocketServer.Proto             := 'tcp';
+    FSocketServer.SocketFamily      := FSocketFamily;
     FSocketServer.Addr              := FAddr;
     FSocketServer.ListenBacklog     := FListenBackLog;
     FSocketServer.MaxClients        := FMaxClients;
@@ -3457,7 +3478,10 @@ begin
         Answer := msgNotLogged;
         Exit;
     end;
-
+    if Client.FEpsvAllArgReceived then begin
+        Answer := Format(msgEPSVALLDeny, [Keyword]);
+        Exit;
+    end;
     try
         Client.CurCmdType := ftpcPORT;
         I                 := 1;
@@ -5240,6 +5264,10 @@ begin
         Answer := msgNotLogged;
         Exit;
     end;
+    if Client.FEpsvAllArgReceived then begin
+        Answer := Format(msgEPSVALLDeny, [Keyword]);
+        Exit;
+    end;
 
     try
         { Get our IP address from our control socket }
@@ -5289,7 +5317,7 @@ begin
                 FOnPasvIpAddr(Self, Client, APasvIp, SetPasvIp);
                 SetPasvIp := SetPasvIp and (APasvIp <> '');
             end;
-             
+
             if not SetPasvIp then
                 Answer := Format(msgPasvRemote,
                           [ord(IPAddr.S_un_b.s_b1),
@@ -5313,7 +5341,7 @@ begin
                                LoByte(DataPort)]);
             end;
         end;
-
+        
         Client.PassiveMode      := TRUE;
         Client.PassiveStart     := FALSE;
         Client.PassiveConnected := FALSE;
@@ -6376,6 +6404,251 @@ begin
     Client.Lang := Params;
     Answer := Format(msgLangOK, [Params]);
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.CommandEPRT(
+    Client      : TFtpCtrlSocket;
+    var Keyword : TFtpString;
+    var Params  : TFtpString;
+    var Answer  : TFtpString);
+var
+    I       : Integer;
+    N       : LongInt;
+    Delim   : Char;
+    Proto   : Integer;
+    AFamily : TSocketFamily;
+begin
+    if Client.FtpState <> ftpcReady then begin
+        Answer := msgNotLogged;
+        Exit;
+    end;
+    if Client.FEpsvAllArgReceived then begin
+        Answer := Format(msgEPSVALLDeny, [Keyword]);
+        Exit;
+    end;
+
+    try
+        Client.CurCmdType := ftpcEPRT;
+        Proto             := 0;
+        Client.DataAddr   := '';
+        Client.DataPort   := '';
+
+        if Length(Params) > 0 then
+        begin
+            Delim := Params[1];
+            if not (Ord(Delim) in [33..126]) then
+            begin
+                Answer := msgSyntaxParam;
+                Exit;
+            end;
+            N := 2;
+            { Get proto }
+            for I := N to Length(Params) do
+            begin
+                if Params[I] = Delim then
+                begin
+                    Proto := atoi(Copy(Params, N, (I - N)));
+                    N := I + 1;
+                    Break;
+                end;
+            end;
+            { Check proto }
+            if not(((Proto = 1) and (FSocketServer.CurrentSocketFamily = sfIPv4)) or
+                   ((Proto = 2) and (FSocketServer.CurrentSocketFamily = sfIPv6))) then
+            begin
+                if FSocketServer.CurrentSocketFamily = sfIPv6 then
+                    Answer := Format(msgInvalidProto, ['2'])
+                else
+                    Answer := Format(msgInvalidProto, ['1']);
+                Exit;
+            end;
+
+            { Get address }
+            for I := N to Length(Params) do
+            begin
+                if Params[I] = Delim then
+                begin
+                    Client.DataAddr := Copy(Params, N, (I - N));
+                    N := I + 1;
+                    Break;
+                end;
+            end;
+            { Check address }
+            if (not WSocketIsIP(Client.DataAddr, AFamily)) then
+            begin
+                Answer := msgSyntaxParam;
+                Exit;
+            end
+            else if ((Proto = 1) and (AFamily <> sfIPv4)) or
+               ((Proto = 2) and (AFamily <> sfIPv6)) then
+            begin
+                Answer := msgSyntaxParam;
+                Exit;
+            end;
+            {Get port }
+            for I := N to Length(Params) do
+            begin
+                if Params[I] = Delim then
+                begin
+                    Client.DataPort := Copy(Params, N, (I - N));
+                    Break;
+                end;
+            end;
+            { Check port }
+            N := atoi(Client.DataPort);
+            if (N < 1) or (N > 65535) then
+                Answer := msgSyntaxParam
+            else
+                Answer := msgPortSuccess;
+        end
+        else begin
+            Answer := msgSyntaxParam;
+        end;
+    except
+        Answer := msgPortFailed;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.CommandEPSV(
+    Client      : TFtpCtrlSocket;
+    var Keyword : TFtpString;
+    var Params  : TFtpString;
+    var Answer  : TFtpString);
+var
+    saddr     : TSockAddrIn6;
+    saddrlen  : Integer;
+    DataPort  : Integer;
+    Proto     : Integer;
+    IPAddr    : TInAddr6;    
+begin
+    if Client.FtpState <> ftpcReady then begin
+        Answer := msgNotLogged;
+        Exit;
+    end;
+
+    try
+        Proto := 0;
+        if Params = 'ALL' then
+            Client.FEpsvAllArgReceived := TRUE
+        else if (Params <> '') then
+        begin
+            Proto := atoi(Params);
+            if Proto = 0 then
+            begin
+                Answer := msgSyntaxParam;
+                Exit;
+            end;
+            if not(((Proto = 1) and (FSocketServer.CurrentSocketFamily = sfIPv4)) or
+                   ((Proto = 2) and (FSocketServer.CurrentSocketFamily = sfIPv6))) then
+            begin
+                if FSocketServer.CurrentSocketFamily = sfIPv6 then
+                    Answer := Format(msgInvalidProto, ['2'])
+                else
+                    Answer := Format(msgInvalidProto, ['1']);
+                Exit;
+            end;
+        end;
+
+        { Get our IP address from our control socket }
+        saddrlen := SizeOf(saddr);
+        Client.GetSockName(PSockAddr(@saddr)^, saddrlen);
+        IPAddr   := saddr.sin6_addr;
+
+        if Client.PassiveMode then
+            FreeCurrentPasvPort(Client);
+
+        Client.DataSocket.Close;
+        if Proto = 0 then
+        begin
+            if saddr.sin6_family = AF_INET6 then
+                Client.DataSocket.Addr  := ICS_ANY_HOST_V6
+            else
+                Client.DataSocket.Addr  := ICS_ANY_HOST_V4;
+        end
+        else begin
+            if Proto = 1 then
+                Client.DataSocket.Addr  := ICS_ANY_HOST_V4
+            else
+                Client.DataSocket.Addr  := ICS_ANY_HOST_V6;
+        end;
+
+        Client.DataSocket.Port  := GetNextAvailablePasvPort; { '0';          Any port  }
+        if Client.DataSocket.Port = '' then
+            raise Exception.Create('No available PASV Ports');
+
+        Client.DataSocket.Proto := 'tcp';
+        Client.DataSocket.OnSessionAvailable := ClientPassiveSessionAvailable;
+        Client.DataSocket.OnSessionConnected := nil;
+        Client.DataSocket.OnSessionClosed    := nil;
+        Client.DataSocket.OnDataAvailable    := nil;
+        Client.DataSocket.ComponentOptions   := [wsoNoReceiveLoop];
+        Client.DataSocket.Listen;
+
+        { Get the port assigned by winsock }
+        saddrlen := SizeOf(saddr);
+        Client.DataSocket.GetSockName(PSockAddr(@saddr)^, saddrlen);
+        DataPort := WSocket_ntohs(saddr.sin6_port);
+        Answer := Format(msgEPSVOk, [DataPort]);
+        (*
+        if Client.sin.sin_addr.s_addr = WSocket_htonl($7F000001) then
+            Answer := Format(msgPasvLocal,
+                          [HiByte(DataPort),
+                           LoByte(DataPort)])
+        else begin
+            APasvIp := FPasvIpAddr;
+            SetPasvIp := (APasvIp <> '') and (not
+                         (((ftpsNoPasvIpAddrInLan in FOptions) and
+                           IsIpPrivate(Client.PeerSAddr.sin_addr)) or
+                          ((ftpsNoPasvIpAddrSameSubnet in FOptions) and
+                           WSocket2IsAddrInSubNet(Client.PeerSAddr.sin_addr))));
+
+            if Assigned(FOnPasvIpAddr) then begin
+                FOnPasvIpAddr(Self, Client, APasvIp, SetPasvIp);
+                SetPasvIp := SetPasvIp and (APasvIp <> '');
+            end;
+
+            if not SetPasvIp then
+                Answer := Format(msgPasvRemote,
+                          [ord(IPAddr.S_un_b.s_b1),
+                           ord(IPAddr.S_un_b.s_b2),
+                           ord(IPAddr.S_un_b.s_b3),
+                           ord(IPAddr.S_un_b.s_b4),
+                           HiByte(DataPort),
+                           LoByte(DataPort)])
+            else begin
+                PASVAddr.S_addr := WSocket_inet_addr(AnsiString(APasvIp));
+                if (PASVAddr.S_addr = u_long(INADDR_NONE)) or
+                            (PASVAddr.S_addr = 0) then { angus v1.53 0.0.0.0 not allowed }
+                        raise Exception.Create('Invalid PASV IP Address')
+                else
+                        Answer := Format(msgPasvRemote,
+                              [ord(PASVAddr.S_un_b.s_b1),
+                               ord(PASVAddr.S_un_b.s_b2),
+                               ord(PASVAddr.S_un_b.s_b3),
+                               ord(PASVAddr.S_un_b.s_b4),
+                               HiByte(DataPort),
+                               LoByte(DataPort)]);
+            end;
+        end;
+        *)
+        Client.PassiveMode      := TRUE;
+        Client.PassiveStart     := FALSE;
+        Client.PassiveConnected := FALSE;
+    except
+        on E:Exception do begin
+            Answer := Format(msgPasvExcept, [E.Message]);
+            try
+                Client.DataSocket.Close;
+            except
+                { Ignore any exception here }
+            end;
+        end;
+    end;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF NOFORMS}

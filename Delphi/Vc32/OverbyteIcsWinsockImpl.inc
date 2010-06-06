@@ -1023,6 +1023,38 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Custom macro helpers }
+
+{const
+  NZoneMask   = $0FFFFFFF;
+  NLevelMask  = $F0000000;
+  NLevelShift = 28;}
+
+function ScopeIdGetLevel(const AScopeId: ULONG): ULONG;
+begin
+    Result := (AScopeId and $F0000000) shr 28;
+end;
+
+function ScopeIdGetZone(const AScopeId: ULONG): ULONG;
+begin
+    Result := AScopeId and $0FFFFFFF;
+end;
+
+procedure ScopeIdSetLevel(var AScopeId: ULONG; const ALevel: ULONG);
+begin
+    AScopeId := (AScopeId and $0FFFFFFF) or ((ALevel shl 28) and $F0000000);
+end;
+
+procedure ScopeIdSetZone(var AScopeId: ULONG; const AZone: ULONG);
+begin
+    AScopeId := (AZone and $0FFFFFFF) or (AScopeId and $F0000000);
+end;
+
+function MakeScopeId(const AZone: ULONG; const ALevel: ULONG): ULONG;
+begin
+    ScopeIdSetZone(Result, AZone);
+    ScopeIdSetLevel(Result, ALevel);
+end;
 
 { Macros }
 
@@ -1140,6 +1172,27 @@ begin
         Result := False;
 end;
 
+{$IFDEF STILL_NEEDS_CHECK}
+function IN6_IS_ADDR_GLOBAL(const a: PIn6Addr): Boolean;
+var
+    LHigh : ULONG;
+begin
+    //
+    // Check the format prefix and exclude addresses
+    // whose high 4 bits are all zero or all one.
+    // This is a cheap way of excluding v4-compatible,
+    // v4-mapped, loopback, multicast, link-local, site-local.
+    //
+    if a <> nil then
+    begin
+        LHigh := (a^.s6_bytes[0] and $f0);
+        Result := (LHigh <> 0) and (LHigh <> $f0);
+    end    
+    else
+        Result := False;
+end;
+{$ENDIF}
+
 function IN6_IS_ADDR_V4MAPPED(const a: PIn6Addr): Boolean;
 begin
     if a <> nil then begin
@@ -1214,5 +1267,243 @@ begin
         Result := False;
 end;
 
-    
+
+{ Microsoft-specific IPv4 definitions. }
+{$IFDEF STILL_NEEDS_CHECK}
+function IN4_CLASSA(a: u_long): Boolean;
+begin
+    Result := a and $00000080 = 0;
+end;
+
+function IN4_CLASSB(a: u_long): Boolean;
+begin
+    Result := a and $000000c0 = $00000080;
+end;
+
+function IN4_CLASSC(a: u_long): Boolean;
+begin
+    Result := a and $000000e0 = $000000c0;
+end;
+
+function IN4_CLASSD(a: u_long): Boolean;
+begin
+    Result := a and $000000f0 = $000000e0;
+end;
+
+function IN4_MULTICAST(a: u_long): Boolean;
+begin
+    Result := IN4_CLASSD(a);
+end;
+
+function IN4_IS_ADDR_BROADCAST(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := DWORD(a^.s_addr) = IN4ADDR_BROADCAST
+    else
+        Result := False;
+end;
+
+function IN4_IS_ADDR_MULTICAST(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := IN4_MULTICAST(a^.s_addr)
+    else
+        Result := False;
+end;
+
+function IN4_IS_ADDR_MC_LINKLOCAL(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := a^.s_addr and $ffffff = $e0 // 224.0.0/24
+    else
+        Result := False;
+end;
+
+function IN4_IS_ADDR_MC_ADMINLOCAL(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := (a^.s_addr and $ffff) = $ffef // 239.255/16
+    else
+        Result := False;
+end;
+
+function IN4_IS_ADDR_MC_SITELOCAL(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := ((a^.s_addr and $ff) = $ef) and
+                    (not IN4_IS_ADDR_MC_ADMINLOCAL(a))
+    else
+        Result := False;
+end;
+
+function IN4_IS_ADDR_LINKLOCAL(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := a^.s_addr and $ffff = $fea9 // 169.254/16
+    else
+        Result := False;
+end;
+
+function IN4_IS_ADDR_LOOPBACK(const a: PInAddr): Boolean;
+begin
+    if a <> nil then
+        Result := PByte(a)^ = $7f // 127/8
+    else
+        Result := False;
+end;
+
+function Ipv4UnicastAddressScope(const Address: PAnsiChar): TScopeLevel;
+(*
+
+Routine Description:
+
+    Determines the scope of an IPv4 unicast address.
+
+    For existing scenarios (e.g. ICS) to work as expected, RFC-1918 prefixes
+    are deemed to be global scoped.  When appropriate, site border routers
+    must explicitly filter packets with these addresses.
+
+Arguments:
+
+    Address - Supplies the IPv4 unicast address.
+
+Return Value:
+
+    Returns the scope level of the address.
+
+Caller IRQL:
+
+    May be called at PASSIVE through DISPATCH level.
+
+*)
+begin
+    {
+    IN_ADDR Ipv4Address;
+
+    if (!INET_IS_ALIGNED(Address, IN_ADDR)) {
+        Ipv4Address = *(CONST IN_ADDR UNALIGNED *)Address;
+        Address = (CONST UCHAR *) &Ipv4Address;
+    }
+    if IN4_IS_ADDR_LINKLOCAL(PInAddr(Address)) or
+        IN4_IS_ADDR_LOOPBACK(PInAddr(Address)) then
+        Result := ScopeLevelLink
+    else
+        Result := ScopeLevelGlobal;
+end;
+
+
+function Ipv4MulticastAddressScope(const Address: PAnsiChar): TScopeLevel;
+
+(*
+
+Routine Description:
+
+    Determines the scope of an IPv4 multicast address.
+    See RFC 2365.
+
+Arguments:
+
+    Address - Supplies the IPv4 multicast address.
+
+Return Value:
+
+    Returns the scope level of the multicast address.
+
+Caller IRQL:
+
+    May be called at PASSIVE through DISPATCH level.
+
+*)
+begin
+    {
+    if (!INET_IS_ALIGNED(Address, IN_ADDR)) begin
+        Ipv4Address = *(CONST IN_ADDR UNALIGNED *)Address;
+        Address = (CONST UCHAR *) &Ipv4Address;
+    end;
+    }
+    if IN4_IS_ADDR_MC_LINKLOCAL(PInAddr(Address)) then
+        Result := ScopeLevelLink
+    else if IN4_IS_ADDR_MC_ADMINLOCAL(PInAddr(Address)) then
+        Result := ScopeLevelAdmin
+    else if IN4_IS_ADDR_MC_SITELOCAL(PInAddr(Address)) then
+        Result := ScopeLevelSite
+    else
+        Result := ScopeLevelGlobal;
+end;
+
+
+function Ipv4AddressScope(const Address: PAnsiChar): TScopeLevel;
+(*
+Routine Description:
+
+    Examines an IPv4 address and determines its scope.
+
+Arguments:
+
+    Address - Supplies the address to test.
+
+Return Value:
+
+    Returns the scope level of the address.
+
+Caller IRQL:
+
+    May be called at PASSIVE through DISPATCH level.
+
+*)
+
+begin
+    if IN4_IS_ADDR_BROADCAST(PInAddr(Address)) then
+        Result := ScopeLevelLink
+    else if IN4_IS_ADDR_MULTICAST(PInAddr(Address)) then
+        Result := Ipv4MulticastAddressScope(Address)
+    else
+        Result := Ipv4UnicastAddressScope(Address);
+end;
+
+procedure IN4_UNCANONICALIZE_SCOPE_ID(const Address: PInAddr; ScopeId: PScopeID);
+var
+    ScopeLevel: TScopeLevel;
+begin
+    ScopeLevel := Ipv4AddressScope(PAnsiChar(Address));
+
+    if IN4_IS_ADDR_LOOPBACK(Address) or (ScopeLevel = ScopeLevelGlobal) then
+        ScopeId^.Value := 0;
+
+    if TScopeLevel(ScopeIdGetLevel(ScopeId^.Value)) = ScopeLevel then
+        ScopeIdSetLevel(ScopeId^.Value, 0);
+    {
+    if ((SCOPE_LEVEL)ScopeId->Level == ScopeLevel) {
+        ScopeId->Level = 0;
+    }
+end;
+
+procedure IN6ADDR_V4MAPPEDPREFIX_INIT(a6: PIn6Addr);
+begin
+    FillChar(a6^, Sizeof(TIn6Addr), 0);
+    a6^.s6_bytes[10] := $FF;
+    a6^.s6_bytes[11] := $FF;
+end;
+
+procedure IN6_SET_ADDR_V4MAPPED(a6: PIn6Addr; const a4: PInAddr);
+begin
+    a6^ := in6addr_v4mappedprefix;
+    a6^.s6_bytes[12] := Byte(PAnsiChar(a4)[0]);
+    a6^.s6_bytes[13] := Byte(PAnsiChar(a4)[1]);
+    a6^.s6_bytes[14] := Byte(PAnsiChar(a4)[2]);
+    a6^.s6_bytes[15] := Byte(PAnsiChar(a4)[3]);
+end;
+
+procedure IN6ADDR_SETV4MAPPED(a6: PSockAddrIn6; const a4: PInAddr;
+    scope: SCOPE_ID; port: u_short);
+begin
+    a6^.sin6_family   := AF_INET6;
+    a6^.sin6_port     := port;
+    a6^.sin6_flowinfo := 0;
+    IN6_SET_ADDR_V4MAPPED(PIn6Addr(@a6^.sin6_addr), a4);
+    a6^.sin6_scope_struct := scope;
+    IN4_UNCANONICALIZE_SCOPE_ID(a4, @a6^.sin6_scope_struct);
+end;
+{$ENDIF}
+
 

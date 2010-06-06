@@ -251,6 +251,7 @@ type
         FMultiLineEnd       : TNotifyEvent;
         FMultiLineProcess   : TNotifyEvent;
         FHost               : String;
+        FSocketFamily       : TSocketFamily;
         FLocalAddr          : String; {bb}
         FPort               : String;
         FUserName           : String;
@@ -385,6 +386,8 @@ type
         property CtrlSocket    : TWSocket            read  FWSocket;
         property Host          : String              read  FHost
                                                      write FHost;
+        property SocketFamily  : TSocketFamily       read  FSocketFamily
+                                                     write FSocketFamily;
         property LocalAddr     : String              read  FLocalAddr   {bb}
                                                      write FLocalAddr;  {bb}
         property Port          : String              read  FPort
@@ -469,6 +472,7 @@ type
     TPop3Cli = class(TCustomPop3Cli)
     published
         property Host;
+        property SocketFamily;
         property LocalAddr; {bb}
         property Port;
         property UserName;
@@ -772,7 +776,8 @@ begin
     FWSocket.OnSessionClosed := WSocketSessionClosed;
     FProtocolState           := pop3Disconnected;
     FState                   := pop3Ready;
-    FLocalAddr               := '0.0.0.0'; {bb}    
+    FSocketFamily            := FWSocket.SocketFamily;
+    FLocalAddr               := ICS_ANY_HOST_V4;
     FPort                    := 'pop3';
 end;
 
@@ -1716,8 +1721,10 @@ begin
     ClearErrorMessage;
     FWSocket.OnDataSent      := nil;
     FWSocket.OnDnsLookupDone := WSocketDnsLookupDone;
+    FWSocket.SocketFamily    := FSocketFamily;
     StateChange(pop3DnsLookup);
     try
+        FWSocket.Addr := FHost;
         FWSocket.DnsLookup(FHost);
     except
         Abort;
