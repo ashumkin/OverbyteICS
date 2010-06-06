@@ -874,7 +874,12 @@ const
   DefaultSocketFamily       = sfIPv4;
 
 type
-  TIcsIPv6Address    = array [0..7] of Word;
+  { C++Builder < 2010 (2009?) cannot wrap an array as record with methods as }
+  { function result. So changed type to a record :(                          }
+  //TIcsIPv6Address    = array [0..7] of Word;
+  TIcsIPv6Address = record
+    Words : array [0..7] of Word;
+  end;
   PIcsIPv6Address    = ^TIcsIPv6Address;
   TIcsIPv4Address    = Integer;
   PIcsIPv4Address    = ^TIcsIPv4Address;
@@ -2957,9 +2962,9 @@ begin
     Zeros2 := [];
     Zeros1Cnt := 0;
     Zeros2Cnt := 0;
-    for I := Low(AIcsIPv6Addr) to High(AIcsIPv6Addr) do
+    for I := Low(AIcsIPv6Addr.Words) to High(AIcsIPv6Addr.Words) do
     begin
-        if AIcsIPv6Addr[I] = 0 then
+        if AIcsIPv6Addr.Words[I] = 0 then
         begin
             Include(Zeros1, I);
             Inc(Zeros1Cnt);
@@ -2980,25 +2985,25 @@ begin
 
    if Zeros2Cnt = 0 then
    begin
-        for I := Low(AIcsIPv6Addr) to High(AIcsIPv6Addr) do
+        for I := Low(AIcsIPv6Addr.Words) to High(AIcsIPv6Addr.Words) do
         begin
             if I = 0 then
             {$IFNDEF BIG_ENDIAN}
-                Result := _IntToHex(IcsSwap16(AIcsIPv6Addr[I]), 1)
+                Result := _IntToHex(IcsSwap16(AIcsIPv6Addr.Words[I]), 1)
             {$ELSE}
-                Result := _IntToHex(AIP[I], 1)
+                Result := _IntToHex(AIcsIPv6Addr.Words[I], 1)
             {$ENDIF}
             else
             {$IFNDEF BIG_ENDIAN}
-                Result := Result + ':' + _IntToHex(IcsSwap16(AIcsIPv6Addr[I]), 1);
+                Result := Result + ':' + _IntToHex(IcsSwap16(AIcsIPv6Addr.Words[I]), 1);
             {$ELSE}
-                Result := Result + ':' + _IntToHex(AIcsIPv6Addr[I], 1);
+                Result := Result + ':' + _IntToHex(AIcsIPv6Addr.Words[I], 1);
             {$ENDIF}
         end;
     end
     else begin
         OmitFlag := FALSE;
-        for I := Low(AIcsIPv6Addr) to High(AIcsIPv6Addr) do
+        for I := Low(AIcsIPv6Addr.Words) to High(AIcsIPv6Addr.Words) do
         begin
             if not (I in Zeros2) then
             begin
@@ -3010,17 +3015,17 @@ begin
                         Result := Result + ':';
                     OmitFlag := FALSE;
                 end;
-                if I < High(AIcsIPv6Addr) then
+                if I < High(AIcsIPv6Addr.Words) then
                 {$IFNDEF BIG_ENDIAN}
-                    Result := Result + _IntToHex(IcsSwap16(AIcsIPv6Addr[I]), 1) + ':'
+                    Result := Result + _IntToHex(IcsSwap16(AIcsIPv6Addr.Words[I]), 1) + ':'
                 {$ELSE}
-                    Result := Result + _IntToHex(AIcsIPv6Addr[I]) + ':'
+                    Result := Result + _IntToHex(AIcsIPv6Addr.Words[I], 1) + ':'
                 {$ENDIF}
                 else
                 {$IFNDEF BIG_ENDIAN}
-                    Result := Result + _IntToHex(IcsSwap16(AIcsIPv6Addr[I]), 1);
+                    Result := Result + _IntToHex(IcsSwap16(AIcsIPv6Addr.Words[I]), 1);
                 {$ELSE}
-                    Result := Result + _IntToHex(AIcsIPv6Addr[I]);
+                    Result := Result + _IntToHex(AIcsIPv6Addr.Words[I], 1);
                 {$ENDIF}
             end
             else
@@ -3057,7 +3062,7 @@ var
     PartCnt     : Byte;
 begin
     Success     := FALSE;
-    FillChar(Result[0], SizeOf(Result), 0);
+    FillChar(Result.Words[0], SizeOf(Result), 0);
     SLen := Length(S);
     if (SLen < 1) or (SLen > (4 * 8) + 7) then
         Exit;
@@ -3090,9 +3095,9 @@ begin
                     if NumVal > -1 then
                     begin
                     {$IFNDEF BIG_ENDIAN}
-                        Result[ColonCnt] := IcsSwap16(NumVal);
+                        Result.Words[ColonCnt] := IcsSwap16(NumVal);
                     {$ELSE}
-                        Result[ColonCnt] := NumVal;
+                        Result.Words[ColonCnt] := NumVal;
                     {$ENDIF}
                         NumVal := -1;
                     end;
@@ -3135,9 +3140,9 @@ begin
     if (NumVal > -1) and (ColonCnt > 1) then
     begin
     {$IFNDEF BIG_ENDIAN}
-        Result[ColonCnt] := IcsSwap16(NumVal);
+        Result.Words[ColonCnt] := IcsSwap16(NumVal);
     {$ELSE}
-        Result[ColonCnt] := NumVal;
+        Result.Words[ColonCnt] := NumVal;
     {$ENDIF}
     end;
     Success := ColonCnt > 1;

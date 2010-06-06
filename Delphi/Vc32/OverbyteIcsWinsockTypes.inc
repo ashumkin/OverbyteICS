@@ -1,7 +1,8 @@
 {$MINENUMSIZE 4}
 {.$IFNDEF NO_WINSOCK_2}
     (*$HPPEMIT '#include <winsock2.h>'*)
-    (*$HPPEMIT '#include <Ws2ipdef.h>'*)
+    //(*$HPPEMIT '#include <Ws2ipdef.h>'*)
+    (*$HPPEMIT '#include <Ws2tcpip.h>'*)
     //(*$HPPEMIT '#include <In6addr.h>'*)
 {.$ELSE}
     //(*$HPPEMIT '#include <winsock.h>'*)
@@ -1008,10 +1009,10 @@ type
   {$EXTERNALSYM in_addr6}
   in_addr6 = record
     case integer of
-      0: (S6_addr: packed array [0..15] of Byte);
-      1: (u6_addr8: packed array [0..15] of Byte);
-      2: (u6_addr16: packed array [0..7] of Word);
-      3: (u6_addr32: packed array [0..3] of Integer);
+      0: (S6_addr: array [0..15] of Byte);
+      1: (u6_addr8: array [0..15] of Byte);
+      2: (u6_addr16: array [0..7] of Word);
+      3: (u6_addr32: array [0..3] of Integer);
   end;
   TInAddr6 = in_addr6;
 
@@ -1146,7 +1147,7 @@ type
   sockaddr = record
      sa_family   : u_short;                    // address family
      sa_data     : array [0..13] of AnsiChar;  // up to 14 bytes of direct address
-  end;  
+  end;
 
   {$EXTERNALSYM IN6_ADDR}
   IN6_ADDR = record
@@ -1157,13 +1158,11 @@ type
         3: (s6_addr  : array [0..15] of Byte);
         4: (s6_words : array [0..7]  of u_short);
   end;
-  {$NODEFINE TIn6Addr}
   TIn6Addr   = IN6_ADDR;
-  {$NODEFINE PIn6Addr}
   PIn6Addr   = ^TIn6Addr;
   {$EXTERNALSYM PIN6_ADDR}
-  PIN6_ADDR  = ^PIn6Addr;
-  
+  PIN6_ADDR  = PIn6Addr;
+
 var
   {$EXTERNALSYM in6addr_any}
   in6addr_any: TIn6Addr;
