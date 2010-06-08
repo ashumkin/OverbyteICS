@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.07
+Version:      7.08
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -426,6 +426,7 @@ Feb 25, 2010 V7.07 Fix by Bjørnar Nielsen: TSslHttpCli didn't work when used
              answer 200 OK to notify client that connection to remote server 
              is established. Usually proxies use 200 OK and an error text when
              something is wrong. In that case Content-Length is not 0.
+May 24, 2010 V7.08 Angus ensure Ready when relocations exceed maximum to avoid timeout
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -503,8 +504,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 707;
-    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.07 ';
+    HttpCliVersion       = 708;
+    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.08 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -3452,7 +3453,10 @@ begin
         if Assigned (FOnLocationChangeExceeded) then
             FOnLocationChangeExceeded(Self, FLocationChangeCurCount,
                                                      AllowMoreRelocations) ;
-        if not AllowMoreRelocations then exit;
+        if not AllowMoreRelocations then begin
+            SetReady;  { angus V7.08 }
+            exit;
+        end;
     end ;
 
     { Trigger the location changed event }
