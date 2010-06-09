@@ -6918,6 +6918,7 @@ var
     RetVal    : Integer;
     IPv4Addr  : LongWord;
     Success   : Boolean;
+    PInfo     : PAddrInfo;
 begin
     if AHostName = '' then
         raise ESocketException.Create('WSocket Resolve Host: Invalid Hostname');
@@ -6969,6 +6970,7 @@ begin
                  'Winsock Resolve Host: Cannot convert host address ''' +
                  AHostName + ''' - ' + GetWinsockErr(RetVal));
             try
+                PInfo:= nil;
                 NextInfo := AddrInfo;
                 while NextInfo <> nil do
                 begin
@@ -6981,6 +6983,8 @@ begin
                             PSockAddrIn(@ASockAddrIn6)^.sin_addr := NextInfo.ai_addr.sin_addr;
                             Exit;
                         end;
+                        if PInfo = nil then
+                            PInfo := NextInfo;
                     end
                     else if NextInfo.ai_family = AF_INET6 then
                     begin
@@ -6992,10 +6996,27 @@ begin
                             ASockAddrIn6.sin6_scope_id := PSockAddrIn6(NextInfo.ai_addr)^.sin6_scope_id;
                             Exit;
                         end;
+                        if PInfo = nil then
+                            PInfo := NextInfo;
                     end;
+
                     NextInfo := NextInfo.ai_next;
                 end;
-                raise ESocketException.Create(
+
+                if ((AFamily = sfAnyIPv6) or (AFamily = sfAnyIPv4)) and
+                   (PInfo <> nil) then
+                begin
+                    ASockAddrIn6.sin6_family := PInfo.ai_family;
+                    if PInfo.ai_family = AF_INET6 then
+                    begin
+                        ASockAddrIn6.sin6_addr := PSockAddrIn6(PInfo.ai_addr)^.sin6_addr;
+                        ASockAddrIn6.sin6_scope_id := PSockAddrIn6(PInfo.ai_addr)^.sin6_scope_id;
+                    end
+                    else
+                        PSockAddrIn(@ASockAddrIn6)^.sin_addr := PInfo.ai_addr.sin_addr;
+                end
+                else
+                    raise ESocketException.Create(
                            'Winsock Resolve Host: Cannot convert host address ''' +
                             AHostName + '''');
             finally
