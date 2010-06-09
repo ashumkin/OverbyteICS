@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.08
+Version:      V7.09
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -57,7 +57,7 @@ Methods:
   User       - Send username
   Pass       - Send password
   Acct       - Send account
-  Connect    - Open the connection, send username, password, account and FEAT request
+  Connect    - Open the connection, send username, password, account
   Quit       - Disconnect gracefully from FTP server
   Abort      - Disconnect (close connection) immediately
   AbortXfer  - Abort file transfer without disconnecting.
@@ -195,7 +195,7 @@ Methods:
                Only supported if ftpFeatHost in SupportedExtensions, but can not be
                  sent once FEAT has been returned unless Rein sent first  - V7.01
 
-  ConnectHost - Open the connection, send host, username, password, account and FEAT request
+  ConnectHost - Open the connection, send host, username, password, account
 
   Rein       - Re-initialise connection so logon process restarted and Host or User can
                  be sent again (in the original FTP RFC so should be supported by all servers)
@@ -204,6 +204,9 @@ Methods:
                Only supported if ftpFeatLang in SupportedExtensions, with list of
                  allowed languages returned in FLangSupport, ie EN, ES, FR, GE with * the current language
 
+  ConnectFeat - Open the connection, send username, password, account and FEAT request
+
+  ConnectFeatHost - Open the connection, send host, username, password, account and FEAT request
 
 
   (There are two set of methods: Async and Sync. The Async are the prefered
@@ -324,6 +327,37 @@ RhinoSoft Serv-U FTP Server v7.3
     XCRC filename;start;end
     MLST Type*;Size*;Create;Modify*;Perm;Win32.ea;Win32.dt;Win32.dl
 211 End (for details use "HELP commmand" where command is the command of interest)
+
+RhinoSoft Serv-U FTP Server v10.0 (IP6 and full Unicode)
+211-Extensions supported
+ UTF8
+ OPTS MODE;MLST;UTF8
+ CLNT
+ CSID Name; Version;
+ HOST domain
+ SITE PSWD;SET;ZONE;CHMOD;MSG;EXEC;HELP
+ AUTH TLS;SSL;TLS-C;TLS-P;
+ PBSZ
+ PROT
+ CCC
+ SSCN
+ RMDA directoryname
+ DSIZ
+ AVBL
+ EPRT
+ EPSV
+ MODE Z
+ THMB BMP|JPEG|GIF|TIFF|PNG max_width max_height pathname
+ REST STREAM
+ SIZE
+ MDTM
+ MDTM YYYYMMDDHHMMSS[+-TZ];filename
+ MFMT
+ MFCT
+ MFF Create;Modify;
+ XCRC filename;start;end
+ MLST Type*;Size*;Create;Modify*;Perm;Win32.ea;Win32.dt;Win32.dl
+211 End
 
 Ipswich WS_FTP Server 3.14
 211-Extensions supported
@@ -958,6 +992,8 @@ Apr 16, 2009 V7.07 Angus assume STREAM64, USE_MODEZ, USE_ONPROGRESS64_ONLY, USE_
 Jan 4, 2010  V7.08 added TriggerResponse virtual and CreateSocket virtual
              ConnectAsync and ConnectHostAsync methods now trigger FEAT command
 			 Thanks to "Anton Sviridov" <ant_s@rambler.ru>
+Jun 9, 2010  V7.09 Angus - ConnectAsync and ConnectHostAsync methods no longer trigger FEAT command
+             Added ConnectFeatAsync and ConnectFeatHostAsync methods which do trigger FEAT command
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpCli;
@@ -1025,9 +1061,9 @@ OverbyteIcsZlibHigh,     { V2.102 }
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 708;
-  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.08 ';
-  FtpClientId : String = 'ICS FTP Client V7.08 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 709;
+  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.09 ';
+  FtpClientId : String = 'ICS FTP Client V7.09 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1083,7 +1119,8 @@ type
                      ftpSiteCmlsdAsync, ftpSiteDmlsdAsync, ftpAlloAsync,       { V2.113 }
                      ftpCombAsync,     ftpXMd5Async,      ftpConnectHostAsync, { V2.113 }
                      ftpReinAsync,     ftpHostAsync,      ftpLangAsync,        { V6.09 }
-                     ftpXCmlsdAsync,   ftpXDmlsdAsync);                        { V7.01 }
+                     ftpXCmlsdAsync,   ftpXDmlsdAsync,    ftpConnectFeatAsync, { V7.01 }
+                     ftpConnectFeatHostAsync );                                    { V7.09 }
   TFtpFct         = (ftpFctNone,       ftpFctOpen,       ftpFctUser,
                      ftpFctPass,       ftpFctCwd,        ftpFctSize,
                      ftpFctMkd,        ftpFctRmd,        ftpFctRenFrom,
@@ -1321,16 +1358,6 @@ type
     function    GetShareMode: TFtpShareMode;
     procedure   SetDisplayFileMode(NewValue: TFtpDisplayFileMode);
     function    GetDisplayFileMode: TFtpDisplayFileMode;
-{    procedure   SetConnectionType(NewValue: TFtpConnectionType);  angus V7.00 gone
-    function    GetConnectionType: TFtpConnectionType;
-    procedure   SetSocksPassword(NewValue: String);
-    function    GetSocksPassword: String;
-    procedure   SetSocksPort(NewValue: String);
-    function    GetSocksPort: String;
-    procedure   SetSocksServer(const NewValue: String);
-    function    GetSocksServer: String;
-    procedure   SetSocksUserCode(NewValue: String);
-    function    GetSocksUserCode: String;     }
     procedure   SetPassive(NewValue: Boolean);
     procedure   AllocateMsgHandlers; override;
     procedure   FreeMsgHandlers; override;
@@ -1438,6 +1465,8 @@ type
     procedure   LangAsync;       virtual;    { V7.01   set language for messages }
     procedure   XCmlsdAsync;     virtual;    { V7.01   extended MLSD using control channel }
     procedure   XDmlsdAsync;     virtual;    { V7.01   extended MLSD using data channel }
+    procedure   ConnectFeatAsync; virtual;   { V7.09   same as Connect but also sends Feat  }
+    procedure   ConnectFeatHostAsync; virtual;   { V7.09   same as Connect but also sends Feat and Host  }
 
     property    CodePage          : LongWord             read  FCodePage
                                                          write SetCodePage;
@@ -1659,6 +1688,8 @@ type
     function    Lang       : Boolean;    { V7.01   set language for messages }
     function    XCmlsd     : Boolean;    { V7.01   extended MLSD using control channel }
     function    XDmlsd     : Boolean;    { V7.01   extended MLSD using data channel }
+    function    ConnectFeat : Boolean;   { V7.09   same as connect but sends Feat  }
+    function    ConnectFeatHost : Boolean;   { V7.09   same as connect but sends Feat and Host  }
 {$IFDEF NOFORMS}
     property    Terminated         : Boolean        read  FTerminated
                                                     write FTerminated;
@@ -1919,6 +1950,8 @@ begin
       ftpLangAsync: result:='LangAsync';
       ftpXCmlsdAsync: result:='XCmlsdAsync';
       ftpXDmlsdAsync: result:='XDmlsdAsync';
+      ftpConnectFeatAsync: result:='ConnectFeatAsync'; { V7.09 }
+      ftpConnectFeatHostAsync: result:='ConnectFeatHostAsync'; { V7.09 }
 {$IFDEF USE_SSL}
       ftpCccAsync: result:='CCCAsync';
       ftpAuthAsync: result:='AuthAsync';
@@ -3710,7 +3743,7 @@ procedure TCustomFtpCli.ConnectAsync;
 begin
     HighLevelAsync(ftpConnectAsync,
                    [ftpFctOpen, ftpFctAuth, ftpFctUser, ftpFctPass,
-                    ftpFctAcct, ftpFctFeat]);               { V7.08 }
+                    ftpFctAcct]);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -3718,7 +3751,23 @@ procedure TCustomFtpCli.ConnectHostAsync;       { V7.01 }
 begin
     HighLevelAsync(ftpConnectHostAsync,
                    [ftpFctOpen, ftpFctHost, ftpFctAuth, ftpFctUser,
-                    ftpFctPass, ftpFctAcct, ftpFctFeat]);   { V7.08 }
+                    ftpFctPass, ftpFctAcct]);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ConnectFeatAsync;           { V7.09 }
+begin
+    HighLevelAsync(ftpConnectAsync,
+                   [ftpFctOpen, ftpFctAuth, ftpFctUser, ftpFctPass,
+                    ftpFctAcct, ftpFctFeat]);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.ConnectFeatHostAsync;       { V7.09 }
+begin
+    HighLevelAsync(ftpConnectHostAsync,
+                   [ftpFctOpen, ftpFctHost, ftpFctAuth, ftpFctUser,
+                    ftpFctPass, ftpFctAcct, ftpFctFeat]);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -6374,6 +6423,18 @@ end;
 function  TFtpClient.XDmlsd  : Boolean;    { V7.01  extended MLSD using data channel }
 begin
     Result := Synchronize(XDmlsdASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.ConnectFeat  : Boolean;     { V7.09   same as connect, but sends FEAT  }
+begin
+    Result := Synchronize(ConnectFeatASync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  TFtpClient.ConnectFeatHost  : Boolean;     { V7.09   same as connect, but sends FEAT and HOST  }
+begin
+    Result := Synchronize(ConnectFeatHostASync);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
