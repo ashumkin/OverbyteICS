@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.15
+Version:      1.16
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -83,6 +83,7 @@ Nov 8, 2008, V1.13 Angus, support HOST and REIN(ialise) commands
              If the account password is 'windows', authenticate against Windows
 Nov 13, 2008 V1.14 Arno adjusted UTF-8/code page support.
 Nov 21, 2008 V1.15 Angus removed raw display
+Jun 10, 2010 V1.16 Angus added MaxKB bandwidth limit
 
 
 Sample entry from ftpaccounts-default.ini
@@ -125,8 +126,8 @@ uses
   OverbyteIcsUtils;
 
 const
-  FtpServVersion      = 115;
-  CopyRight : String  = ' FtpServ (c) 1998-2008 F. Piette V1.15 ';
+  FtpServVersion      = 116;
+  CopyRight : String  = ' FtpServ (c) 1998-2010 F. Piette V1.16 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -195,6 +196,8 @@ type
     Label1: TLabel;
     RootDirectory: TEdit;
     DisplayDirectories1: TMenuItem;
+    Label13: TLabel;
+    MaxKB: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure FtpServer1ClientConnect(Sender: TObject;
       Client: TFtpCtrlSocket; Error: Word);
@@ -361,6 +364,7 @@ const
     KeyHidePhysicalPath     = 'HidePhysicalPath';
     KeyReadOnly             = 'ReadOnly';
     KeyForceSsl             = 'ForceSsl';
+    KeyMaxKB                = 'MaxKB';
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -387,6 +391,7 @@ begin
         FXHeight := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
         Minim    := IniFile.ReadInteger(SectionWindow, KeyMinim,  0);
         RootDirectory.Text := IniFile.ReadString(SectionData, KeyRoot, 'c:\temp');
+        MaxKB.Text := IniFile.ReadString(SectionData, KeyMaxKB, '0');
 
         IniFile.Free;
 
@@ -436,6 +441,7 @@ begin
         IniFile.WriteInteger(SectionWindow, KeyMinim,  Minim);
         IniFile.WriteString(SectionData,    KeyPort,   FPort);
         IniFile.WriteString(SectionData,    KeyRoot,   RootDirectory.Text);
+        IniFile.WriteString(SectionData,    KeyMaxKB,  MaxKB.Text);
         IniFile.UpdateFile;
         IniFile.Free;
     except
@@ -553,6 +559,7 @@ end;
 procedure TFtpServerForm.StartServer;
 var
     wsi     : TWSADATA;
+    bandwidth: integer;
 begin
     GreenImage.Visible := FALSE;
     RedImage.Visible   := TRUE;
@@ -581,7 +588,12 @@ begin
     FtpServer1.Banner := '220-Welcome to my Server' + #13#10 +
                          '220-' + #13#10 +
                          '220 ICS FTP Server ready.';
-    FtpServer1.Port   := FPort;   
+    bandwidth := StrToInt(MaxKB.Text);
+    if bandwidth > 0 then
+        FtpServer1.BandwidthLimit := bandwidth * 1024  { limit server bandwidth }
+    else
+        FtpServer1.BandwidthLimit := 0;
+    FtpServer1.Port   := FPort;
     FtpServer1.Start;
 end;
 

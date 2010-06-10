@@ -87,6 +87,19 @@ object FtpServerForm: TFtpServerForm
       Height = 13
       Caption = 'Root Directory'
     end
+    object Label13: TLabel
+      Left = 242
+      Top = 12
+      Width = 56
+      Height = 13
+      Caption = 'Max KBytes'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+    end
     object StartMinimizedCheckBox: TCheckBox
       Left = 136
       Top = 12
@@ -102,6 +115,20 @@ object FtpServerForm: TFtpServerForm
       Height = 21
       TabOrder = 1
       Text = 'c:\temp'
+    end
+    object MaxKB: TEdit
+      Left = 304
+      Top = 8
+      Width = 57
+      Height = 21
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 2
+      Text = 'MaxKB'
     end
   end
   object FtpServer1: TFtpServer
@@ -126,6 +153,9 @@ object FtpServerForm: TFtpServerForm
     ZlibMaxSize = 500000000
     CodePage = 0
     Language = 'EN*'
+    MaxAttempts = 12
+    BandwidthLimit = 0
+    BandwidthSampling = 1000
     OnStart = FtpServer1Start
     OnStop = FtpServer1Stop
     OnAuthenticate = FtpServer1Authenticate
