@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.21
+Version:      7.22
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -102,6 +102,8 @@ Mar 19, 2010 V7.20  A. Garrels added the same fix of V7.18 to the Unicode versio
 Apr 26, 2010 V7.21  Arno added EncodeMbcsInline() that handles UTF-7 and some
                     other stateful and MBCS. Fixed a bug with folding and MIME
                     inline encoding.
+Jun 10, 2010 V7.22  A. Buzanakov fixed DecodeQuotedPrintable return value.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -493,7 +495,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function DecodeQuotedPrintable(const S: UnicodeString) : UnicodeString;
 begin
-    DecodeQuotedPrintable(S, CP_ACP);
+    Result := DecodeQuotedPrintable(S, CP_ACP);
 end;
 {$ENDIF}
 
