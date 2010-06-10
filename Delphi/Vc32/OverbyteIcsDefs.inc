@@ -133,6 +133,12 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 { any extended RTTI information.                                             }
 {.$DEFINE NO_EXTENDED_RTTI}
 
+{ Next symbols include experimental features. Experimental features          }
+{ may change or being removed entirely in later versions!                    }
+{.$DEFINE EXPERIMENTAL_TIMEOUT}
+{.$DEFINE EXPERIMENTAL_THROTTLE}                                                
+
+
 { Do not change anything below this line !                                   }
 {----------------------------------------------------------------------------}
 {$IFDEF FPC}
@@ -720,4 +726,12 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   {$IFNDEF USE_ICONV}
     {$DEFINE USE_ICONV}
   {$ENDIF}
+{$ENDIF}
+{$IFDEF EXPERIMENTAL_THROTTLE}
+    {$DEFINE EXPERIMENTAL_TIMER}
+{$ENDIF}
+{$IFDEF EXPERIMENTAL_TIMEOUT}
+    {$IFNDEF EXPERIMENTAL_TIMER}
+        {$DEFINE EXPERIMENTAL_TIMER}
+    {$ENDIF}
 {$ENDIF}
