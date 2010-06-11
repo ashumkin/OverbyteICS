@@ -483,6 +483,7 @@ function  _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): BOOL
 function  _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
 {#$EXTERNALSYM EnterCriticalSection}
 procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
+function _TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL;
 {#$EXTERNALSYM LeaveCriticalSection}
 procedure _LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 {#$EXTERNALSYM InitializeCriticalSection}
@@ -1544,6 +1545,11 @@ end;
 procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 begin
     Windows.EnterCriticalSection(lpCriticalSection);
+end;
+
+function _TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL;
+begin
+    Result := Windows.TryEnterCriticalSection(lpCriticalSection);
 end;
 
 procedure _LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection);

@@ -3205,7 +3205,7 @@ end;
 function WSocket_Synchronized_WSACleanup : Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSACleanup
+    Result := OverbyteIcsWinsock.WSACleanup;
     (*
     if @FWSACleanup = nil then
         @FWSACleanup := WSocketGetProc('WSACleanup');
@@ -16511,9 +16511,11 @@ type
     FThreads      : TList;
     FQueue        : TList;
     FMaxThreads   : Integer;
+    FMinThreads   : Integer;
     FQueueLock    : TRTLCriticalSection;
     FThreadsLock  : TRTLCriticalSection;
     FDestroying   : Boolean;
+    FThreadIdleTimeoutMsec : LongWord;
     procedure LockQueue;
     procedure UnlockQueue;
     procedure LockThreadList;
@@ -16525,7 +16527,8 @@ type
     function CancelAsyncRequest(AReq: THandle): Integer;
     class function CpuCount: Integer;
   public
-    constructor Create(const AMaxThreads: Integer);
+    constructor Create(const AMaxThreads: Integer; const AMinThreads: Integer = 0;
+      const AThreadIdleTimeoutSec: LongWord = 60);
     destructor Destroy; override;
   end;
 
@@ -16686,13 +16689,31 @@ var
 begin
     while not Terminated do
     begin
-        case FEvent.WaitFor($FFFFFFFF) of
+        case FEvent.WaitFor(FDnsLookup.FThreadIdleTimeoutMsec) of
             wrError :
                 begin
                     if not Terminated then
                         raise Exception.Create(_SysErrorMessage(FEvent.LastError));
                 end;
             wrAbandoned : Break;
+            wrTimeout :
+                begin
+                    if _TryEnterCriticalSection(FDnsLookup.FThreadsLock) then
+                    try { If we cannot enter the critsec next timeout might be }
+                        { successful. EnterCriticalSection may not be called   }
+                        { since it might lead to a deadlock when FDnsLookup    }
+                        { is freed.                                            }
+                        if (not FBusy) and (not Terminated) and
+                           (FDnsLookup.FThreads.Count > FDnsLookup.FMinThreads) then
+                        begin
+                            FDnsLookup.FThreads.Delete(FDnsLookup.FThreads.IndexOf(Self));
+                            FreeOnTerminate := TRUE;
+                            Break;
+                        end;    
+                    finally
+                        _LeaveCriticalSection(FDnsLookup.FThreadsLock);
+                    end;
+                end;
         end;
         if Terminated then
             Break;
@@ -16898,12 +16919,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsAsyncDnsLookup.Create(const AMaxThreads: Integer);
+constructor TIcsAsyncDnsLookup.Create(
+    const AMaxThreads           : Integer;
+    const AMinThreads           : Integer = 0;
+    const AThreadIdleTimeoutSec : LongWord = 60);
 begin
     inherited Create;
     _InitializeCriticalSection(FQueueLock);
     _InitializeCriticalSection(FThreadsLock);
     FMaxThreads := AMaxThreads;
+    FMinThreads := AMinThreads;
+    FThreadIdleTimeoutMsec := AThreadIdleTimeoutSec * 1000;
     FQueue   := TList.Create;
     FThreads := TList.Create;
 end;
@@ -16968,6 +16994,7 @@ begin
         UnlockQueue;
     end;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsAsyncDnsLookup.UnlockQueue;
