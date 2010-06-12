@@ -2511,9 +2511,11 @@ procedure WSocketCancelForceLoadWinsock; {$IFDEF USE_INLINE} inline; {$ENDIF}
 procedure WSocketUnloadWinsock; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  WSocketIsDottedIP(const S : AnsiString) : Boolean;
 function  WSocketIPv4ToStr(const AIcsIPv4Addr: TIcsIPv4Address): string;
-function  WSocketIPv6ToStr(const AIcsIPv6Addr: TIcsIPv6Address): string;
+function  WSocketIPv6ToStr(const AIcsIPv6Addr: TIcsIPv6Address): string; overload;
+function  WSocketIPv6ToStr(const AIn6: PSockAddrIn6): string; overload;
 function  WSocketStrToIPv4(const S: string; out Success: Boolean): TIcsIPv4Address;
-function  WSocketStrToIPv6(const S: string; out Success: Boolean): TIcsIPv6Address;
+function  WSocketStrToIPv6(const S: string; out Success: Boolean): TIcsIPv6Address; overload;
+function  WSocketStrToIPv6(const S: string; out Success : Boolean; out ScopeID : LongWord): TIcsIPv6Address; overload;
 {$IFDEF STILL_NEEDS_CHECK}
 function  WSocketStrToMappedIPv4(const IPv4Str: string; APortNum: Word;
   AScopeIDValue: LongWord; out Success: Boolean): TSockAddrIn6;
@@ -2949,6 +2951,23 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Returns the scope ID as well, if not null }
+function WSocketIPv6ToStr(const AIn6: PSockAddrIn6): string;
+begin
+    if AIn6 <> nil then
+    begin
+        if AIn6^.sin6_scope_id = 0 then
+            Result := WSocketIPv6ToStr(PIcsIPv6Address(@AIn6^.sin6_addr)^)
+        else
+            Result := WSocketIPv6ToStr(PIcsIPv6Address(@AIn6^.sin6_addr)^) +
+                      '%' + _IntToStr(AIn6^.sin6_scope_id);
+    end
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Byte order translated }
 function WSocketIPv6ToStr(const AIcsIPv6Addr: TIcsIPv6Address): string;
 var
@@ -3048,8 +3067,22 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Byte order translated }
 function WSocketStrToIPv6(const S: string; out Success: Boolean): TIcsIPv6Address;
+var
+    ScopeID : LongWord;
+begin
+    Result := WSocketStrToIPv6(S, Success, ScopeID);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Byte order translated }
+function WSocketStrToIPv6(
+    const S     : string;
+    out Success : Boolean;
+    out ScopeID : LongWord): TIcsIPv6Address;
 const
     Colon       = ':';
+    Percent     = '%';
 var
     ColonCnt    : Integer;
     I           : Integer;
@@ -3060,6 +3093,7 @@ var
     OmitPos     : Integer;
     OmitCnt     : Integer;
     PartCnt     : Byte;
+    ScopeFlag   : Boolean;
 begin
     Success     := FALSE;
     FillChar(Result.Words[0], SizeOf(Result), 0);
@@ -3074,7 +3108,7 @@ begin
     if ColonCnt > 7 then
         Exit;
     OmitPos := Pos('::', S) - 1;
-    if OmitPos > - 1 then
+    if OmitPos > -1 then
         OmitCnt := 8 - ColonCnt
     else begin
         OmitCnt := 0; // Make the compiler happy
@@ -3085,12 +3119,34 @@ begin
     ColonCnt  := 0;
     PartCnt   := 0;
     I         := 0;
+    ScopeID   := 0;
+    ScopeFlag := FALSE;
     while I < SLen do
     begin
         Ch := P[I];
         case Ch of
+            Percent : // scope_id / interface ID follows
+                begin
+                    if ScopeFlag then
+                        Exit
+                    else
+                        ScopeFlag := TRUE;
+                        
+                    PartCnt := 0;
+                    if NumVal > -1 then
+                    begin
+                    {$IFNDEF BIG_ENDIAN}
+                        Result.Words[ColonCnt] := IcsSwap16(NumVal);
+                    {$ELSE}
+                        Result.Words[ColonCnt] := NumVal;
+                    {$ENDIF}
+                        NumVal := -1;
+                    end;
+                end;
             Colon :
                 begin
+                    if ScopeFlag then
+                        Exit;
                     PartCnt := 0;
                     if NumVal > -1 then
                     begin
@@ -3115,6 +3171,8 @@ begin
                     Inc(PartCnt);
                     if NumVal < 0 then
                         NumVal := (Ord(Ch) - Ord('0'))
+                    else if ScopeFlag then
+                        NumVal := NumVal * 10 + (Ord(Ch) - Ord('0'))
                     else
                         NumVal := NumVal * 16 + (Ord(Ch) - Ord('0'));
                     if (NumVal > High(Word)) or (PartCnt > 4) then
@@ -3123,6 +3181,8 @@ begin
             'a'..'z',
             'A'..'Z' :
                 begin
+                    if ScopeFlag then
+                        Exit;
                     Inc(PartCnt);
                     if NumVal < 0 then
                         NumVal := ((Ord(Ch) and 15) + 9)
@@ -3139,11 +3199,16 @@ begin
 
     if (NumVal > -1) and (ColonCnt > 1) then
     begin
-    {$IFNDEF BIG_ENDIAN}
-        Result.Words[ColonCnt] := IcsSwap16(NumVal);
-    {$ELSE}
-        Result.Words[ColonCnt] := NumVal;
-    {$ENDIF}
+        if not ScopeFlag then
+        begin
+        {$IFNDEF BIG_ENDIAN}
+            Result.Words[ColonCnt] := IcsSwap16(NumVal);
+        {$ELSE}
+            Result.Words[ColonCnt] := NumVal;
+        {$ENDIF}
+        end
+        else
+            ScopeID := NumVal;
     end;
     Success := ColonCnt > 1;
 end;
@@ -6862,7 +6927,7 @@ begin
             if saddr.sin6_family = AF_INET then
                 Result := WSocketIPv4ToStr(PSockAddrIn(@saddr)^.sin_addr.S_addr)
             else
-                Result := WSocketIPv6ToStr(PIcsIPv6Address(@saddr.sin6_addr)^);
+                Result := WSocketIPv6ToStr(@saddr);
             //Result := String(WSocket_Synchronized_inet_ntoa(saddr.sin_addr));
         end;
      end;
@@ -7298,7 +7363,7 @@ begin
             if saddr.sin6_family = AF_INET then
                 Result := WSocketIPv4ToStr(PSockAddrIn(@saddr)^.sin_addr.S_addr)
             else
-                Result := WSocketIPv6ToStr(PIcsIPv6Address(@saddr.sin6_addr)^);
+                Result := WSocketIPv6ToStr(@saddr);
             //Result := String(WSocket_Synchronized_inet_ntoa(saddr.sin6_addr))
         end    
         else begin
@@ -7384,6 +7449,7 @@ var
     IPv6Addr : TIcsIPv6Address;
     HostName : AnsiString;
     Success  : Boolean;
+    ScopeID  : LongWord;
 begin
     if AHostName = '' then begin
         RaiseException('DNS lookup: invalid host name.');
@@ -7418,8 +7484,8 @@ begin
 
     if (FSocketFamily <> sfIPv4) then
     begin
-        IPv6Addr := WSocketStrToIPv6(_Trim(AHostName), Success);
-        if Success then
+        IPv6Addr := WSocketStrToIPv6(_Trim(AHostName), Success, ScopeID);
+        if Success and (ScopeID = 0) then
         begin
             FDnsResult := WSocketIPv6ToStr(IPv6Addr);
             FDnsResultList.Add(FDnsResult);
@@ -8689,12 +8755,12 @@ begin
                         if ASocketFamily = sfAnyIPv6 then
                         begin
                             IPList.Insert(IDX,
-                            WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(AddrInfoNext)));
+                            WSocketIPv6ToStr(PSockAddrIn6(AddrInfoNext.ai_addr)));
                             Inc(IDX);
                         end
                         else
                             IPList.Add(
-                            WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(AddrInfoNext)));
+                            WSocketIPv6ToStr(PSockAddrIn6(AddrInfoNext.ai_addr)));
                     end;
                     AddrInfoNext := AddrInfoNext.ai_next;
                 end;
@@ -16636,19 +16702,15 @@ begin
                             WSocketIPv4ToStr(NextInfo.ai_addr.sin_addr.S_addr));
                     end
                     else begin
-                        {if not IN6_IS_ADDR_LINKLOCAL(
-                             @PSockAddrIn6(NextInfo^.ai_addr)^.sin6_addr) then
-                        begin}
-                            if AFamily = sfAnyIPv6 then
-                            begin
-                                AResultList.Insert(IDX,
-                                WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(NextInfo)));
-                                Inc(IDX);
-                            end
-                            else
-                                AResultList.Add(
-                                WSocketIPv6ToStr(IcsIPv6AddrFromAddrInfo(NextInfo)));
-                        //end;
+                        if AFamily = sfAnyIPv6 then
+                        begin
+                            AResultList.Insert(IDX,
+                            WSocketIPv6ToStr(PSockAddrIn6(NextInfo.ai_addr)));
+                            Inc(IDX);
+                        end
+                        else
+                            AResultList.Add(
+                            WSocketIPv6ToStr(PSockAddrIn6(NextInfo.ai_addr)));
                     end;
                 end;
             end;
