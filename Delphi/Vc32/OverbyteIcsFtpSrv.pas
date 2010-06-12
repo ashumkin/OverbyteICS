@@ -6501,6 +6501,16 @@ begin
                 Answer := msgSyntaxParam
             else
                 Answer := msgPortSuccess;
+
+            { Remove a possible scope ID. It is IMO a bug on the client  }
+            { side. Filezilla sends it with link local addresses.        }
+            { Or should we return a syntax error?                        }
+            if (Proto = 2) then
+            begin
+                N := Pos('%', Client.DataAddr);
+                if N > 0 then
+                    Client.DataAddr := Copy(Client.DataAddr, 1, N - 1);
+            end;
         end
         else begin
             Answer := msgSyntaxParam;
