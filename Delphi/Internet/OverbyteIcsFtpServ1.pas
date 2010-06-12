@@ -691,7 +691,10 @@ begin
              IntToStr (IcsElapsedSecs (Client.SessStartTick)) +
               ' secs, total recv ' + IntToKbyte (Client.TotPutBytes) +
                       ', total xmit ' + IntToKbyte (Client.TotGetBytes) ) ;
-    UpdateClientCount;
+    if FtpServer1.ClientCount -1 = 0 then
+        ClientCountLabel.Caption := 'No user'
+    else
+        ClientCountLabel.Caption := IntToStr(FtpServer1.ClientCount - 1) + ' users';
 end;
 
 
