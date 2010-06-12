@@ -174,6 +174,8 @@ begin
             PSockAddr(@FSenderAddr).sin_addr := WSocketResolveHost(LocalHostName);
         WSocket.SocketFamily      := sfIPv4;
         WSocket.Addr              := ICS_ANY_HOST_V4;
+        WSocket.MultiCast         := FALSE;
+        WSocket.MultiCastAddrStr  := '';
     end
     else if (FSenderAddr.sin6_family = AF_INET6) then begin
         if IN6_IS_ADDR_LOOPBACK(@FSenderAddr.sin6_addr) then
