@@ -513,9 +513,19 @@ var
 begin
     DisplayMemo.Lines.BeginUpdate;
     try
-        if DisplayMemo.Lines.Count > 2000 then begin
-            for I := 1 to 200 do
-                DisplayMemo.Lines.Delete(0);
+        if DisplayMemo.Lines.Count > 200 then begin
+            { This is much faster than deleting line by line of the memo }
+            { however still slow enough to throttle ICS speed!           }
+            with TStringList.Create do
+            try
+                BeginUpdate;
+                Assign(DisplayMemo.Lines);
+                for I := 1 to 50 do
+                    Delete(0);
+                DisplayMemo.Lines.Text := Text;
+            finally
+                Free;
+            end;
         end;
         DisplayMemo.Lines.Add(Msg);
     finally
