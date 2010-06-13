@@ -4945,7 +4945,7 @@ begin
         else begin  { EPSV IPv6 }
             { Response like: "Entering Extended Passive Mode (|||6446|)" }
             Delim := #0; DelimCnt := 0; Temp := '0'; N := 1;
-            TargetIP := WSocketIPv6ToStr(PIcsIPv6Address(@FControlSocket.sin6.sin6_addr)^);
+            TargetIP := WSocketIPv6ToStr(PSockAddrIn6(@FControlSocket.sin6));
             for I := 1 to Length(FPasvResponse) do
             begin
                 if FPasvResponse[I] = '(' then
