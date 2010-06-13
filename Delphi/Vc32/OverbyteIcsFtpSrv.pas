@@ -6454,10 +6454,10 @@ begin
                 end;
             end;
             { Check proto }
-            if not(((Proto = 1) and (FSocketServer.CurrentSocketFamily = sfIPv4)) or
-                   ((Proto = 2) and (FSocketServer.CurrentSocketFamily = sfIPv6))) then
+            if not(((Proto = 1) and (Client.CurrentSocketFamily = sfIPv4)) or
+                   ((Proto = 2) and (Client.CurrentSocketFamily = sfIPv6))) then
             begin
-                if FSocketServer.CurrentSocketFamily = sfIPv6 then
+                if Client.CurrentSocketFamily = sfIPv6 then
                     Answer := Format(msgInvalidProto, ['2'])
                 else
                     Answer := Format(msgInvalidProto, ['1']);
@@ -6551,10 +6551,10 @@ begin
                 Answer := msgSyntaxParam;
                 Exit;
             end;
-            if not(((Proto = 1) and (FSocketServer.CurrentSocketFamily = sfIPv4)) or
-                   ((Proto = 2) and (FSocketServer.CurrentSocketFamily = sfIPv6))) then
+            if not(((Proto = 1) and (Client.CurrentSocketFamily = sfIPv4)) or
+                   ((Proto = 2) and (Client.CurrentSocketFamily = sfIPv6))) then
             begin
-                if FSocketServer.CurrentSocketFamily = sfIPv6 then
+                if Client.CurrentSocketFamily = sfIPv6 then
                     Answer := Format(msgInvalidProto, ['2'])
                 else
                     Answer := Format(msgInvalidProto, ['1']);

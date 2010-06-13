@@ -952,6 +952,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   private
     FSocketFamily       : TSocketFamily;
     FOldSocketFamily    : TSocketFamily;
+    FCurrentAddrFamily  : Word; // Addr family cache
     Fsin                : TSockAddrIn6;
     FDnsResult          : String;
     FDnsResultList      : TStrings;
@@ -5471,6 +5472,7 @@ procedure TCustomWSocket.AssignDefaultValue;
 begin    
     InitializeAddr(Fsin, FSocketFamily);
     FAddrFormat         := Fsin.sin6_family;
+    FCurrentAddrFamily  := AF_UNSPEC;
     FPortAssigned       := FALSE;
     FAddrAssigned       := FALSE;
     FAddrResolved       := FALSE;
@@ -7992,7 +7994,7 @@ begin
                     PSockAddrIn(@laddr)^.sin_addr.S_addr :=
                     WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).S_addr
                 else
-                    WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, CurrentSocketFamily);
+                    WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, sfIPv6);
 
                 if FAddrFormat = PF_INET then
                     iStatus := WSocket_Synchronized_SetSockOpt(FHSocket,
@@ -9096,11 +9098,37 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomWSocket.GetCurrentSocketFamily: TSocketFamily;
+var
+    saddr    : TSockAddrIn6;
+    saddrlen : Integer;
 begin
-    if Fsin.sin6_family = AF_INET then
-        Result := sfIPv4
+    if FCurrentAddrFamily <> AF_UNSPEC then
+    begin
+        if FCurrentAddrFamily = AF_INET6 then
+            Result := sfIPv6
+        else
+            Result := sfIPv4;
+    end
+    else if FState in [wsConnected, wsBound, wsListening] then
+    begin
+        Result := FSocketFamily; // Dummy
+        saddrlen := sizeof(saddr);
+        if WSocket_Synchronized_GetSockName(FHSocket, PSockAddrIn(@saddr)^,
+                                            saddrlen) = 0 then
+        begin
+            FCurrentAddrFamily := saddr.sin6_family;
+            if FCurrentAddrFamily = AF_INET then
+                Result := sfIPv4
+            else if FCurrentAddrFamily = AF_INET6 then
+                Result := sfIPv6
+            else
+                raise ESocketException.Create('Unknown socket family');
+        end
+        else
+            SocketError('GetSockName');
+    end
     else
-        Result := sfIPv6;    
+        Result := FSocketFamily;
 end;
 
 
