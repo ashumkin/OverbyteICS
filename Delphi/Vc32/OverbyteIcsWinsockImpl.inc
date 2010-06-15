@@ -382,11 +382,43 @@ begin
     { Winsock 2 is required }
     Result := ((GReqVerHigh >= 2) and (GReqVerLow >= 2)) and
     (
-        { Win XP or better too }
+        { Win XP or better }
+        { Actually we should also check for service pack >= 1 but that }
+        { required a call to VersionInfoEx().                          }
         (Win32Platform = VER_PLATFORM_WIN32_NT) and
         ((Win32MajorVersion > 5) or
          ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1)))
     );
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Check whether IPv6 is available on the system, requires to load socket API }
+{ once, subsequent calls return a cached value.                               }
+function IsIPv6Available: Boolean;
+var
+    s : TSocket;
+begin
+    if GIPv6Available > -1 then
+        Result := (GIPv6Available = 1)
+    else begin
+        EnterCriticalSection(GWSockCritSect);
+        try
+            s := socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+            Result := s <> INVALID_SOCKET;
+            if Result then begin
+                CloseSocket(s);
+                GIPv6Available := 1;
+            end
+            else
+                GIPv6Available := 0;
+            { If no socket created, then unload winsock immediately }
+            if WSocketGCount <= 0 then
+                UnloadWinsock;
+        finally
+            LeaveCriticalSection(GWSockCritSect);
+        end;
+    end;
 end;
 
 

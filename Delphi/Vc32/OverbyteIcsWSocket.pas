@@ -842,6 +842,9 @@ uses
 {$IFDEF USE_SSL}
   OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, Contnrs, Masks, { Masks added AG 06/20/07 }  
 {$ENDIF}
+{$IFNDEF USE_SSL}
+  Contnrs,
+{$ENDIF}
 {$IFDEF CLR}
   System.ComponentModel,
   System.Text,
@@ -948,6 +951,36 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   end;
   TWSocketCounterClass = class of TWSocketCounter;
 
+  TListenSocketInfo = class(TObject)
+  public
+    FAddrStr      : string;
+    FPortStr      : string;
+    FHSocket      : TSocket;
+    FPortNum      : Word;
+    FSocketFamily : TSocketFamily;
+    FSin          : TSockAddrIn6;
+    constructor Create;
+  end;
+
+  TCustomWSocket = class;
+  TListenSocketInfos = class(TObject)
+  private
+    FList : TObjectList;
+    function GetItem(Index: Integer): TListenSocketInfo;
+    procedure SetItem(Index: Integer; const Value: TListenSocketInfo);
+    function GetNextValue(const S: string; var AStartIndex: Integer;
+      ADelim: Char): String;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Assign(const AddrLst, PortLst: string): Integer;
+    procedure Clear;
+    procedure CloseSockets;
+    function GetByHandle(AHSocket: TSocket): TListenSocketInfo;
+    function Count: Integer;
+    property Items[Index: Integer]: TListenSocketInfo read GetItem write SetItem; default;
+  end;
+
   TCustomWSocket = class(TIcsWndControl)
   private
     FSocketFamily       : TSocketFamily;
@@ -978,6 +1011,9 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   protected    
     FHSocket            : TSocket;
     FASocket            : TSocket;               { Accepted socket }
+    FLSocketInfos       : TListenSocketInfos;    { Listening HSockets}
+    FHCurrentSocket     : TSocket;
+    FMultiListenFlag    : Boolean;
     FMsg_WM_ASYNCSELECT            : UINT;
     FMsg_WM_ASYNCGETHOSTBYNAME     : UINT;
     FMsg_WM_ASYNCGETHOSTBYADDR     : UINT;
@@ -1158,6 +1194,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   Flush; virtual;
     procedure   WaitForClose; virtual;
     procedure   Listen; virtual;
+    procedure   TcpMultiListen; virtual;
     function    Accept: TSocket; virtual;
     function    Receive(Buffer : TWSocketData; BufferSize: Integer) : Integer;  {overload; }virtual;
 //{$IFDEF WIN32}
@@ -1385,6 +1422,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
       constructor Create{$IFDEF VCL}(AOwner : TComponent){$ENDIF}; override;
       procedure   Connect; override;
       procedure   Listen; override;
+      procedure   TcpMultiListen; override;
   protected
       property SocksServer   : String               read  GetSocksServer
                                                     write SetSocksServer;
@@ -2645,7 +2683,7 @@ const
     ICS_LOCAL_HOST_V4  = '127.0.0.1';
     ICS_LOCAL_HOST_V6  = '::1';
     ICS_ANY_HOST_V4    = '0.0.0.0';
-    ICS_ANY_HOST_V6    = '::0';
+    ICS_ANY_HOST_V6    = '::';
     ICS_BROADCAST_V4   = '255.255.255.255';
     ICS_BROADCAST_V6   = 'ffff::1';
     ICS_ANY_PORT       = '0';
@@ -5501,6 +5539,7 @@ begin
 {   FReadCount          := 0;  V7.24 only reset when connection opened, not closed }
     FCloseInvoked       := FALSE;
     FFlushTimeout       := 60;
+    FMultiListenFlag    := FALSE;
 end;
 
 
@@ -5617,19 +5656,45 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.ThreadAttach;
+var
+    I : Integer;
 begin
     inherited ThreadAttach;
-    if FHSocket <> INVALID_SOCKET then
-        WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle,
+    if not FMultiListenFlag then begin
+        if FHSocket <> INVALID_SOCKET then
+            WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle,
                                             FMsg_WM_ASYNCSELECT, FSelectEvent);
+    end
+    else begin
+        if (FLSocketInfos <> nil) then
+            for I := 0 to FLSocketInfos.Count - 1 do
+                if FLSocketInfos[I].FHSocket <> INVALID_SOCKET then
+                    WSocket_Synchronized_WSAASyncSelect(
+                                    FLSocketInfos[I].FHSocket,
+                                    Handle, FMsg_WM_ASYNCSELECT, FSelectEvent);
+    end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.ThreadDetach;
+var
+    I : Integer;
 begin
-    if (_GetCurrentThreadID = DWORD(FThreadID)) and (FHSocket <> INVALID_SOCKET) then
-        WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle, 0, 0);
+    if not FMultiListenFlag then begin
+        if (_GetCurrentThreadID = DWORD(FThreadID)) and
+           (FHSocket <> INVALID_SOCKET) then
+            WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle, 0, 0);
+    end
+    else begin
+        if (FLSocketInfos <> nil) then
+            for I := 0 to FLSocketInfos.Count - 1 do
+                if (_GetCurrentThreadID = DWORD(FThreadID)) and
+                   (FLSocketInfos[I].FHSocket <> INVALID_SOCKET) then
+                    WSocket_Synchronized_WSAASyncSelect(
+                                                    FLSocketInfos[I].FHSocket,
+                                                    Handle, 0, 0);
+    end;
     inherited ThreadDetach;
 end;
 
@@ -5700,6 +5765,8 @@ begin
         FCounter.Free;
         FCounter := nil;
     end;
+
+    FLSocketInfos.Free;
 
     inherited Destroy;
 end;
@@ -6531,7 +6598,9 @@ begin
         { Check if we have something arrived, if yes, process it     }
         { DLR, since we are closing MAKE SURE WE LOOP in the receive }
         { function to get ALL remaining data                         }
-        ASyncReceive(0, RemoveOption(FComponentOptions, wsoNoReceiveLoop));
+
+        if (FState <> wsListening) then // We should not receive with listening sockets {AG}
+            ASyncReceive(0, RemoveOption(FComponentOptions, wsoNoReceiveLoop));
 
         if not FCloseInvoked then begin
             FCloseInvoked := TRUE;
@@ -6547,6 +6616,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.Do_FD_ACCEPT(var msg: TMessage);
 begin
+    FHCurrentSocket := TSocket(msg.WParam);
     TriggerSessionAvailable(HiWord(msg.LParam));
 end;
 
@@ -6580,7 +6650,7 @@ const
 begin
 {TriggerDisplay('AsyncSelect ' + IntToStr(msg.wParam) + ', ' + IntToStr(msg.LParamLo));}
     { Verify that the socket handle is ours handle }
-    if msg.wParam <> FHSocket then
+    if (not FMultiListenFlag) and (msg.wParam <> FHSocket) then
         Exit;
 
     if FPaused then
@@ -6958,13 +7028,14 @@ begin
 
     { If the address is either a valid IPv4 or IPv6 address }
     { change current SocketFamily.                 }
+    if Pos(';', FAddrStr) = 0 then // This field is used for multiple listening interfaces
     if WSocketIsIP(FAddrStr, LSocketFamily) then
     begin
         if (LSocketFamily = sfIPv4) or (IsIPv6APIAvailable) then
             FSocketFamily := LSocketFamily
         else
             FSocketFamily := FOldSocketFamily;
-    end        
+    end
     else
         FSocketFamily := FOldSocketFamily;
 
@@ -8105,6 +8176,141 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.TcpMultiListen;
+
+    procedure LSocketError(sockfunc: String; SIndex: Integer);
+    var
+        Error  : Integer;
+        Line   : String;
+    begin
+        Error := WSocket_Synchronized_WSAGetLastError;
+        Line  := 'TcpMultiListen: Interface #' + _IntToStr(SIndex + 1) + '. ' +
+             WSocketErrorDesc(Error) +
+             ' (#' + _IntToStr(Error) + ' in ' + sockfunc + ')' ;
+        if FHSocket <> INVALID_SOCKET then
+        begin
+            WSocket_Synchronized_closesocket(FHSocket);
+            FHSocket := INVALID_SOCKET;
+            { Close remaining listening sockets, if any. }
+            if FLSocketInfos <> nil then
+                FLSocketInfos.CloseSockets;
+        end;
+        FLastError := Error;
+        RaiseException(Line);
+    end;
+
+var
+    I         : Integer;
+    iStatus   : Integer;
+begin
+    if not FPortAssigned then begin
+        WSocket_Synchronized_WSASetLastError(WSAEINVAL);
+        SocketError('TcpMultiListen: port not assigned');
+        Exit;
+    end;
+
+    if not FAddrAssigned then begin
+        WSocket_Synchronized_WSASetLastError(WSAEINVAL);
+        SocketError('TcpMultiListen: address not assigned');
+        Exit;
+    end;
+
+    FHCurrentSocket := INVALID_SOCKET;
+    if FLSocketInfos = nil then
+        FLSocketInfos := TListenSocketInfos.Create;
+    if FLSocketInfos.Assign(FAddrStr, FPortStr) = 0 then begin
+        WSocket_Synchronized_WSASetLastError(WSAEINVAL);
+        SocketError('TcpMultiListen: Syntax error in address or port list, or ' +
+                    'address types unsupported');
+        Exit;
+    end;
+
+    FMultiListenFlag := TRUE;
+
+    { Remove any data from the internal output buffer }
+    { (should already be empty !)                     }
+    DeleteBufferedData;
+
+    for I := 0 to FLSocketInfos.Count - 1 do
+    begin
+        try
+            { The next line will trigger an exception in case of failure }
+            FLSocketInfos[I].FPortNum := WSocket_Synchronized_ResolvePort(
+                                           AnsiString(FLSocketInfos[I].FPortStr),
+                                           AnsiString('TCP'));
+            FLSocketInfos[I].FSin.sin6_port :=
+                WSocket_Synchronized_htons(FLSocketInfos[I].FPortNum);
+
+            if FLSocketInfos[I].FSocketFamily = sfIPv4 then
+            begin
+                PSockAddrIn(@FLSocketInfos[I].FSin).sin_addr.s_addr :=
+                 WSocket_Synchronized_ResolveHost(AnsiString(FLSocketInfos[I].FAddrStr)).s_addr;
+            end
+            else
+                WSocket_Synchronized_ResolveHost(FLSocketInfos[I].FAddrStr,
+                                                 FLSocketInfos[I].FSin,
+                                                 FLSocketInfos[I].FSocketFamily);
+        except
+            on E: Exception do
+            begin
+                if FHSocket <> INVALID_SOCKET then
+                begin
+                    WSocket_Synchronized_closesocket(FHSocket);
+                    FHSocket := INVALID_SOCKET;
+                    if FLSocketInfos <> nil then
+                        FLSocketInfos.CloseSockets;
+                end;
+                RaiseException('TcpMultiListen: Interface #' +
+                               _IntToStr(I + 1) + '. ' + E.Message);
+                Exit;
+            end;
+        end;
+
+        FLSocketInfos[I].FHSocket := WSocket_Synchronized_socket(
+                                              FLSocketInfos[I].FSin.sin6_family,
+                                              SOCK_STREAM,
+                                              IPPROTO_TCP);
+
+        if FLSocketInfos[I].FHSocket = INVALID_SOCKET then
+        begin
+            LSocketError('socket', I);
+            Exit;
+        end;
+        if I = 0 then
+            FHSocket := FLSocketInfos[0].FHSocket;
+
+        iStatus := WSocket_Synchronized_bind(FLSocketInfos[I].FHSocket,
+                                             PSockAddr(@FLSocketInfos[I].FSin)^,
+                                             SizeOfAddr(FLSocketInfos[I].FSin));
+        if iStatus <> 0 then
+        begin
+            LSocketError('Bind', I);
+            Exit;
+        end;
+        iStatus := WSocket_Synchronized_Listen(FLSocketInfos[I].FHSocket, FListenBacklog);
+        if iStatus <> 0 then
+        begin
+            LSocketError('listen', I);
+            Exit;
+        end;
+        FSelectEvent := FD_ACCEPT or FD_CLOSE;
+        iStatus      := WSocket_Synchronized_WSAASyncSelect(
+                                                        FLSocketInfos[I].FHSocket,
+                                                        Handle,
+                                                        FMsg_WM_ASYNCSELECT,
+                                                        FSelectEvent);
+        if iStatus <> 0 then
+        begin
+            LSocketError('WSAASyncSelect', I);
+            Exit;
+        end;
+    end;
+    ChangeState(wsBound);
+    ChangeState(wsListening);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.Listen;
 var
     iStatus        : Integer;
@@ -8136,6 +8342,8 @@ begin
         Exit;
     end;
 
+    FMultiListenFlag := FALSE;
+
     try
         if not FProtoResolved then begin
             { The next line will trigger an exception in case of failure }
@@ -8156,7 +8364,7 @@ begin
         if not FPortResolved then begin
             { The next line will trigger an exception in case of failure }
             FPortNum       := WSocket_Synchronized_ResolvePort(
-                                  AnsiString(FPortStr), AnsiString(FProtoStr));            
+                                  AnsiString(FPortStr), AnsiString(FProtoStr));
             Fsin.sin6_port := WSocket_Synchronized_htons(FPortNum);
             FPortResolved  := TRUE;
         end;
@@ -8330,12 +8538,12 @@ begin
         SocketError('not a listening socket');
         Result := INVALID_SOCKET;
         Exit;
-    end;    
-    len := SizeOfAddr(Fsin);
+    end;
+    len := SizeOf(Fsin);
 {$IFDEF CLR}
     FASocket := WSocket_Synchronized_accept(FHSocket, sin, len);
-{$ELSE}    
-    FASocket := WSocket_Synchronized_Accept(FHSocket, @Fsin, @len);
+{$ELSE}
+    FASocket := WSocket_Synchronized_Accept(FHCurrentSocket, @Fsin, @len);
 {$ENDIF}
 
     if FASocket = INVALID_SOCKET then begin
@@ -8350,18 +8558,38 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.Pause;
+var
+    I : Integer;
 begin
     FPaused := TRUE;
-    WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle, 0, 0);
+    if not FMultiListenFlag then
+        WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle, 0, 0)
+    else if FLSocketInfos <> nil then
+    begin
+        for I := 0 to FLSocketInfos.Count - 1 do
+            WSocket_Synchronized_WSAASyncSelect(FLSocketInfos[I].FHSocket,
+                                                Handle, 0, 0);
+    end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.Resume;
+var
+    I : Integer;
 begin
     FPaused := FALSE;
-    WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle,
-                                        FMsg_WM_ASYNCSELECT, FSelectEvent);
+    if not FMultiListenFlag then
+        WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle,
+                                            FMsg_WM_ASYNCSELECT, FSelectEvent)
+    else if FLSocketInfos <> nil then
+    begin
+        for I := 0 to FLSocketInfos.Count - 1 do
+            WSocket_Synchronized_WSAASyncSelect(FLSocketInfos[I].FHSocket,
+                                                Handle,
+                                                FMsg_WM_ASYNCSELECT,
+                                                FSelectEvent);
+    end;
 end;
 
 
@@ -8508,6 +8736,9 @@ begin
         until iStatus = 0;
         FHSocket := INVALID_SOCKET;
     end;
+    { Close remaining listening sockets, if any. }
+    if FMultiListenFlag and (FLSocketInfos <> nil) then
+        FLSocketInfos.CloseSockets;
 
     ChangeState(wsClosed);
     if {$IFDEF WIN32}(not (csDestroying in ComponentState)) and {$ENDIF}
@@ -8975,9 +9206,13 @@ begin
                                          ' in ' + sockfunc + ')' ;   { V5.26 }
 
     if (Error = WSAECONNRESET) or
-       (Error = WSAENOTCONN)   then begin
-        WSocket_Synchronized_closesocket(FHSocket);
+       (Error = WSAENOTCONN) or
+       (Error = WSAEADDRINUSE) then begin
+        WSocket_Synchronized_closesocket(FHSocket); { Added WSAEADDRINUSE (AG)}
         FHSocket := INVALID_SOCKET;
+        { Close remaining listening sockets, if any. }
+        if FMultiListenFlag and (FLSocketInfos <> nil) then
+            FLSocketInfos.CloseSockets;
         if FState <> wsClosed then
            TriggerSessionClosed(Error);
         ChangeState(wsClosed);
@@ -9260,6 +9495,19 @@ begin
     if not FSocksServerAssigned then begin
         { No socks server assigned, Listen as usual }
         inherited Listen;
+        Exit;
+    end;
+    RaiseException('Listening is not supported thru socks server');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSocksWSocket.TcpMultiListen;
+begin
+    { Check if we really wants to use socks server }
+    if not FSocksServerAssigned then begin
+        { No socks server assigned, Listen as usual }
+        inherited TcpMultiListen;
         Exit;
     end;
     RaiseException('Listening is not supported thru socks server');
@@ -17121,6 +17369,161 @@ function WSocket_Synchronized_IcsCancelAsyncRequest(
   const ARequest: THandle): Integer;
 begin
     Result := GAsyncDnsLookup.CancelAsyncRequest(ARequest);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TListenSocketInfo }
+
+constructor TListenSocketInfo.Create;
+begin
+    FHSocket := INVALID_SOCKET;
+end;
+
+{ TListenSocketInfos }
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TListenSocketInfos.GetNextValue(const S: string; var AStartIndex: Integer;
+  ADelim: Char): String;
+var
+    LStart: Integer;
+    Len : Integer;
+begin
+    LStart := AStartIndex;
+    Len := Length(S);
+    while AStartIndex <= Len do begin
+        if S[AStartIndex] = ADelim then
+        begin
+            Result := Copy(S, LStart, AStartIndex - LStart);
+            Inc(AStartIndex);
+            Exit;
+        end;
+        Inc(AStartIndex);
+    end;
+    if AStartIndex > LStart then
+        Result := Copy(S, LStart, AStartIndex - LStart)
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TListenSocketInfos.Assign(const AddrLst, PortLst: string): Integer;
+var
+    LSocketInfo: TListenSocketInfo;
+    I1, I2 : Integer;
+    LPort, LAddr: string;
+    LSocketFamily : TSocketFamily;
+begin
+    Clear;
+    I1 := 1; I2 := 1;
+    while I1 < Length(AddrLst) do
+    begin
+        LAddr := _Trim(GetNextValue(AddrLst, I1, ';'));
+        LPort := _Trim(GetNextValue(PortLst, I2, ';'));
+        if (LAddr = '') or (LPort = '') then
+        begin
+            Clear;
+            Break;
+        end;
+        if not WSocketIsIP(LAddr, LSocketFamily) then
+        begin
+            Clear;
+            Break
+        end;
+        { Ignore IPv6 addresses if not supported so TcpMultiListen will }
+        { only use the good ones.                                       }
+        if (LSocketFamily = sfIPv6) and (not IsIPv6Available) then
+            Continue;
+        LSocketInfo := TListenSocketInfo.Create;
+        LSocketInfo.FAddrStr := LAddr;
+        LSocketInfo.FPortStr := LPort;
+        LSocketInfo.FSocketFamily := LSocketFamily;
+        if LSocketFamily = sfIPv6 then
+            LSocketInfo.FSin.sin6_family := AF_INET6
+        else
+            LSocketInfo.FSin.sin6_family := AF_INET;
+        FList.Add(LSocketInfo);
+    end;
+    Result := FList.Count;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TListenSocketInfos.CloseSockets;
+var
+    I : Integer;
+begin
+    for I := 0 to Count - 1 do
+    begin
+        { First handle is a dup of FHSocket, do not close }
+        if (I > 0) and
+           (Items[I].FHSocket <> INVALID_SOCKET) then
+            WSocket_Synchronized_closesocket(Items[I].FHSocket);
+        Items[I].FHSocket := INVALID_SOCKET;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TListenSocketInfos.Clear;
+begin
+    FList.Clear;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TListenSocketInfos.Create;
+begin
+    inherited Create;
+    FList := TObjectList.Create(TRUE);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TListenSocketInfos.Destroy;
+begin
+    FList.Free;
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TListenSocketInfos.GetItem(Index: Integer): TListenSocketInfo;
+begin
+    Result := TListenSocketInfo(FList[Index]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TListenSocketInfos.GetByHandle(AHSocket: TSocket): TListenSocketInfo;
+var
+    I : Integer;
+begin
+    for I := 0 to FList.Count -1 do
+    begin
+        if Items[I].FHSocket = AHSocket then
+        begin
+            Result := TListenSocketInfo(Items[I]);
+            Exit;
+        end;
+    end;
+    Result := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TListenSocketInfos.SetItem(Index: Integer;
+  const Value: TListenSocketInfo);
+begin
+    FList[Index] := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TListenSocketInfos.Count: Integer;
+begin
+    Result := FList.Count;
 end;
 
 

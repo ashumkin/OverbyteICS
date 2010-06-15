@@ -1351,6 +1351,10 @@ const
     SIO_INDEX_ADD_MCAST  = IOC_IN or IOC_VENDOR or 10;
 {$EXTERNALSYM SIO_INDEX_DEL_MCAST}
     SIO_INDEX_DEL_MCAST  = IOC_IN or IOC_VENDOR or 11;
+{$EXTERNALSYM SIO_GET_INTERFACE_LIST}
+    SIO_GET_INTERFACE_LIST = IOC_OUT or ((SizeOf(u_long) and IOCPARM_MASK) shl 16) or (Ord('t') shl 8) or 127;
+{$EXTERNALSYM SIO_ADDRESS_LIST_QUERY}
+    SIO_ADDRESS_LIST_QUERY = DWORD(IOC_OUT or IOC_WS2 or 22);
 
 {$EXTERNALSYM WSAStartup}
 function WSAStartup(wVersionRequired: word; var WSData: TWSAData): Integer;
@@ -1479,6 +1483,7 @@ var
   GWSockCritSect  : TRTLCriticalSection;
   GReqVerLow      : BYTE    = 2;
   GReqVerHigh     : BYTE    = 2;
+  GIPv6Available  : Integer = -1; { -1 = unchecked, 0 = FALSE, 1 = TRUE }
 
 procedure ForceLoadWinsock;
 procedure CancelForceLoadWinsock;
@@ -1487,6 +1492,7 @@ function  SocketErrorDesc(ErrCode : Integer) : String;
 function  WinsockAPIInfo : TWSADATA;
 function  IsSocketAPILoaded : Boolean;
 function  IsIPv6APIAvailable: Boolean;
+function  IsIPv6Available: Boolean;
 
 { Record TScopeID includes bitfields, these are helper functions }
 function  ScopeIdGetLevel(const AScopeId: ULONG): ULONG;

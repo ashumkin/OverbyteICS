@@ -156,6 +156,11 @@ type
     TCustomWSocketServer       = class;
     TWSocketClient             = class;
     TWSocketClientClass        = class of TWSocketClient;
+    TWSocketBeforeClientCreateEvent = procedure (
+                                 Sender           : TObject;
+                                 ListenSocketInfo : TListenSocketInfo;
+                                 var AClientClass : TWSocketClientClass) of object;
+
     TWSocketClientCreateEvent  = procedure (Sender : TObject;
                                             Client : TWSocketClient) of object;
     TWSocketClientConnectEvent = procedure (Sender : TObject;
@@ -217,6 +222,7 @@ type
         FClientNum              : LongInt;
         FMaxClients             : LongInt;
         FMsg_WM_CLIENT_CLOSED   : UINT;
+        FOnBeforeClientCreate   : TWSocketBeforeClientCreateEvent;
         FOnClientCreate         : TWSocketClientCreateEvent;
         FOnClientConnect        : TWSocketClientConnectEvent;
         FOnClientDisconnect     : TWSocketClientConnectEvent;
@@ -225,6 +231,7 @@ type
         procedure Notification(AComponent: TComponent; operation: TOperation); override;
 {$ENDIF}
         procedure TriggerSessionAvailable(Error : Word); override;
+        procedure TriggerBeforeClientCreate(var AClientClass : TWSocketClientClass); virtual;
         procedure TriggerClientCreate(Client : TWSocketClient); virtual;
         procedure TriggerClientConnect(Client : TWSocketClient; Error : Word); virtual;
         procedure TriggerClientDisconnect(Client : TWSocketClient; Error : Word); virtual;
@@ -268,14 +275,18 @@ type
         property  OnClientDisconnect     : TWSocketClientConnectEvent
                                                       read  FOnClientDisconnect
                                                       write FOnClientDisconnect;
-        { Triggerred when a new client is connecting }
+        { Triggered when a new client is connecting }
         property  OnClientConnect        : TWSocketClientConnectEvent
                                                       read  FOnClientConnect
                                                       write FOnClientConnect;
-        { Triggerred when a new client component has been created }
+        { Triggered when a new client component has been created }
         property  OnClientCreate         : TWSocketClientCreateEvent
                                                       read  FOnClientCreate
                                                       write FOnClientCreate;
+        { Triggered before a new client is created }
+        property  OnBeforeClientCreate   : TWSocketBeforeClientCreateEvent
+                                                      read  FOnBeforeClientCreate
+                                                      write FOnBeforeClientCreate;
     end;
 
     TWSocketServer = class(TCustomWSocketServer)
@@ -460,6 +471,7 @@ end;
 procedure TCustomWSocketServer.TriggerSessionAvailable(Error : Word);
 var
     Client : TWSocketClient;
+    LClientClass: TWSocketClientClass;
 begin
 {$IFDEF DEBUG_OUTPUT}
     OutputDebugString('OnSessionAvailable');
@@ -469,10 +481,11 @@ begin
     { In case of error, do nothing }
     if Error <> 0 then
         Exit;
-
+    LClientClass := FClientClass;
+    TriggerBeforeClientCreate(LClientClass);
     if FClientNum >= $7FFFFF then FClientNum := 0;      { angus V7.00 }
     Inc(FClientNum);
-    Client                 := FClientClass.Create{$IFDEF WIN32}(Self){$ENDIF};
+    Client                 := LClientClass.Create{$IFDEF WIN32}(Self){$ENDIF};
     Client.FCliId          := FClientNum;               { angus V7.00 }
 {$IFDEF CLR}
     FClientList.Add(Client);
@@ -506,6 +519,21 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocketServer.TriggerBeforeClientCreate(
+  var AClientClass: TWSocketClientClass);
+begin
+    if Assigned(FOnBeforeClientCreate) then
+    begin
+        if not FMultiListenFlag then
+            FOnBeforeClientCreate(Self, nil, AClientClass)
+        else
+            FOnBeforeClientCreate(Self, FLSocketInfos.GetByHandle(FHCurrentSocket),
+                                  AClientClass);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocketServer.TriggerClientConnect(
     Client : TWSocketClient; Error : Word);
 begin

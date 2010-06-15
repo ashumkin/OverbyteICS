@@ -90,8 +90,6 @@ uses
 const
     WSocket2Version             = 101;
 
-    {$EXTERNALSYM SIO_GET_INTERFACE_LIST}
-    SIO_GET_INTERFACE_LIST      = $4004747F;
 type
     TSockAddrIn6Old = record
         sin6_family   : short;    // AF_INET6
