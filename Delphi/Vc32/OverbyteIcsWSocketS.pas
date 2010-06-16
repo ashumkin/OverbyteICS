@@ -524,11 +524,12 @@ procedure TCustomWSocketServer.TriggerBeforeClientCreate(
 begin
     if Assigned(FOnBeforeClientCreate) then
     begin
-        if not FMultiListenFlag then
-            FOnBeforeClientCreate(Self, nil, AClientClass)
+        if FMultiListenFlag and (FLSocketInfos <> nil) then
+            FOnBeforeClientCreate(Self,
+                                  FLSocketInfos.GetByHandle(FHCurAcceptSocket),
+                                  AClientClass)
         else
-            FOnBeforeClientCreate(Self, FLSocketInfos.GetByHandle(FHCurrentSocket),
-                                  AClientClass);
+            FOnBeforeClientCreate(Self, nil, AClientClass);
     end;
 end;
 

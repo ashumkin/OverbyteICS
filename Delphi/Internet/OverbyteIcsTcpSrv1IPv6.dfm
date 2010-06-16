@@ -1,9 +1,9 @@
 object TcpSrvForm: TTcpSrvForm
   Left = 544
   Top = 164
-  Caption = 'TcpSrvForm'
-  ClientHeight = 243
-  ClientWidth = 389
+  Width = 397
+  Height = 277
+  Caption = 'TcpSrvIPv6Form'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -75,6 +75,7 @@ object TcpSrvForm: TTcpSrvForm
     MaxClients = 0
     OnClientDisconnect = WSocketServer1ClientDisconnect
     OnClientConnect = WSocketServer1ClientConnect
+    OnBeforeClientCreate = WSocketServer1BeforeClientCreate
     Left = 38
     Top = 68
   end

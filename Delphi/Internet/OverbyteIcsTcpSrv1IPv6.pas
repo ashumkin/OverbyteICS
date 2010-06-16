@@ -229,7 +229,7 @@ begin
     Display(' I am "' + String(MyHostName) + '"');
     Display(' IP: ' + LocalIPList(sfAny).Text);
     { We'll listen on multiple interfaces. Separator is a semicolon ";" }
-    { For each address one port must to be set.                         }
+    { For each address one port has to be set.                          }
     { Use any IPv4/IPv6 interface with telnet port and any IPv4         }
     { interface with port 24                                            }
     WSocketServer1.Addr        := '0.0.0.0;::;0.0.0.0';
@@ -250,8 +250,22 @@ end;
 procedure TTcpSrvForm.WSocketServer1BeforeClientCreate(Sender: TObject;
   AListenSocketInfo: TListenSocketInfo; var AClientClass: TWSocketClientClass);
 begin
-    // Use this event to get info about the listening socket and set
-    // the client class as required.
+    { Use this event to get info about the listening socket accepted }
+    { a connection. Optionally change the client class that will be  }
+    { created.                                                       }
+    if AListenSocketInfo <> nil then begin
+       { When listening with method TcpMultiListen AListenSocketInfo }
+       { is assigned.                                                }
+       Display('BeforeClientCreate: Listening socket ' +
+               AListenSocketInfo.FAddrStr + '/' +
+               IntToStr(AListenSocketInfo.FPortNum));
+    end
+    else begin
+        { If method Listen was called AListenSocketInfo is unassigned }
+        Display('BeforeClientCreate: Listening socket ' +
+               TWSocketServer(Sender).Addr + '/' +
+               IntToStr(TWSocketServer(Sender).PortNum));
+    end;
 end;
 
 

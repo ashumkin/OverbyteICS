@@ -1012,7 +1012,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     FHSocket            : TSocket;
     FASocket            : TSocket;               { Accepted socket }
     FLSocketInfos       : TListenSocketInfos;    { Listening HSockets}
-    FHCurrentSocket     : TSocket;
+    FHCurAcceptSocket   : TSocket;
     FMultiListenFlag    : Boolean;
     FMsg_WM_ASYNCSELECT            : UINT;
     FMsg_WM_ASYNCGETHOSTBYNAME     : UINT;
@@ -6616,7 +6616,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.Do_FD_ACCEPT(var msg: TMessage);
 begin
-    FHCurrentSocket := TSocket(msg.WParam);
+    FHCurAcceptSocket := TSocket(msg.WParam);
     TriggerSessionAvailable(HiWord(msg.LParam));
 end;
 
@@ -8215,7 +8215,7 @@ begin
         Exit;
     end;
 
-    FHCurrentSocket := INVALID_SOCKET;
+    FHCurAcceptSocket := INVALID_SOCKET;
     if FLSocketInfos = nil then
         FLSocketInfos := TListenSocketInfos.Create;
     if FLSocketInfos.Assign(FAddrStr, FPortStr) = 0 then begin
@@ -8543,7 +8543,7 @@ begin
 {$IFDEF CLR}
     FASocket := WSocket_Synchronized_accept(FHSocket, sin, len);
 {$ELSE}
-    FASocket := WSocket_Synchronized_Accept(FHCurrentSocket, @Fsin, @len);
+    FASocket := WSocket_Synchronized_Accept(FHCurAcceptSocket, @Fsin, @len);
 {$ENDIF}
 
     if FASocket = INVALID_SOCKET then begin
@@ -9206,9 +9206,8 @@ begin
                                          ' in ' + sockfunc + ')' ;   { V5.26 }
 
     if (Error = WSAECONNRESET) or
-       (Error = WSAENOTCONN) or
-       (Error = WSAEADDRINUSE) then begin
-        WSocket_Synchronized_closesocket(FHSocket); { Added WSAEADDRINUSE (AG)}
+       (Error = WSAENOTCONN) then begin
+        WSocket_Synchronized_closesocket(FHSocket);
         FHSocket := INVALID_SOCKET;
         { Close remaining listening sockets, if any. }
         if FMultiListenFlag and (FLSocketInfos <> nil) then
@@ -17502,7 +17501,7 @@ var
 begin
     for I := 0 to FList.Count -1 do
     begin
-        if Items[I].FHSocket = AHSocket then
+        if (Items[I].FHSocket = AHSocket) and (AHSocket <> INVALID_SOCKET) then
         begin
             Result := TListenSocketInfo(Items[I]);
             Exit;
