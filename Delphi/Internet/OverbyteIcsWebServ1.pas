@@ -16,11 +16,11 @@ Description:  WebSrv1 show how to use THttpServer component to implement
               The code below allows to get all files on the computer running
               the demo. Add code in OnGetDocument, OnHeadDocument and
               OnPostDocument to check for authorized access to files.
-Version:      7.19
+Version:      7.20
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2009 by François PIETTE
+Legal issues: Copyright (C) 1999-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -96,6 +96,7 @@ Nov 05, 2008 V7.17 A. Garrels made the POST demo UTF-8 aware.
 Jan 03, 2009 V7.18 A. Garrels added some lines to force client browser's login
                    dialog when the nonce is stale with digest authentication.
 Oct 03, 2009 V7.19 F. Piette added file upload demo (REST & HTML Form)
+Jun 18, 2010 V7.20 Arno fixed a bug in CreateVirtualDocument_ViewFormUpload.                   
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -131,8 +132,8 @@ uses
   OverbyteIcsHttpSrv, OverbyteIcsUtils, OverbyteIcsFormDataDecoder;
 
 const
-  WebServVersion     = 719;
-  CopyRight : String = 'WebServ (c) 1999-2009 F. Piette V7.19 ';
+  WebServVersion     = 720;
+  CopyRight : String = 'WebServ (c) 1999-2010 F. Piette V7.20 ';
   NO_CACHE           = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
   WM_CLIENT_COUNT    = WM_USER + WH_MAX_MSG + 1;
   FILE_UPLOAD_URL    = '/cgi-bin/FileUpload/';
@@ -478,22 +479,34 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Display a message in display memo box, making sure we don't overflow it.  }
 procedure TWebServForm.Display(const Msg : String);
+var
+    I : Integer;
 begin
     if csDestroying in ComponentState then Exit;
     EnterCriticalSection(DisplayLock);
     try
         DisplayMemo.Lines.BeginUpdate;
         try
-            { We preserve only 2000 lines }
-            while DisplayMemo.Lines.Count > 2000 do
-                DisplayMemo.Lines.Delete(0);
+            if DisplayMemo.Lines.Count > 200 then begin
+                { We preserve only 200 lines }
+                { This is much faster than deleting line by line of the memo }
+                { however still slow enough to throttle ICS speed!           }
+                with TStringList.Create do
+                try
+                    BeginUpdate;
+                    Assign(DisplayMemo.Lines);
+                    for I := 1 to 50 do
+                        Delete(0);
+                    DisplayMemo.Lines.Text := Text;
+                finally
+                    Free;
+                end;
+            end;
             DisplayMemo.Lines.Add(Msg);
         finally
             DisplayMemo.Lines.EndUpdate;
             { Makes last line visible }
-            {$IFNDEF VER80}
             SendMessage(DisplayMemo.Handle, EM_SCROLLCARET, 0, 0);
-            {$ENDIF}
         end;
         if FLogFileOpened then begin
             try
@@ -1134,10 +1147,8 @@ procedure TWebServForm.CreateVirtualDocument_ViewFormUpload(
     Sender    : TObject;            { HTTP server component                 }
     ClientCnx : TMyHttpConnection;  { Client connection issuing command     }
     var Flags : THttpGetFlag);      { Tells what HTTP server has to do next }
-var
-    Dummy     : THttpGetFlag;
 begin
-    ClientCnx.AnswerString(Dummy,
+    ClientCnx.AnswerString(Flags,
         '',           { Default Status '200 OK'         }
         '',           { Default Content-Type: text/html }
         '',           { Default header                  }
