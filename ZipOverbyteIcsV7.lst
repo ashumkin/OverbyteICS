@@ -907,6 +907,7 @@ Delphi\Internet\WebServData\Template\FormData1.html
 Delphi\Internet\WebServData\Template\TemplateDemo.html
 
 Delphi\Internet\OverbyteIcsWebAppServer.dpr
+Delphi\Internet\OverbyteIcsWebAppServer.dof
 Delphi\Internet\OverbyteIcsWebAppServer.res
 Delphi\Internet\OverbyteIcsWebAppServer.dproj
 Delphi\Internet\OverbyteIcsWebAppServer.bdsproj
@@ -935,6 +936,7 @@ Delphi\Internet\WebAppServerData\Templates\Moved.html
 Delphi\Internet\WebAppServerData\Templates\NotLogged.html
 Delphi\Internet\WebAppServerData\Templates\maildone.html
 Delphi\Internet\WebAppServerData\Templates\mailer.html
+Delphi\Internet\WebAppServerData\HeadForm.html
 Delphi\Internet\WebAppServerData\wwwRoot\Images\Logo.png
 Delphi\Internet\WebAppServerData\wwwRoot\Js\md5.js
 
