@@ -15,7 +15,9 @@ uses
   OverbyteIcsWebAppServerCounter in 'OverbyteIcsWebAppServerCounter.pas',
   OverbyteIcsWebAppServerHomePage in 'OverbyteIcsWebAppServerHomePage.pas',
   OverbyteIcsWebAppServerConfig in 'OverbyteIcsWebAppServerConfig.pas',
-  OverbyteIcsWebAppServerCounterView in 'OverbyteIcsWebAppServerCounterView.pas';
+  OverbyteIcsWebAppServerCounterView in 'OverbyteIcsWebAppServerCounterView.pas',
+  OverbyteIcsWebAppServerHead in 'OverbyteIcsWebAppServerHead.pas',
+  OverbyteIcsWebAppServerMailer in 'OverbyteIcsWebAppServerMailer.pas';
 
 {$R *.res}
 

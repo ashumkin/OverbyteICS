@@ -59,6 +59,7 @@ const
     UrlCounterViewHtml         = '/CounterView.html';
     UrlJavascriptErrorHtml     = '/JavascriptError.html';
     UrlAjaxFetchCounter        = '/Ajax/FetchCounter';
+    UrlHeadForm                = '/HeadForm.html';
 
 implementation
 

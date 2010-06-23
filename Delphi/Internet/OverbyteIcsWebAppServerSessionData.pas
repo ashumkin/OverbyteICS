@@ -4,7 +4,7 @@ Author:       François PIETTE
 Creation:     April 11, 2009
 Description:  This source is part of WebAppServer demo application.
               The purpose is defin the session data used by the application.
-Version:      1.01
+Version:      1.02
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -40,7 +40,7 @@ Legal issues: Copyright (C) 2009 by François PIETTE
 History:
 Apr 19, 2010 V1.01 Angus, removed GSessionDataCount which duplicates same
                           variable in OverbyteIcsWebSession
-
+Jun 23, 2010 V1.02 Arno - Added integer field TempVar.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebAppServerSessionData;
@@ -62,6 +62,9 @@ type
        FConfigPort     : String;    // Used for configuration process
        FConfigTempDir  : String;    // Used for configuration process
        FConfigHasLogo  : Boolean;   // Used for configuration process
+       FTempVar        : Integer;   // Currently used for anti-spam
+    public
+       constructor Create(AOwner: TComponent); override;
     published
        property UserCode       : String     read  FUserCode
                                             write FUserCode;
@@ -81,12 +84,22 @@ type
                                             write FConfigTempDir;
        property ConfigHasLogo  : Boolean    read  FConfigHasLogo
                                             write FConfigHasLogo;
+       property TempVar        : Integer    read  FTempVar
+                                            write FTempVar;
     end;
 
 //var
 //    GSessionDataCount : Integer;
 
 implementation
+
+{ TAppSrvSessionData }
+
+constructor TAppSrvSessionData.Create(AOwner: TComponent);
+begin
+    inherited;
+    FTempVar := -1;
+end;
 
 initialization
     RegisterClass(TAppSrvSessionData);

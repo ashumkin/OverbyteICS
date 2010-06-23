@@ -924,6 +924,7 @@ Delphi\Internet\OverbyteIcsWebAppServerUrlDefs.pas
 Delphi\Internet\OverbyteIcsWebAppServerDataModule.pas
 Delphi\Internet\OverbyteIcsWebAppServerDataModule.dfm
 Delphi\Internet\OverbyteIcsWebAppServerMailer.pas
+Delphi\Internet\OverbyteIcsWebAppServerHead.pas
 Delphi\Internet\WebAppServerData\Templates\Config.html
 Delphi\Internet\WebAppServerData\Templates\ConfigConfirm.html
 Delphi\Internet\WebAppServerData\Templates\CounterView.html

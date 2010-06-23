@@ -12,17 +12,73 @@
     <DCC_DebugInformation>False</DCC_DebugInformation>
     <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
     <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-    <DCC_Define>RELEASE</DCC_Define>
+    <DCC_Define>RELEASE;USE_SSL</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
-    <DCC_Define>DEBUG</DCC_Define>
+    <DCC_Define>DEBUG;USE_SSL</DCC_Define>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>
     <Borland.ProjectType />
     <BorlandProject>
 <BorlandProject><Delphi.Personality><Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters></Parameters><VersionInfo><VersionInfo Name="IncludeVerInfo">False</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">1</VersionInfo><VersionInfo Name="MinorVer">0</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">0</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">2060</VersionInfo><VersionInfo Name="CodePage">1252</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName"></VersionInfoKeys><VersionInfoKeys Name="FileDescription"></VersionInfoKeys><VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys><VersionInfoKeys Name="InternalName"></VersionInfoKeys><VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys><VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys><VersionInfoKeys Name="ProductName"></VersionInfoKeys><VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys><VersionInfoKeys Name="Comments"></VersionInfoKeys></VersionInfoKeys><Excluded_Packages>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
       
       
       
@@ -135,6 +191,12 @@
     <DelphiCompile Include="OverbyteIcsWebAppServer.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <RcCompile Include="..\Vc32\OverbyteIcsCommonVersion.rc">
+      <Form>..\Vc32\OverbyteIcsCommonVersion.res</Form>
+    </RcCompile>
+    <RcCompile Include="..\Vc32\OverbyteIcsXpManifest.rc">
+      <Form>..\Vc32\OverbyteIcsXpManifest.res</Form>
+    </RcCompile>
     <DCCReference Include="OverbyteIcsWebAppServerConfig.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerCounter.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerCounterView.pas" />
@@ -142,10 +204,12 @@
       <Form>WebAppSrvDataModule</Form>
       <DesignClass>TDataModule</DesignClass>
     </DCCReference>
+    <DCCReference Include="OverbyteIcsWebAppServerHead.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerHelloWorld.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerHomePage.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerHttpHandlerBase.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerLogin.pas" />
+    <DCCReference Include="OverbyteIcsWebAppServerMailer.pas" />
     <DCCReference Include="OverbyteIcsWebAppServerMain.pas">
       <Form>WebAppSrvForm</Form>
     </DCCReference>
@@ -154,8 +218,11 @@
     <None Include="WebAppServerData\templates\Config.html" />
     <None Include="WebAppServerData\templates\ConfigConfirm.html" />
     <None Include="WebAppServerData\templates\CounterView.html" />
+    <None Include="WebAppServerData\templates\HeadForm.html" />
     <None Include="WebAppServerData\templates\HomePage.html" />
     <None Include="WebAppServerData\templates\LoginForm.html" />
+    <None Include="WebAppServerData\templates\maildone.html" />
+    <None Include="WebAppServerData\templates\mailer.html" />
     <None Include="WebAppServerData\templates\Moved.html" />
     <None Include="WebAppServerData\templates\NotLogged.html" />
   </ItemGroup>

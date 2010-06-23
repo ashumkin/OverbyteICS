@@ -4,7 +4,7 @@ Author:       François PIETTE
 Creation:     April 11, 2009
 Description:  WebAppServer is a demo application showing the HTTP application
               server component (THttpAppSrv).
-Version:      1.03
+Version:      1.04
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -43,7 +43,9 @@ Jul 3, 2009 V1.01 Angus - added mailer send email form demo
 Jul 10, 2009 V1.02 Arno - Assigned correct ClientClass which fixed Access Violations
                    whenever a connection was closed or established.
 Sept 1, 2009 V1.03 Angus - report exceptions creating virtual pages
-
+Jun 23, 2010 V1.04 Arno - Added a page that issues HTTP/HTTPS HEAD requests
+                   and shows the response, also includes a simple anti-robots
+                   feature.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebAppServerMain;
@@ -54,6 +56,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls,
   OverbyteIcsWndControl,
+  OverbyteIcsWSocket,
   OverbyteIcsWebSession,
   OverbyteIcsHttpSrv,
   OverbyteIcsFtpSrvT,
@@ -67,7 +70,8 @@ uses
   OverbyteIcsWebAppServerCounter,
   OverbyteIcsWebAppServerLogin,
   OverbyteIcsWebAppServerCounterView,
-  OverbyteIcsWebAppServerMailer;
+  OverbyteIcsWebAppServerMailer,
+  OverbyteIcsWebAppServerHead;
 
 const
   WM_APPSTARTUP = WM_USER + 1;
@@ -376,14 +380,24 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.Display(const Msg : String);
+var
+    I : Integer;
 begin
     if not Assigned(DisplayMemo) then
         Exit;
     DisplayMemo.Lines.BeginUpdate;
     try
-        if DisplayMemo.Lines.Count > 500 then begin
-            while DisplayMemo.Lines.Count > 500 do
-                DisplayMemo.Lines.Delete(0);
+        if DisplayMemo.Lines.Count > 200 then begin
+            with TStringList.Create do
+            try
+                BeginUpdate;
+                Assign(DisplayMemo.Lines);
+                for I := 1 to 50 do
+                    Delete(0);
+                DisplayMemo.Lines.Text := Text;
+            finally
+                Free;
+            end;
         end;
         DisplayMemo.Lines.Add(Msg);
     finally
@@ -465,6 +479,7 @@ begin
                               TUrlHandlerJavascriptErrorHtml);
     HttpAppSrv1.AddGetHandler('/mailer.html', TUrlHandlerMailer);
     HttpAppSrv1.AddPostHandler('/mailer.html', TUrlHandlerMailer);
+    HttpAppSrv1.AddGetHandler(UrlHeadForm, TUrlHandlerHead);
 
     // Just for demoing the simplest handler, let's add an "Helloworld" one
     HttpAppSrv1.AddGetHandler('/HelloWorld.html',
@@ -497,6 +512,7 @@ begin
 
 
     // Start the HTTP server
+    HttpAppSrv1.KeepAliveTimeSec := 30;
     HttpAppSrv1.SessionTimeout := 5 * 60;  // Seconds, must be done after loading
     HttpAppSrv1.Port           := WebAppSrvDataModule.Port;
     HttpAppSrv1.Start;
