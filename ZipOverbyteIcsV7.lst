@@ -1125,6 +1125,7 @@ Delphi\Internet\OverbyteIcsHttpThr1.dfm
 Delphi\Internet\OverbyteIcsHttpThr2.pas
 
 Delphi\Internet\OverbyteIcsIsapi.dpr
+Delphi\Internet\OverbyteIcsIsapi.res
 Delphi\Internet\OverbyteIcsIsapi.dof
 Delphi\Internet\OverbyteIcsIsapi.cfg
 Delphi\Internet\OverbyteIcsIsapi.bdsproj
