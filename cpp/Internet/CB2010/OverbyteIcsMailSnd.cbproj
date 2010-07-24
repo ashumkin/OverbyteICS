@@ -1,6 +1,6 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{5034040d-97d6-4e29-8c4f-e4b5a9586437}</ProjectGuid>
+			<ProjectGuid>{CB99D88F-F97D-44AD-9FBE-7B4AED33BB4D}</ProjectGuid>
 			<MainSource>OverbyteIcsMailSnd.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>

@@ -1,6 +1,6 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{5034040d-97d6-4e29-8c4f-e4b5a9586437}</ProjectGuid>
+			<ProjectGuid>{DCEB20E7-A6CF-4137-9674-FB2B86570501}</ProjectGuid>
 			<MainSource>OverbyteIcsTnSrv.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>
