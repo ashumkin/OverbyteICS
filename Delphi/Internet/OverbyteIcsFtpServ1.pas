@@ -588,11 +588,13 @@ begin
     FtpServer1.Banner := '220-Welcome to my Server' + #13#10 +
                          '220-' + #13#10 +
                          '220 ICS FTP Server ready.';
+{$IFDEF EXPERIMENTAL_THROTTLE}
     bandwidth := StrToInt(MaxKB.Text);
     if bandwidth > 0 then
         FtpServer1.BandwidthLimit := bandwidth * 1024  { limit server bandwidth }
     else
         FtpServer1.BandwidthLimit := 0;
+{$ENDIF}
     FtpServer1.Port   := FPort;
     FtpServer1.Start;
 end;

@@ -154,8 +154,6 @@ object FtpServerForm: TFtpServerForm
     CodePage = 0
     Language = 'EN*'
     MaxAttempts = 12
-    BandwidthLimit = 0
-    BandwidthSampling = 1000
     OnStart = FtpServer1Start
     OnStop = FtpServer1Stop
     OnAuthenticate = FtpServer1Authenticate
@@ -200,7 +198,7 @@ object FtpServerForm: TFtpServerForm
   end
   object MainMenu1: TMainMenu
     Left = 116
-    Top = 107
+    Top = 99
     object File1: TMenuItem
       Caption = '&File'
       object MnuStartServer: TMenuItem
