@@ -7,7 +7,7 @@ Description:  This source is part of WebAppServer demo application.
               Normally you would find here database stuff. In this simple
               demo, persistent data is not stored in a database but into a
               simple INI file.
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -41,6 +41,7 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Jul 30, 2010 V1.01 F.Piette - added SaveConfig
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
