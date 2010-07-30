@@ -68,6 +68,7 @@ type
                                DefaultValue      : Integer) : Integer;
         function  CounterIncrement(const CounterRef: String) : Integer;
         procedure LoadConfig;
+        procedure SaveConfig;
         procedure Display(const Msg : String);
         procedure DisplayHandler(Sender : TObject; const Msg : String);
         property IniFileName : String read  FIniFileName
@@ -153,6 +154,19 @@ begin
     IniFile := TIcsIniFile.Create(FIniFileName);
     try
         FPort := IniFile.ReadString(SectionConfig, KeyPort, DftPort);
+    finally
+        FreeAndNil(IniFile);
+    end;
+end;
+
+procedure TWebAppSrvDataModule.SaveConfig;
+var
+    IniFile : TIcsIniFile;
+begin
+    IniFile := TIcsIniFile.Create(FIniFileName);
+    try
+        IniFile.WriteString(SectionConfig, KeyPort, FPort);
+        IniFile.UpdateFile;
     finally
         FreeAndNil(IniFile);
     end;
