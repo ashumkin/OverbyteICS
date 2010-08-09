@@ -559,7 +559,9 @@ end;
 procedure TFtpServerForm.StartServer;
 var
     wsi     : TWSADATA;
+{$IFDEF EXPERIMENTAL_THROTTLE}
     bandwidth: integer;
+{$ENDIF}
 begin
     GreenImage.Visible := FALSE;
     RedImage.Visible   := TRUE;
