@@ -3,11 +3,11 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.35
+Version:      7.36
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2008 by François PIETTE
+Legal issues: Copyright (C) 2002-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -107,7 +107,7 @@ Apr 26, 2010 V7.34 Arno removed some Windows dependencies. Charset conversion
              functions optionally may use GNU iconv library (LGPL) by explicitly
 		    defining conditional "USE_ICONV".  			 
 May 07, 2010 V7.35 Arno added IcsIsSBCSCodepage.			 
-
+Aug 21, 2010 V7.36 Arno fixed a bug in the UTF-8 constructor of TIcsFileStreamW.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -3654,8 +3654,8 @@ constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String;
   Mode: Word);
 begin
 {$IFDEF COMPILER12_UP}
-    inherited Create(Utf8FileName, Mode);
-    FFileName := FileName;
+    FFileName := Utf8FileName;
+    inherited Create(FFileName, Mode);
 {$ELSE}
     Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, 0);
 {$ENDIF}
@@ -3667,8 +3667,8 @@ constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String; Mode: Word;
   Rights: Cardinal);
 begin
 {$IFDEF COMPILER12_UP}
-    inherited Create(Utf8FileName, Mode, Rights);
-    FFileName := FileName;
+    FFileName := Utf8FileName;
+    inherited Create(FFileName, Mode, Rights);
 {$ELSE}
     Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, Rights);
 {$ENDIF}
