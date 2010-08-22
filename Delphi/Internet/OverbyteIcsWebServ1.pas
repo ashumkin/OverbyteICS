@@ -135,7 +135,7 @@ const
   WebServVersion     = 720;
   CopyRight : String = 'WebServ (c) 1999-2010 F. Piette V7.20 ';
   NO_CACHE           = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
-  WM_CLIENT_COUNT    = WM_USER + WH_MAX_MSG + 1;
+  WM_CLIENT_COUNT    = WM_USER + 1;
   FILE_UPLOAD_URL    = '/cgi-bin/FileUpload/';
   UPLOAD_DIR         = 'upload\';
   MAX_UPLOAD_SIZE    = 1024 * 1024; // Accept max 1MB file
