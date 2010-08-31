@@ -1,9 +1,9 @@
 object SrvForm: TSrvForm
   Left = 335
   Top = 205
-  Width = 375
-  Height = 218
   Caption = 'Server'
+  ClientHeight = 184
+  ClientWidth = 367
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

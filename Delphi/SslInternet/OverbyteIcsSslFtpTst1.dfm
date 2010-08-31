@@ -1021,7 +1021,6 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 165
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 58
       Items.Strings = (
         'sslTypeNone'
@@ -1431,7 +1430,6 @@ object FtpReceiveForm: TFtpReceiveForm
       Top = 71
       Width = 126
       Height = 21
-      ItemHeight = 13
       TabOrder = 15
       Text = 'UTF8 ON'
       Items.Strings = (
@@ -1490,7 +1488,10 @@ object FtpReceiveForm: TFtpReceiveForm
     Top = 440
   end
   object IcsLogger1: TIcsLogger
+    TimeStampFormatString = 'hh:nn:ss:zzz'
+    TimeStampSeparator = ' '
     LogFileOption = lfoOverwrite
+    LogFileEncoding = lfeUtf8
     LogFileName = 'Debug_SslFtpTst.txt'
     LogOptions = []
     Left = 152

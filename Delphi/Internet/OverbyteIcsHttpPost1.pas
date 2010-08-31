@@ -6,7 +6,7 @@ Description:
 Version:      7.02
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Unsupported code.
-Legal issues: Copyright (C) 2005-2009 by François PIETTE
+Legal issues: Copyright (C) 2005-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 

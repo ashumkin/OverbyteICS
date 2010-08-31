@@ -39,7 +39,7 @@ Apr 12, 1998  V1.03 Adapted for BCB3
 #if __BORLANDC__ == 0x520     // BCB1 is BC5.20   BCB3 is BC5.30
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
 #endif
-#include <vcl\vcl.h>
+#include <vcl.h>
 #pragma hdrstop
 
 #define ChatPort "2200"

@@ -1,9 +1,9 @@
 object TcpSrvForm: TTcpSrvForm
   Left = 336
   Top = 251
-  Width = 389
-  Height = 275
   Caption = 'ThrdSrvForm'
+  ClientHeight = 241
+  ClientWidth = 381
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

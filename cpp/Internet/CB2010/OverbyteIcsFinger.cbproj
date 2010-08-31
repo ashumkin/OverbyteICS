@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{65FAF644-E3E1-48EA-9600-2C017B9BB064}</ProjectGuid>
+			<ProjectGuid>{D60D8619-C1DA-49CD-851F-B06A61C67871}</ProjectGuid>
 			<MainSource>OverbyteIcsFinger.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>

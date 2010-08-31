@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{ED67F5CC-2719-4808-92F1-A7D6685E0B01}</ProjectGuid>
+			<ProjectGuid>{FB3BF23C-5265-400E-92D9-9372620EB8B9}</ProjectGuid>
 			<MainSource>OverbyteIcsD2010Design.dpk</MainSource>
 			<ProjectVersion>12.0</ProjectVersion>
 			<Config Condition="'$(Config)'==''">Debug</Config>

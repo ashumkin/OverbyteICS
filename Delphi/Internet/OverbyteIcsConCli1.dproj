@@ -1,6 +1,6 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{3b906d35-c75e-465e-a76e-03c9a48d84c7}</ProjectGuid>
+    <ProjectGuid>{E8369CC0-F8B5-445B-A1DF-F09444FFD497}</ProjectGuid>
     <MainSource>OverbyteIcsConCli1.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -71,11 +71,11 @@
     </Source>
   </Delphi.Personality> </BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <ItemGroup />
+  <ItemGroup/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsConCli1.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
 </Project>

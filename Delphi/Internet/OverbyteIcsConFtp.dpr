@@ -10,7 +10,7 @@ Version:      1.00
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2001-2006 by François PIETTE
+Legal issues: Copyright (C) 2001-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -64,7 +64,7 @@ uses
 
 const
     ConFtpVersion  = 100;
-    CopyRight      = ' ConFtp (c) 2001-2006 by Francois PIETTE. V1.00';
+    CopyRight      = ' ConFtp (c) 2001-2010 by Francois PIETTE. V1.00';
 
 type
     { We use TConApplication class (actually a component) to encapsulate all }

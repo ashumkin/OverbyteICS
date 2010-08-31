@@ -41,7 +41,7 @@ Nov 11, 1997 V2.03 Added a button to display the list of IP addresses for the
 Dec 06, 1998 V2.04 Don't use TWait component anymore.
 
 ---------------------------------------------------------------------------*/
-#include <vcl\vcl.h>
+#include <vcl.h>
 #pragma hdrstop
 
 #include "OverbyteIcscli5.h"

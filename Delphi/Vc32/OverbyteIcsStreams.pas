@@ -4,7 +4,7 @@ Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
 Version:      6.14
-Legal issues: Copyright (C) 2005-2009 by Arno Garrels, Berlin, Germany,
+Legal issues: Copyright (C) 2005-2010 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
               This software is provided 'as-is', without any express or

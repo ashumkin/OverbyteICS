@@ -64,6 +64,7 @@ object WebAppSrvForm: TWebAppSrvForm
     OnAfterAnswer = HttpAppSrv1AfterAnswer
     AuthTypes = []
     AuthRealm = 'ics'
+    OnBgException = HttpAppSrv1BgException
     SessionTimeout = 300
     OnDeleteSession = HttpAppSrv1DeleteSession
     OnVirtualException = HttpAppSrv1VirtualException

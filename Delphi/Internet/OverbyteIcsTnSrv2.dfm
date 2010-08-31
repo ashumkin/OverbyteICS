@@ -28,8 +28,6 @@ object ClientForm: TClientForm
     ReadOnly = True
     ScrollBars = ssBoth
     TabOrder = 0
-    ExplicitWidth = 427
-    ExplicitHeight = 173
   end
   object Panel1: TPanel
     Left = 0
@@ -78,7 +76,6 @@ object ClientForm: TClientForm
         'DataMemo')
       ScrollBars = ssVertical
       TabOrder = 3
-      ExplicitWidth = 425
     end
   end
   object Socket: TWSocket
@@ -90,17 +87,9 @@ object ClientForm: TClientForm
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'
     LocalPort = '0'
-    LastError = 0
     MultiThreaded = False
     MultiCast = False
     MultiCastIpTTL = 1
-    ReuseAddr = False
-    ComponentOptions = []
-    ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
-    OnDataAvailable = SocketDataAvailable
-    OnSessionClosed = SocketSessionClosed
     FlushTimeout = 60
     SendFlags = wsSendNormal
     LingerOnOff = wsLingerOn
@@ -110,6 +99,14 @@ object ClientForm: TClientForm
     KeepAliveInterval = 1000
     SocksLevel = '5'
     SocksAuthentication = socksNoAuthentication
+    LastError = 0
+    ReuseAddr = False
+    ComponentOptions = []
+    ListenBacklog = 5
+    ReqVerLow = 1
+    ReqVerHigh = 1
+    OnDataAvailable = SocketDataAvailable
+    OnSessionClosed = SocketSessionClosed
     Left = 8
     Top = 40
   end

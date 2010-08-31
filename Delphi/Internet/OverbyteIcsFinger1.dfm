@@ -1,9 +1,9 @@
 object FingerDemoForm: TFingerDemoForm
   Left = 154
   Top = 120
-  Width = 529
-  Height = 352
   Caption = 'Finger Demo - http://www.overbyte.be'
+  ClientHeight = 318
+  ClientWidth = 521
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

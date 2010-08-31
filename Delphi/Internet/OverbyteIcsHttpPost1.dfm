@@ -1,9 +1,9 @@
 object HttpPostForm: THttpPostForm
   Left = 250
   Top = 147
-  Width = 380
-  Height = 334
   Caption = 'Http Post - http://www.orverbyte.be'
+  ClientHeight = 300
+  ClientWidth = 372
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

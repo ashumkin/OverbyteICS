@@ -1,9 +1,9 @@
 object FtpAsyncForm: TFtpAsyncForm
   Left = 153
   Top = 122
-  Width = 648
-  Height = 380
   Caption = 'FtpAsyncForm'
+  ClientHeight = 346
+  ClientWidth = 640
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

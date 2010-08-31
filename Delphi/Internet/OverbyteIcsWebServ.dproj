@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{d6699241-31ef-451e-ac3a-db10735cd5dc}</ProjectGuid>
+    <ProjectGuid>{4FD7750C-5F9C-4859-A4C1-EC683596F859}</ProjectGuid>
     <MainSource>OverbyteIcsWebServ.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -52,7 +52,7 @@
       <Excluded_Packages Name="$(BDS)\bin\dcloffice2k100.bpl">Composants Microsoft Office 2000 Sample Automation Server Wrapper</Excluded_Packages>
     </Excluded_Packages></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsWebServ.dpr">
       <MainSource>MainSource</MainSource>

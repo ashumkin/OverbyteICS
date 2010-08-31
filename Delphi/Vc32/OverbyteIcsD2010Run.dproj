@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{bcf796a6-a54b-49ba-8152-ea41410f9f61}</ProjectGuid>
+			<ProjectGuid>{04CC4FF1-7760-4714-A85D-8D3B7E250242}</ProjectGuid>
 			<MainSource>OverbyteIcsD2010Run.dpk</MainSource>
 			<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 			<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>

@@ -1,9 +1,9 @@
 object MainForm: TMainForm
   Left = 163
   Top = 178
-  Width = 392
-  Height = 154
   Caption = 'Udp Sender (Broadcast)'
+  ClientHeight = 120
+  ClientWidth = 384
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

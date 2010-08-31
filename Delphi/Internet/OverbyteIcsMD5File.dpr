@@ -8,7 +8,7 @@ Version:      1.01
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2007 by François PIETTE
+Legal issues: Copyright (C) 2002-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -52,7 +52,7 @@ uses
 
 const
     MD5FileVersion = 101;
-    CopyRight      = ' MD5File (c) 2002-2007 by Francois PIETTE. V1.01';
+    CopyRight      = ' MD5File (c) 2002-2010 by Francois PIETTE. V1.01';
 
 var
     I : Integer;

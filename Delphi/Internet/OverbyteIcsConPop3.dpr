@@ -12,7 +12,7 @@ Version:      1.01
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -62,18 +62,20 @@ program OverbyteIcsConPop3;
 {$DEFINE DEBUG}         // debug output.
 
 uses
-  WinTypes,
-  WinProcs,
+  Windows,
   Messages,
   SysUtils,
   Classes,
   IniFiles,
+{$IF CompilerVersion >= 20}
+  AnsiStrings,
+{$IFEND}
   OverbyteIcsPop3Prot,
   OverbyteIcsConApp in '..\Vc32\OverbyteIcsConApp.pas';
 
 const
     ConPop3Version = 101;
-    CopyRight : String = ' ConPOP3 (c) 1997-2007 F. Piette V1.01 ';
+    CopyRight : String = ' ConPOP3 (c) 1997-2010 F. Piette V1.01 ';
 
 type
   TPOP3ExercizerApp = class(TConApplication)
@@ -631,12 +633,16 @@ end;
 { receiveing. This could be used to write the message lines to a file.      }
 procedure TPOP3ExercizerApp.Pop3ClientMessageLine(Sender: TObject);
 var
-    S : String;
+    S : AnsiString;
 begin
     S := (Sender as TPop3Cli).LastResponse;
     if Copy(S, 1, 8) = 'Subject:' then begin
         S         := Uppercase(S);
+    {$IF CompilerVersion >= 20}
+        SubjectOk := (PosEx('RUN SCRIPT', S) > 0);
+    {$ELSE}
         SubjectOk := (Pos('RUN SCRIPT', S) > 0);
+    {$IFEND}
     end;
     // Some extra checks on origin here.
 end;
@@ -673,7 +679,7 @@ var
 begin
     Buffer := 'MsgNum = ' + IntToStr((Sender as TPop3Cli).MsgNum) + ' ' +
               'MsgSize = ' + IntToStr((Sender as TPop3Cli).MsgSize) + ' ' +
-              'Line = ''' + (Sender as TPop3Cli).LastResponse + '''';
+              'Line = ''' + String((Sender as TPop3Cli).LastResponse) + '''';
     {$IFDEF DEBUG}
     WriteLn(Buffer);
     {$ENDIF}
@@ -704,7 +710,7 @@ var
     Buffer : String;
 begin
     Buffer := 'MsgNum = ' + IntToStr((Sender as TPop3Cli).MsgNum) + ' ' +
-              'MsgUidl = ' + (Sender as TPop3Cli).MsgUidl + '''';
+              'MsgUidl = ' + String((Sender as TPop3Cli).MsgUidl) + '''';
     {$IFDEF DEBUG}
     WriteLn(Buffer);
     {$ENDIF}
@@ -829,7 +835,7 @@ begin
                 Pop3Client.Uidl;
            end;
         1: begin     { Comes from the Uidl command }
-                FFileName := FMsgPath + 'Msg ' + Pop3Client.MsgUidl + '.txt';
+                FFileName := FMsgPath + 'Msg ' + String(Pop3Client.MsgUidl) + '.txt';
                 if FileExists(FFileName) then begin
                     WriteLn('Message ' + IntToStr(Pop3Client.MsgNum) + ' already here');
                     if Pop3Client.MsgNum >= Pop3Client.MsgCount then begin

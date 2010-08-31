@@ -14,7 +14,7 @@ Version:      6.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -102,7 +102,7 @@ uses
 
 const
   IcmpVersion = 6.01;
-  CopyRight : String   = ' TICMP (c) 1997-2008 F. Piette V6.01 ';
+  CopyRight : String   = ' TICMP (c) 1997-2010 F. Piette V6.01 ';
   IcmpDLL     = 'icmp.dll';
 
   // IP status codes returned to transports and user IOCTLs.

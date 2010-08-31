@@ -8,7 +8,7 @@ Version:      2.09
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2008 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -64,7 +64,7 @@ unit OverbyteIcsSslMailSnd1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, OverbyteIcsIniFiles,
   OverbyteIcsWndControl,
   OverbyteIcsWSocket,
@@ -73,7 +73,7 @@ uses
 
 const
   SslSmtpTestVersion    = 2.09;
-  CopyRight : String    = ' SslMailSnd (c) 1997-2008 F. Piette V2.09 ';
+  CopyRight : String    = ' SslMailSnd (c) 1997-2010 F. Piette V2.09 ';
   WM_SSL_RECONNECT      = WM_USER + 1;
 
 type

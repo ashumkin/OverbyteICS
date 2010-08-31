@@ -1,9 +1,9 @@
 object Cli7Form: TCli7Form
   Left = 70
   Top = 103
-  Width = 394
-  Height = 266
   Caption = 'Client 7'
+  ClientHeight = 232
+  ClientWidth = 386
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

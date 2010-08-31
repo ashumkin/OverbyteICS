@@ -9,7 +9,7 @@ Object:       Demo for TFtpClient object (RFC 959 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2006 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -80,14 +80,14 @@ unit OverbyteIcsSslFtpTst1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls, WinSock,
   OverbyteIcsWSocket, OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsLogger,
   OverbyteIcsWndControl, OverbyteIcsFtpCli, OverbyteIcsFtpSrvT, OverByteIcsUtils;
 
 const
   FTPTstVersion      = 707;
-  CopyRight : String = ' SslFtpTst (c) 1997-2009 F. Piette V7.07 ';
+  CopyRight : String = ' SslFtpTst (c) 1997-2010 F. Piette V7.07 ';
   WM_SSL_NOT_TRUSTED = WM_USER + 1;
   WM_TMP_SOMETHING   = WM_USER + 2;
 type

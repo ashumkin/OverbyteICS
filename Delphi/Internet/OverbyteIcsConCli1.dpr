@@ -8,7 +8,7 @@ Version:      1.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -59,7 +59,7 @@ uses
 
 const
     ConCli1Version     = 102;
-    CopyRight : String = 'ConCli1 (c) 1997-2007 Francois Piette  V1.02 ';
+    CopyRight : String = 'ConCli1 (c) 1997-2010 Francois Piette  V1.02 ';
 
 type
     { TWSocket is event driven. Since all event handlers have to be a       }

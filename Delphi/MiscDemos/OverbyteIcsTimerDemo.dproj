@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{aadd85c8-96ef-4777-8eb1-3af22df13473}</ProjectGuid>
+    <ProjectGuid>{D11623B0-70B6-4F75-9A3E-6A6FFA7D2DB9}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>
-    <Borland.ProjectType />
+    <Borland.ProjectType/>
     <BorlandProject>
 <BorlandProject> <Delphi.Personality>   <Parameters>
       <Parameters Name="UseLauncher">False</Parameters>
@@ -64,7 +64,7 @@
     </Source>
   </Delphi.Personality> </BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsTimerDemo.dpr">
       <MainSource>MainSource</MainSource>

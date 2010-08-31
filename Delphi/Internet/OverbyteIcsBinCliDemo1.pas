@@ -46,7 +46,7 @@ unit OverbyteIcsBinCliDemo1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, OverbyteIcsIniFiles, ExtCtrls,
   { Don't forget to add your vc32 directory to Delphi library path }
   OverbyteIcsWSocket;

@@ -36,7 +36,7 @@ Updates:
 
 ---------------------------------------------------------------------------*/
 #include <vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <Inifiles.hpp>
 #include <stdio.h>
 #pragma hdrstop
 

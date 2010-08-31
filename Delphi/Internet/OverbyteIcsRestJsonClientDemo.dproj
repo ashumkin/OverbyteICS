@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{4EB77FB2-C462-40E1-BE91-21A1FEE5D7B6}</ProjectGuid>
+			<ProjectGuid>{93AC0246-7D3C-4D8E-9D37-3788C0B5DAF6}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>OverbyteIcsRestJsonClientDemo.dpr</MainSource>
 			<Config Condition="'$(Config)'==''">Débogage</Config>

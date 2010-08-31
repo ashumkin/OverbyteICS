@@ -11,7 +11,7 @@ Version:      7.21
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2008 by François PIETTE
+Legal issues: Copyright (C) 1998-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -92,7 +92,7 @@ uses
 
 const
   MimeDemoVersion    = 721;
-  CopyRight : String = ' MimeDemo (c) 1998-2009 F. Piette V7.21 ';
+  CopyRight : String = ' MimeDemo (c) 1998-2010 F. Piette V7.21 ';
 
 type
 {$IFDEF USE_TNT}

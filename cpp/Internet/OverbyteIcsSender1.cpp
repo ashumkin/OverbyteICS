@@ -39,7 +39,7 @@ Aug 15, 1999  V1.03 Adapted for BCB4 (Moved FIniFileName initialization from
 
 ---------------------------------------------------------------------------*/
 #include <vcl.h>
-#include <vcl/IniFiles.hpp>
+#include <IniFiles.hpp>
 #include <stdlib.h>
 #pragma hdrstop
 

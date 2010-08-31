@@ -41,7 +41,7 @@ Dec 27, 1998 V1.10 New argument in TPing events.
 #if __BORLANDC__ == 0x520     // BCB1 is BC5.20   BCB3 is BC5.30
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
 #endif
-#include <vcl\vcl.h>
+#include <vcl.h>
 #pragma hdrstop
 
 #include "OverbyteIcsPingTst1.h"

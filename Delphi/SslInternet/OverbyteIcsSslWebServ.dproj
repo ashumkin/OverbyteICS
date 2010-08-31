@@ -1,6 +1,6 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{b6c6ee61-5607-4be0-8264-f2c795bbc52e}</ProjectGuid>
+    <ProjectGuid>{6A1A3AAD-E40F-4C92-B6FA-200F3BCDE407}</ProjectGuid>
     <MainSource>OverbyteIcsSslWebServ.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -70,7 +70,7 @@
 
 <Source><Source Name="MainSource">OverbyteIcsSslWebServ.dpr</Source></Source></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsSslWebServ.dpr">
       <MainSource>MainSource</MainSource>

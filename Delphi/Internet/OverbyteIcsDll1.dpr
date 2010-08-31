@@ -20,7 +20,7 @@ Version:      1.02
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2000-2007 by François PIETTE
+Legal issues: Copyright (C) 2000-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -70,7 +70,7 @@ uses
 
 const
   IcsDll1Version            = 102;
-  CopyRight    : String     = ' IcsDll1 (c) 2000-2007 Francois Piette V1.02 ';
+  CopyRight    : String     = ' IcsDll1 (c) 2000-2010 Francois Piette V1.02 ';
 
 // If you use strings or other dynamically allocated data between the DLL and
 // the main program, then you _must_ use ShareMem unit as explained in Delphi

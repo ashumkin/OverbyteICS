@@ -47,7 +47,7 @@ History:
     #define s_addr S_addr
 #endif
 #include <vcl.h>
-#include <vcl\inifiles.hpp>
+#include <inifiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsWebServ1.h"

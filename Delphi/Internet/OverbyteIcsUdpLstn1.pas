@@ -10,7 +10,7 @@ Object:       Demo program to show how to use TWSocket object to listen
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -56,12 +56,12 @@ unit OverbyteIcsUdpLstn1;
 interface
 
 uses
-  WinTypes, Messages, SysUtils, Classes, Controls, Forms, StdCtrls,
+  Windows, SysUtils, Classes, Controls, Forms, StdCtrls,
   OverbyteIcsIniFiles, WinSock, OverbyteIcsWSocket, OverbyteIcsWndControl;
 
 const
   UdpLstnVersion     = 204;
-  CopyRight : String = ' UdpLstn (c) 1997-2007 F. Piette V2.04 ';
+  CopyRight : String = ' UdpLstn (c) 1997-2010 F. Piette V2.04 ';
 
 type
   TMainForm = class(TForm)

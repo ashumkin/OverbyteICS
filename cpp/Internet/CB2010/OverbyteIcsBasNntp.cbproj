@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{406F7478-2BC8-4598-9771-4F41440A29C4}</ProjectGuid>
+			<ProjectGuid>{9B93DF8C-DC8B-4B89-96CF-4997F7101C40}</ProjectGuid>
 			<MainSource>OverbyteIcsBasNntp.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>

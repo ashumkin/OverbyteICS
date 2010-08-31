@@ -6,7 +6,7 @@ Creation:     February 24th, 1998
 Version:      6.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org See website for details.
-Legal issues: Copyright (C) 1998-2007 by François PIETTE
+Legal issues: Copyright (C) 1998-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -145,7 +145,7 @@ uses
 
 const
     TnScriptVersion    = 6.00;
-    CopyRight : String = ' TTnScript (c) 1998-2007 F. Piette V6.00 ';
+    CopyRight : String = ' TTnScript (c) 1998-2010 F. Piette V6.00 ';
 
 type
     TnScriptException = class(Exception);

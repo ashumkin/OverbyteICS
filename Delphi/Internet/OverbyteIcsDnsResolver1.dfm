@@ -1,9 +1,9 @@
 object DnsResolverForm: TDnsResolverForm
   Left = 56
   Top = 116
-  Width = 384
-  Height = 411
   Caption = 'DnsResolverForm'
+  ClientHeight = 377
+  ClientWidth = 376
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{52bfa9a0-62bc-459e-b458-d6a4ab8b1d82}</ProjectGuid>
+    <ProjectGuid>{5A177B3F-2E90-4201-A799-4D7AE870A010}</ProjectGuid>
     <MainSource>OverbyteIcsCB2007Design.cpp</MainSource>
     <Config Condition="'$(Config)'==''">Debug</Config>
   </PropertyGroup>
@@ -86,7 +86,7 @@
       <Excluded_Packages Name="$(BDS)\bin\dclofficexp100.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
     </Excluded_Packages><HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Count">1</HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Item0">250</HistoryLists_hlBCC_MaxIdentifierLength></HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlDCC_UsePackage><HistoryLists_hlDCC_UsePackage Name="Count">1</HistoryLists_hlDCC_UsePackage><HistoryLists_hlDCC_UsePackage Name="Item0">DesignIDE</HistoryLists_hlDCC_UsePackage></HistoryLists_hlDCC_UsePackage><HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Count">1</HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Item0">0</HistoryLists_hlDCC_CodePage></HistoryLists_hlDCC_CodePage><HistoryLists_hlBCC_Defines><HistoryLists_hlBCC_Defines Name="Count">1</HistoryLists_hlBCC_Defines><HistoryLists_hlBCC_Defines Name="Item0">NO_ADVANCED_HTTP_CLIENT_FEATURES</HistoryLists_hlBCC_Defines></HistoryLists_hlBCC_Defines><HistoryLists_hlBCC_UserSuppliedOptions><HistoryLists_hlBCC_UserSuppliedOptions Name="Count">1</HistoryLists_hlBCC_UserSuppliedOptions><HistoryLists_hlBCC_UserSuppliedOptions Name="Item0"> -r</HistoryLists_hlBCC_UserSuppliedOptions></HistoryLists_hlBCC_UserSuppliedOptions><HistoryLists_hlDCC_Define><HistoryLists_hlDCC_Define Name="Count">1</HistoryLists_hlDCC_Define><HistoryLists_hlDCC_Define Name="Item0">DEBUG;USE_SSL</HistoryLists_hlDCC_Define></HistoryLists_hlDCC_Define><HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Count">1</HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Item0">Debug</HistoryLists_hlIntermediateOutputDir></HistoryLists_hlIntermediateOutputDir></CPlusPlusBuilder.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets"/>
   <ItemGroup>
     <PackageImport Include="designide.bpi">
       <BuildOrder>0</BuildOrder>

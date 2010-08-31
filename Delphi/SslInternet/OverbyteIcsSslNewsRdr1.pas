@@ -8,7 +8,7 @@ Version:      1.00
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2006 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -59,13 +59,13 @@ unit OverbyteIcsSslNewsRdr1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, OverbyteIcsNntpCli, StdCtrls, ExtCtrls, OverbyteIcsIniFiles,
   OverbyteIcsWSocket, OverbyteIcsWndControl;
 
 const
   NewsRdrVersion     = 100;
-  CopyRight : String = ' NewsRdr (c) 1997-2006 F. Piette V1.00 ';
+  CopyRight : String = ' NewsRdr (c) 1997-2010 F. Piette V1.00 ';
 
 type
   TNNTPForm = class(TForm)

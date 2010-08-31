@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.27
+Version:      7.28
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -293,6 +293,7 @@ Feb 08, 2010 V7.26 F. Piette fixed a bug introduced in 7.25 with ResType
                    empty line and passed the wrong length to HandleTableRow.
 Aug 07, 2010 V7.27 Bjørnar Nielsen suggested to add an overloaded UrlDecode()
                    that takes a RawByteString URL.
+Aug 08, 2010 V7.28 F. Piette: Published OnBgException from underlaying socket.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -377,8 +378,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 727;
-    CopyRight : String = ' THttpServer (c) 1999-2010 F. Piette V7.27 ';
+    THttpServerVersion = 728;
+    CopyRight : String = ' THttpServer (c) 1999-2010 F. Piette V7.28 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
 
@@ -972,6 +973,8 @@ type
                                              Error  : Word);
         procedure WSocketServerChangeState(Sender : TObject;
                                            OldState, NewState : TSocketState);
+        procedure WSocketServerBgException(Sender: TObject; E: Exception;
+                                           var CanClose: Boolean);
         procedure TriggerServerStarted; virtual;
         procedure TriggerServerStopped; virtual;
         procedure TriggerClientConnect(Client : TObject; Error  : Word); virtual;
@@ -1164,6 +1167,7 @@ type
                                                  write FAuthDigestNonceLifeTimeMin default 1;
     {$ENDIF}
 {$ENDIF}
+        property OnBgException;  { F.Piette V7.27 }
     end;
 
     THttpDirEntry = class
@@ -1248,7 +1252,7 @@ Description:  A component adding SSL support to THttpServer.
 const
      SslHttpSrvVersion            = 100;
      SslHttpSrvDate               = 'Jul 20, 2003';
-     SslHttpSrvCopyRight : String = ' TSslHttpSrv (c) 2003-2005 Francois Piette V1.00.0 ';
+     SslHttpSrvCopyRight : String = ' TSslHttpSrv (c) 2003-2010 Francois Piette V1.00.0 ';
 
 type
     TSslHttpServer = class(THttpServer)
@@ -1581,6 +1585,7 @@ begin
     FWSocketServer.OnClientDisconnect := WSocketServerClientDisconnect;
     FWSocketServer.OnSessionClosed    := WSocketServerSessionClosed;
     FWSocketServer.OnChangeState      := WSocketServerChangeState;
+    FWSocketServer.OnBgException      := WSocketServerBgException;  { F.Piette V7.27 }
     FWSocketServer.Banner             := '';
     FWSocketServer.Proto              := 'tcp';
     FWSocketServer.Port               := FPort;
@@ -1745,6 +1750,17 @@ procedure THttpServer.WSocketServerSessionClosed(
     Error  : Word);
 begin
     TriggerServerStopped;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.WSocketServerBgException(    { F.Piette V7.27 }
+    Sender       : TObject;
+    E            : Exception;
+    var CanClose : Boolean);
+begin
+    if Assigned(FOnBgException) then
+        FOnBgException(Self, E, CanClose);
 end;
 
 

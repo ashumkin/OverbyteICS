@@ -1,9 +1,9 @@
 object HttpThreadForm: THttpThreadForm
   Left = 168
   Top = 120
-  Width = 610
-  Height = 300
   Caption = 'HTTP Treaded Test'
+  ClientHeight = 266
+  ClientWidth = 602
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

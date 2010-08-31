@@ -1,9 +1,9 @@
 object WebServForm: TWebServForm
   Left = 253
   Top = 158
-  Width = 531
-  Height = 369
   Caption = 'ICS WebServer Demo - http://www.overbyte.be'
+  ClientHeight = 335
+  ClientWidth = 523
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,10 +20,11 @@ object WebServForm: TWebServForm
   object ToolsPanel: TPanel
     Left = 0
     Top = 0
-    Width = 515
+    Width = 523
     Height = 125
     Align = alTop
     TabOrder = 0
+    ExplicitWidth = 515
     object Label1: TLabel
       Left = 40
       Top = 8
@@ -222,8 +223,8 @@ object WebServForm: TWebServForm
   object DisplayMemo: TMemo
     Left = 0
     Top = 125
-    Width = 515
-    Height = 208
+    Width = 523
+    Height = 210
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText

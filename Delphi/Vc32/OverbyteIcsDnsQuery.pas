@@ -8,7 +8,7 @@ Version:      6.03
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2009 by François PIETTE
+Legal issues: Copyright (C) 1999-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -100,7 +100,7 @@ uses
 
 const
   DnsQueryVersion    = 603;
-  CopyRight : String = ' TDnsQuery  (c) 1999-2009 F. Piette V6.03 ';
+  CopyRight : String = ' TDnsQuery  (c) 1999-2010 F. Piette V6.03 ';
 
   { Maximum answers (responses) count }
   MAX_ANCOUNT     = 50;

@@ -1,9 +1,9 @@
 object BasicNntpForm: TBasicNntpForm
   Left = 119
   Top = 113
-  Width = 502
-  Height = 430
   Caption = 'Basic NNTP demo'
+  ClientHeight = 396
+  ClientWidth = 494
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

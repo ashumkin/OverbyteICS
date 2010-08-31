@@ -1,9 +1,9 @@
 object DllTestForm: TDllTestForm
   Left = 138
   Top = 119
-  Width = 379
-  Height = 247
   Caption = 'DllTest - http://www.overbyte.be'
+  ClientHeight = 213
+  ClientWidth = 371
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

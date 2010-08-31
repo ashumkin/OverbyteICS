@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{2AC663E2-433F-4991-A121-3ABB7648BB25}</ProjectGuid>
+			<ProjectGuid>{2F71E6EB-9A6B-4774-9EBB-C85D855169B2}</ProjectGuid>
 			<MainSource>OverbyteIcsUdpSend.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>

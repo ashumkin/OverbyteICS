@@ -1,9 +1,9 @@
 object ThrdSrvForm: TThrdSrvForm
   Left = 295
   Top = 249
-  Width = 388
-  Height = 275
   Caption = 'ThrdSrvForm'
+  ClientHeight = 241
+  ClientWidth = 380
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

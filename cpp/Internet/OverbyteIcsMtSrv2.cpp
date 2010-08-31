@@ -53,7 +53,7 @@ Updates:
 
 
 ---------------------------------------------------------------------------*/
-#include <vcl\vcl.h>
+#include <vcl.h>
 #pragma hdrstop
 
 #include "OverbyteIcsMtSrv2.h"

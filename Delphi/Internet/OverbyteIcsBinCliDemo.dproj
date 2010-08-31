@@ -1,6 +1,6 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{d86f53ad-9ab0-4b53-89b5-5981bb504770}</ProjectGuid>
+    <ProjectGuid>{16550515-A65C-454C-9E8D-3C4465FCD276}</ProjectGuid>
     <MainSource>OverbyteIcsBinCliDemo.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -124,7 +124,7 @@
     </Source>
   </Delphi.Personality> </BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <ItemGroup />
+  <ItemGroup/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsBinCliDemo.dpr">
       <MainSource>MainSource</MainSource>
@@ -133,5 +133,5 @@
       <Form>BinClientForm</Form>
     </DCCReference>
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
 </Project>

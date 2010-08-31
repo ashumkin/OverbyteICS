@@ -1,9 +1,9 @@
 object MainForm: TMainForm
   Left = 158
   Top = 169
-  Width = 365
-  Height = 149
   Caption = 'UdpListener'
+  ClientHeight = 115
+  ClientWidth = 357
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

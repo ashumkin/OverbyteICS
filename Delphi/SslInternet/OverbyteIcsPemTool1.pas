@@ -13,7 +13,7 @@ Version:      1.11
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2009 by François PIETTE
+Legal issues: Copyright (C) 2003-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -90,7 +90,7 @@ const
      PemToolVersion     = 111;
      PemToolDate        = 'January 29, 2009';
      PemToolName        = 'PEM Certificate Tool';
-     CopyRight : String = '(c) 2003-2009 by François PIETTE V1.11 ';
+     CopyRight : String = '(c) 2003-2010 by François PIETTE V1.11 ';
      CaptionMain        = 'ICS PEM Certificate Tool - ';
      WM_APPSTARTUP      = WM_USER + 1;
 

@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{BF87054D-B0DA-4CA7-8A22-4908FE63709B}</ProjectGuid>
+			<ProjectGuid>{BB5655A3-91AF-4033-A08D-7C3B449ABEA8}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>OverbyteIcsSysLogServerDemo.dpr</MainSource>
 			<Config Condition="'$(Config)'==''">Débogage</Config>

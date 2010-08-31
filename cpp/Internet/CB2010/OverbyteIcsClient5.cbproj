@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{F44EE784-C0CC-460C-B2DE-E21DCE83E942}</ProjectGuid>
+			<ProjectGuid>{EBFD349E-FD77-4D3F-A053-8FEA42279837}</ProjectGuid>
 			<MainSource>OverbyteIcsClient5.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>

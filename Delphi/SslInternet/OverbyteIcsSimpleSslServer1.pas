@@ -8,7 +8,7 @@ Version:      1.00.2
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2009 by François PIETTE
+Legal issues: Copyright (C) 2003-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -75,7 +75,7 @@ uses
 const
   SimpleSslServer1Version            = 100;
   SimpleSslServer1Date               = 'Feb 02, 2003';
-  SimpleSslServer1CopyRight : String = ' SimpleSslServer1 (c) 2003-2009 Francois Piette V1.00.2 ';
+  SimpleSslServer1CopyRight : String = ' SimpleSslServer1 (c) 2003-2010 Francois Piette V1.00.2 ';
   
   WM_SSL_NOT_TRUSTED = WM_USER + 1;
 

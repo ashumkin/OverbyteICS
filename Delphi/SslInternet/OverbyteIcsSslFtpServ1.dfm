@@ -399,7 +399,8 @@ object SslFtpServerForm: TSslFtpServerForm
   object IcsLogger1: TIcsLogger
     TimeStampFormatString = 'hh:nn:ss:zzz'
     TimeStampSeparator = ' '
-    LogFileOption = lfoOverwrite    
+    LogFileOption = lfoOverwrite
+    LogFileEncoding = lfeUtf8
     LogFileName = 'DEBUG_SSLFtpSrv.txt'
     LogOptions = []
     Left = 140

@@ -38,7 +38,7 @@ Updates:
 Mar 27, 1998  Adapted to C++Builder V3.0
 
 ---------------------------------------------------------------------------*/
-#include <vcl\vcl.h>
+#include <vcl.h>
 #pragma hdrstop
 
 #include "OverbyteIcsTnSrv2.h"

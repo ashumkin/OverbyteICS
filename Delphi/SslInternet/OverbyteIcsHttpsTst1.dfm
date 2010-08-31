@@ -1,9 +1,9 @@
 object HttpsTstForm: THttpsTstForm
   Left = 244
   Top = 170
-  Width = 657
-  Height = 421
   Caption = 'HTTPS TEST'
+  ClientHeight = 387
+  ClientWidth = 649
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -311,7 +311,6 @@ object HttpsTstForm: THttpsTstForm
       Width = 49
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 11
       Items.Strings = (
         '5'
@@ -377,7 +376,6 @@ object HttpsTstForm: THttpsTstForm
       Width = 85
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 17
       Items.Strings = (
         'HTTP/1.0'
@@ -471,6 +469,7 @@ object HttpsTstForm: THttpsTstForm
     BandwidthSampling = 1000
     Options = []
     IcsLogger = IcsLogger1
+    Timeout = 30
     OnHeaderData = SslHttpCli1HeaderData
     OnCommand = SslHttpCli1Command
     OnDocBegin = SslHttpCli1DocBegin
@@ -508,6 +507,7 @@ object HttpsTstForm: THttpsTstForm
     TimeStampFormatString = 'hh:nn:ss:zzz'
     TimeStampSeparator = ' '
     LogFileOption = lfoOverwrite
+    LogFileEncoding = lfeUtf8
     LogFileName = 'Debug_Out_HttpsTst.txt'
     LogOptions = [loDestFile, loProtSpecErr, loProtSpecInfo, loProtSpecDump]
     OnIcsLogEvent = IcsLogger1IcsLogEvent

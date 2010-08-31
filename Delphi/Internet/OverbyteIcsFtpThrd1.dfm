@@ -1,9 +1,9 @@
 object ThrdFtpForm: TThrdFtpForm
   Left = 118
   Top = 122
-  Width = 591
-  Height = 394
   Caption = 'Threaded FTP'
+  ClientHeight = 360
+  ClientWidth = 583
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

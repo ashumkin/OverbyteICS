@@ -1,9 +1,9 @@
 object BasicFtpClientForm: TBasicFtpClientForm
   Left = 81
   Top = 115
-  Width = 482
-  Height = 660
   Caption = 'Basic FTP Client with ICS - http://www.overbyte.be'
+  ClientHeight = 626
+  ClientWidth = 474
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

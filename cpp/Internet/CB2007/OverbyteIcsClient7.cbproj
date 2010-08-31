@@ -1,6 +1,6 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{5034040d-97d6-4e29-8c4f-e4b5a9586437}</ProjectGuid>
+    <ProjectGuid>{97859420-2ED5-4830-9AF0-E0494BBC5070}</ProjectGuid>
     <MainSource>OverbyteIcsClient7.cpp</MainSource>
     <Config Condition="'$(Config)'==''">Debug</Config>
   </PropertyGroup>
@@ -23,14 +23,14 @@
     <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
     <Defines>NO_STRICT</Defines>
     <DynamicRTL>true</DynamicRTL>
-    <ILINK_ObjectSearchPath>D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
+    <ILINK_ObjectSearchPath>..\..\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
     <UsePackages>true</UsePackages>
     <ProjectType>CppVCLApplication</ProjectType>
     <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;IndyProtocols.bpi;OverbyteIcsCB2007Run.bpi</PackageImports>
     <BCC_wpar>false</BCC_wpar>
-    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\..\Delphi\Vc32;D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</IncludePath>
+    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\..\Delphi\Vc32;..\..\Internet\CB2007;..\..\Internet</IncludePath>
     <AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2007Run.lib</AllPackageLibs>
-    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</ILINK_LibraryPath>
+    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</ILINK_LibraryPath>
     <Multithreaded>true</Multithreaded>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -73,7 +73,7 @@
       <Excluded_Packages Name="C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\5.0\Bpl\pielib.bpl">Borland Delphi Demo Component</Excluded_Packages>
     </Excluded_Packages><Linker><Linker Name="LibPrefix"></Linker><Linker Name="LibSuffix"></Linker><Linker Name="LibVersion"></Linker></Linker><ProjectProperties><ProjectProperties Name="AutoShowDeps">False</ProjectProperties><ProjectProperties Name="ManagePaths">True</ProjectProperties><ProjectProperties Name="VerifyPackages">True</ProjectProperties></ProjectProperties></CPlusPlusBuilder.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets"/>
   <ItemGroup>
     <ResFiles Include="OverbyteIcsClient7.res">
       <BuildOrder>0</BuildOrder>
@@ -86,7 +86,7 @@
     <CppCompile Include="OverbyteIcsClient7.cpp">
       <BuildOrder>1</BuildOrder>
     </CppCompile>
-    <FormResources Include="..\OverbyteIcsCli7.dfm" />
+    <FormResources Include="..\OverbyteIcsCli7.dfm"/>
     <BuildConfiguration Include="Debug">
       <Key>Cfg_1</Key>
     </BuildConfiguration>

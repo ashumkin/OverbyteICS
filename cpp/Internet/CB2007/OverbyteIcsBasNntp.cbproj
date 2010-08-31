@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{5034040d-97d6-4e29-8c4f-e4b5a9586437}</ProjectGuid>
+    <ProjectGuid>{AB9DCDC8-2175-40BD-BBAF-3359BB4F71DF}</ProjectGuid>
     <MainSource>OverbyteIcsBasNntp.cpp</MainSource>
     <Config Condition="'$(Config)'==''">Debug</Config>
   </PropertyGroup>
@@ -24,14 +24,14 @@
     <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
     <Defines>NO_STRICT</Defines>
     <DynamicRTL>true</DynamicRTL>
-    <ILINK_ObjectSearchPath>D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
+    <ILINK_ObjectSearchPath>..\..\Internet\CB2007;..\..\Internet</ILINK_ObjectSearchPath>
     <UsePackages>true</UsePackages>
     <ProjectType>CppVCLApplication</ProjectType>
     <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;IndyProtocols.bpi;OverbyteIcsCB2007Run.bpi</PackageImports>
     <BCC_wpar>false</BCC_wpar>
-    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\..\Delphi\Vc32;D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</IncludePath>
+    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\..\Delphi\Vc32;..\..\Internet\CB2007;..\..\Internet</IncludePath>
     <AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2007Run.lib</AllPackageLibs>
-    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;D:\Ics-Temp\branches\icsv7\cpp\Internet\CB2007;..\..\Internet</ILINK_LibraryPath>
+    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</ILINK_LibraryPath>
     <Multithreaded>true</Multithreaded>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -183,7 +183,7 @@
     </ProjectProperties>
   </CPlusPlusBuilder.Personality> </BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets"/>
   <ItemGroup>
     <ResFiles Include="OverbyteIcsBasNntp.res">
       <ModuleName>OverbyteIcsBasNntp.res</ModuleName>
@@ -197,7 +197,7 @@
     <CppCompile Include="OverbyteIcsBasNntp.cpp">
       <BuildOrder>1</BuildOrder>
     </CppCompile>
-    <FormResources Include="..\OverbyteIcsBasNntp1.dfm" />
+    <FormResources Include="..\OverbyteIcsBasNntp1.dfm"/>
     <BuildConfiguration Include="Debug">
       <Key>Cfg_1</Key>
     </BuildConfiguration>

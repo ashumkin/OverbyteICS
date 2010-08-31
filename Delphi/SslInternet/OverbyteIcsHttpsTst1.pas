@@ -10,7 +10,7 @@ Version:      1.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2008 by François PIETTE
+Legal issues: Copyright (C) 2003-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -92,7 +92,7 @@ const
      HttpsTstVersion     = 106;
      HttpsTstDate        = 'Dec 21, 2005';
      HttpsTstName        = 'HttpsTst';
-     CopyRight : String  = ' HttpsTst (c) 2005-2008 Francois Piette V1.06.0 ';
+     CopyRight : String  = ' HttpsTst (c) 2005-2010 Francois Piette V1.06.0 ';
      WM_SSL_NOT_TRUSTED  = WM_USER + 1;
 
 type

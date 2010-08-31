@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{9ba621c1-8f61-4f31-94c7-16399d392d21}</ProjectGuid>
+    <ProjectGuid>{1BC6B5D4-DFB5-4861-8AE9-4E949DC867DF}</ProjectGuid>
     <MainSource>OverbyteIcsHttpsTst.cpp</MainSource>
     <Config Condition="'$(Config)'==''">Debug</Config>
   </PropertyGroup>
@@ -31,9 +31,9 @@
     <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;IndyCore.bpi;IndySystem.bpi;IndyProtocols.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;OverbyteIcsCB2007Run.bpi</PackageImports>
     <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
     <BCC_wpar>false</BCC_wpar>
-    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet;..\..\Internet\CB2007</IncludePath>
+    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet;..\..\Internet\CB2007;..\..\..\Delphi\Vc32</IncludePath>
     <AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2007Run.lib;xmlrtl.lib;vclactnband.lib;vclx.lib</AllPackageLibs>
-    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</ILINK_LibraryPath>
+    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet;..\..\..\Delphi\Vc32</ILINK_LibraryPath>
     <Multithreaded>true</Multithreaded>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -75,7 +75,7 @@
       <Excluded_Packages Name="$(BDS)\bin\dclofficexp100.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
     </Excluded_Packages><Linker><Linker Name="LibPrefix"></Linker><Linker Name="LibSuffix"></Linker><Linker Name="LibVersion"></Linker></Linker><ProjectProperties><ProjectProperties Name="AutoShowDeps">False</ProjectProperties><ProjectProperties Name="ManagePaths">True</ProjectProperties><ProjectProperties Name="VerifyPackages">True</ProjectProperties></ProjectProperties><HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Count">2</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item0">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\Internet;..\..\Internet\CB2007</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item1">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;D:\ICS-Root\V7Temp\cpp\SslInternet\CB2007</HistoryLists_hlIncludePath></HistoryLists_hlIncludePath><HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Count">1</HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Item0">$(BDS)\lib\debug;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CB2007;..\..\Internet</HistoryLists_hlILINK_LibraryPath></HistoryLists_hlILINK_LibraryPath><HistoryLists_hlDefines><HistoryLists_hlDefines Name="Count">1</HistoryLists_hlDefines><HistoryLists_hlDefines Name="Item0">_DEBUG;NO_STRICT;USE_SSL</HistoryLists_hlDefines></HistoryLists_hlDefines><HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Count">1</HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Item0">0</HistoryLists_hlDCC_CodePage></HistoryLists_hlDCC_CodePage><HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Count">1</HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Item0">250</HistoryLists_hlBCC_MaxIdentifierLength></HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Count">1</HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Item0">Debug</HistoryLists_hlIntermediateOutputDir></HistoryLists_hlIntermediateOutputDir><HistoryLists_hlDCC_Define><HistoryLists_hlDCC_Define Name="Count">1</HistoryLists_hlDCC_Define><HistoryLists_hlDCC_Define Name="Item0">USE_SSL</HistoryLists_hlDCC_Define></HistoryLists_hlDCC_Define></CPlusPlusBuilder.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets"/>
   <ItemGroup>
     <ResFiles Include="OverbyteIcsHttpsTst.res">
       <BuildOrder>0</BuildOrder>
@@ -93,8 +93,8 @@
     <CppCompile Include="OverbyteIcsHttpsTst.cpp">
       <BuildOrder>1</BuildOrder>
     </CppCompile>
-    <FormResources Include="..\OverbyteIcsCliCertDlg.dfm" />
-    <FormResources Include="..\OverbyteIcsHttpsTst1.dfm" />
+    <FormResources Include="..\OverbyteIcsCliCertDlg.dfm"/>
+    <FormResources Include="..\OverbyteIcsHttpsTst1.dfm"/>
     <BuildConfiguration Include="Debug">
       <Key>Cfg_1</Key>
     </BuildConfiguration>

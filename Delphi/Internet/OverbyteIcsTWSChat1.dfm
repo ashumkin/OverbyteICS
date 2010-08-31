@@ -1,9 +1,9 @@
 object TWSChatForm: TTWSChatForm
   Left = 190
   Top = 176
-  Width = 405
-  Height = 302
   Caption = 'TWSChat - http://www.overbyte.be'
+  ClientHeight = 268
+  ClientWidth = 397
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.40
+Version:      7.42
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -744,7 +744,7 @@ Dec 20, 2009 V7.35 Arno added support for SSL Server Name Indication (SNI).
                    browers don't send both "localhost" and IP addresses as
                    server names, this is specified in RFC.
 Dec 24, 2009 V7.36 SSL SNI - Do not switch context if not initialized.
-Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It 
+Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It
                    now takes an AnsiString buffer. Since this method is highly
                    deprecated it's also marked as "deprecated". Do not use it
                    in new applications.
@@ -755,6 +755,14 @@ Jun 10, 2010 V7.40 Arno Garrels added experimental timeout and throttle feature
                    to TWSocket. Currently both features have to be enabled
                    explicitly with conditional defines EXPERIMENTAL_TIMEOUT
                    and/or EXPERIMENTAL_THROTTLE (see OverbyteIcsDefs.inc )
+Aug 02, 2010 V7.41 Arno removed an option to send plain UTF-16 strings with
+                   SendStr() and SendLine() by passing 1200 (CP_UTF16) in the
+                   codepage parameter. Changed SendLine() to return correct
+                   number of bytes written.
+Aug 08, 2010 V7.42 FPiette prevented socket close in TCustomWSocket.Destroy when
+                   socket state is wsInvalidState (this happend when an
+                   exception is raise early in the constructor).
+
 
 }
 
@@ -865,8 +873,8 @@ uses
   OverbyteIcsWinsock;
 
 const
-  WSocketVersion            = 740;
-  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.40 ';
+  WSocketVersion            = 741;
+  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.41 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
 {$IFNDEF BCB}
   { Manifest constants for Shutdown }
@@ -1212,11 +1220,11 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   Pause; virtual;
     procedure   Resume; virtual;
     procedure   PutDataInSendBuffer(Data : TWSocketData; Len : Integer); virtual;
-    procedure   PutStringInSendBuffer(const Str : RawByteString); {$IFDEF COMPILER12_UP} overload; {$ENDIF}
+    function    PutStringInSendBuffer(const Str : RawByteString): Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF}
 {$IFDEF COMPILER12_UP}
-    procedure   PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord); overload;
-    procedure   PutStringInSendBuffer(const Str : UnicodeString); overload;
-{$ENDIF}    
+    function    PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord): Integer; overload;
+    function    PutStringInSendBuffer(const Str : UnicodeString): Integer; overload;
+{$ENDIF}
     procedure   DeleteBufferedData;
 {$IFDEF COMPILER2_UP}
     procedure   ThreadAttach; override;
@@ -1538,7 +1546,7 @@ Nov 08, 2007 A. Garrels added property PublicKey to TX509Base.
 const
      SslWSocketVersion            = 100;
      SslWSocketDate               = 'Jan 18, 2006';
-     SslWSocketCopyRight : String = ' TSslWSocket (c) 2003-2006 Francois Piette V1.00.5e ';
+     SslWSocketCopyRight : String = ' TSslWSocket (c) 2003-2010 Francois Piette V1.00.5e ';
 
 const
      
@@ -2340,7 +2348,11 @@ type
   public
       constructor Create{$IFDEF VCL}(AOwner : TComponent){$ENDIF}; override;
       destructor  Destroy; override;
-      function    SendLine(const Str : String) : Integer; virtual;
+      function    SendLine(const Str : RawByteString) : Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF} virtual;
+{$IFDEF COMPILER12_UP}
+      function    SendLine(const Str : UnicodeString; ACodePage: LongWord) : Integer; overload; virtual;
+      function    SendLine(const Str : UnicodeString) : Integer; overload; virtual;
+{$ENDIF}
       property    LineLength : Integer      read  FLineLength;
       property    RcvdPtr    : TWSocketData read  FRcvdPtr;
       property    RcvdCnt    : LongInt      read  FRcvdCnt;
@@ -5436,23 +5448,27 @@ begin
         { Ignore any exception here }
     end;
 
-    if FState <> wsClosed then       { Close the socket if not yet closed }
-        Close;
+    if FState <> wsInvalidState then begin              { FPiette V7.42 }
+        { wsInvalidState happend when an exception is raised early in the constructor }
+        { Close the socket if not yet closed }
+        if FState <> wsClosed then
+            Close;
 
 {$IFDEF COMPILER2_UP}
-    _EnterCriticalSection(GWSockCritSect);
-    try
+        _EnterCriticalSection(GWSockCritSect);
+        try
 {$ENDIF}
-        Dec(WSocketGCount);
-        if WSocketGCount <= 0 then begin
-            WSocketUnloadWinsock;
-{           WSocketGCount := 0;  // it is set to 0 in WSocketUnloadWinsock }
-        end;
+            Dec(WSocketGCount);
+            if WSocketGCount <= 0 then begin
+                WSocketUnloadWinsock;
+    {           WSocketGCount := 0;  // it is set to 0 in WSocketUnloadWinsock }
+            end;
 {$IFDEF COMPILER2_UP}
-    finally
-        _LeaveCriticalSection(GWSockCritSect);
-    end;
+        finally
+            _LeaveCriticalSection(GWSockCritSect);
+        end;
 {$ENDIF}
+    end;
 
     if Assigned(FBufHandler) then begin
         FBufHandler.Free;
@@ -5960,7 +5976,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : RawByteString);
+function TCustomWSocket.PutStringInSendBuffer(const Str : RawByteString): Integer;
 {$IFDEF CLR}
 var
     Data : TBytes;
@@ -5973,29 +5989,28 @@ begin
 {$ENDIF}
 {$IFDEF WIN32}
 begin
-    if Length(Str) > 0 then
-        PutDataInSendBuffer(@Str[1], Length(Str));
+    Result := Length(Str);
+    if Result > 0 then
+        PutDataInSendBuffer(Pointer(Str), Result);
 {$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}                                              
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord);
+function TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage : LongWord): Integer;
 begin
-    if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
-        PutDataInSendBuffer(Pointer(Str), Length(Str) * 2)
-    else
-        PutStringInSendBuffer(UnicodeToAnsi(Str, ACodePage));  // Explicit cast
+    Result := PutStringInSendBuffer(UnicodeToAnsi(Str, ACodePage));  // Explicit cast
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString);
+function TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString): Integer;
 begin
-    PutStringInSendBuffer(AnsiString(Str));  // Explicit cast
+    Result := PutStringInSendBuffer(AnsiString(Str));  // Explicit cast
 end;
 {$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.PutDataInSendBuffer(
@@ -6082,15 +6097,7 @@ end;
 {$IFDEF COMPILER12_UP}
 function TCustomWSocket.SendStr(const Str : UnicodeString; ACodePage : LongWord) : Integer;
 begin
-    if Length(Str) > 0 then
-    begin
-        if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
-            Result := Send( Pointer(Str), Length(Str) * 2)
-        else
-           Result := SendStr(UnicodeToAnsi(Str, ACodePage));
-   end
-   else
-        Result := 0;
+    Result := SendStr(UnicodeToAnsi(Str, ACodePage));
 end;
 
 
@@ -6107,16 +6114,15 @@ end;
 { Return -1 if error, else return number of byte written                    }
 function TCustomWSocket.SendStr(const Str : RawByteString) : Integer;
 begin
-    if Length(Str) > 0 then
+    Result := Length(Str);
+    if Result > 0 then
         Result := Send({$IFDEF CLR}
                        System.Text.Encoding.Default.GetBytes(Str),
                        {$ENDIF}
                        {$IFDEF WIN32}
                        PAnsiChar(Str),
                        {$ENDIF}
-                       Length(Str))
-    else
-        Result := 0;
+                       Result);
 end;
 
 
@@ -9477,14 +9483,51 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Return -1 if error, else return number of byte written                    }
-function TCustomLineWSocket.SendLine(const Str : String) : Integer;
+{$IFDEF COMPILER12_UP}
+{ Returns -1 on error only if event OnError is assigned, otherwise an       }
+{ ESocketException may be raised. Returns the number of bytes written on    }
+{ success. LineEnd is treated as a raw sequence of bytes, hence it's not    }
+{ converted but sent as is.                                                 }
+function TCustomLineWSocket.SendLine(
+    const Str : UnicodeString;
+    ACodePage : LongWord) : Integer;
 begin
-    Result := Length(Str);
+    Result := PutStringInSendBuffer(Str, ACodePage);
     if Result > 0 then begin
-        PutStringInSendBuffer(Str);
-        SendStr(LineEnd);
-        Inc(Result, Length(LineEnd));
+        if SendStr(LineEnd) > -1 then
+            Inc(Result, Length(LineEnd))
+        else
+            Result := -1;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomLineWSocket.SendLine(const Str : UnicodeString) : Integer;
+begin
+    Result := PutStringInSendBuffer(Str);
+    if Result > 0 then begin
+        if SendStr(LineEnd) > -1 then
+            Inc(Result, Length(LineEnd))
+        else
+            Result := -1;
+    end;
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Returns -1 on error only if event OnError is assigned, otherwise an       }
+{ ESocketException may be raised. Returns the number of bytes written on    }
+{ success.                                                                  }
+function TCustomLineWSocket.SendLine(const Str : RawByteString) : Integer;
+begin
+    Result := PutStringInSendBuffer(Str);
+    if Result > 0 then begin
+        if SendStr(LineEnd) > -1 then
+            Inc(Result, Length(LineEnd))
+        else
+            Result := -1;
     end;
 end;
 

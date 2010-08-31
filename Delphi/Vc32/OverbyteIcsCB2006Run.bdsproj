@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<PersonalityInfo>
 		<Option>
 			<Option Name="Personality">CPlusPlusBuilder.Personality</Option>
 			<Option Name="ProjectType">CppPackage</Option>
 			<Option Name="Version">1.0</Option>
-			<Option Name="GUID">{45C3E936-BFAA-45ED-A383-0D98666A7F5B}</Option>
+			<Option Name="GUID">{AFC91BC2-B963-4326-AC7D-9D26605B8D3B}</Option>
 		</Option>
 	</PersonalityInfo>
 	<CPlusPlusBuilder.Personality>

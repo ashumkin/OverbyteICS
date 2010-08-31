@@ -1,10 +1,10 @@
 object POP3ExcercizerForm: TPOP3ExcercizerForm
-  Left = 437
-  Top = 210
-  Width = 534
-  Height = 440
+  Left = 43
+  Top = 43
   ActiveControl = ConnectButton
   Caption = 'SSL POP3 Excercizer'
+  ClientHeight = 406
+  ClientWidth = 526
   Color = clBtnFace
   Constraints.MinHeight = 370
   Constraints.MinWidth = 530
@@ -23,7 +23,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
     Left = 0
     Top = 279
     Width = 526
-    Height = 134
+    Height = 127
     Hint = 'This area show the activity with the host'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -412,7 +412,6 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 121
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       ItemIndex = 0
       TabOrder = 6
       Text = 'None'
@@ -436,7 +435,6 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Top = 56
       Width = 129
       Height = 21
-      ItemHeight = 13
       ItemIndex = 0
       TabOrder = 7
       Text = 'None (Plain Text)'
