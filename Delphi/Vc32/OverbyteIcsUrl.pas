@@ -2,12 +2,12 @@
 
 Author:       François PIETTE
 Creation:     Aug 08, 2004 (extracted from various ICS components)
-Version:      6.03
+Version:      6.04
 Description:  This unit contain support routines for URL handling.
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2009 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -44,6 +44,8 @@ Sep 28, 2008 V6.01 A. Garrels modified UrlEncode() and UrlDecode() to support
 Apr 17, 2009 V6.02 A. Garrels added argument CodePage to functions
              UrlEncode() and UrlDecode.
 Dec 19, 2009 V6.03 A. Garrels added UrlEncodeToA().
+Aug 07, 2010 V6.04 Bjørnar Nielsen suggested to add an overloaded UrlDecode()
+                   that takes a RawByteString URL.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -77,8 +79,8 @@ uses
     {SysUtils,} OverbyteIcsUtils, OverbyteIcsLibrary;
 
 const
-    IcsUrlVersion        = 603;
-    CopyRight : String   = ' TIcsURL (c) 1997-2009 F. Piette V6.03 ';
+    IcsUrlVersion        = 604;
+    CopyRight : String   = ' TIcsURL (c) 1997-2010 F. Piette V6.04 ';
 
 { Syntax of an URL: protocol://[user[:password]@]server[:port]/path }
 procedure ParseURL(const URL : String;
@@ -88,6 +90,12 @@ function  UrlEncode(const S : String; DstCodePage: LongWord = CP_UTF8) : String;
 function  UrlDecode(const S     : String;
                     SrcCodePage : LongWord = CP_ACP;
                     DetectUtf8  : Boolean = TRUE) : String;
+{$IFDEF COMPILER12_UP}
+                    overload;
+function  UrlDecode(const S     : RawByteString;
+                    SrcCodePage : LongWord = CP_ACP;
+                    DetectUtf8  : Boolean = TRUE) : UnicodeString; overload;
+{$ENDIF}
 function UrlEncodeToA(const S   : String;
                     DstCodePage : LongWord = CP_UTF8): AnsiString;
 
@@ -416,6 +424,40 @@ begin
         Result := U8Str;
 {$ENDIF}
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function UrlDecode(const S: RawByteString; SrcCodePage: LongWord = CP_ACP;
+  DetectUtf8: Boolean = TRUE): UnicodeString;
+var
+    I, J, L : Integer;
+    U8Str   : AnsiString;
+    Ch      : AnsiChar;
+begin
+    L := Length(S);
+    SetLength(U8Str, L);
+    I := 1;
+    J := 0;
+    while (I <= L) and (S[I] <> '&') do begin
+        Ch := AnsiChar(S[I]);
+        if Ch = '%' then begin
+            Ch := AnsiChar(htoi2(PAnsiChar(@S[I + 1])));
+            Inc(I, 2);
+        end
+        else if Ch = '+' then
+            Ch := ' ';
+        Inc(J);
+        U8Str[J] := Ch;
+        Inc(I);
+    end;
+    SetLength(U8Str, J);
+    if (SrcCodePage = CP_UTF8) or (DetectUtf8 and IsUtf8Valid(U8Str)) then
+        Result := Utf8ToStringW(U8Str)
+    else
+        Result := AnsiToUnicode(U8Str, SrcCodePage);
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

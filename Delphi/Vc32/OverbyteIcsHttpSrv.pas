@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.26
+Version:      7.28
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -291,6 +291,9 @@ Feb 08, 2010 V7.26 F. Piette fixed a bug introduced in 7.25 with ResType
                    (Need to be PChar instead of PAnsiChar).
                    TRL fixed HtmlPageProducerFromMemory which added an extra
                    empty line and passed the wrong length to HandleTableRow.
+Aug 07, 2010 V7.27 Bjørnar Nielsen suggested to add an overloaded UrlDecode()
+                   that takes a RawByteString URL.
+Aug 08, 2010 V7.28 F. Piette: Published OnBgException from underlaying socket.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -375,8 +378,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 724;
-    CopyRight : String = ' THttpServer (c) 1999-2009 F. Piette V7.24 ';
+    THttpServerVersion = 728;
+    CopyRight : String = ' THttpServer (c) 1999-2010 F. Piette V7.28 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
 
@@ -971,6 +974,8 @@ type
                                              Error  : Word);
         procedure WSocketServerChangeState(Sender : TObject;
                                            OldState, NewState : TSocketState);
+        procedure WSocketServerBgException(Sender: TObject; E: Exception;
+                                           var CanClose: Boolean);
         procedure TriggerServerStarted; virtual;
         procedure TriggerServerStopped; virtual;
         procedure TriggerClientConnect(Client : TObject; Error  : Word); virtual;
@@ -1165,6 +1170,7 @@ type
                                                  write FAuthDigestNonceLifeTimeMin default 1;
     {$ENDIF}
 {$ENDIF}
+        property OnBgException;  { F.Piette V7.27 }
     end;
 
     THttpDirEntry = class
@@ -1249,7 +1255,7 @@ Description:  A component adding SSL support to THttpServer.
 const
      SslHttpSrvVersion            = 100;
      SslHttpSrvDate               = 'Jul 20, 2003';
-     SslHttpSrvCopyRight : String = ' TSslHttpSrv (c) 2003-2005 Francois Piette V1.00.0 ';
+     SslHttpSrvCopyRight : String = ' TSslHttpSrv (c) 2003-2010 Francois Piette V1.00.0 ';
 
 type
     TSslHttpServer = class(THttpServer)
@@ -1344,6 +1350,12 @@ function UrlEncode(const S : String; DstCodePage : LongWord = CP_UTF8) : String;
 function UrlDecode(const Url   : String;
                    SrcCodePage : LongWord = CP_ACP;
                    DetectUtf8  : Boolean = TRUE) : String;
+{$IFDEF COMPILER12_UP}
+                   overload;
+function UrlDecode(const Url   : RawByteString;
+                   SrcCodePage : LongWord = CP_ACP;
+                   DetectUtf8  : Boolean = TRUE) : UnicodeString; overload;
+{$ENDIF}
 function FileDate(FileName : String) : TDateTime;
 function RFC1123_Date(aDate : TDateTime) : String;
 function DocumentToContentType(FileName : String) : String;
@@ -1577,6 +1589,7 @@ begin
     FWSocketServer.OnClientDisconnect := WSocketServerClientDisconnect;
     FWSocketServer.OnSessionClosed    := WSocketServerSessionClosed;
     FWSocketServer.OnChangeState      := WSocketServerChangeState;
+    FWSocketServer.OnBgException      := WSocketServerBgException;  { F.Piette V7.27 }
     FWSocketServer.Banner             := '';
     FWSocketServer.Proto              := 'tcp';
     FWSocketServer.Port               := FPort;
@@ -1742,6 +1755,17 @@ procedure THttpServer.WSocketServerSessionClosed(
     Error  : Word);
 begin
     TriggerServerStopped;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.WSocketServerBgException(    { F.Piette V7.27 }
+    Sender       : TObject;
+    E            : Exception;
+    var CanClose : Boolean);
+begin
+    if Assigned(FOnBgException) then
+        FOnBgException(Self, E, CanClose);
 end;
 
 
@@ -4424,6 +4448,40 @@ begin
         Result := U8Str;
 {$ENDIF}
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function UrlDecode(const Url: RawByteString; SrcCodePage: LongWord = CP_ACP;
+  DetectUtf8: Boolean = TRUE): UnicodeString;
+var
+    I, J, L : Integer;
+    U8Str   : AnsiString;
+    Ch      : AnsiChar;
+begin
+    L := Length(Url);
+    SetLength(U8Str, L);
+    I := 1;
+    J := 0;
+    while (I <= L) and (Url[I] <> '&') do begin
+        Ch := AnsiChar(Url[I]);
+        if Ch = '%' then begin
+            Ch := AnsiChar(htoi2(PAnsiChar(@Url[I + 1])));
+            Inc(I, 2);
+        end
+        else if Ch = '+' then
+            Ch := ' ';
+        Inc(J);
+        U8Str[J] := Ch;
+        Inc(I);
+    end;
+    SetLength(U8Str, J);
+    if (SrcCodePage = CP_UTF8) or (DetectUtf8 and IsUtf8Valid(U8Str)) then
+        Result := Utf8ToStringW(U8Str)
+    else
+        Result := AnsiToUnicode(U8Str, SrcCodePage);
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

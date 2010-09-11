@@ -15,7 +15,7 @@ Credit:       This code is based on a work by Diego Ariel Degese
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2004-2007 by François PIETTE
+Legal issues: Copyright (C) 2004-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -81,7 +81,7 @@ uses
 
 const
     IcsNtlmMsgsVersion     = 601;
-    CopyRight : String     = ' IcsNtlmMsgs (c) 2004-2008 F. Piette V6.01 ';
+    CopyRight : String     = ' IcsNtlmMsgs (c) 2004-2010 F. Piette V6.01 ';
 
 const
     Flags_Negotiate_Unicode               = $00000001;

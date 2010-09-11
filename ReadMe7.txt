@@ -1,9 +1,9 @@
-ICS - Internet Component Suite - V7 - RAD Studio 2009 and 2010
-==============================================================
+ICS - Internet Component Suite - V7 - Delphi 7 to RAD Studio XE
+===============================================================
 (Aka FPIETTE's Components)
 
 
-Revised: Aug 11, 2009
+Revised: Aug 16, 2010
 http://www.overbyte.be
 
 Table of content:
@@ -26,7 +26,7 @@ Table of content:
 
 Legal issues: 
 -------------
-              Copyright (C) 1997-2009 by François PIETTE 
+              Copyright (C) 1997-2010 by François PIETTE 
               Rue de Grady 24, 4053 Embourg, Belgium
               <francois.piette@overbyte.be>
 
@@ -93,7 +93,7 @@ Contributions:
 
 ICS has been designed by François PIETTE but many other peoples are working on the
 components and sample programs. The history of changes in each source file list
-all developers having contributed (Wehn no name is given, the change is by F. Piette).
+all developers having contributed (When no name is given, the change is by F. Piette).
 I can't list all contributors here but I want to specially thanks two specially active
 contributors:
     - Arno Garrels <arno.garrels@gmx.de>
@@ -121,6 +121,7 @@ This is the subdirectory layout:
 .\cpp\internet\cb2007         C++Builder 2007 projects
 .\cpp\internet\cb2009         C++Builder 2009 projects
 .\cpp\internet\cb2010         C++Builder 2010 projects
+.\cpp\internet\cbXE           C++Builder XE projects
 .\delphi\vc32                 Delphi (7 and up) and C++Builder (2006 and up) components
 .\Install                     Component packages project groups for all versions
 
@@ -157,10 +158,12 @@ Delphi 2006      :  D2006Install.bdsgroup
 Delphi 2007      :  D2007Install.groupproj
 Delphi 2009      :  D2009Install.groupproj
 Delphi 2010      :  D2010Install.groupproj
+Delphi XE        :  DXeInstall.groupproj
 C++ Builder 2006 :  CB2006Install.bdsgroup
 C++ Builder 2007 :  CB2007Install.groupproj
 C++ Builder 2009 :  CB2009Install.groupproj
 C++ Builder 2010 :  CB2010Install.groupproj
+C++ Builder XE   :  CBXeInstall.groupproj
 
 1 - Do a File/Open Project, navigate to the Install directory, select the correct
 file and open it. The project manager view should now display two package 
@@ -186,10 +189,12 @@ Delphi 2006      :  OverbyteIcsD2006Run.bdsproj, OverbyteIcsD2006Design.bdsproj
 Delphi 2007      :  OverbyteIcsD2007Run.dproj, OverbyteIcsD2007Design.dproj
 Delphi 2009      :  OverbyteIcsD2009Run.dproj, OverbyteIcsD2009Design.dproj
 Delphi 2010      :  OverbyteIcsD2010Run.dproj, OverbyteIcsD2010Design.dproj
+Delphi XE        :  OverbyteIcsDXeRun.dproj, OverbyteIcsDXeDesign.dproj
 C++ Builder 2006 :  OverbyteIcsCB2006Run.bdsproj, OverbyteIcsCB2006Design.bdsproj
 C++ Builder 2007 :  OverbyteIcsCB2007Run.cbproj, OverbyteIcsCB2007Design.cbproj 
 C++ Builder 2009 :  OverbyteIcsCB2009Run.cbproj, OverbyteIcsCB2009Design.cbproj
-C++ Builder 2009 :  OverbyteIcsCB2010Run.cbproj, OverbyteIcsCB2010Design.cbproj
+C++ Builder 2010 :  OverbyteIcsCB2010Run.cbproj, OverbyteIcsCB2010Design.cbproj
+C++ Builder XE   :  OverbyteIcsCBXeRun.cbproj, OverbyteIcsCBXeDesign.cbproj
 
 1 - Open and Build the run-time package project (do not install!).
 2 - Open and Install the design-time package project.
@@ -201,7 +206,7 @@ After a few seconds, you should have a dialog box telling you the package has
 been installed with a bunch of new components registered in the Tool Palette
 under "Overbyte ICS" and "Overbyte ICS SSL". Then do a "Save All" and a "Close All".
 
-DELPHI 2006/WIN32, 2007/WIN32, 2009/WIN32 and 2010/WIN32:
+DELPHI 2006/WIN32, 2007/WIN32, 2009/WIN32, 2010/WIN32 and XE/WIN32:
 Having installed the package, verify that the VC32 directory has been added to
 the Win32 Library Path (Tools / Options / Delphi Options / Library - Win32 / 
 Library Path). If not, add it manually. It is not mandatory to add vc32 to the global
@@ -209,19 +214,19 @@ Delphi path, but it will be much easier for you because otherwise you'll have to
 add it to each project.
 
 Once the package is installed, you may open the sample projects. There is a
-project group called OverByteIcsDel2009Sam.groupproj (or 2006, 2007 or 2010) which has 
-all sample programs. Open it with file/open project (Ctrl-F11), browse to the Internet 
-directory, select and open OverByteIcsDel2009Sam.groupproj. You will get some dialog 
-box telling you that resource files are missing (they have not been included in the 
-zip file to save space) and are recreated by Delphi. It is OK. Any other error message 
-is a problem you should fix. After all resource files have been recreated,
-you should see in the project manager a group of projects called OverByteIcsDel2009Sam.
-In this group, you'll find all sample programs.
+project group called OverByteIcsD2009Sam.groupproj (or 2006, 2007, 2010 or XE) 
+which has all sample programs. Open it with file/open project (Ctrl-F11), browse to
+the Internet directory, select and open OverByteIcsD2009Sam.groupproj. You will get
+some dialog box telling you that resource files are missing (they have not been 
+included in the zip file to save space) and are recreated by Delphi. It is OK. 
+Any other error message is a problem you should fix. After all resource files have 
+been recreated, you should see in the project manager a group of projects called 
+OverByteIcsD2009Sam. In this group, you'll find all sample programs.
 
 To compile all samples at once, do Project / Build all projects. This will 
 take some time to compile all sample programs. Delphi may run out of
 memory if you don't have enough RAM installed in your computer. 
-If this happend, just build the projects one by one.
+If this happended, just build the projects one by one.
 
 
 DELPHI 7: Add VC32 directory path to your library path (Tools menu / Environment 
@@ -240,8 +245,8 @@ once. If you have not enough RAM, then compile each project individually.
 
 Note 2: Delphi has warnings which triggers a lot of messages for 100% OK
 code. You can turn those warnings off in the project/ options / Compiler messages
-and deselecting: "Deprecated symbol", "Platform symbol", "usafe type", "unsafe code", 
-"usafe typecast". Those are intended for .NET and Linux portability. You can
+and deselecting: "Deprecated symbol", "Platform symbol", "unsafe type", "unsafe code", 
+"unsafe typecast". Those are intended for .NET and Linux portability. You can
 safely ignore them if you run windows. For you facility, I included a utility 
 SetProjectOptions (source code, you must compile it) in the internet directory.
 This utility will update project options to disable the warnings.
@@ -250,13 +255,13 @@ Once the components are all installed, you may open the sample projects
 each one after the other and compile them. For each project, do file/open
 and select the dpr file in the internet directory. Then Project/Build All.
 
-CBUILDER 2006, 2007, 2009, 2010:
+CBUILDER 2006, 2007, 2009, 2010, XE:
 Follow the installation procedure described for Delphi 2006. Just change
 the project group and package name: replace "del" by "bcb" in their names.
 You can't have Delphi 2006 and CBuilder 2006 packages installed at the 
 same time in the IDE. So when switching from one to the other, be sure to
 remove the one you don't need.
-If you need both BCB and Delphi personnalities ate the same time, then
+If you need both BCB and Delphi personalities ate the same time, then
 use Delphi 2006 package (OverbyteIcsDel100.bpl) and change his options to make it
 a dual mode Delphi/CPP package. See Borland documentation.
 
@@ -278,7 +283,7 @@ Projects are located in CPP/INTERNET/BCB1.
 NOTES: 
 - You may have an error message, using Delphi or BCB, complaining about 
 Font.Charset, OldCreateOrder and other properties. Those are new properties 
-in newer Delphi or BCB versions. 
+in newer Delphi or BCB versions, newer than the version you use. 
 You can safely ignore those errors because those properties are not 
 used by the components nor sample programs. You may encounter this 
 error at run time. To avoid it, you must open each form at design time
@@ -302,29 +307,29 @@ directory.
 - The following is a list of the files that should be installed in order to
 properly add all of the available components in this collection:
 
-> OverbyteIcsDnsQuery         DNS lookup component - useful for getting MX records
-> OverbyteIcsEmulVT.pas       ANSI terminal emulation in a control
-> OverbyteIcsFingCli.pas      FINGER client protocol - Find informations about user
-> OverbyteIcsFtpCli.pas       FTP client protocol - file transfert
-> OverbyteIcsFtpSrv.pas       FTP server protocol - file transfert
-> OverbyteIcsHttpProt.pas     HTTP client protocol - used by the web
-> OverbyteIcsHttpSrv.pas      HTTP server protocol - used to build webservers
-> OverbyteIcsIcsLogger.pas    A component to log informations
-> OverbyteIcsMimeDec.pas      MIME component - decode file attach, use with POP3
-> OverbyteIcsNntpCli.pas      NNTP client protocol - send and receive newsgroups messages
-> OverbyteIcsPing.pas         ICMP echo protocol - ping a host
-> OverbyteIcsPop3Prot.pas     POP3 client protocol - get mail from mail server
-> OverbyteIcsSmtpProt.pas     SMTP client protocol - send mail to server
-> OverbyteIcsTnCnx.pas        TELNET client protocol - terminal emulation protocol
-> OverbyteIcsTnEmulVT.pas     TELNET and ANSI terminal emulation combined
-> OverbyteIcsTnScript.pas     TELNET client protocol - with automation
-> OverbyteIcsWait.pas         A kind of progress bar - now obsolete, forget it for new cod
-> OverbyteIcsWSocket.pas      Winsock component - TCP, UDP, DNS,...
-> OverbyteIcsWSocketE.pas     Register procedure andproperty editor for TWSocket
-> OverbyteIcsWSocketS.pas     Winsock component for building servers
-> OverbyteIcsWSocketTS.pas    Winsock component for building multithreaded servers
+> OverbyteIcsDnsQuery          DNS lookup component - useful for getting MX records
+> OverbyteIcsEmulVT.pas        ANSI terminal emulation in a control
+> OverbyteIcsFingCli.pas       FINGER client protocol - Find information about user
+> OverbyteIcsFtpCli.pas        FTP client protocol - file transfer
+> OverbyteIcsFtpSrv.pas        FTP server protocol - file transfer
+> OverbyteIcsHttpProt.pas      HTTP client protocol - used by the web
+> OverbyteIcsHttpSrv.pas       HTTP server protocol - used to build webservers
+> OverbyteIcsHttpAppServer.pas HTTP server protocol - used to build advanced webservers
+> OverbyteIcsIcsLogger.pas     A component to log information
+> OverbyteIcsMimeDec.pas       MIME component - decode file attach, use with POP3
+> OverbyteIcsNntpCli.pas       NNTP client protocol - send and receive newsgroups messages
+> OverbyteIcsPing.pas          ICMP echo protocol - ping a host
+> OverbyteIcsPop3Prot.pas      POP3 client protocol - get mail from mail server
+> OverbyteIcsSmtpProt.pas      SMTP client protocol - send mail to server
+> OverbyteIcsTnCnx.pas         TELNET client protocol - terminal emulation protocol
+> OverbyteIcsTnEmulVT.pas      TELNET and ANSI terminal emulation combined
+> OverbyteIcsTnScript.pas      TELNET client protocol - with automation
+> OverbyteIcsWait.pas          A kind of progress bar - now obsolete, forget it for new cod
+> OverbyteIcsWSocket.pas       Winsock component - TCP, UDP, DNS,...
+> OverbyteIcsWSocketE.pas      Register procedure and property editor for TWSocket
+> OverbyteIcsWSocketS.pas      Winsock component for building servers
+> OverbyteIcsWSocketTS.pas     Winsock component for building multithreaded servers
 
-As a rule, the components are the files which have a Register procedure.
 
 - The following list support and utilities units:
 > OverbyteIcsIcmp.pas         ICMP protocol support, used by the PING component
@@ -335,11 +340,12 @@ As a rule, the components are the files which have a Register procedure.
 > OverbyteIcsIcsSHA1.pas      Implementation of US Secure Hash Algorithm 1 (SHA1)
 > OverbyteIcsIcsURL.pas       Support routines for URL handling
 > OverbyteIcsMimeUtil.pas     Support routines for MIME standard
+> OverbyteIcsLibrary.pas      Other support routines
 
 Version Control repository:
 ---------------------------
 svn://svn.overbyte.be/ics or http://svn.overbyte.be:8443/svn/ics
-(Usercode = ics, password = ics) and and an archive extracted dayly from the repository 
+(Usercode = ics, password = ics) and and an archive extracted daily from the repository 
 at: http://wiki.overbyte.be/arch/icsv7w.zip 
 
 
@@ -363,10 +369,10 @@ CONSMTP         Basic console mode demo for SMTP (mail send)
 CONSRV1         Basic server application in console mode
 DLLTST1         Test program using ICSDLL
 DNSLOOK         Example of name resolution, see also NSLOOKUP sample
-DYNCLI          Basic client creatin TWSocket dynamically
+DYNCLI          Basic client create TWSocket dynamically
 DYNCLI          Demo of dynamically created TWSocket components
 FINGER          Example of TFingerCli component
-FTPASY          Example of asychronous FTP client
+FTPASY          Example of asynchronous FTP client
 FTPSERV         General purpose FTP server
 FTPTHRD         Demo of multithreaded FTP client, see also FTPASY
 FTPTST          Basic graphical FTP client
@@ -413,6 +419,7 @@ TWSCHAT         Chat program (both client and server in a single program)
 UDPLSTN         UDP listen demo
 UDPSEND         UDP send demo
 WEBSERV         HTTP server demo. Show static and dynamic pages. Use template for HTML.
+WEBAPPSERVER	Advanced HTTP server demo.
 
 Note 1: Many samples are similar. When searching for something, always look at the date
         the demos where created. The most recent is always the best code !
@@ -484,7 +491,7 @@ ROOT.PEM :     A demo CA certificate.
                Passphrase is "password".               
 TRUSTEDCABUNDLE.PEM :
                A demo CA file in PEM format containing multiple
-               wellknown root CA certificates to be spezified in
+               well known root CA certificates to be specified in
                property CA Path of the demo applications. Read
                the comments included in this file.
 6F6359FC.0 :   Located in sub directory SslInternet\TrustedCaStore,
@@ -495,7 +502,7 @@ TRUSTEDCABUNDLE.PEM :
 For details about certificate, see the excellent book:
   "Network security with OpenSSL", O'Reilly, ISBN 10: 0-596-00270-X
 
-You will find more informations in IcsSslHowTo.txt file.
+You will find more information in IcsSslHowTo.txt file.
 
 
 Support:
@@ -527,7 +534,7 @@ Always use the latest version (beta if any) before reporting any bug.
 You are also encouraged to use the support mailing list to ask for 
 enhancements. You are welcome to post your own code.
 
-The support mailing list has a heavy traffic: 20 to 40 messages each day. If
+The support mailing list has sometimes a heavy traffic. If
 it is too much for you, you can select "digest" mode in which mailing list
 processor will mail you only one big message per day. To select digest mode
 goto http://lists.elists.org/mailman/listinfo/twsocket.
@@ -553,14 +560,6 @@ If you wants to build client/server applications using TCP/IP protocol, you
 can do it easily with ICS. But you can do it much more easily using another
 freeware product from François Piette: MidWare. Available from the same web
 site http://www.overbyte.be.
-
-
-Special thanks
---------------
-
-to Bob Dolan (bobd@overware.com) who corrected my bad English.
-(Ok, I introduced new errors since I updated this file... For those
-who care, I normally speak French.)
 
 
 francois.piette@overbyte.be

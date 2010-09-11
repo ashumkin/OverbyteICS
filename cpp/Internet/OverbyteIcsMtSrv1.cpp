@@ -54,7 +54,7 @@ Nov 15, 1997 Corrected a bug in the disconnect method which crashed the server
              when you tried to disconnect the second or later client.
 
 ---------------------------------------------------------------------------*/
-#include <vcl\vcl.h>
+#include <vcl.h>
 #pragma hdrstop
 
 #include "OverbyteIcsMtSrv1.h"

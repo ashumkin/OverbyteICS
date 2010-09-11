@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      1.10
+Version:      1.11
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2008 by François PIETTE
+Legal issues: Copyright (C) 2002-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -73,7 +73,15 @@ Historique:
 01/05/2008 V1.08 A. Garrels - Function names adjusted according to changes in
                  OverbyteIcsLibrary.pas.
 15/11/2008 V1.09 Olivier Sannier improved unit finalization, comments in source.
-21/07/2009 V1.10 A. Garrels modified TIcsTimer a bit. 
+21/07/2009 V1.10 A. Garrels modified TIcsTimer a bit.
+19/08/2010 V1.11 A. Garrels - Added TIcsWndHandlerPool.SetWndHandlerMaxMsgIDs()
+                 to provide an option to change default maximum number of
+                 message IDs per WndHandler at runtime.
+                 TIcsWndHandler.UnregisterMessage removes all messages
+                 with the unregistered message ID from the message queue now.
+                 Resolved an Error Insight false positive in TIcsWndhandler.WndProc.
+                 An assertion error is now raised if MsgHandlersCount exceeded
+                 the maximum number of message IDs per WndHandler.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWndControl;
@@ -107,10 +115,9 @@ uses
   OverbyteIcsTypes, OverbyteIcsLibrary;
 
 const
-  TIcsWndControlVersion  = 110;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2008 F. Piette V1.10 ';
+  TIcsWndControlVersion  = 111;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2010 F. Piette V1.11 ';
 
-  WH_MAX_MSG                   = 100;
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 
 type
@@ -221,13 +228,15 @@ type
                                                       write FOnBgException;
   end;
 
+  TIcsMsgMap = array of TIcsWndControl;
+
   TIcsWndHandler = class(TObject)
   protected
     FHandle        : HWND;
     {$IFDEF CLR}
     FHandleGc      : GCHandle;
     {$ENDIF}
-    FMsgMap        : array [0..WH_MAX_MSG] of TIcsWndControl;
+    FMsgMap        : TIcsMsgMap;
     FMsgLow        : UINT;
     FMsgCnt        : Integer;
     FOwnerList     : TIcsWndHandlerList;
@@ -240,6 +249,7 @@ type
     procedure TriggerBgException(E: Exception; var CanClose : Boolean);
     function  GetMsgLeft: UINT;
   public
+    constructor Create;
     procedure   RegisterMessage(Msg : UINT; Obj: TIcsWndControl);
     procedure   UnregisterMessage(var Msg : UINT);
     function    AllocateMsgHandler(Obj: TIcsWndControl) : UINT;
@@ -258,6 +268,8 @@ type
     ThreadID : THandle;
   end;
 
+  TWhMaxMsgIDs = 50..1000;
+
   TIcsWndHandlerPool = class(TObject)
   private
     FList     : TIcsWndHandlerList;
@@ -270,6 +282,7 @@ type
     procedure   FreeWndHandler(var WndHandler : TIcsWndHandler);
     procedure   Lock;
     procedure   UnLock;
+    procedure   SetWndHandlerMaxMsgIDs(const Value: TWhMaxMsgIDs);
   end;
 
 {$IFDEF CLR}
@@ -308,7 +321,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsThreadTimer;
   
 var
-  GUIDOffSet : Integer;
+  GUIDOffSet   : Integer;
+  G_WH_MAX_MSG : Word = 100;
 
 // Forward declaration for our Windows callback function
 function WndControlWindowsProc(
@@ -906,7 +920,8 @@ begin
         Exit;
 
     // Clear message map
-    FillChar(FMsgMap, SizeOf(FmsgMap), 0);
+    FillChar(FMsgMap[0], G_WH_MAX_MSG * SizeOf(Pointer), 0);
+
     SetWindowLong(FHandle, 0, 0); // Supprime la référence vers l'objet
     DestroyWindow(FHandle);       // Détruit la fenêtre cachée
     FHandle := 0;                 // On n'a plus de handle !
@@ -970,7 +985,7 @@ procedure TIcsWndHandler.RegisterMessage(Msg: UINT; Obj: TIcsWndControl);
 begin
     if FMsgLow < WM_USER then
         raise EIcsException.Create('MsgLow not defined');
-    if Msg >= (FMsgLow + WH_MAX_MSG) then
+    if Msg >= (FMsgLow + G_WH_MAX_MSG) then
         raise EIcsException.Create('Msg value out of bound');
     if Assigned(FMsgMap[Msg - WM_USER]) then
         raise EIcsException.Create('Msg already registered');
@@ -983,17 +998,23 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsWndHandler.UnregisterMessage(var Msg: UINT);
+var
+    LMsg : TMsg;
 begin
     if Msg = 0 then
         Exit;
     if FMsgLow < WM_USER then
         raise EIcsException.Create('MsgLow not defined');
-    if Msg >= (FMsgLow + WH_MAX_MSG) then
+    if Msg >= (FMsgLow + G_WH_MAX_MSG) then
         raise EIcsException.Create('Msg value out of bound');
     if not Assigned(FMsgMap[Msg - FMsgLow]) then
         raise EIcsException.Create('Msg not registered');
     FMsgMap[Msg - FMsgLow] := nil;
     Dec(FMsgCnt);
+    { Remove all messages with the unregistered message ID from the message }
+    { queue (those with destination HWND = FHandle).                        }
+    if FHandle > 0 then
+        while PeekMessage(LMsg, FHandle, Msg, Msg, PM_REMOVE) do {loop} ;
     Msg := 0;
     if FMsgCnt = 0 then
         DeallocateHWnd;
@@ -1029,7 +1050,7 @@ begin
     try
         with MsgRec do begin
             if (Msg >= FMsgLow) and
-               (Msg < (FMsgLow + WH_MAX_MSG)) and
+               (Msg < (FMsgLow + G_WH_MAX_MSG)) and
                Assigned(FMsgMap[Msg - FMsgLow]) then
                 FMsgMap[Msg - FMsgLow].WndProc(MsgRec)
 
@@ -1042,10 +1063,10 @@ begin
                 {$ELSE}
                     Obj := TObject(WParam);
                 {$ENDIF}
-                if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(INT_PTR))) and
-                   (PINT_PTR(WParam + GUIDOffSet)^ = WParam) and
-                   (Obj is TIcsTimer) then
-                    TIcsTimer(Obj).WmTimer(MsgRec);
+                    if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(INT_PTR))) and
+                       (PINT_PTR(WParam + GUIDOffSet)^ = WParam) and
+                       (Obj is TIcsTimer) then
+                        TIcsTimer(Obj).WmTimer(MsgRec);
                 end
                 else if (Msg = WM_ICS_THREAD_TIMER) then begin
                 {$IFDEF CLR}
@@ -1057,7 +1078,10 @@ begin
                     if (not IsBadReadPtr(Obj, GUIDOffSet + SizeOf(INT_PTR))) and
                        (PINT_PTR(WParam + GUIDOffSet)^ = LParam) and
                        (Obj is TIcsThreadTimer) then
-                        TIcsThreadTimer(Obj).WmTimer(MsgRec)
+                       { Actually the overridden method       }
+                       { TIcsThreadTimer.WMTimer is called!   }
+                       { This removes an Error Insight error. }
+                        TIcsTimer(Obj).WmTimer(MsgRec);
                 end
                 else
                     Result := DefWindowProc(Handle, Msg, wParam, lParam);
@@ -1079,10 +1103,10 @@ var
 begin
     if FMsgLow < WM_USER then
         raise EIcsException.Create('MsgLow not defined');
-    if FMsgCnt >= WH_MAX_MSG then
+    if FMsgCnt >= G_WH_MAX_MSG then
         raise EIcsException.Create('No more free message');
     I := 0;
-    while I < WH_MAX_MSG do begin
+    while I < G_WH_MAX_MSG do begin
         if not Assigned(FMsgMap[I]) then begin
             Result     := I + FMsgLow;
 //if IsConsole then writeLn('AllocateMsgHandler = ', Result);
@@ -1099,9 +1123,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsWndHandler.Create;
+begin
+    inherited Create;
+    SetLength(FMsgMap, G_WH_MAX_MSG); { No initialization required }
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsWndHandler.GetMsgLeft: UINT;
 begin
-    Result := WH_MAX_MSG - FMsgCnt;
+    Result := G_WH_MAX_MSG - FMsgCnt;
 end;
 
 
@@ -1127,6 +1159,22 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsWndHandlerPool.SetWndHandlerMaxMsgIDs(const Value: TWhMaxMsgIDs);
+begin
+    Lock;
+    try
+        if FList.Count > 0 then
+            raise EIcsException.Create(
+              'Maximum number of message IDs per handler can only be set ' +
+              'when the pool is empty');
+        G_WH_MAX_MSG := Value;
+    finally
+        UnLock;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsWndHandlerPool.GetWndHandler(
     HandlerCount : UINT;
     ThreadID     : THandle) : TIcsWndHandler;
@@ -1134,6 +1182,11 @@ var
     I : Integer;
     L : TIcsWndHandlerList;
 begin
+    { If you see an assertion error here you have to increase the maximum  }
+    { number of message IDs per WndHandler.                                }
+    { Call GWndHandlerPool.SetWndHandlerMaxMsgIDs() to set this value.     }
+    Assert(HandlerCount <= G_WH_MAX_MSG, 'ICS message IDs out of bounds!');
+
     // Search the list which has same thread ID
     I := FList.Count - 1;
     while (I >= 0) and
@@ -1161,7 +1214,7 @@ begin
     //OutputDebugString('TIcsWndHandler.Create');
     //Result.MsgLow   := WM_USER + 1;
     if (GWndHandlerMsgLow <= WM_USER) or
-       (GWndHandlerMsgLow >= (65535 - WH_MAX_MSG)) then
+       (GWndHandlerMsgLow >= (65535 - G_WH_MAX_MSG)) then
         GWndHandlerMsgLow := WM_USER + 1;
     Result.MsgLow := GWndHandlerMsgLow;
     L.Add(Result);

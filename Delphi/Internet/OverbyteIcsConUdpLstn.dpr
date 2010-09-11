@@ -10,7 +10,7 @@ Object:       Demo program to show how to use TWSocket object inside a console
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2005-2007 by François PIETTE
+Legal issues: Copyright (C) 2005-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -55,8 +55,7 @@ Bomb('Please add NOFORMS to your project defines to reduce exe size');
 {$DEFINE DEBUG}         // debug output.
 
 uses
-  WinTypes,
-  WinProcs,
+  Windows,
   SysUtils,
   Classes,
   OverbyteIcsConApp in '..\Vc32\OverbyteIcsConApp.pas',
@@ -67,7 +66,7 @@ uses
 
 const
   ConUdpLstnVersion     = 100;
-  CopyRight : String = ' ConUdpLstn (c) 2005-2007 F. Piette V1.00 ';
+  CopyRight : String = ' ConUdpLstn (c) 2005-2010 F. Piette V1.00 ';
 
 type
   TConUdpRcv = class(TConApplication)

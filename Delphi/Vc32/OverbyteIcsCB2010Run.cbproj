@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{45C3E936-BFAA-45ED-A383-0D98666A7F5B}</ProjectGuid>
+			<ProjectGuid>{5A2C32AC-482C-4F60-B3E2-D06A5BD540C7}</ProjectGuid>
 			<ProjectType>CppPackage</ProjectType>
 			<MainSource>OverbyteIcsCB2010Run.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>

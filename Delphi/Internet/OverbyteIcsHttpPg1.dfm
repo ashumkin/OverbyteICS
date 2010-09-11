@@ -1,9 +1,9 @@
 object HttpTestForm: THttpTestForm
   Left = 164
   Top = 119
-  Width = 372
-  Height = 326
   Caption = 'HttpPg - http://www.rtfm.be/fpiette'
+  ClientHeight = 292
+  ClientWidth = 364
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

@@ -45,9 +45,9 @@ Aug 15, 1999 V1.02 Adapted for BCB4
 #if __BORLANDC__ == 0x520     // BCB1 is BC5.20   BCB3 is BC5.30
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
 #endif
-#include <vcl\vcl.h>
-#include <vcl\Inifiles.hpp>
-#include <vcl\Registry.hpp>
+#include <vcl.h>
+#include <Inifiles.hpp>
+#include <Registry.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsNewsRdr1.h"

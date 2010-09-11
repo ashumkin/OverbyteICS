@@ -1,9 +1,9 @@
 object CheckUrlForm: TCheckUrlForm
   Left = 205
   Top = 122
-  Width = 326
-  Height = 285
   Caption = 'CheckUrlForm'
+  ClientHeight = 251
+  ClientWidth = 318
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

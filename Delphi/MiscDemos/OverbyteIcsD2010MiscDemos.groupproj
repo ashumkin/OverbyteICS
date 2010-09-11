@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{598C79B7-5DFF-4BF2-B52E-508F9513F079}</ProjectGuid>
+			<ProjectGuid>{6BA26105-1810-4CDC-8F96-5F8A3D8E8D37}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
 			<Projects Include="..\Vc32\OverbyteIcsD2010Run.dproj">

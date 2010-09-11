@@ -1657,7 +1657,6 @@ object FtpReceiveForm: TFtpReceiveForm
       Top = 73
       Width = 126
       Height = 21
-      ItemHeight = 13
       TabOrder = 16
       Text = 'UTF8 ON'
       Items.Strings = (

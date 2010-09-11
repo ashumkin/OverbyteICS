@@ -7,7 +7,7 @@ Version:      1.03
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -47,13 +47,13 @@ unit OverbyteIcsTWSChat1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, WinSock, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 
 const
   TWSChatVersion     = 103;
-  CopyRight : String = ' TWSChat (c) 1997-2007 Francois Piette  V1.03 ';
+  CopyRight : String = ' TWSChat (c) 1997-2010 Francois Piette  V1.03 ';
   ChatPort           = '2200';             { Any port would do the job... }
 
 type

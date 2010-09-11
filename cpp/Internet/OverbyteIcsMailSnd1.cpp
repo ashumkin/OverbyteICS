@@ -45,7 +45,7 @@ Aug 15, 1999  V2.01 Adapted for BCB4 (Moved FIniFileName initialization from
 
 ---------------------------------------------------------------------------*/
 #include <vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <Inifiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsMailSnd1.h"

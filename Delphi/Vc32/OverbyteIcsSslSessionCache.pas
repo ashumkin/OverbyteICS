@@ -11,7 +11,7 @@ Version:      1.04
 EMail:        <arno.garrels@gmx.de>
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2006-2007 by Arno Garrels, Berlin, Germany,
+Legal issues: Copyright (C) 2006-2010 by Arno Garrels, Berlin, Germany,
               <arno.garrels@gmx.de>
 
               This software is freeware and provided 'as-is', without any

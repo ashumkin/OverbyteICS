@@ -57,7 +57,7 @@ uses
 
 const
    IcsSHA1Version     = 200;
-   CopyRight : String = ' IcsSHA1 (c) 2004-2007 F. Piette V2.00 ';
+   CopyRight : String = ' IcsSHA1 (c) 2004-2010 F. Piette V2.00 ';
 
 const
    shaSuccess      = 0;

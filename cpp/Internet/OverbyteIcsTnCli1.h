@@ -2,10 +2,10 @@
 #ifndef OverbyteIcsTnCli1H
 #define OverbyteIcsTnCli1H
 //---------------------------------------------------------------------------
-#include <vcl\Classes.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
+#include <Classes.hpp>
+#include <Controls.hpp>
+#include <StdCtrls.hpp>
+#include <Forms.hpp>
 #include "OverbyteIcsWSocket.hpp"
 #include "OverbyteIcsEmulvt.hpp"
 #include "OverbyteIcsTnEmulvt.hpp"

@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
   <PersonalityInfo>
     <Option>
       <Option Name="Personality">Default.Personality</Option>
       <Option Name="ProjectType"></Option>
       <Option Name="Version">1.0</Option>
-      <Option Name="GUID">{99902FD2-74FE-44CB-A77D-AD6B021DEAD9}</Option>
+      <Option Name="GUID">{E64FFA0E-2E8A-4EB7-9C32-709572DB106E}</Option>
     </Option>
   </PersonalityInfo>
   <Default.Personality>

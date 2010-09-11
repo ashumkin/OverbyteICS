@@ -77,7 +77,6 @@ object HttpToMemoForm: THttpToMemoForm
     ParentFont = False
     ScrollBars = ssBoth
     TabOrder = 1
-    ExplicitHeight = 208
   end
   object HttpCli1: THttpCli
     LocalAddr = '0.0.0.0'

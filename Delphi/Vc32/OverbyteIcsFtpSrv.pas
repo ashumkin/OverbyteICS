@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.11
+Version:      7.13
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2008 by François PIETTE
+Legal issues: Copyright (C) 1998-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -385,7 +385,13 @@ June 04, 2009 V7.09 Angus called TriggerMd5Calculated when changing file date/ti
              SessIdInfo add client numeric id to identify separate sessions from same IP
 Sept 03, 2009 V7.10 Arno exchanged TThread.Resume by TThread.Start for D2010 and later
 Dec  15, 2009 V7.11 Arno added type TFtpSrvCommandTable to make C++Builder happy.
-
+June 10, 2010 V7.12 Angus added bandwidth throttling using TCustomThrottledWSocket
+              Set BandwidthLimit property to maximum bytes server wide, for
+              specific clients set CBandwidthLimit in a client connect event
+              (requires BUILTIN_THROTTLE to be defined in project options or
+              enabled OverbyteIcsDefs.inc)
+Sep 05, 2010 V7.13 Arno renamed conditional defines EXPERIMENTAL_THROTTLE and
+             EXPERIMENTAL_TIMEOUT to BUILTIN_THROTTLE and BUILTIN_TIMEOUT.
 
 
 Angus pending -
@@ -478,8 +484,8 @@ uses
 
 
 const
-    FtpServerVersion         = 711;
-    CopyRight : String       = ' TFtpServer (c) 1998-2009 F. Piette V7.11 ';
+    FtpServerVersion         = 713;
+    CopyRight : String       = ' TFtpServer (c) 1998-2010 F. Piette V7.13 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -732,6 +738,10 @@ type
         AccountReadOnly   : Boolean;     { angus V7.00 client account read only file access, no uploads  }
         FailedAttempts    : Integer;     { angus V7.06 }
         DelayAnswerTick   : Longword;    { angus V7.06 tick when delayed answer should be sent }
+{$IFDEF BUILTIN_THROTTLE}
+        CBandwidthLimit    : LongWord;   { angus V7.12 Bytes per second, null = disabled }
+        CBandwidthSampling : LongWord;   { angus V7.12 Msec sampling interval }
+{$ENDIF}
 {$IFDEF USE_SSL}
         ProtP             : Boolean;
         AuthFlag          : Boolean;
@@ -976,6 +986,10 @@ type
         FCodePage               : LongWord;     { angus V7.01 for UTF8 support }
         FLanguage               : String;       { angus V7.01 for UTF8 support }
         FMaxAttempts            : Integer;      { angus V7.06 }
+{$IFDEF BUILTIN_THROTTLE}
+        FBandwidthLimit         : LongWord;     { angus V7.12 Bytes per second, null = disabled }
+        FBandwidthSampling      : LongWord;     { angus V7.12 Msec sampling interval }
+{$ENDIF}
         FMsg_WM_FTPSRV_CLOSE_REQUEST  : UINT;
         FMsg_WM_FTPSRV_ABORT_TRANSFER : UINT;
         FMsg_WM_FTPSRV_CLOSE_DATA     : UINT;
@@ -1539,6 +1553,12 @@ type
                                                       write FLanguage;       { angus V7.01 }
         property  MaxAttempts            : Integer    read  FMaxAttempts
                                                       write FMaxAttempts ;   { angus V7.06 }
+{$IFDEF BUILTIN_THROTTLE}
+        property  BandwidthLimit         : LongWord   read  FBandwidthLimit
+                                                      write FBandwidthLimit;     { angus V7.12 }
+        property  BandwidthSampling      : LongWord   read  FBandwidthSampling
+                                                      write FBandwidthSampling;  { angus V7.12 }
+{$ENDIF}
         property  OnStart                : TNotifyEvent
                                                       read  FOnStart
                                                       write FOnStart;
@@ -2135,6 +2155,10 @@ begin
     FLanguage           := 'EN*';   { angus V7.01 we only support ENglish }
     FSystemCodePage     := GetAcp;  { AG 7.02 }
     FMaxAttempts        := 12 ;     { angus V7.06 }
+{$IFDEF BUILTIN_THROTTLE}
+    FBandwidthLimit     := 0;       { angus V7.12 no bandwidth limit, yet, bytes per second }
+    FBandwidthSampling  := 1000;    { angus V7.12 Msec sampling interval, less is not possible }
+{$ENDIF}
  { !!!!!!!!!!! NGB: Added next five lines }
     FPasvIpAddr         := '';
     FPasvPortRangeStart := 0;
@@ -2496,7 +2520,15 @@ begin
     MyClient.FFtpState       := ftpcWaitingUserCode;
     MyClient.FileModeRead    := SrvFileModeRead;     { angus V1.57 }
     MyClient.FileModeWrite   := SrvFileModeWrite;    { angus V1.57 }
+{$IFDEF BUILTIN_THROTTLE}
+    MyClient.CBandwidthLimit    := fBandwidthLimit;     { angus V7.12 may be changed in event for different limit }
+    MyClient.CBandwidthSampling := fBandwidthSampling;  { angus V7.12 }
+{$ENDIF}
     TriggerClientConnect(MyClient, Error);
+{$IFDEF BUILTIN_THROTTLE}
+    MyClient.BandwidthLimit     := MyClient.CBandwidthLimit;     { angus V7.12 slow down control connection }
+    MyClient.BandwidthSampling  := MyClient.CBandwidthSampling;  { angus V7.12 }
+{$ENDIF}
 end;
 
 
@@ -3578,6 +3610,10 @@ begin
         Client.DataSocket.LocalPort           := 'ftp-data'; {20}
 {$ENDIF}
         Client.DataSocket.ComponentOptions    := [wsoNoReceiveLoop];
+{$IFDEF BUILTIN_THROTTLE}
+        Client.DataSocket.BandwidthLimit      := Client.CBandwidthLimit;     { angus V7.12 }
+        Client.DataSocket.BandwidthSampling   := Client.CBandwidthSampling;  { angus V7.12 }
+{$ENDIF}
         Client.DataSocket.Connect;
     end;
 end;
@@ -4243,6 +4279,10 @@ begin
     end;
     Client.DataSocket.LingerOnOff             := wsLingerOff;
     Client.DataSocket.LingerTimeout           := 0;
+{$IFDEF BUILTIN_THROTTLE}
+    Client.DataSocket.BandwidthLimit          := Client.CBandwidthLimit;     { angus V7.12 }
+    Client.DataSocket.BandwidthSampling       := Client.CBandwidthSampling;  { angus V7.12 }
+{$ENDIF}
     Client.DataSocket.HSocket                 := HSocket;
     Client.PassiveConnected                   := TRUE;
     if Client.PassiveStart then
@@ -4275,6 +4315,10 @@ begin
         Client.DataSocket.LocalPort           := 'ftp-data'; {20}
 {$ENDIF}
         Client.DataSocket.ComponentOptions    := [wsoNoReceiveLoop];
+{$IFDEF BUILTIN_THROTTLE}
+        Client.DataSocket.BandwidthLimit      := Client.CBandwidthLimit;     { angus V7.12 }
+        Client.DataSocket.BandwidthSampling   := Client.CBandwidthSampling;  { angus V7.12 }
+{$ENDIF}
         Client.DataSocket.Connect;
     end;
 end;

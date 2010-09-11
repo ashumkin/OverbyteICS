@@ -12,7 +12,7 @@ Version:      1.08
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2007 by François PIETTE
+Legal issues: Copyright (C) 1999-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -88,13 +88,13 @@ unit OverbyteIcsSslWebServ1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Controls, Forms,
-  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, WinSock, OverbyteIcsWSocket,
+  Windows, Messages, SysUtils, Classes, Controls, Forms,
+  OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsWinsock, OverbyteIcsWSocket,
   OverbyteIcsWSocketS, OverbyteIcsHttpSrv, OverbyteIcsLIBEAY,
   OverbyteIcsSslSessionCache, OverbyteIcsLogger, OverbyteIcsWndControl;
 
 const
-  CopyRight : String         = 'WebServ (c) 1999-2006 F. Piette V1.07 ';
+  CopyRight : String         = 'WebServ (c) 1999-2010 F. Piette V1.07 ';
   Ssl_Session_ID_Context     = 'WebServ_Test';
 
 type

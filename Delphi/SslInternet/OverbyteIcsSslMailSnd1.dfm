@@ -1,9 +1,9 @@
 object SslSmtpTestForm: TSslSmtpTestForm
   Left = 456
   Top = 161
-  Width = 609
-  Height = 474
   Caption = 'SMTP SSL Test - http://www.overbyte.be'
+  ClientHeight = 440
+  ClientWidth = 601
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -414,7 +414,6 @@ object SslSmtpTestForm: TSslSmtpTestForm
       Height = 21
       Hint = 'Select authentication type'
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 10
       Items.Strings = (
         'None'
@@ -484,7 +483,6 @@ object SslSmtpTestForm: TSslSmtpTestForm
       Height = 21
       Hint = 'Select e-mail priority'
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 11
       Items.Strings = (
         'Not specified'
@@ -520,7 +518,6 @@ object SslSmtpTestForm: TSslSmtpTestForm
       Height = 21
       Hint = 'Select the SMTP SSL mode '
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 12
       Items.Strings = (
         'None'
@@ -640,6 +637,8 @@ object SslSmtpTestForm: TSslSmtpTestForm
     ConfirmReceipt = False
     HdrPriority = smtpPriorityNone
     CharSet = 'iso-8859-1'
+    ConvertToCharset = True
+    WrapMsgMaxLineLen = 76
     SendMode = smtpToSocket
     DefaultEncoding = smtpEnc7bit
     Allow8bitChars = True
@@ -651,6 +650,7 @@ object SslSmtpTestForm: TSslSmtpTestForm
     OnGetData = SslSmtpClientGetData
     OnHeaderLine = SslSmtpClientHeaderLine
     OnRequestDone = SslSmtpClientRequestDone
+    XMailer = 'ICS SMTP Component V%VER%'
     OnBeforeFileOpen = SslSmtpClientBeforeFileOpen
     Timeout = 15
     MultiThreaded = False

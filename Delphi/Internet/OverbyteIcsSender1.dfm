@@ -1,9 +1,9 @@
 object SenderForm: TSenderForm
   Left = 217
   Top = 161
-  Width = 552
-  Height = 321
   Caption = 'Sender'
+  ClientHeight = 287
+  ClientWidth = 544
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

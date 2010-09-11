@@ -27,7 +27,6 @@ object SocksTestForm: TSocksTestForm
     ScrollBars = ssBoth
     TabOrder = 0
     WordWrap = False
-    ExplicitHeight = 102
   end
   object Panel1: TPanel
     Left = 0

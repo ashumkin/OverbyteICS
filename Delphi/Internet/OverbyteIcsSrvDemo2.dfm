@@ -1,9 +1,9 @@
 object CliForm: TCliForm
   Left = 419
   Top = 200
-  Width = 373
-  Height = 230
   Caption = 'Client'
+  ClientHeight = 196
+  ClientWidth = 365
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

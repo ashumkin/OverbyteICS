@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
   <PersonalityInfo>
     <Option>
       <Option Name="Personality">Delphi.Personality</Option>
       <Option Name="ProjectType">VCLApplication</Option>
       <Option Name="Version">1.0</Option>
-      <Option Name="GUID">{634F37F9-F304-47F3-932D-6478BBD338F3}</Option>
+      <Option Name="GUID">{81FFA409-1849-4CDA-817D-15C8FB7400E7}</Option>
     </Option>
   </PersonalityInfo>
   <Delphi.Personality>

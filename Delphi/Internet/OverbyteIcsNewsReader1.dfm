@@ -1,9 +1,9 @@
 object NNTPForm: TNNTPForm
   Left = 190
   Top = 126
-  Width = 588
-  Height = 366
   Caption = 'NNTP - http://www.overbyte.be'
+  ClientHeight = 332
+  ClientWidth = 580
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

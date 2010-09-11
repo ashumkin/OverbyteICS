@@ -7,7 +7,7 @@ Version:      7.00
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org See website for details.
-Legal issues: Copyright (C) 1996-2007 by François PIETTE
+Legal issues: Copyright (C) 1996-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -79,7 +79,7 @@ uses
 
 const
   TnOptFrmVersion      = 700;
-  CopyRight : String = ' TnOptFrm (c) 1996-2008 F. Piette V7.00 ';
+  CopyRight : String = ' TnOptFrm (c) 1996-2010 F. Piette V7.00 ';
 
 type
   TOptForm = class(TForm)

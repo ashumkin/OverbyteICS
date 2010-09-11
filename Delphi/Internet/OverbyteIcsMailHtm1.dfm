@@ -1,9 +1,9 @@
 object HtmlMailForm: THtmlMailForm
   Left = 338
   Top = 228
-  Width = 669
-  Height = 478
   Caption = 'Html Mail - ICS - http://www.overbyte.be'
+  ClientHeight = 444
+  ClientWidth = 661
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -362,6 +362,8 @@ object HtmlMailForm: THtmlMailForm
     ConfirmReceipt = False
     HdrPriority = smtpPriorityNone
     CharSet = 'windows-1252'
+    ConvertToCharset = True
+    WrapMsgMaxLineLen = 76
     SendMode = smtpToSocket
     DefaultEncoding = smtpEnc7bit
     Allow8bitChars = True
@@ -372,7 +374,9 @@ object HtmlMailForm: THtmlMailForm
     OnDisplay = HtmlSmtpClientDisplay
     OnRequestDone = HtmlSmtpClientRequestDone
     OnSessionClosed = HtmlSmtpClientSessionClosed
+    XMailer = 'ICS SMTP Component V%VER%'
     HtmlCharSet = 'windows-1252'
+    HtmlConvertToCharset = True
     Left = 362
     Top = 152
   end

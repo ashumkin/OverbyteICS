@@ -91,6 +91,7 @@ object MainForm: TMainForm
     LineEcho = False
     LineEdit = False
     Addr = '0.0.0.0'
+    SocketFamily = sfIPv4
     Port = '600'
     Proto = 'udp'
     LocalAddr = '0.0.0.0'

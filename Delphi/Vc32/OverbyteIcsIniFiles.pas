@@ -99,6 +99,8 @@ type
     procedure SetStrings(List: TStrings);
     procedure UpdateFile; override;
     procedure WriteString(const Section, Ident, Value: String); override;
+    function  ReadStrings(const Section, Ident: String; Strings: TStrings): Boolean;
+    procedure WriteStrings(const Section, Ident: String; Strings: TStrings);
     property  CaseSensitive: Boolean read GetCaseSensitive write SetCaseSensitive;
   end;
 
@@ -313,6 +315,60 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsUtf8IniFile.WriteStrings(
+    const Section : String;
+    const Ident   : String;
+    Strings       : TStrings);
+var
+    nItem   : Integer;
+begin
+    if (Section = '') or (Ident = '') or (not Assigned(Strings)) then
+        Exit;
+    EraseSection(Section);
+    if Strings.Count <= 0 then
+        WriteString(Section, Ident + 'EmptyFlag', 'Empty')
+    else
+        for nItem := 0 to Strings.Count - 1 do
+            WriteString(Section,
+                        Ident + IntToStr(nItem),
+                        Strings.Strings[nItem]);
+end;
+
+function TIcsUtf8IniFile.ReadStrings(
+    const Section  : String;
+    const Ident    : String;
+    Strings        : TStrings) : Boolean;
+var
+    nItem   : Integer;
+    I       : Integer;
+    Buf     : String;
+begin
+    Result := TRUE;
+    if (Section = '') or (Ident = '') or (not Assigned(Strings)) then
+        Exit;
+    Strings.Clear;
+    if ReadString(Section, Ident + 'EmptyFlag', '') <> '' then
+        Exit;
+    ReadSectionValues(Section, Strings);
+    nItem := Strings.Count - 1;
+    while nItem >= 0 do begin
+        Buf := Strings.Strings[nItem];
+        if CompareText(Ident, Copy(Buf, 1, Length(Ident))) <> 0 then
+            Strings.Delete(nItem)
+        else begin
+            if (Ord(Buf[Length(Ident) + 1]) < Ord('0')) or
+               (Ord(Buf[Length(Ident) + 1]) > Ord('9')) then
+                Strings.Delete(nItem)
+            else begin
+                I := Pos('=', Buf);
+                Strings.Strings[nItem] := Copy(Buf, I + 1, Length(Buf));
+            end;
+        end;
+        Dec(nItem);
+    end;
+    Result := (Strings.Count <> 0);
+end;
+
 procedure TIcsUtf8IniFile.Rename(const FileName: String; Reload: Boolean);
 begin
   FFileName := FileName;

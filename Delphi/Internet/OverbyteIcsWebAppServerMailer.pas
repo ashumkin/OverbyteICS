@@ -198,7 +198,7 @@ procedure TUrlHandlerMailer.Execute;
 begin
     WSocket := TWSocket.Create (self) ;
     WSocket.OnDnsLookupDone := DoneDnsLookup ;
-    WSocket.OnBgException := WebAppSrvForm.AppSrvBgException;
+    WSocket.OnBgException := WebAppSrvForm.HttpAppSrvClientBgException;
     AbortTimer := TTimer.Create (self) ;
     AbortTimer.OnTimer := TimerAbortTimer ;
     AbortTimer.Interval := 5000 ;     // five second timeout for DNS
@@ -311,7 +311,7 @@ begin
                 sTempFrom := '"' + sMailName + '" <' + sMailFrom + '>' ;
                 if NOT Assigned (EmailBody) then EmailBody := TStringList.Create ;
                 if NOT Assigned (SmtpClient) then SmtpClient := TSmtpCli.Create (self) ;
-                SmtpClient.OnBgException := WebAppSrvForm.AppSrvBgException;
+                SmtpClient.OnBgException := WebAppSrvForm.HttpAppSrvClientBgException;
                 SmtpClient.OnDisplay := SmtpClientDisplay ;
                 SmtpClient.OnGetData := SmtpClientGetData ;
                 SmtpClient.OnRequestDone := SmtpClientRequestDone ;

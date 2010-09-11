@@ -1,9 +1,9 @@
 object IcsTimerDemoForm: TIcsTimerDemoForm
   Left = 529
   Top = 184
-  Width = 264
-  Height = 322
   Caption = 'TIcsThreadTimer demo'
+  ClientHeight = 288
+  ClientWidth = 256
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

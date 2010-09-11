@@ -44,8 +44,8 @@ Aug 15, 1999  V2.03 Removed FormPos dependency.
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
     #define s_addr S_addr
 #endif
-#include <vcl\vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <vcl.h>
+#include <Inifiles.hpp>
 #include <stdlib.h>
 #pragma hdrstop
 

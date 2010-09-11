@@ -44,8 +44,8 @@ Aug 15, 1999  V2.03 Removed FormPos dependency.
 #if __BORLANDC__ == 0x520     // BCB1 is BC5.20   BCB3 is BC5.30
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
 #endif
-#include <vcl\vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <vcl.h>
+#include <Inifiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsUdpSend1.h"

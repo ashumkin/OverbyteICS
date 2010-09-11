@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{21807bda-350b-4913-bead-c8f4448339a4}</ProjectGuid>
+    <ProjectGuid>{D8BE9632-AA81-4E64-AB3D-231D0816C3A0}</ProjectGuid>
     <MainSource>OverbyteIcsD2007Design.dpk</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -55,16 +55,16 @@
       <Excluded_Packages Name="$(BDS)\bin\dclofficexp100.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
     </Excluded_Packages></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsD2007Design.dpk">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="C:\Users\user\Desktop\designide.dcp" />
-    <DCCReference Include="C:\Users\user\Desktop\OverbyteIcsD2007Run.dcp" />
-    <DCCReference Include="C:\Users\user\Desktop\rtl.dcp" />
-    <DCCReference Include="C:\Users\user\Desktop\vcl.dcp" />
-    <DCCReference Include="OverbyteIcsReg.pas" />
-    <DCCReference Include="OverByteIcsWSocketE.pas" />
+    <DCCReference Include="C:\Users\user\Desktop\designide.dcp"/>
+    <DCCReference Include="C:\Users\user\Desktop\OverbyteIcsD2007Run.dcp"/>
+    <DCCReference Include="C:\Users\user\Desktop\rtl.dcp"/>
+    <DCCReference Include="C:\Users\user\Desktop\vcl.dcp"/>
+    <DCCReference Include="OverbyteIcsReg.pas"/>
+    <DCCReference Include="OverByteIcsWSocketE.pas"/>
   </ItemGroup>
 </Project>

@@ -47,7 +47,7 @@ Jun 07, 2002  V1.06 Added a processing thread for Get.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 //---------------------------------------------------------------------------
 #include <vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <Inifiles.hpp>
 #pragma hdrstop
 
 #define FtpServVersion = 102;
@@ -207,7 +207,7 @@ void __fastcall TFtpServerForm::WMAppStartup(TMessage &Msg)
 
     // Prevent the server from running twice
     Buf = ClassName();
-    PrvWnd = FindWindow(&Buf[1], MainTitle);
+    PrvWnd = FindWindowA(&Buf[1], MainTitle);
     if (PrvWnd) {
         Log->Text('E', "Server already running. Shutdown.");
         Close();

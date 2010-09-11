@@ -12,7 +12,7 @@ EMail:        http://www.overbyte.be        http://www.rtfm.be/fpiette
                                             francois.piette@pophost.eunet.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2001-2005 by Franois PIETTE
+Legal issues: Copyright (C) 2001-2010 by Franois PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -68,7 +68,7 @@ uses
 
 const
   ConSmtpVersion = 103;
-  CopyRight      = ' ConSmtp (c) 2001-2009 by Francois PIETTE. V1.03';
+  CopyRight      = ' ConSmtp (c) 2001-2010 by Francois PIETTE. V1.03';
 
 { You *MUST* change the settings below so that your ISP mail server is      }
 { addressed. If you don't change those settings, you'll use my ISP SMTP     }

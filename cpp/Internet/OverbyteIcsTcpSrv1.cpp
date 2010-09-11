@@ -44,7 +44,7 @@ History:
     #define s_addr S_addr
 #endif
 #include <vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <Inifiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsTcpSrv1.h"

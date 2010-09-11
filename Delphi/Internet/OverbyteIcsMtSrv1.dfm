@@ -1,9 +1,9 @@
 object ServerForm: TServerForm
   Left = 148
   Top = 132
-  Width = 299
-  Height = 306
   Caption = 'ServerForm'
+  ClientHeight = 272
+  ClientWidth = 291
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

@@ -38,7 +38,7 @@ Updates:
 
 ---------------------------------------------------------------------------*/
 #include <vcl.h>
-#include <vcl\IniFiles.hpp>
+#include <IniFiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsCliDemo1.h"

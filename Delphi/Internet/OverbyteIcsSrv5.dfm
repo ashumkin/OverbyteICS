@@ -38,6 +38,7 @@ object ServerForm: TServerForm
     LineEnd = #13#10
     LineEcho = False
     LineEdit = False
+    SocketFamily = sfIPv4
     Port = 'telnet'
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'
@@ -70,6 +71,7 @@ object ServerForm: TServerForm
     LineEnd = #13#10
     LineEcho = False
     LineEdit = False
+    SocketFamily = sfIPv4
     Port = 'telnet'
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'

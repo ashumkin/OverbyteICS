@@ -43,7 +43,7 @@ History:
 
 ---------------------------------------------------------------------------*/
 #include <vcl.h>
-#include <vcl\IniFiles.hpp>
+#include <IniFiles.hpp>
 #pragma hdrstop
 #include "OverbyteIcsDllTst1.h"
 //---------------------------------------------------------------------------
@@ -93,7 +93,7 @@ void __fastcall TDllTestForm::FormShow(TObject *Sender)
         delete IniFile;
         DisplayMemo->Clear();
 
-        DllHandle = LoadLibrary("OverbyteIcsDLL1.dll");
+		DllHandle = LoadLibraryA("OverbyteIcsDLL1.dll");
         if (DllHandle == 0) {
             MyMessageBox("OverbyteIcsDLL1.dll not found", "Error", MB_OK);
             Application->Terminate();
@@ -152,16 +152,16 @@ void __fastcall TDllTestForm::FormClose(TObject *Sender, TCloseAction &Action)
 //---------------------------------------------------------------------------
 void __fastcall TDllTestForm::CallDllButtonClick(TObject *Sender)
 {
-    AnsiString Buffer;
-    int        BufSize;
+	AnsiString Buffer;
+	int        BufSize;
     int        Status;
 
     Display("Calling DLL...");
     BufSize = 100;
     Buffer.SetLength(BufSize);
-    Status = IcsDllDemo(AnsiString(HostnameEdit->Text).c_str(),
+	Status = IcsDllDemo(AnsiString(HostnameEdit->Text).c_str(),
                         AnsiString(PortEdit->Text).c_str(),
-                        &Buffer[1], &BufSize);
+						&Buffer[1], &BufSize);
     Buffer.SetLength(BufSize);
     if (Status)
         Display("Error #" + IntToStr(Status));

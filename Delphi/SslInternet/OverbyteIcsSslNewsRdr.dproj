@@ -1,6 +1,6 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{8a53db58-0b97-47c2-a7f0-5967671c39cd}</ProjectGuid>
+    <ProjectGuid>{02F5F083-4F2D-4BCA-A2F2-F5C276DA1F75}</ProjectGuid>
     <MainSource>OverbyteIcsSslNewsRdr.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -69,7 +69,7 @@
 
 <Source><Source Name="MainSource">OverbyteIcsSslNewsRdr.dpr</Source></Source></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsSslNewsRdr.dpr">
       <MainSource>MainSource</MainSource>

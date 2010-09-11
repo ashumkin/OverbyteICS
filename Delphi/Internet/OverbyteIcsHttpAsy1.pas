@@ -12,7 +12,7 @@ Description:  This program shows how to use the THttpCli component to execute
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2008 by François PIETTE
+Legal issues: Copyright (C) 1998-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -56,13 +56,13 @@ unit OverbyteIcsHttpAsy1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, OverbyteIcsHttpProt, OverbyteIcsIniFiles,
   OverbyteIcsWndControl;
 
 const
   HttpAsyVersion         = 600;
-  CopyRight : String     = 'OverbyteIcsHttpTst (c) 1998-2008 Francois Piette  V6.00 ';
+  CopyRight : String     = 'OverbyteIcsHttpTst (c) 1998-2010 Francois Piette  V6.00 ';
 
 type
   THttpAsyForm = class(TForm)

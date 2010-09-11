@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{5e0134e2-f1ce-4676-a519-f0c6c85fc3b1}</ProjectGuid>
+    <ProjectGuid>{591C7061-251D-40CF-B913-B7628302ABBC}</ProjectGuid>
     <MainSource>OverbyteIcsSslMailSnd.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -67,7 +67,7 @@
 
 <Source><Source Name="MainSource">OverbyteIcsSslMailSnd.dpr</Source></Source></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsSslMailSnd.dpr">
       <MainSource>MainSource</MainSource>

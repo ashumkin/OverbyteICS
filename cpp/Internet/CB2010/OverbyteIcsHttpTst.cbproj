@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{f9156155-2cef-4cdc-865f-b14715f20988}</ProjectGuid>
+			<ProjectGuid>{C76D2DE2-A7BA-472F-A352-63EC8D517BA8}</ProjectGuid>
 			<MainSource>OverbyteIcsHttpTst.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>
@@ -25,7 +25,7 @@
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<Defines>NO_STRICT</Defines>
 			<DynamicRTL>true</DynamicRTL>
-			<ILINK_ObjectSearchPath>..\..\Internet</ILINK_ObjectSearchPath>
+			<ILINK_ObjectSearchPath>D:\ICS-Root\V7Temp1\cpp\Internet\CB2010;..\..\Internet</ILINK_ObjectSearchPath>
 			<ProjectType>CppVCLApplication</ProjectType>
 			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;IndyCore.bpi;IndySystem.bpi;IndyProtocols.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;OverbyteIcsCB2010Run.bpi</PackageImports>
 			<BCC_wpar>false</BCC_wpar>

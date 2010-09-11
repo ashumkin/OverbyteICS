@@ -7,11 +7,11 @@ Description:  This source is part of WebAppServer demo application.
               Actually it is mostly a data entry demo showing how to
               handle HTML form with simple text input as well as a
               file upload input.
-Version:      1.00
+Version:      1.01
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2009 by François PIETTE
+Legal issues: Copyright (C) 2009-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -41,6 +41,7 @@ Legal issues: Copyright (C) 2009 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+Jul 30, 2010 V1.01 F.Piette: Added call to SaveConfig
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -210,8 +211,10 @@ begin
     ExtractURLEncodedValue(Params, 'submit', Submit);
     if SameText(Submit, 'OK') then begin
         // We have a new configuration confirmed
-        if SessionData.ConfigPort <> '' then
+        if SessionData.ConfigPort <> '' then begin
             WebAppSrvDataModule.Port := SessionData.ConfigPort;
+            WebAppSrvDataModule.SaveConfig;
+        end;
         if SessionData.ConfigHasLogo then begin
             FileName := WebAppSrvDataModule.DataDir + SessionData.ConfigTempDir +
                         '\' + SessionData.UserCode + '\Logo.png';

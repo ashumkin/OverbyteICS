@@ -42,10 +42,9 @@ Jul 3, 2009 V1.01 Angus - added mailer send email form demo
                           added W3C format log file
 Jul 10, 2009 V1.02 Arno - Assigned correct ClientClass which fixed Access Violations
                    whenever a connection was closed or established.
-Sept 1, 2009 V1.03 Angus - report exceptions creating virtual pages
-Jun 23, 2010 V1.04 Arno - Added a page that issues HTTP/HTTPS HEAD requests
-                   and shows the response, also includes a simple anti-robots
-                   feature.
+Sep 01, 2009 V1.03 Angus - report exceptions creating virtual pages
+Aug 08, 2010 V1.04 F.Piette: OnBgException is now published. Use a different
+                   method for listening and client sockets.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWebAppServerMain;
@@ -112,6 +111,7 @@ type
     procedure HttpAppSrv1AfterAnswer(Sender, Client: TObject);
     procedure HttpAppSrv1BeforeProcessRequest(Sender, Client: TObject);
     procedure HttpAppSrv1VirtualException(Sender: TObject; E: Exception; Method: THttpMethod; const Path: string);
+    procedure HttpAppSrv1BgException(Sender: TObject; E: Exception; var CanClose : Boolean);
   private
     FIniFileName : String;
     FInitialized : Boolean;
@@ -121,8 +121,8 @@ type
   public
     procedure Display(const Msg : String);
     procedure DisplayHandler(Sender : TObject; const Msg : String);
-    property IniFileName : String read FIniFileName write FIniFileName;
-    procedure AppSrvBgException(Sender: TObject; E: Exception; var CanClose : Boolean);
+    procedure HttpAppSrvClientBgException(Sender: TObject; E: Exception; var CanClose : Boolean);
+    property  IniFileName : String read FIniFileName write FIniFileName;
   end;
 
 var
@@ -290,6 +290,7 @@ begin
     RemoteClient.CLastWrite := RemoteClient.WriteCount ;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.HttpAppSrv1ClientConnect(
     Sender, Client: TObject;
@@ -299,7 +300,7 @@ var
 begin
     ClientCnx                := Client as THttpAppSrvConnection;
     ClientCnx.WSessionCookie := 'OverbyteIcsWebAppServer' + HttpAppSrv1.Port;
-    ClientCnx.OnBgException  := AppSrvBgException;
+    ClientCnx.OnBgException  := HttpAppSrvClientBgException;
 end;
 
 
@@ -352,12 +353,24 @@ begin
     Display('Exception creating virtual page: ' + Path + ' - ' + E.Message);
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TWebAppSrvForm.AppSrvBgException(Sender: TObject; E: Exception; var CanClose : Boolean);
+procedure TWebAppSrvForm.HttpAppSrv1BgException(Sender: TObject; E: Exception; var CanClose : Boolean);
 begin
-    Display('Exception processing page - ' + E.Message);
-    CanClose := true;
+    Display('Exception processing page - ' +
+            E.ClassName + ': ' + E.Message);
+    CanClose := FALSE;  // Let the server continue to accept connections
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWebAppSrvForm.HttpAppSrvClientBgException(Sender: TObject; E: Exception; var CanClose : Boolean);
+begin
+    Display('Exception processing page - ' +
+            E.ClassName + ': ' + E.Message);
+    CanClose := TRUE;  // Shutdown client
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWebAppSrvForm.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -429,7 +442,6 @@ begin
     HttpAppSrv1.DocDir         := BaseDir + 'WebAppServerData\wwwRoot';
     HttpAppSrv1.TemplateDir    := BaseDir + 'WebAppServerData\Templates';
     HttpAppSrv1.DefaultDoc     := 'index.html';
-    HttpAppSrv1.OnBgException  := AppSrvBgException;
 
     // Force directory creation
     ForceDirectories(FDataDir);

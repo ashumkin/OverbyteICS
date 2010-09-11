@@ -1,6 +1,6 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{2d7a9e75-7bec-47d3-b0aa-ab0f8a29d417}</ProjectGuid>
+    <ProjectGuid>{28B20D76-3B6E-448C-8FA1-08398E3F50C5}</ProjectGuid>
     <MainSource>OverbyteIcsSimpleSslServer.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -70,7 +70,7 @@
 
 <Source><Source Name="MainSource">OverbyteIcsSimpleSslServer.dpr</Source></Source></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsSimpleSslServer.dpr">
       <MainSource>MainSource</MainSource>

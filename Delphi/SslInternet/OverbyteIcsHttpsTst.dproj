@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{e4e2e01a-0b7a-4d41-b2d5-8e91cd57adaa}</ProjectGuid>
+    <ProjectGuid>{06894D3A-7DD4-40A7-B90F-8BAD507ED22E}</ProjectGuid>
     <MainSource>OverbyteIcsHttpsTst.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -52,7 +52,7 @@
       <Excluded_Packages Name="C:\Dokumente und Einstellungen\Peter Peterson\Eigene Dateien\Borland Studio Projects\bpl\OverbyteIcsSslBcb100Package.bpl">OverbyteIcsSslBcb100Package</Excluded_Packages>
     </Excluded_Packages><Source><Source Name="MainSource">OverbyteIcsHttpsTst.dpr</Source></Source></Delphi.Personality></BorlandProject></BorlandProject>
   </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets"/>
   <ItemGroup>
     <DelphiCompile Include="OverbyteIcsHttpsTst.dpr">
       <MainSource>MainSource</MainSource>

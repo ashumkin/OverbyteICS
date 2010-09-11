@@ -47,8 +47,8 @@ Apr 02, 2000  V1.04 Adapted for BCB5
 #if __BORLANDC__ == 0x520     // BCB1 is BC5.20   BCB3 is BC5.30
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
 #endif
-#include <vcl\vcl.h>
-#include <vcl\inifiles.hpp>
+#include <vcl.h>
+#include <inifiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsHttpsTst1.h"
@@ -232,9 +232,9 @@ void __fastcall THttpTestForm::PrepareConnection(void)
 
     IcsLogger1->LogOptions = TLogOptions();
     if (DebugEventCheckBox->Checked )
-        IcsLogger1->LogOptions = IcsLogger1->LogOptions << loDestEvent;
+		IcsLogger1->LogOptions = IcsLogger1->LogOptions << loDestEvent;
     if (DebugOutputCheckBox->Checked )
-        IcsLogger1->LogOptions = IcsLogger1->LogOptions << loDestOutDebug;
+		IcsLogger1->LogOptions = IcsLogger1->LogOptions << loDestOutDebug;
     if (DebugFileCheckBox->Checked ) {
         IcsLogger1->LogFileName   = "Debug_Out_HttpsTst.txt";
         IcsLogger1->LogFileOption = lfoOverwrite;

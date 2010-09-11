@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{9ba621c1-8f61-4f31-94c7-16399d392d21}</ProjectGuid>
+			<ProjectGuid>{1C55DFAA-0A55-449E-B9CE-288A3F2439AF}</ProjectGuid>
 			<MainSource>OverbyteIcsHttpsTst.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>

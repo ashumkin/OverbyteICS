@@ -57,7 +57,7 @@ interface
 {$ENDIF}
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsWSocket, 
   OverbyteIcsWSocketS, OverbyteIcsWndControl;
 

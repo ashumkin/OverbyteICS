@@ -2,7 +2,7 @@
 #ifndef OverbyteIcsMtSrv2H
 #define OverbyteIcsMtSrv2H
 //---------------------------------------------------------------------------
-#include <vcl\Classes.hpp>
+#include <Classes.hpp>
 #include "OverbyteIcsWSocket.hpp"
 //---------------------------------------------------------------------------
 class TClientThread : public TThread

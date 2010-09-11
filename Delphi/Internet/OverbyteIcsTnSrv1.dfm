@@ -1,9 +1,9 @@
 object ServerForm: TServerForm
   Left = 269
   Top = 236
-  Width = 551
-  Height = 306
   Caption = 'ServerForm'
+  ClientHeight = 272
+  ClientWidth = 543
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -78,6 +78,7 @@ object ServerForm: TServerForm
     LineEcho = False
     LineEdit = False
     Addr = '0.0.0.0'
+    SocketFamily = sfIPv4
     Port = 'telnet'
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'

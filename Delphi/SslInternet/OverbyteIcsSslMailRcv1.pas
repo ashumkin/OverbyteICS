@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Object:       Show how to use TPop3Cli (POP3 protocol, RFC-1225)
 Creation:     03 october 1997
-Version:      6.00a
+Version:      6.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -50,6 +50,7 @@ Jan 11, 2004  V1.04 Added Auth feature.
 Mar 23, 2006  V6.00  New version started from ICS-V5
 Aug 12, 2007  V6.00a Updated for ICS-V6
 Dec 25, 2007  V6.00b A. Garrels update SSL
+Jul 04, 2010  V6.01 Updated to support new TPop3Cli V6.07.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslMailRcv1;
@@ -68,7 +69,7 @@ uses
 
 const
     MailRcvVersion = 600;
-    CopyRight : String = ' MailRcv demo (c) 1997-2007 F. Piette V6.00a ';
+    CopyRight : String = ' MailRcv demo (c) 1997-2010 F. Piette V6.00a ';
 
 type
   TPOP3ExcercizerForm = class(TForm)
@@ -147,7 +148,7 @@ type
     procedure ResetButtonClick(Sender: TObject);
     procedure TopButtonClick(Sender: TObject);
     procedure RpopButtonClick(Sender: TObject);
-    procedure SslPop3ClientDisplay(Sender: TObject; Msg: String);
+    procedure SslPop3ClientDisplay(Sender: TObject; const Msg: String);
     procedure UidlButtonClick(Sender: TObject);
     procedure SslPop3ClientUidlBegin(Sender: TObject);
     procedure SslPop3ClientUidlEnd(Sender: TObject);
@@ -303,8 +304,8 @@ end;
 { This event handler is called when the TPop3Client object wants to display }
 { some information such as connection progress or errors.                   }
 procedure TPOP3ExcercizerForm.SslPop3ClientDisplay(
-    Sender : TObject;
-    Msg    : String);
+    Sender    : TObject;
+    const Msg : String);
 begin
     DisplayMemo.Lines.Add(Msg);
 end;
@@ -538,7 +539,7 @@ end;
 { receiveing. This could be used to write the message lines to a file.      }
 procedure TPOP3ExcercizerForm.SslPop3ClientMessageLine(Sender: TObject);
 begin
-    DisplayMemo.Lines.Add((Sender as TPop3Cli).LastResponse);
+    DisplayMemo.Lines.Add(String((Sender as TPop3Cli).LastResponse));
 end;
 
 
@@ -568,7 +569,7 @@ var
 begin
     Buffer := 'MsgNum = ' + IntToStr((Sender as TPop3Cli).MsgNum) + ' ' +
               'MsgSize = ' + IntToStr((Sender as TPop3Cli).MsgSize) + ' ' +
-              'Line = ''' + (Sender as TPop3Cli).LastResponse + '''';
+              'Line = ''' + String((Sender as TPop3Cli).LastResponse) + '''';
     DisplayMemo.Lines.Add(Buffer);
 end;
 
@@ -593,7 +594,7 @@ var
     Buffer : String;
 begin
     Buffer := 'MsgNum = ' + IntToStr((Sender as TPop3Cli).MsgNum) + ' ' +
-              'MsgUidl = ' + (Sender as TPop3Cli).MsgUidl + '''';
+              'MsgUidl = ' + String((Sender as TPop3Cli).MsgUidl) + '''';
     DisplayMemo.Lines.Add(Buffer);
 end;
 
@@ -610,7 +611,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TPOP3ExcercizerForm.MessageLine(Sender: TObject);
 begin
-    MessageForm.DisplayMemo.Lines.Add((Sender as TPop3Cli).LastResponse);
+    MessageForm.DisplayMemo.Lines.Add(String((Sender as TPop3Cli).LastResponse));
 end;
 
 
@@ -700,7 +701,7 @@ begin
             FFileOpened := FALSE;
             CloseFile(FFile);
         end;
-        DisplayMemo.Lines.Add('Error ' + SslPop3Client.ErrorMessage);
+        DisplayMemo.Lines.Add('Error ' + String(SslPop3Client.ErrorMessage));
         Exit;
     end;
 
@@ -716,7 +717,7 @@ begin
                 SslPop3Client.Uidl;
            end;
         1: begin     { Comes from the Uidl command }
-                FFileName := FMsgPath + 'Msg ' + SslPop3Client.MsgUidl + '.txt';
+                FFileName := FMsgPath + 'Msg ' + String(SslPop3Client.MsgUidl) + '.txt';
                 if FileExists(FFileName) then begin
                     DisplayMemo.Lines.Add('Message ' + IntToStr(SslPop3Client.MsgNum) + ' already here');
                     if SslPop3Client.MsgNum >= SslPop3Client.MsgCount then begin
@@ -771,8 +772,8 @@ procedure TPOP3ExcercizerForm.SslPop3ClientRequestDone(
 begin
     DisplayMemo.Lines.Add('Request Done Rq=' + IntToStr(Integer(RqType)) +
                           ' Error=' + IntToStr(ErrCode) + ' LastResponse="' +
-                          SslPop3Client.LastResponse + '" ErrorMessage="' +
-                          SslPop3Client.ErrorMessage + '" Connected=' +
+                          String(SslPop3Client.LastResponse) + '" ErrorMessage="' +
+                          String(SslPop3Client.ErrorMessage) + '" Connected=' +
                           BoolToStr(SslPop3Client.Connected, TRUE));
 
     if RqType = pop3Stat then begin
@@ -794,9 +795,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TPOP3ExcercizerForm.SslPop3ClientHeaderEnd(Sender: TObject);
 begin
-    SubjectEdit.Text := SslPop3Client.HeaderSubject;
-    FromEdit.Text    := SslPop3Client.HeaderFrom;
-    ToEdit.Text      := SslPop3Client.HeaderTo;
+    SubjectEdit.Text := String(SslPop3Client.HeaderSubject);
+    FromEdit.Text    := String(SslPop3Client.HeaderFrom);
+    ToEdit.Text      := String(SslPop3Client.HeaderTo);
 end;
 
 

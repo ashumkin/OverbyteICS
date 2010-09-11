@@ -1,9 +1,9 @@
 object GetGroupsForm: TGetGroupsForm
   Left = 345
   Top = 180
-  Width = 412
-  Height = 275
   Caption = 'ICS Tcp Server - http://www.overbyte.be'
+  ClientHeight = 241
+  ClientWidth = 404
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

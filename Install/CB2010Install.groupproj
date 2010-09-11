@@ -1,6 +1,6 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{221E8E06-099F-49C6-961C-D12882174995}</ProjectGuid>
+			<ProjectGuid>{67AB63A4-9949-44A5-9D80-63F388F79447}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
 			<Projects Include="..\Delphi\Vc32\OverbyteIcsCB2010Run.cbproj">

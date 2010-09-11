@@ -1,9 +1,9 @@
 object FtpMultiForm: TFtpMultiForm
   Left = 138
   Top = 123
-  Width = 441
-  Height = 517
   Caption = 'FTP - Multiple simultaneous transfers'
+  ClientHeight = 483
+  ClientWidth = 433
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

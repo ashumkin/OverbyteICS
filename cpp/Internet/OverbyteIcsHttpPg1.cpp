@@ -54,8 +54,8 @@ Apr 02, 2000  V1.05 Adapted for BCB5 (removed "#define _WINSPOOL_" SetPortA synd
 #if __BORLANDC__ == 0x520     // BCB1 is BC5.20   BCB3 is BC5.30
     #define _WINSOCKAPI_      // Prevent winsock.h from being included
 #endif
-#include <vcl\vcl.h>
-#include <vcl\Inifiles.hpp>
+#include <vcl.h>
+#include <Inifiles.hpp>
 #pragma hdrstop
 
 #include "OverbyteIcsHttpPg1.h"

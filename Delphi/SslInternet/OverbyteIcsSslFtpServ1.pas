@@ -12,7 +12,7 @@ Version:      1.14
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2008 by François PIETTE
+Legal issues: Copyright (C) 1998-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -92,7 +92,7 @@ unit OverbyteIcsSslFtpServ1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, OverbyteIcsIniFiles, OverbyteIcsFtpSrv, {OverbyteIcsFtpSrvC,} OverbyteIcsWSocket,
   StdCtrls, ExtCtrls, Menus,
   OverbyteIcsWinsock, OverbyteIcsLibeay, OverbyteIcsLogger,
@@ -100,7 +100,7 @@ uses
 
 const
   FtpServVersion      = 114;
-  CopyRight : String  = ' SslFtpServ (c) 1998-2008 F. Piette V1.14 ';
+  CopyRight : String  = ' SslFtpServ (c) 1998-2010 F. Piette V1.14 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type

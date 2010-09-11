@@ -7,8 +7,6 @@ object IcsTcpSvc: TIcsTcpSvc
   OnExecute = ServiceExecute
   OnStart = ServiceStart
   OnStop = ServiceStop
-  Left = 168
-  Top = 175
   Height = 161
   Width = 270
 end

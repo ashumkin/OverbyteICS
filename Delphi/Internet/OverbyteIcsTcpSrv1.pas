@@ -9,7 +9,7 @@ Description:  Basic TCP server showing how to use TWSocketServer and
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2008 by François PIETTE
+Legal issues: Copyright (C) 1999-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -54,13 +54,13 @@ unit OverbyteIcsTcpSrv1;
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls,
   OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl;
 
 const
   TcpSrvVersion = 702;
-  CopyRight     = ' TcpSrv (c) 1999-2008 by François PIETTE. V7.02';
+  CopyRight     = ' TcpSrv (c) 1999-2010 by François PIETTE. V7.02';
   WM_APPSTARTUP = WM_USER + 1;
 
 type

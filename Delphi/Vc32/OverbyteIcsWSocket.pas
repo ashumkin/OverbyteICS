@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.39
+Version:      7.46
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -744,14 +744,39 @@ Dec 20, 2009 V7.35 Arno added support for SSL Server Name Indication (SNI).
                    browers don't send both "localhost" and IP addresses as
                    server names, this is specified in RFC.
 Dec 24, 2009 V7.36 SSL SNI - Do not switch context if not initialized.
-Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It 
+Dec 26, 2009 V7.37 Arno fixed TCustomSyncWSocket.ReadLine for Unicode. It
                    now takes an AnsiString buffer. Since this method is highly
                    deprecated it's also marked as "deprecated". Do not use it
                    in new applications.
 May 08, 2010 V7.38 Arno Garrels added support for OpenSSL 0.9.8n. Read comments
                    in OverbyteIcsLIBEAY.pas for details.
 May 16, 2010 V7.39 Arno Garrels reenabled check for nil in WMAsyncGetHostByName.
-
+Jun 10, 2010 V7.40 Arno Garrels added experimental timeout and throttle feature
+                   to TWSocket. Currently both features have to be enabled
+                   explicitly with conditional defines BUILTIN_TIMEOUT
+                   and/or BUILTIN_THROTTLE (see OverbyteIcsDefs.inc )
+Aug 02, 2010 V7.41 Arno removed an option to send plain UTF-16 strings with
+                   SendStr() and SendLine() by passing 1200 (CP_UTF16) in the
+                   codepage parameter. Changed SendLine() to return correct
+                   number of bytes written.
+Aug 08, 2010 V7.42 FPiette prevented socket close in TCustomWSocket.Destroy when
+                   socket state is wsInvalidState (this happend when an
+                   exception is raise early in the constructor).
+Sep 05, 2010 V7.43 Arno fixed a bug in the experimental throttle and timeout
+                   source which made it impossible to use both features at the
+                   same time. Renamed conditionals EXPERIMENTAL_THROTTLE and
+                   EXPERIMENTAL_TIMEOUT to BUILTIN_THROTTLE and BUILTIN_TIMEOUT.
+                   It's now possible to either enable them in OverbyteIcsDefs.inc
+                   or define them in project options.
+Sep 08, 2010 V7.44 Arno reworked the experimental timeout and throttle code.
+                   Method names of TCustomTimeoutWSocket **changed**, they all
+                   got prefix "Timeout". Removed the crappy TCustomTimerWSocket
+                   class, both throttle and timeout use their own TIcsThreadTimer
+                   instance now.
+Sep 08, 2010 V7.45 Fixed a typo in experimental throttle code.
+Sep 11, 2010 V7.46 Arno added two more SSL debug log entries and a call to
+                   RaiseLastOpenSslError in TCustomSslWSocket.InitSSLConnection.
+                   Added function OpenSslErrMsg.
 
 }
 
@@ -860,7 +885,10 @@ uses
 {$IFNDEF NO_DEBUG_LOG}
   OverbyteIcsLogger,
 {$ENDIF}
-  OverbyteIcsUtils,
+{$IF DEFINED(BUILTIN_THROTTLE) or DEFINED(BUILTIN_TIMEOUT)}
+  OverbyteIcsThreadTimer,
+{$IFEND}
+  OverbyteIcsUtils,      OverbyteIcsAvlTrees,
   OverbyteIcsTypes,      OverbyteIcsLibrary,
   OverbyteIcsWndControl, OverbyteIcsWSockBuf,
   OverbyteIcsWinsock;
@@ -871,8 +899,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 739;
-  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.39 ';
+  WSocketVersion            = 746;
+  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.46 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -953,8 +981,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 
   TListenSocketInfo = class(TObject)
   public
-    FAddrStr      : string;
-    FPortStr      : string;
+    FAddrStr      : String;
+    FPortStr      : String;
     FHSocket      : TSocket;
     FPortNum      : Word;
     FSocketFamily : TSocketFamily;
@@ -968,12 +996,12 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     FList : TObjectList;
     function GetItem(Index: Integer): TListenSocketInfo;
     procedure SetItem(Index: Integer; const Value: TListenSocketInfo);
-    function GetNextValue(const S: string; var AStartIndex: Integer;
+    function GetNextValue(const S: String; var AStartIndex: Integer;
       ADelim: Char): String;
   public
     constructor Create;
     destructor Destroy; override;
-    function Assign(const AddrLst, PortLst: string): Integer;
+    function Assign(const AddrLst, PortLst: String): Integer;
     procedure Clear;
     procedure CloseSockets;
     function GetByHandle(AHSocket: TSocket): TListenSocketInfo;
@@ -1008,7 +1036,12 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   {$ENDIF}
     FCounter            : TWSocketCounter;
     FCounterClass       : TWsocketCounterClass;
-  protected    
+    { ThreadID at the time of the first call to one of the IcsAsyncXxxx methods}
+    FLookupThreadID     : THandle;
+    { Pointer to a TIcsAsyncDnsLookup instance shared by all TWSocket instances}
+    { which called one of the IcsAsyncXxxx methods from the same thread context}
+    FAsyncLookupPtr     : Pointer;
+  protected
     FHSocket            : TSocket;
     FASocket            : TSocket;               { Accepted socket }
     FLSocketInfos       : TListenSocketInfos;    { Listening HSockets}
@@ -1176,6 +1209,17 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure SetSin(const Value: TSockAddrIn);
     function  GetSin: TSockAddrIn;
     function  GetCurrentSocketFamily: TSocketFamily;
+    { The next three are wrappers around methods of TIcsAsyncDnsLookup. They   }
+    { mimic the MS native async DNS looup API that isn't available for IPv6.   }
+    function IcsAsyncGetHostByName(AWnd                : HWND;
+                                   AMsgID              : UINT;
+                                   const ASocketFamily : TSocketFamily;
+                                   const AName         : String): THandle;
+    function IcsAsyncGetHostByAddr(AWnd                : HWND;
+                                   AMsgID              : UINT;
+                                   const ASocketFamily : TSocketFamily;
+                                   const AAddr         : String): THandle;
+    function IcsCancelAsyncRequest(const ARequest: THandle): Integer;
   public
     property sin  : TSockAddrIn read GetSin write SetSin;
     property sin6 : TSockAddrIn6 read Fsin write Fsin;
@@ -1226,6 +1270,17 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   ReverseDnsLookup(const HostAddr: String); virtual;
     procedure   ReverseDnsLookupSync(const HostAddr: String); virtual;  {AG 03/03/06}
     procedure   CancelDnsLookup; virtual;
+    { Sets behavior of the internal DNS lookup object.                         }
+    { AMinThreads determines the number of persistent DNS lookup threads while }
+    { AMaxThreads determines the maximum number of threads the internal DNS    }
+    { lookup object may create per caller's thread context. After an idle time }
+    { out of 60 seconds the non-persistent threads exit.                       }
+    { Works only with new API, that is when SocketFamily is not sfIPv4.        }
+    procedure   SetMinMaxIcsAsyncDnsLookupThreads(AMinThreads, AMaxThreads: Byte);
+    { Helper method that assigns FAsyncLookupPtr internally                   }
+    procedure   RegisterIcsAsyncDnsLookup;
+    procedure   UnregisterIcsAsyncDnsLookup;
+
     function    GetPeerAddr: String; virtual;
     function    GetPeerPort: String; virtual;
     function    GetPeerName(var Name : TSockAddrIn; NameLen : Integer) : Integer; virtual;
@@ -1243,11 +1298,11 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   Pause; virtual;
     procedure   Resume; virtual;
     procedure   PutDataInSendBuffer(Data : TWSocketData; Len : Integer); virtual;
-    procedure   PutStringInSendBuffer(const Str : RawByteString); {$IFDEF COMPILER12_UP} overload; {$ENDIF}
+    function    PutStringInSendBuffer(const Str : RawByteString): Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF}
 {$IFDEF COMPILER12_UP}
-    procedure   PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord); overload;
-    procedure   PutStringInSendBuffer(const Str : UnicodeString); overload;
-{$ENDIF}    
+    function    PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord): Integer; overload;
+    function    PutStringInSendBuffer(const Str : UnicodeString): Integer; overload;
+{$ENDIF}
     procedure   DeleteBufferedData;
     procedure   ThreadAttach; override;
     procedure   ThreadDetach; override;
@@ -1567,7 +1622,7 @@ Nov 08, 2007 A. Garrels added property PublicKey to TX509Base.
 const
      SslWSocketVersion            = 100;
      SslWSocketDate               = 'Jan 18, 2006';
-     SslWSocketCopyRight : String = ' TSslWSocket (c) 2003-2006 Francois Piette V1.00.5e ';
+     SslWSocketCopyRight : String = ' TSslWSocket (c) 2003-2010 Francois Piette V1.00.5e ';
 
 const
      
@@ -2369,7 +2424,11 @@ type
   public
       constructor Create{$IFDEF VCL}(AOwner : TComponent){$ENDIF}; override;
       destructor  Destroy; override;
-      function    SendLine(const Str : String) : Integer; virtual;
+      function    SendLine(const Str : RawByteString) : Integer; {$IFDEF COMPILER12_UP} overload; {$ENDIF} virtual;
+{$IFDEF COMPILER12_UP}
+      function    SendLine(const Str : UnicodeString; ACodePage: LongWord) : Integer; overload; virtual;
+      function    SendLine(const Str : UnicodeString) : Integer; overload; virtual;
+{$ENDIF}
       property    LineLength : Integer      read  FLineLength;
       property    RcvdPtr    : TWSocketData read  FRcvdPtr;
       property    RcvdCnt    : LongInt      read  FRcvdCnt;
@@ -2408,10 +2467,100 @@ type
           {$IFDEF COMPILER12_UP}'Do not use in new applications'{$ENDIF};
   end;
 
+{$IFDEF BUILTIN_TIMEOUT}
+  TTimeoutReason = (torConnect, torIdle);
+  TTimeoutEvent = procedure (Sender: TObject; Reason: TTimeoutReason) of object;
+  TCustomTimeoutWSocket = class(TCustomSyncWSocket)
+  private
+      FTimeoutConnect         : LongWord;
+      FTimeoutIdle            : LongWord;
+      FTimeoutSampling        : LongWord;
+      FOnTimeout              : TTimeoutEvent;
+      FTimeoutTimer           : TIcsThreadTimer;
+      FTimeoutConnectStartTick: LongWord;
+      FTimeoutOldTimerEnabled : Boolean;
+      FTimeoutKeepThreadAlive : Boolean;
+      procedure TimeoutHandleTimer(Sender: TObject);
+      procedure SetTimeoutSampling(const Value: LongWord);
+      procedure SetTimeoutKeepThreadAlive(const Value: Boolean);
+  protected
+      procedure TriggerTimeout(Reason: TTimeoutReason); virtual;
+      procedure TriggerSessionConnectedSpecial(Error: Word); override;
+      procedure TriggerSessionClosed(Error: Word); override;
+      procedure DupConnected; override;
+  public
+      constructor Create(AOwner: TComponent); override;
+      procedure Connect; override;
+      procedure TimeoutStartSampling;
+      procedure TimeoutStopSampling;
+      procedure ThreadAttach; override;
+      procedure ThreadDetach; override;
+      property  TimeoutKeepThreadAlive: Boolean    read  FTimeoutKeepThreadAlive
+                                                   write SetTimeoutKeepThreadAlive
+                                                   default TRUE;
+  //published
+      property TimeoutSampling: LongWord           read  FTimeoutSampling
+                                                   write SetTimeoutSampling;
+      property TimeoutConnect: LongWord            read  FTimeoutConnect
+                                                   write FTimeoutConnect;
+      property TimeoutIdle: LongWord read FTimeoutIdle write FTimeoutIdle;
+      property OnTimeout: TTimeoutEvent read FOnTimeout write FOnTimeout;
+  end;
+{$ENDIF}
+
+{$IFDEF BUILTIN_THROTTLE}
+  {$IFDEF BUILTIN_TIMEOUT}
+  TCustomThrottledWSocket = class(TCustomTimeoutWSocket)
+  {$ELSE}
+  TCustomThrottledWSocket = class(TCustomSyncWSocket)
+  {$ENDIF}
+  private
+      FBandwidthLimit           : LongWord;  // Bytes per second, null = disabled
+      FBandwidthSampling        : LongWord;  // Msec sampling interval
+      FBandwidthCount           : LongWord;  // Byte counter
+      FBandwidthMaxCount        : LongWord;  // Bytes during sampling period
+      FBandwidthTimer           : TIcsThreadTimer;
+      FBandwidthPaused          : Boolean;
+      FBandwidthEnabled         : Boolean;
+      FBandwidthOldTimerEnabled : Boolean;
+      FBandwidthKeepThreadAlive : Boolean;
+      procedure BandwidthHandleTimer(Sender: TObject);
+      procedure SetBandwidthControl;
+      procedure SetBandwidthSampling(const Value: LongWord);
+      procedure SetBandwidthKeepThreadAlive(const Value: Boolean);
+  protected
+      procedure DupConnected; override;
+      function  RealSend(var Data: TWSocketData; Len : Integer) : Integer; override;
+      procedure TriggerSessionConnectedSpecial(Error: Word); override;
+      procedure TriggerSessionClosed(Error: Word); override;
+  public
+      constructor Create(AOwner: TComponent); override;
+      function  Receive(Buffer: TWSocketData; BufferSize: Integer) : Integer; override;
+      procedure ThreadAttach; override;
+      procedure ThreadDetach; override;
+      property  TimeoutKeepThreadAlive: Boolean    read  FBandwidthKeepThreadAlive
+                                                   write SetBandwidthKeepThreadAlive
+                                                   default TRUE;
+  //published
+      property BandwidthLimit       : LongWord     read  FBandwidthLimit
+                                                   write FBandwidthLimit;
+      property BandwidthSampling    : LongWord     read  FBandwidthSampling
+                                                   write SetBandwidthSampling;
+  end;
+{$ENDIF}
+
 {$IFDEF CLR}
 //  [DesignTimeVisibleAttribute(TRUE)]
 {$ENDIF}
+{$IFDEF BUILTIN_THROTTLE}
+  TWSocket = class(TCustomThrottledWSocket)
+{$ELSE}
+  {$IFDEF BUILTIN_TIMEOUT}
+  TWSocket = class(TCustomTimeoutWSocket)
+  {$ELSE}
   TWSocket = class(TCustomSyncWSocket)
+  {$ENDIF}
+{$ENDIF}
   public
     property PortNum;
     property Handle;
@@ -2692,6 +2841,9 @@ const
 function SafeWSocketGCount : Integer;
 {$ENDIF}
 
+{$IFDEF USE_SSL}
+function OpenSslErrMsg(const AErrCode: LongWord): String;
+{$ENDIF}
 {
 const
     WSocketGCount   : Integer = 0;
@@ -2730,6 +2882,10 @@ const
 {$IFNDEF NO_DEBUG_LOG}
 var
     __DataSocket : TCustomWSocket;
+{$ENDIF}
+{$IFNDEF COMPILER12_UP}
+var
+    CPUCount     : Integer;
 {$ENDIF}
 
 implementation
@@ -2793,6 +2949,96 @@ var
 //  V6.01 moved GSendBufCritSect to OverbyteIcsWSocket.pas
 //  GSendBufCritSect  : TRTLCriticalSection;                 { v6.00f }
 
+type
+  TIcsAsyncDnsLookupRequestState = (lrsNone, lrsInWork, lrsAlready);
+  TIcsAsyncDnsLookupRequest = class(TObject)
+  private
+    FWndHandle    : HWND;
+    FMsgID        : UINT;
+    FSocketFamily : TSocketFamily;
+    FState        : TIcsAsyncDnsLookupRequestState;
+    FReverse      : Boolean;
+    FCanceled     : Boolean;
+    FLookupName   : string;
+    FResultList   : TStrings;
+  public
+    property ResultList: TStrings read FResultList;
+  end;
+
+  TIcsAsyncDnsLookupThread = class;
+  { TIcsAsyncDnsLookup provides async name resolution with new API, IPv6 and IPv4 }
+  TIcsAsyncDnsLookup = class(TObject)
+  private
+    FThreads      : TList;
+    FQueue        : TList;
+    FMaxThreads   : Integer;
+    FMinThreads   : Integer;
+    FQueueLock    : TRTLCriticalSection;
+    FThreadsLock  : TRTLCriticalSection;
+    FDestroying   : Boolean;
+    FThreadIdleTimeoutMsec : LongWord;
+    procedure LockQueue;
+    procedure UnlockQueue;
+    procedure LockThreadList;
+    procedure UnlockThreadList;
+    function ExecAsync(AWnd: HWND; AMsgID: UINT; ASocketFamily: TSocketFamily;
+      const AName: string; AReverse: Boolean): THandle;
+    function GetNextRequest(AThread: TIcsAsyncDnsLookupThread): TIcsAsyncDnsLookupRequest;
+    function RemoveRequest(AReq: TIcsAsyncDnsLookupRequest): Boolean;
+    function CancelAsyncRequest(AReq: THandle): Integer;
+  public
+    constructor Create(const AMaxThreads: Integer; const AMinThreads: Integer = 0;
+      const AThreadIdleTimeoutSec: LongWord = 60);
+    destructor Destroy; override;
+    procedure SetMinMaxThreads(AMinThreads, AMaxThreads: Byte);
+  end;
+
+  TIcsAsyncDnsLookupThread = class(TThread)
+  private
+    FEvent         : TEvent;
+    FBusy          : Boolean;
+    FDnsLookup     : TIcsAsyncDnsLookup;
+    FDnsResultList : TStringList;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(ADnsLookup: TIcsAsyncDnsLookup); reintroduce;
+    destructor Destroy; override;
+  end;
+
+  TThreadStoreTree = class (TIcsAvlPointerTree)
+  protected
+    { If Data1 < Data2 return False otherwise True }
+    function  CompareData(Data1, Data2: Pointer): Boolean; override;
+    { Return True if Data1 equals Data2 otherwise False }
+    function  SameData(Data1, Data2: Pointer): Boolean; override;
+    procedure Notification(Data: Pointer; Action: TIcsAvlTreeNotification); override;
+  end;
+
+  TThreadStoreItem = record
+    ThreadID  : THandle;
+    RefCnt    : Integer;
+    Data      : Pointer;
+  end;
+  PThreadStoreItem = ^TThreadStoreItem;
+
+  TThreadLocalStore = class // Not really thread local
+  private
+    FTree : TThreadStoreTree;
+    FTemp : TThreadStoreItem;
+    FLock : TRTLCriticalSection;
+  public
+    constructor Create;
+    destructor  Destroy; override;
+    function  RegisterStore(ThreadID: THandle): PPointer;
+    function  UnregisterStore(ThreadID: THandle): Pointer;
+    procedure Lock;
+    procedure Unlock;
+  end;
+
+var
+  GThreadLocalStore : TThreadLocalStore = nil;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsDigit(Ch : AnsiChar) : Boolean;
@@ -2800,6 +3046,17 @@ begin
     Result := (ch >= '0') and (ch <= '9');
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF COMPILER12_UP}
+function GetCpuCount: Integer;
+var
+    SysInfo : TSystemInfo;
+begin
+    _GetSystemInfo(SysInfo);
+    Result := SysInfo.dwNumberOfProcessors;
+end;
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Check for a valid numeric dotted IP address such as 192.161.65.25         }
@@ -3908,24 +4165,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-type
-  TIcsAsyncDnsLookupRequestState = (lrsNone, lrsInWork, lrsAlready);
-  TIcsAsyncDnsLookupRequest = class(TObject)
-  private
-    FWndHandle    : HWND;
-    FMsgID        : UINT;
-    FSocketFamily : TSocketFamily;
-    FState        : TIcsAsyncDnsLookupRequestState;
-    FReverse      : Boolean;
-    FCanceled     : Boolean;
-    FLookupName   : string;
-    FResultList   : TStrings;
-  public
-    property ResultList: TStrings read FResultList;
-  end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 function WSocket_Synchronized_IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
   const ASocketFamily: TSocketFamily; const AName: string): THandle; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -3935,6 +4175,8 @@ function WSocket_Synchronized_IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
 function WSocket_Synchronized_IcsCancelAsyncRequest(
   const ARequest: THandle): Integer; forward;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
+*)
+
 function WSocket_Synchronized_ResolveName(const AName: string;
   const AReverse: Boolean; const AFamily: TSocketFamily;
   AResultList: TStrings): Integer; forward;
@@ -5737,19 +5979,24 @@ begin
     except
         { Ignore any exception here }
     end;
+    UnregisterIcsAsyncDnsLookup;
 
-    if FState <> wsClosed then       { Close the socket if not yet closed }
-        Close;
+    if FState <> wsInvalidState then begin              { FPiette V7.42 }
+        { wsInvalidState happend when an exception is raised early in the constructor }
+        { Close the socket if not yet closed }
+        if FState <> wsClosed then
+            Close;
 
-    _EnterCriticalSection(GWSockCritSect);
-    try
-        Dec(WSocketGCount);
-        if WSocketGCount <= 0 then begin
-            WSocketUnloadWinsock;
-{           WSocketGCount := 0;  // it is set to 0 in WSocketUnloadWinsock }
+        _EnterCriticalSection(GWSockCritSect);
+        try
+            Dec(WSocketGCount);
+            if WSocketGCount <= 0 then begin
+                WSocketUnloadWinsock;
+    {           WSocketGCount := 0;  // it is set to 0 in WSocketUnloadWinsock }
+            end;
+        finally
+            _LeaveCriticalSection(GWSockCritSect);
         end;
-    finally
-        _LeaveCriticalSection(GWSockCritSect);
     end;
 
     if Assigned(FBufHandler) then begin
@@ -6260,7 +6507,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : RawByteString);
+function TCustomWSocket.PutStringInSendBuffer(const Str : RawByteString): Integer;
 {$IFDEF CLR}
 var
     Data : TBytes;
@@ -6273,29 +6520,28 @@ begin
 {$ENDIF}
 {$IFDEF WIN32}
 begin
-    if Length(Str) > 0 then
-        PutDataInSendBuffer(@Str[1], Length(Str));
+    Result := Length(Str);
+    if Result > 0 then
+        PutDataInSendBuffer(Pointer(Str), Result);
 {$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF COMPILER12_UP}                                              
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage: LongWord);
+function TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString; ACodePage : LongWord): Integer;
 begin
-    if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
-        PutDataInSendBuffer(Pointer(Str), Length(Str) * 2)
-    else
-        PutStringInSendBuffer(UnicodeToAnsi(Str, ACodePage));  // Explicit cast
+    Result := PutStringInSendBuffer(UnicodeToAnsi(Str, ACodePage));  // Explicit cast
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString);
+function TCustomWSocket.PutStringInSendBuffer(const Str : UnicodeString): Integer;
 begin
-    PutStringInSendBuffer(AnsiString(Str));  // Explicit cast
+    Result := PutStringInSendBuffer(AnsiString(Str));  // Explicit cast
 end;
 {$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.PutDataInSendBuffer(
@@ -6382,15 +6628,7 @@ end;
 {$IFDEF COMPILER12_UP}
 function TCustomWSocket.SendStr(const Str : UnicodeString; ACodePage : LongWord) : Integer;
 begin
-    if Length(Str) > 0 then
-    begin
-        if ACodePage = 1200 then // UTF-16Le, default UnicodeString => send as is
-            Result := Send( Pointer(Str), Length(Str) * 2)
-        else
-           Result := SendStr(UnicodeToAnsi(Str, ACodePage));
-   end
-   else
-        Result := 0;
+    Result := SendStr(UnicodeToAnsi(Str, ACodePage));
 end;
 
 
@@ -6407,16 +6645,15 @@ end;
 { Return -1 if error, else return number of byte written                    }
 function TCustomWSocket.SendStr(const Str : RawByteString) : Integer;
 begin
-    if Length(Str) > 0 then
+    Result := Length(Str);
+    if Result > 0 then
         Result := Send({$IFDEF CLR}
                        System.Text.Encoding.Default.GetBytes(Str),
                        {$ENDIF}
                        {$IFDEF WIN32}
                        PAnsiChar(Str),
                        {$ENDIF}
-                       Length(Str))
-    else
-        Result := 0;
+                       Result);
 end;
 
 
@@ -6920,7 +7157,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 function TCustomWSocket.GetRemotePort : String;
 begin
     Result := FPortStr;
@@ -7041,6 +7277,84 @@ begin
 
     FAddrResolved       := FALSE;
     FAddrAssigned       := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.RegisterIcsAsyncDnsLookup;
+var
+    PP: PPointer;
+begin
+    if FAsyncLookupPtr = nil then begin
+        GThreadLocalStore.Lock;
+        try
+            FLookupThreadID := _GetCurrentThreadID;
+            PP := GThreadLocalStore.RegisterStore(FLookupThreadID);
+            if (PP^ = nil) then
+                PP^ := TIcsAsyncDnsLookup.Create(CpuCount);
+            FAsyncLookupPtr := PP^;
+        finally
+            GThreadLocalStore.Unlock;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.UnRegisterIcsAsyncDnsLookup;
+begin
+    if FAsyncLookupPtr <> nil then begin
+        GThreadLocalStore.Lock;
+        try
+            if GThreadLocalStore.UnregisterStore(FLookupThreadID) = FAsyncLookupPtr then
+                _FreeAndNil(TObject(FAsyncLookupPtr));
+        finally
+            GThreadLocalStore.Unlock;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetMinMaxIcsAsyncDnsLookupThreads(
+  AMinThreads : Byte; AMaxThreads : Byte);
+begin
+    if FAsyncLookupPtr = nil then
+        RegisterIcsAsyncDnsLookup;
+    TIcsAsyncDnsLookup(FAsyncLookupPtr).SetMinMaxThreads(AMinThreads, AMaxThreads);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocket.IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
+  const ASocketFamily: TSocketFamily; const AName: String): THandle;
+begin
+    if FAsyncLookupPtr = nil then
+        RegisterIcsAsyncDnsLookup;
+    Result := TIcsAsyncDnsLookup(FAsyncLookupPtr).ExecAsync(
+                                    AWnd, AMsgID, ASocketFamily, AName, FALSE);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocket.IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
+  const ASocketFamily: TSocketFamily; const AAddr: String): THandle;
+begin
+    if FAsyncLookupPtr = nil then
+        RegisterIcsAsyncDnsLookup;
+    Result := TIcsAsyncDnsLookup(FAsyncLookupPtr).ExecAsync(
+                                    AWnd, AMsgID, ASocketFamily, AAddr, TRUE);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocket.IcsCancelAsyncRequest(
+  const ARequest: THandle): Integer;
+begin
+    if FAsyncLookupPtr <> nil then
+        Result := TIcsAsyncDnsLookup(FAsyncLookupPtr).CancelAsyncRequest(ARequest)
+    else
+        Result := 0;
 end;
 
 
@@ -7499,7 +7813,7 @@ begin
     if FSocketFamily = sfIPv4 then
         RetVal := WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
     else
-        RetVal := WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
+        RetVal := {WSocket_Synchronized_}IcsCancelAsyncRequest(FDnsLookupHandle);
     if RetVal <> 0 then begin
         FDnsLookupHandle := 0;
         SocketError('WSACancelAsyncRequest');
@@ -7535,7 +7849,7 @@ begin
         if FSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
-            WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
+            {WSocket_Synchronized_}IcsCancelAsyncRequest(FDnsLookupHandle);
         FDnsLookupHandle := 0;
     end;
 
@@ -7602,7 +7916,7 @@ begin
                                   @FDnsLookupBuffer,
                                   SizeOf(FDnsLookupBuffer))
     else
-        FDnsLookupHandle   := WSocket_Synchronized_IcsAsyncGetHostByName(
+        FDnsLookupHandle   := {WSocket_Synchronized_}IcsAsyncGetHostByName(
                                   FWindowHandle,
                                   FMsg_WM_ASYNCGETHOSTBYNAME,
                                   FSocketFamily,
@@ -7636,7 +7950,7 @@ begin
         if FSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
-            WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle);
+            {WSocket_Synchronized_}IcsCancelAsyncRequest(FDnsLookupHandle);
         FDnsLookupHandle := 0;
     end;
 
@@ -7674,7 +7988,7 @@ begin
                             @FDnsLookupBuffer,
                             SizeOf(FDnsLookupBuffer))
     else
-        FDnsLookupHandle := WSocket_Synchronized_IcsAsyncGetHostByAddr(
+        FDnsLookupHandle := {WSocket_Synchronized_}IcsAsyncGetHostByAddr(
                             FWindowHandle,
                             FMsg_WM_ASYNCGETHOSTBYADDR,
                             FSocketFamily,
@@ -7740,7 +8054,7 @@ begin
         if FSocketFamily = sfIPv4 then
             WSocket_Synchronized_WSACancelAsyncRequest(FDnsLookupHandle)
         else
-            WSocket_Synchronized_IcsCancelAsyncRequest(FDnsLookupHandle)
+            {WSocket_Synchronized_}IcsCancelAsyncRequest(FDnsLookupHandle)
     end;
     FDnsResult := '';
     if FSocketFamily = sfIPv4 then
@@ -10365,14 +10679,51 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Return -1 if error, else return number of byte written                    }
-function TCustomLineWSocket.SendLine(const Str : String) : Integer;
+{$IFDEF COMPILER12_UP}
+{ Returns -1 on error only if event OnError is assigned, otherwise an       }
+{ ESocketException may be raised. Returns the number of bytes written on    }
+{ success. LineEnd is treated as a raw sequence of bytes, hence it's not    }
+{ converted but sent as is.                                                 }
+function TCustomLineWSocket.SendLine(
+    const Str : UnicodeString;
+    ACodePage : LongWord) : Integer;
 begin
-    Result := Length(Str);
+    Result := PutStringInSendBuffer(Str, ACodePage);
     if Result > 0 then begin
-        PutStringInSendBuffer(Str);
-        SendStr(LineEnd);
-        Inc(Result, Length(LineEnd));
+        if SendStr(LineEnd) > -1 then
+            Inc(Result, Length(LineEnd))
+        else
+            Result := -1;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomLineWSocket.SendLine(const Str : UnicodeString) : Integer;
+begin
+    Result := PutStringInSendBuffer(Str);
+    if Result > 0 then begin
+        if SendStr(LineEnd) > -1 then
+            Inc(Result, Length(LineEnd))
+        else
+            Result := -1;
+    end;
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Returns -1 on error only if event OnError is assigned, otherwise an       }
+{ ESocketException may be raised. Returns the number of bytes written on    }
+{ success.                                                                  }
+function TCustomLineWSocket.SendLine(const Str : RawByteString) : Integer;
+begin
+    Result := PutStringInSendBuffer(Str);
+    if Result > 0 then begin
+        if SendStr(LineEnd) > -1 then
+            Inc(Result, Length(LineEnd))
+        else
+            Result := -1;
     end;
 end;
 
@@ -11097,6 +11448,332 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF BUILTIN_TIMEOUT}
+
+{ TCustomTimeoutWSocket }
+
+const
+    MIN_TIMEOUT_SAMPLING_INTERVAL = 1000;
+
+constructor TCustomTimeoutWSocket.Create(AOwner: TComponent);
+begin
+    inherited;
+    FTimeoutKeepThreadAlive := TRUE;
+    FTimeoutSampling := 5000;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.TimeoutHandleTimer(
+    Sender: TObject);
+begin
+    if (FTimeoutConnect > 0) and (FState <> wsConnected) then begin
+        if IcsCalcTickDiff(FTimeoutConnectStartTick,
+                           _GetTickCount) > FTimeoutConnect then begin
+            TimeoutStopSampling;
+            TriggerTimeout(torConnect);
+        end;
+    end
+    else if (FTimeoutIdle > 0) then begin
+        if IcsCalcTickDiff(FCounter.GetLastAliveTick,
+                           _GetTickCount) > FTimeoutIdle then begin
+            TimeoutStopSampling;
+            TriggerTimeout(torIdle);
+        end;
+    end
+    else
+        TimeoutStopSampling;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.Connect;
+begin
+    if FTimeoutConnect > 0 then begin
+        TimeoutStartSampling;
+        FTimeoutConnectStartTick := _GetTickCount;
+    end
+    else if FTimeoutIdle > 0 then
+        TimeoutStartSampling;
+    inherited Connect;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.SetTimeoutKeepThreadAlive(const Value: Boolean);
+begin
+    FTimeoutKeepThreadAlive := Value;
+    if FTimeoutTimer <> nil then
+        FTimeoutTimer.KeepThreadAlive := FTimeoutKeepThreadAlive;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.SetTimeoutSampling(const Value: LongWord);
+begin
+    if (Value > 0) and (Value < MIN_TIMEOUT_SAMPLING_INTERVAL) then
+       FTimeoutSampling := MIN_TIMEOUT_SAMPLING_INTERVAL
+    else
+       FTimeoutSampling := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.TimeoutStartSampling;
+begin
+    if not Assigned(FTimeoutTimer) then begin
+        FTimeoutTimer := TIcsThreadTimer.Create(Self);
+        FTimeoutTimer.KeepThreadAlive := FTimeoutKeepThreadAlive;
+        FTimeoutTimer.OnTimer := TimeoutHandleTimer;
+    end;
+    if not Assigned(FCounter) then
+        CreateCounter
+    else
+        FCounter.LastSendTick := _GetTickCount; // Init
+    if FTimeoutTimer.Interval <> FTimeoutSampling then
+        FTimeoutTimer.Interval := FTimeoutSampling;
+    if not FTimeoutTimer.Enabled then
+        FTimeoutTimer.Enabled := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.TimeoutStopSampling;
+begin
+    if Assigned(FTimeoutTimer) then
+        FTimeoutTimer.Enabled := FALSE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.DupConnected;
+begin
+    if FTimeoutIdle > 0 then
+        TimeoutStartSampling
+    else
+        TimeoutStopSampling;
+    inherited DupConnected;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.ThreadAttach;
+begin
+    inherited ThreadAttach;
+    if Assigned(FTimeoutTimer) then
+        FTimeoutTimer.Enabled := FTimeoutOldTimerEnabled;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.ThreadDetach;
+begin
+    if Assigned(FTimeoutTimer) and
+      (_GetCurrentThreadID = DWORD(FThreadID)) then begin
+        FTimeoutOldTimerEnabled := FTimeoutTimer.Enabled;
+        if FTimeoutOldTimerEnabled then
+            FTimeoutTimer.Enabled := FALSE;
+    end;
+    inherited ThreadDetach;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.TriggerSessionClosed(Error: Word);
+begin
+    TimeoutStopSampling;
+    inherited TriggerSessionClosed(Error);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.TriggerSessionConnectedSpecial(
+  Error: Word);
+begin
+    if (Error = 0) and (FTimeoutIdle > 0) then
+        TimeoutStartSampling
+    else
+        TimeoutStopSampling;
+    inherited TriggerSessionConnectedSpecial(Error);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomTimeoutWSocket.TriggerTimeout(Reason: TTimeoutReason);
+begin
+    if Assigned(FOnTimeout) then
+        FOnTimeout(Self, Reason);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF BUILTIN_THROTTLE}
+
+{ TCustomThrottledWSocket }
+
+constructor TCustomThrottledWSocket.Create(AOwner: TComponent);
+begin
+    inherited Create(AOwner);
+    FBandwidthKeepThreadAlive := TRUE;
+    FBandwidthSampling := 1000; { Msec sampling interval }
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.ThreadAttach;
+begin
+    inherited ThreadAttach;
+    if Assigned(FBandwidthTimer) then
+        FBandwidthTimer.Enabled := FBandwidthOldTimerEnabled;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.ThreadDetach;
+begin
+    if Assigned(FBandwidthTimer) and
+      (_GetCurrentThreadID = DWORD(FThreadID)) then begin
+        FBandwidthOldTimerEnabled := FBandwidthTimer.Enabled;
+        if FBandwidthOldTimerEnabled then
+            FBandwidthTimer.Enabled := FALSE;
+    end;
+    inherited ThreadDetach;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.DupConnected;
+begin
+    inherited DupConnected;
+    SetBandwidthControl;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.SetBandwidthControl;
+var
+    I : Int64;
+begin
+    FBandwidthCount := 0;
+    if FBandwidthLimit > 0 then
+    begin
+        if not Assigned(FBandwidthTimer) then begin
+            FBandwidthTimer := TIcsThreadTimer.Create(Self);
+            FBandwidthTimer.KeepThreadAlive := FBandwidthKeepThreadAlive;
+            FBandwidthTimer.OnTimer := BandwidthHandleTimer;
+        end;
+        FBandwidthTimer.Interval := FBandwidthSampling;
+        if not FBandwidthTimer.Enabled then
+            FBandwidthTimer.Enabled := TRUE;
+        // Number of bytes we allow during a sampling period, max integer max.
+        I := Int64(FBandwidthLimit) * FBandwidthSampling div 1000;
+        if I < MaxInt then
+            FBandwidthMaxCount := I
+        else
+            FBandwidthMaxCount := MaxInt;
+        FBandwidthPaused := FALSE;
+        Include(FComponentOptions, wsoNoReceiveLoop);
+        FBandwidthEnabled := TRUE
+    end
+    else begin
+        if Assigned(FBandwidthTimer) then
+            FBandwidthTimer.Enabled := FALSE;
+        FBandwidthEnabled := FALSE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.SetBandwidthKeepThreadAlive(
+  const Value: Boolean);
+begin
+    FBandwidthKeepThreadAlive := Value;
+    if FBandwidthTimer <> nil then
+        FBandwidthTimer.KeepThreadAlive := FBandwidthKeepThreadAlive;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.SetBandwidthSampling(const Value: LongWord);
+begin
+    if Value < 500 then
+        FBandwidthSampling := 500
+    else
+        FBandwidthSampling := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomThrottledWSocket.RealSend(var Data: TWSocketData;
+  Len: Integer): Integer;
+begin
+    Result := inherited RealSend(Data, Len);
+
+    if FBandwidthEnabled and (Result > 0) then begin
+        Inc(FBandwidthCount, Result);
+        if (FBandwidthCount > FBandwidthMaxCount) and
+           (not FBandwidthPaused) then begin
+            FBandwidthPaused := TRUE;
+            Pause;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomThrottledWSocket.Receive(Buffer: TWSocketData;
+  BufferSize: Integer): Integer;
+begin
+    Result := inherited Receive(Buffer, BufferSize);
+    
+    if FBandwidthEnabled and (Result > 0) then begin
+        Inc(FBandwidthCount, Result);
+        if (FBandwidthCount > FBandwidthMaxCount) and
+            (not FBandwidthPaused) then begin
+            FBandwidthPaused := TRUE;
+            Pause;
+        end;    
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.BandwidthHandleTimer(
+    Sender: TObject);
+begin
+    if FBandwidthPaused then begin
+        FBandwidthPaused := FALSE;
+        Dec(FBandwidthCount, FBandwidthMaxCount);
+        if FBandwidthCount > FBandwidthMaxCount then
+            FBandwidthCount := FBandwidthMaxCount;
+        Resume;
+    end
+    else
+        FBandwidthCount := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.TriggerSessionClosed(Error: Word);
+begin
+    if Assigned(FBandwidthTimer) then
+        FBandwidthTimer.Enabled := FALSE;
+    inherited TriggerSessionClosed(Error);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomThrottledWSocket.TriggerSessionConnectedSpecial(Error: Word);
+begin
+    inherited TriggerSessionConnectedSpecial(Error);
+    if Error = 0 then
+        SetBandwidthControl;
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
 {$IFDEF USE_SSL}
@@ -11317,6 +11994,18 @@ begin
     SetLength(result, 255);
     f_ERR_error_string_n(ErrCode, PAnsiChar(Result), Length(Result));
     SetLength(Result, _StrLen(PAnsiChar(Result)));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function OpenSslErrMsg(const AErrCode: LongWord): String;
+var
+    Buf : AnsiString;
+begin
+    SetLength(Buf, 127);
+    f_ERR_error_string_n(AErrCode, PAnsiChar(Buf), Length(Buf));
+    SetLength(Buf, _StrLen(PAnsiChar(Buf)));
+    Result := String(Buf);
 end;
 
 
@@ -12585,6 +13274,10 @@ begin
     Lock;
     try
 {$ENDIF}
+    {$IFNDEF NO_DEBUG_LOG}
+        if CheckLogOptions(loSslInfo) then
+         DebugLog(loSslInfo, 'InitCtx> OpenSSL version: ' + OpenSslVersion);
+    {$ENDIF}
     {$IFNDEF OPENSSL_NO_ENGINE}
         if (not GSslRegisterAllCompleted) and FAutoEnableBuiltinEngines then
         begin
@@ -15408,9 +16101,18 @@ begin
                 Obj.FInHandshake   := TRUE;
                 Inc(Obj.FHandShakeCount);
                 if (Obj.FHandShakeCount > 1) and
-                    IsSslRenegotiationDisallowed(Obj) then
+                    IsSslRenegotiationDisallowed(Obj) then begin
                 //if ICS_SSL_NO_RENEGOTIATION and (Obj.FHandShakeCount > 1) then
                     Obj.CloseDelayed;
+                   { todo: We need to handle this much better }
+                {$IFNDEF NO_DEBUG_LOG}
+                    if Obj.CheckLogOptions(loSslErr) or
+                       Obj.CheckLogOptions(loSslInfo) then
+                        Obj.DebugLog(loSslInfo, 'ICB> Renegotiaton not supported ' +
+                                                'or not allowed. Connection ' +
+                                                'closed delayed');
+                {$ENDIF}
+                end;
                 if Obj.FHandShakeCount > 1 then
                     Obj.FSslInRenegotiation := TRUE;
 {$IFNDEF NO_DEBUG_LOG}
@@ -15999,7 +16701,10 @@ begin
             Options := my_BIO_read(FSslbio, Pointer(1), 0); // reuse of int var Options!
             if Options < 0 then begin
                 if not my_BIO_should_retry(FSslbio) then
-                    HandleSslError;
+                    //HandleSslError;
+                    { Usually happens with an invalid context option set }
+                    RaiseLastOpenSslError(EOpenSslError, TRUE,
+                                          'InitSSLConnection:');
             end;
             //Initialize SSL negotiation
             if (FState = wsConnected) then begin
@@ -16844,50 +17549,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$ENDIF} // USE_SSL
 
-type
-  TIcsAsyncDnsLookupThread = class;
-  { TIcsAsyncDnsLookup provides async name resolution with new API, IPv6 and IPv4 }
-  TIcsAsyncDnsLookup = class(TObject)
-  private
-    FThreads      : TList;
-    FQueue        : TList;
-    FMaxThreads   : Integer;
-    FMinThreads   : Integer;
-    FQueueLock    : TRTLCriticalSection;
-    FThreadsLock  : TRTLCriticalSection;
-    FDestroying   : Boolean;
-    FThreadIdleTimeoutMsec : LongWord;
-    procedure LockQueue;
-    procedure UnlockQueue;
-    procedure LockThreadList;
-    procedure UnlockThreadList;
-    function ExecAsync(AWnd: HWND; AMsgID: UINT; ASocketFamily: TSocketFamily;
-      const AName: string; AReverse: Boolean): THandle;
-    function GetNextRequest(AThread: TIcsAsyncDnsLookupThread): TIcsAsyncDnsLookupRequest;
-    function RemoveRequest(AReq: TIcsAsyncDnsLookupRequest): Boolean;
-    function CancelAsyncRequest(AReq: THandle): Integer;
-    class function CpuCount: Integer;
-  public
-    constructor Create(const AMaxThreads: Integer; const AMinThreads: Integer = 0;
-      const AThreadIdleTimeoutSec: LongWord = 60);
-    destructor Destroy; override;
-  end;
+//type
 
-  TIcsAsyncDnsLookupThread = class(TThread)
-  private
-    FEvent         : TEvent;
-    FBusy          : Boolean;
-    FDnsLookup     : TIcsAsyncDnsLookup;
-    FDnsResultList : TStringList;
-  protected
-    procedure Execute; override;
-  public
-    constructor Create(ADnsLookup: TIcsAsyncDnsLookup); reintroduce;
-    destructor Destroy; override;
-  end;
 
-var
-  GAsyncDnsLookup : TIcsAsyncDnsLookup = nil;
+//var
+  //GAsyncDnsLookup : TIcsAsyncDnsLookup = nil;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TIcsAsyncDnsLookupThread }
@@ -17024,6 +17690,9 @@ var
     Request : TIcsAsyncDnsLookupRequest;
     LRes : WORD;
 begin
+{$IFDEF DEBUG}
+    IcsNameThreadForDebugging('TIcsAsyncDnsLookupThread');
+{$ENDIF}
     while not Terminated do
     begin
         case FEvent.WaitFor(FDnsLookup.FThreadIdleTimeoutMsec) of
@@ -17116,8 +17785,7 @@ begin
     Result := 0;
     LockQueue;
     try        
-        if not IsIPv6APIAvailable then
-        begin
+        if not IsIPv6APIAvailable then begin
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
         end;
@@ -17135,18 +17803,15 @@ begin
     Thread := nil;
     LockThreadList;
     try
-        for I := 0 to FThreads.Count - 1 do
-        begin
-            if not TIcsAsyncDnsLookupThread(FThreads[I]).FBusy then
-            begin
+        for I := 0 to FThreads.Count - 1 do begin
+            if not TIcsAsyncDnsLookupThread(FThreads[I]).FBusy then begin
                 Thread := TIcsAsyncDnsLookupThread(FThreads[I]);
                 Thread.FBusy := TRUE;
                 Thread.FEvent.SetEvent;
                 Break;
             end;
         end;
-        if (Thread = nil) and (FThreads.Count < FMaxThreads) then
-        begin
+        if (Thread = nil) and (FThreads.Count < FMaxThreads) then begin
             Thread := TIcsAsyncDnsLookupThread.Create(Self);
             FThreads.Add(Thread);
             Thread.FBusy := TRUE;
@@ -17174,10 +17839,8 @@ begin
         Result := nil;
         if FDestroying then
             Exit;
-        for I := 0 to FQueue.Count - 1 do
-        begin
-            if TIcsAsyncDnsLookupRequest(FQueue[I]).FState = lrsNone then
-            begin
+        for I := 0 to FQueue.Count - 1 do begin
+            if TIcsAsyncDnsLookupRequest(FQueue[I]).FState = lrsNone then begin
                 Result := FQueue[I];
                 Result.FState := lrsInWork;
                 Break;
@@ -17203,8 +17866,7 @@ var
 begin
     LockQueue;
     try
-        if not IsIPv6APIAvailable then
-        begin
+        if not IsIPv6APIAvailable then begin
             Result := -1;
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
@@ -17215,17 +17877,14 @@ begin
         else
             Req := nil;
 
-        if Req <> nil then
-        begin
-            if Req.FState = lrsNone then
-            begin
+        if Req <> nil then begin
+            if Req.FState = lrsNone then begin
                 Req.Free;
                 FQueue.Delete(I);
                 Result := 0;
             end
             else begin
-                if Req.FState = lrsAlready then
-                begin
+                if Req.FState = lrsAlready then begin
                     Result := -1;
                     SetLastError(WSAEALREADY);
                 end
@@ -17246,12 +17905,20 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-class function TIcsAsyncDnsLookup.CpuCount: Integer;
-var
-    SysInfo: TSystemInfo;
+procedure TIcsAsyncDnsLookup.SetMinMaxThreads(AMinThreads, AMaxThreads: Byte);
 begin
-    _GetSystemInfo(SysInfo);
-    Result := SysInfo.dwNumberOfProcessors;
+    LockThreadList;
+    try
+        if AMaxThreads = 0 then
+            AMaxThreads := 1;
+        FMaxThreads := AMaxThreads;
+        if AMinThreads > AMaxThreads then
+            FMinThreads := AMaxThreads
+        else
+            FMinThreads := AMinThreads;
+    finally
+        UnlockThreadList;
+    end;
 end;
 
 
@@ -17264,11 +17931,12 @@ begin
     inherited Create;
     _InitializeCriticalSection(FQueueLock);
     _InitializeCriticalSection(FThreadsLock);
-    FMaxThreads := AMaxThreads;
-    FMinThreads := AMinThreads;
+    //FMaxThreads := AMaxThreads;
+    //FMinThreads := AMinThreads;
     FThreadIdleTimeoutMsec := AThreadIdleTimeoutSec * 1000;
     FQueue   := TList.Create;
     FThreads := TList.Create;
+    SetMinMaxThreads(AMinThreads, AMaxThreads);
 end;
 
 
@@ -17280,14 +17948,12 @@ begin
     FDestroying := TRUE;
     LockThreadList;
     try
-        if Assigned(FThreads) then
-        begin
+        if Assigned(FThreads) then begin
             for I := 0 to FThreads.Count -1 do
                 TObject(FThreads[I]).Free; // No problem since D7
             _FreeAndNil(FThreads);
         end;
-        if Assigned(FQueue) then
-        begin
+        if Assigned(FQueue) then begin
             for I := 0 to FQueue.Count -1 do
                 TObject(FQueue[I]).Free;
             _FreeAndNil(FQueue);
@@ -17348,6 +18014,111 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TThreadStoreTree }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TThreadStoreTree.CompareData(Data1, Data2: Pointer): Boolean;
+begin
+    Result := PThreadStoreItem(Data1)^.ThreadID < PThreadStoreItem(Data2)^.ThreadID;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TThreadStoreTree.Notification(Data: Pointer;
+  Action: TIcsAvlTreeNotification);
+begin
+    if Action = atnRemoved then
+        Dispose(PThreadStoreItem(Data));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TThreadStoreTree.SameData(Data1, Data2: Pointer): Boolean;
+begin
+    Result := PThreadStoreItem(Data1)^.ThreadID = PThreadStoreItem(Data2)^.ThreadID;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TThreadLocalStore }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TThreadLocalStore.Create;
+begin
+    inherited Create;
+    _InitializeCriticalSection(FLock);
+    FTree:= TThreadStoreTree.Create(FALSE);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TThreadLocalStore.Destroy;
+begin
+    FTree.Free;
+    inherited Destroy;
+    _DeleteCriticalSection(FLock);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TThreadLocalStore.Lock;
+begin
+    _EnterCriticalSection(FLock);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TThreadLocalStore.RegisterStore(ThreadID: THandle): PPointer;
+var
+    Found : Boolean;
+    PItem : PThreadStoreItem;
+begin
+    FTemp.ThreadID := ThreadID;
+    PItem := FTree.Find(@FTemp, Found);
+    if PItem <> nil then begin
+        Inc(PItem^.RefCnt);
+        Result := @PItem^.Data;
+    end
+    else begin
+        New(PItem);
+        PItem^.ThreadID := FTemp.ThreadID;
+        PItem^.RefCnt   := 1;
+        PItem^.Data     := nil;
+        FTree.Add(PItem);
+        Result := @PItem^.Data;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TThreadLocalStore.Unlock;
+begin
+    _LeaveCriticalSection(FLock);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TThreadLocalStore.UnregisterStore(ThreadID: THandle): Pointer;
+var
+    Found : Boolean;
+    PItem : PThreadStoreItem;
+begin
+    FTemp.ThreadID := ThreadID;
+    PItem := FTree.Find(@FTemp, Found);
+    if PItem <> nil then begin
+        Dec(PItem^.RefCnt);
+        if PItem^.RefCnt = 0 then
+        begin
+            Result := PItem^.Data;
+            FTree.Remove(PItem);
+        end
+        else
+            Result := nil;
+    end
+    else
+        Result := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 function WSocket_Synchronized_IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
   const ASocketFamily: TSocketFamily; const AName: string): THandle;
 begin
@@ -17369,18 +18140,18 @@ function WSocket_Synchronized_IcsCancelAsyncRequest(
 begin
     Result := GAsyncDnsLookup.CancelAsyncRequest(ARequest);
 end;
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TListenSocketInfo }
-
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TListenSocketInfo.Create;
 begin
     FHSocket := INVALID_SOCKET;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TListenSocketInfos }
-
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TListenSocketInfos.GetNextValue(const S: string; var AStartIndex: Integer;
   ADelim: Char): String;
@@ -17532,7 +18303,11 @@ initialization
     _InitializeCriticalSection(CritSecIpList);
 {$ENDIF}
     IPList     := TStringList.Create;
-    GAsyncDnsLookup := TIcsAsyncDnsLookup.Create(TIcsAsyncDnsLookup.CpuCount); // more or less max. threads ?
+    //GAsyncDnsLookup := TIcsAsyncDnsLookup.Create(TIcsAsyncDnsLookup.CpuCount); // more or less max. threads ?
+    GThreadLocalStore := TThreadLocalStore.Create;
+{$IFNDEF COMPILER12_UP}
+    CPUCount := GetCPUCount;
+{$ENDIF}
 {$IFDEF USE_SSL}
     _InitializeCriticalSection(SslCritSect);
     {$IFNDEF NO_SSL_MT}
@@ -17557,7 +18332,8 @@ finalization
 {$IFNDEF NO_ADV_MT}
     _DeleteCriticalSection(CritSecIpList);
 {$ENDIF}
-    _FreeAndNil(GAsyncDnsLookup);
+    //_FreeAndNil(GAsyncDnsLookup);
+    _FreeAndNil(GThreadLocalStore);
 {$IFDEF USE_SSL}
     {$IFNDEF NO_SSL_MT}
         _DeleteCriticalSection(LockPwdCB);

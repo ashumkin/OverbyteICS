@@ -1,9 +1,9 @@
 object TnDemoForm: TTnDemoForm
   Left = 305
   Top = 196
-  Width = 415
-  Height = 283
   Caption = 'TnDemo - http://www.overbyte.be'
+  ClientHeight = 249
+  ClientWidth = 407
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

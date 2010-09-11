@@ -2,12 +2,12 @@
 #ifndef OverbyteIcsHttpsTst1H
 #define OverbyteIcsHttpsTst1H
 //---------------------------------------------------------------------------
-#include <vcl\Classes.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <OverbyteIcsHttpProt.hpp>
+#include <Classes.hpp>
+#include <Controls.hpp>
+#include <StdCtrls.hpp>
+#include <Forms.hpp>
+#include <ExtCtrls.hpp>
+#include "OverbyteIcsHttpProt.hpp"
 #include "OverbyteIcsWSocket.hpp"
 #include "OverbyteIcsSslSessionCache.hpp"
 #include "OverbyteIcsCliCertDlg.h"

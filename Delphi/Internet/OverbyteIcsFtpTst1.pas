@@ -9,7 +9,7 @@ Object:       Demo for TFtpClient object (RFC 959 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -109,7 +109,7 @@ uses
 
 const
   FTPTstVersion      = 707;
-  CopyRight : String = ' FtpTst (c) 1997-2009 F. Piette V7.07 ';
+  CopyRight : String = ' FtpTst (c) 1997-2010 F. Piette V7.07 ';
 
 type
   TSyncCmd   = function : Boolean  of object;
@@ -578,7 +578,7 @@ begin
         Strm := TFileStream.Create(FileName, fmOpenRead);
         try
             SetLength(S, Strm.Size);
-            Strm.Read(S[1], Length(S));
+            Strm.Read(PAnsiChar(S)^, Length(S));
             { Auto-detect UTF-8 if Option is set }
             if (FtpClient1.CodePage <> CP_UTF8) and
                (ftpAutoDetectCodePage in FtpClient1.Options) and

@@ -1,9 +1,9 @@
 object POP3ExcercizerForm: TPOP3ExcercizerForm
-  Left = 44
-  Top = 643
-  Width = 526
-  Height = 382
+  Left = 42
+  Top = 43
   Caption = 'POP3 Excercizer - http://www.overbyte.be'
+  ClientHeight = 348
+  ClientWidth = 518
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -388,7 +388,6 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 97
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 29
       Items.Strings = (
         'None'

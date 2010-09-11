@@ -32,7 +32,6 @@ object DynCliForm: TDynCliForm
     ScrollBars = ssBoth
     TabOrder = 0
     WordWrap = False
-    ExplicitHeight = 129
   end
   object Panel1: TPanel
     Left = 0

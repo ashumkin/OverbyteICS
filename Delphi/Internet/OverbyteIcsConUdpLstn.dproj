@@ -1,6 +1,6 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectGuid>{01b1150f-b52a-4bef-9454-acffe1f0eae2}</ProjectGuid>
+    <ProjectGuid>{c53eb414-47d2-43c7-93c5-e3457dcfc5f4}</ProjectGuid>
     <MainSource>OverbyteIcsConUdpLstn.dpr</MainSource>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>

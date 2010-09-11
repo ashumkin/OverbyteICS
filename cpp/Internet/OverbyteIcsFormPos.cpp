@@ -27,8 +27,8 @@ Updates
 Apr 12, 1998 Adapted for BCB3
 
 ---------------------------------------------------------------------------*/
-#include <vcl\vcl.h>
-#include <vcl/Inifiles.hpp>
+#include <vcl.h>
+#include <Inifiles.hpp>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

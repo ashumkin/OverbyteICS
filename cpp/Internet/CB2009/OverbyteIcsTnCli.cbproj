@@ -1,6 +1,6 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{5034040d-97d6-4e29-8c4f-e4b5a9586437}</ProjectGuid>
+			<ProjectGuid>{72D9E626-4E73-4C90-BAA3-D1E88B653502}</ProjectGuid>
 			<MainSource>OverbyteIcsTnCli.cpp</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<ProjectVersion>12.0</ProjectVersion>
@@ -19,7 +19,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<LinkPackageImports>rtl.bpi;vcl.bpi</LinkPackageImports>
+			<LinkPackageImports>rtl.bpi;vcl.bpi;OverbyteIcsCB2009Run.bpi</LinkPackageImports>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
 			<OutputExt>exe</OutputExt>
 			<Defines>NO_STRICT</Defines>
@@ -30,9 +30,9 @@
 			<ProjectType>CppVCLApplication</ProjectType>
 			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;IndyProtocols.bpi;OverbyteIcsCB2009Run.bpi</PackageImports>
 			<BCC_wpar>false</BCC_wpar>
-			<IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\..\Delphi\Vc32;..\..\Internet</IncludePath>
-			<AllPackageLibs>rtl.lib;vcl.lib</AllPackageLibs>
-			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet</ILINK_LibraryPath>
+			<IncludePath>..\;..\CB2009;$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..\..\..\Delphi\Vc32;..\..\Internet;$(IncludePath)</IncludePath>
+			<AllPackageLibs>rtl.lib;vcl.lib;OverbyteIcsCB2009Run.lib</AllPackageLibs>
+			<ILINK_LibraryPath>..\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet</ILINK_LibraryPath>
 			<Multithreaded>true</Multithreaded>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -169,17 +169,17 @@
 			<ProjectFileVersion>12</ProjectFileVersion>
 		</ProjectExtensions>
 		<ItemGroup>
-			<CppCompile Include="OverbyteIcsTnCli.cpp">
-				<BuildOrder>1</BuildOrder>
-			</CppCompile>
+			<ResFiles Include="OverbyteIcsTnCli.res">
+				<BuildOrder>0</BuildOrder>
+			</ResFiles>
 			<CppCompile Include="..\OverbyteIcsTnCli1.cpp">
 				<Form>TelnetForm</Form>
 				<DependentOn>..\OverbyteIcsTnCli1.h</DependentOn>
 				<BuildOrder>2</BuildOrder>
 			</CppCompile>
-			<ResFiles Include="OverbyteIcsTnCli.res">
-				<BuildOrder>0</BuildOrder>
-			</ResFiles>
+			<CppCompile Include="OverbyteIcsTnCli.cpp">
+				<BuildOrder>1</BuildOrder>
+			</CppCompile>
 			<FormResources Include="..\OverbyteIcsTnCli1.dfm"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>

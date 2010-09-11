@@ -71,7 +71,7 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   DELPHI11_UP      Delphi 11 or higher  (Delphi 2007 - Highlander)
   DELPHI12_UP      Delphi 12 or higher  (Delphi 2009 - Tiburon)
   DELPHI14_UP      Delphi 14 or higher  (Delphi 2010 - Weaver)
-  DELPHI15_UP      ?
+  DELPHI15_UP      Delphi 15 or higher  (Delphi XE   - Fulcrum)
 
   BCB1             C++ Builder 1
   BCB3             C++ Builder 3
@@ -85,9 +85,11 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   BCB5_UP          C++ Builder 5  or higher
   BCB6_UP          C++ Builder 6  or higher
   BCB7_UP          C++ Builder 7  or higher
-  BCB10_UP         C++ Builder 10 or higher
-  BCB11_UP         C++ Builder 11 or higher
-  BCB12_UP         C++ Builder 12 or higher
+  BCB10_UP         C++ Builder 2006 or higher
+  BCB11_UP         C++ Builder 2007 or higher
+  BCB12_UP         C++ Builder 2009 or higher
+  BCB14_UP         C++ Builder 2010 or higher
+  BCB15_UP         C++ Builder XE   or higher
 
   COMPILER1        Delphi 1
   COMPILER2        Delphi 2  or C++ Builder 1
@@ -105,11 +107,11 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   COMPILER6_UP     Delphi 6  or C++ Builder 6 or higher
   COMPILER7_UP     Delphi 7  or higher
   COMPILER9_UP     Delphi 9  or higher
-  COMPILER10_UP    Delphi 10 or C++ Builder 10 or higher
+  COMPILER10_UP    Delphi or C++ Builder 2006 or higher
   COMPILER11_UP    Delphi or C++ Builder 2007 or higher (Highlander)
-  COMPILER12_UP    Delphi or C++ Builder 12 or higher (Tiburon)
-  COMPILER14_UP    Delphi or C++ Builder 14 or higher (Weaver)
-  COMPILER15_UP    ?
+  COMPILER12_UP    Delphi or C++ Builder 2009 or higher (Tiburon)
+  COMPILER14_UP    Delphi or C++ Builder 2010 or higher (Weaver)
+  COMPILER15_UP    Delphi or C++ Builder XE   or higher (Fulcrum)
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }
 
@@ -132,6 +134,12 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 { disables all the inherited RTTI options and sets the new ones to not emit  }
 { any extended RTTI information.                                             }
 {.$DEFINE NO_EXTENDED_RTTI}
+
+{ Next symbols include experimental features. Experimental features          }
+{ may change or being removed entirely in later versions!                    }
+{.$DEFINE BUILTIN_TIMEOUT}
+{.$DEFINE BUILTIN_THROTTLE}
+
 
 { Do not change anything below this line !                                   }
 {----------------------------------------------------------------------------}
@@ -584,6 +592,21 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
   {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
+{$IFDEF BCB15}
+  {$DEFINE BCB15_UP}
+  {$DEFINE BCB14_UP}
+  {$DEFINE BCB12_UP}
+  {$DEFINE BCB11_UP}
+  {$DEFINE BCB10_UP}
+  {$DEFINE BCB7_UP}
+  {$DEFINE BCB6_UP}
+  {$DEFINE BCB5_UP}
+  {$DEFINE BCB4_UP}
+  {$DEFINE BCB3_UP}
+  {$DEFINE BCB1_UP}
+{$ENDIF}
+
+
 {$IFDEF BCB14}
   {$DEFINE BCB14_UP}
   {$DEFINE BCB12_UP}
@@ -701,9 +724,12 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
 {$ENDIF}
 
 {$IFDEF COMPILER12_UP}
+{$IFNDEF COMPILER15_UP}
   {$IFNDEF BCB}
+  { Since Fulcrum always OFF and ignored }
     {$STRINGCHECKS OFF}
   {$ENDIF}
+{$ENDIF}
 {$ENDIF}
 
 { ICS SSL code doesn't work with FPC }
@@ -721,3 +747,4 @@ Oct 05, 2008 V1.09 USE_LINE for COMPILER10_UP, removed UNICODE check for .NET.
     {$DEFINE USE_ICONV}
   {$ENDIF}
 {$ENDIF}
+

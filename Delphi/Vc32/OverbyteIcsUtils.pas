@@ -3,11 +3,11 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.35
+Version:      7.37
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2008 by François PIETTE
+Legal issues: Copyright (C) 2002-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -107,6 +107,8 @@ Apr 26, 2010 V7.34 Arno removed some Windows dependencies. Charset conversion
              functions optionally may use GNU iconv library (LGPL) by explicitly
 		    defining conditional "USE_ICONV".  			 
 May 07, 2010 V7.35 Arno added IcsIsSBCSCodepage.			 
+Aug 21, 2010 V7.36 Arno fixed a bug in the UTF-8 constructor of TIcsFileStreamW.
+Sep 05, 2010 V.37 Arno added procedure IcsNameThreadForDebugging
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -172,6 +174,7 @@ type
 
 {$IFNDEF COMPILER15_UP}
     PLongBool     =  ^LongBool;
+    TThreadID     = LongWord;
 {$ENDIF}
     TIcsDbcsLeadBytes = TSysCharset;
     
@@ -256,7 +259,7 @@ type
     TIcsFileStreamW = class(THandleStream)
 {$ELSE}
     TIcsFileStreamW = class(TFileStream)
-{$ENDIF}    
+{$ENDIF}
     private
         FFileName: UnicodeString;
     public
@@ -386,6 +389,7 @@ const
     function  IcsSwap32(Value: LongWord): LongWord;
     procedure IcsSwap32Buf(Src, Dst: PLongWord; LongWordCount: Integer);
     procedure IcsSwap64Buf(Src, Dst: PInt64; QuadWordCount: Integer);
+    procedure IcsNameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1));
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): Integer; overload;
     function IcsFileCreateW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -444,6 +448,10 @@ const
     function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
     function  RtlCompareUnicodeString(String1 : PUNICODE_STRING;
         String2 : PUNICODE_STRING; CaseInsensitive : BOOLEAN): LongInt; stdcall;
+  {$IF CompilerVersion < 21}
+    function IsDebuggerPresent: BOOL; stdcall;
+    {$EXTERNALSYM IsDebuggerPresent}
+ {$IFEND}
 {$ENDIF}
 
 type
@@ -488,6 +496,9 @@ const
 var
     hNtDll : THandle = 0;
     _RtlCompareUnicodeString : Pointer = nil;
+  {$IF CompilerVersion < 21}
+    function IsDebuggerPresent; external kernel32 name 'IsDebuggerPresent';
+  {$IFEND}
 {$ENDIF}
 
 {$IFDEF USE_ICONV}
@@ -2749,6 +2760,38 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsNameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID);
+{$IF CompilerVersion < 21}
+type
+    TThreadNameInfo = record
+        FType: LongWord;     // must be 0x1000
+        FName: PAnsiChar;    // pointer to name (in user address space)
+        FThreadID: LongWord; // thread ID (-1 indicates caller thread)
+        FFlags: LongWord;    // reserved for future use, must be zero
+    end;
+var
+    ThreadNameInfo: TThreadNameInfo;
+begin
+    if IsDebuggerPresent then
+    begin
+        ThreadNameInfo.FType := $1000;
+        ThreadNameInfo.FName := PAnsiChar(AThreadName);
+        ThreadNameInfo.FThreadID := AThreadID;
+        ThreadNameInfo.FFlags := 0;
+        try
+            RaiseException($406D1388, 0,
+                  SizeOf(ThreadNameInfo) div SizeOf(LongWord), @ThreadNameInfo);
+        except
+        end;
+    end;
+{$ELSE}
+begin
+    TThread.NameThreadForDebugging(AThreadName, AThreadID);
+{$IFEND}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure IcsFindCloseW(var F: TIcsSearchRecW);
 begin
 {$IFDEF COMPILER12_UP}
@@ -3654,8 +3697,8 @@ constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String;
   Mode: Word);
 begin
 {$IFDEF COMPILER12_UP}
-    inherited Create(Utf8FileName, Mode);
-    FFileName := FileName;
+    FFileName := Utf8FileName;
+    inherited Create(FFileName, Mode);
 {$ELSE}
     Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, 0);
 {$ENDIF}
@@ -3667,8 +3710,8 @@ constructor TIcsFileStreamW.Create(const Utf8FileName: UTF8String; Mode: Word;
   Rights: Cardinal);
 begin
 {$IFDEF COMPILER12_UP}
-    inherited Create(Utf8FileName, Mode, Rights);
-    FFileName := FileName;
+    FFileName := Utf8FileName;
+    inherited Create(FFileName, Mode, Rights);
 {$ELSE}
     Create(AnsiToUnicode(Utf8FileName, CP_UTF8), Mode, Rights);
 {$ENDIF}

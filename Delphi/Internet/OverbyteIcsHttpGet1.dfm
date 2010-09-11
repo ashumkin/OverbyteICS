@@ -1,9 +1,9 @@
 object HttpGetForm: THttpGetForm
   Left = 128
   Top = 123
-  Width = 347
-  Height = 189
   Caption = 'Http Get - http://www.orverbyte.be'
+  ClientHeight = 155
+  ClientWidth = 339
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

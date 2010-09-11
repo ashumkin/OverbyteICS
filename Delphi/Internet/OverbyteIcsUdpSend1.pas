@@ -10,7 +10,7 @@ Object:       Demo program to show how to use TWSocket object to broadcast
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2007 by François PIETTE
+Legal issues: Copyright (C) 1997-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
               <francois.piette@overbyte.be>
 
@@ -54,12 +54,12 @@ unit OverbyteIcsUdpSend1;
 interface
 
 uses
-  WinTypes, Messages, Classes, SysUtils, Controls, Forms, StdCtrls,
+  Windows, Classes, SysUtils, Controls, Forms, StdCtrls,
   OverbyteIcsIniFiles, OverbyteIcsWSocket, OverbyteIcsWndControl;
 
 const
   UdpSendVersion     = 203;
-  CopyRight : String = ' UdpSend (c) 1997-2007 F. Piette V2.03 ';
+  CopyRight : String = ' UdpSend (c) 1997-2010 F. Piette V2.03 ';
 
 type
   TMainForm = class(TForm)
