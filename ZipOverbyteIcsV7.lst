@@ -1437,6 +1437,12 @@ Delphi\Internet\OverbyteIcsTcpSrvIPv6.res
 Delphi\Internet\OverbyteIcsTcpSrv1IPv6.pas
 Delphi\Internet\OverbyteIcsTcpSrv1IPv6.dfm
 
+Delphi\Internet\OverbyteIcsBatchDnsLookup.dpr
+Delphi\Internet\OverbyteIcsBatchDnsLookup.cfg
+Delphi\Internet\OverbyteIcsBatchDnsLookup.res
+Delphi\Internet\OverbyteIcsBatchDnsLookup1.pas
+Delphi\Internet\OverbyteIcsBatchDnsLookup1.dfm
+
 Delphi\SslInternet\SslCerts\IcsSslBuildCerts.bat
 Delphi\SslInternet\SslCerts\openssl.conf
 
