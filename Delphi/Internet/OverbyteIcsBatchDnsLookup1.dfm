@@ -100,6 +100,7 @@ object BatchDnsLookupForm: TBatchDnsLookupForm
       'ResultMemo')
     ReadOnly = True
     TabOrder = 1
+    WordWrap = False
   end
   object MinEdit: TEdit
     Left = 40

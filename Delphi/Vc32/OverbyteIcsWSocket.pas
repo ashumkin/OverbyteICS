@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.47
+Version:      7.52
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -780,6 +780,13 @@ Sep 11, 2010 V7.46 Arno added two more SSL debug log entries and a call to
 Sep 23, 2010 V7.47 Arno fixed a bug in the experimental throttle code and made
                    it more accurate. Thanks to Angus for testing and reporting.
                    Method Resume with SSL enabled did not always work.
+Oct 10, 2010 V7.48 Arno - MessagePump changes/fixes.
+Oct 14, 2010 V7.49 Arno - Abort TCustomLineWSocket as soon as possible.
+Oct 15, 2010 V7.50 Arno - Made function IsSslRenegotiationDisallowed available.
+Oct 16, 2010 V7.51 Arno removed dummy ancestor TBaseParentWSocket, it was not 
+                   required to make D7's structure view happy.
+Nov 08, 2010 V7.35 Arno improved final exception handling, more details
+                   in OverbyteIcsWndControl.pas (V1.14 comments).
                    
 }
 
@@ -902,8 +909,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 747;
-  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.47 ';
+  WSocketVersion            = 751;
+  CopyRight    : String     = ' TWSocket (c) 1996-2010 Francois Piette V7.51 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -919,10 +926,7 @@ type
   PIcsIPv4Address    = ^TIcsIPv4Address;
   TWndMethod         = procedure(var Message: TMessage) of object;
   ESocketException   = class(Exception);
-  TBgExceptionEvent  = procedure (Sender : TObject;
-                                  E : Exception;
-                                  var CanClose : Boolean) of object;
-
+  TBgExceptionEvent  = TIcsBgExceptionEvent; { V7.35 }
   TSocketState       = (wsInvalidState,
                         wsOpened,     wsBound,
                         wsConnecting, wsSocksConnected, wsConnected,
@@ -1090,7 +1094,6 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     FCloseInvoked       : Boolean;
     FBufferedByteCount  : LongInt;   { V5.20 how man xmit bytes unsent        }
     FFlushTimeout       : Integer;   { This property is not used anymore      }
-    FMultiThreaded      : Boolean;
     FDnsLookupHandle    : THandle;
     { More info about multicast can be found at:                              }
     {    http://ntrg.cs.tcd.ie/undergrad/4ba2/multicast/antony/               }
@@ -1121,9 +1124,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     { FOnLineTooLong      : TNotifyEvent; }
     FOnDnsLookupDone    : TDnsLookupDone;
     FOnError            : TNotifyEvent;
-    FOnBgException      : TBgExceptionEvent;
     FOnDebugDisplay     : TDebugDisplay;       { 18/06/05 }
-    FOnMessagePump      : TNotifyEvent;
     //FThreadId           : THandle;
     FSocketSndBufSize   : Integer;  { Winsock internal socket send buffer size }
     FSocketRcvBufSize   : Integer;  { Winsock internal socket Recv buffer size }
@@ -1133,6 +1134,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   DebugLog(LogOption : TLogOption; const Msg : String); virtual;  { V5.21 }
     function    CheckLogOptions(const LogOption: TLogOption): Boolean; virtual; { V5.21 }
 {$ENDIF}
+    procedure   AbortComponent; override; { V7.35 }
     procedure   WndProc(var MsgRec: TMessage); override;
     function    MsgHandlersCount: Integer; override;
     procedure   AllocateMsgHandlers; override;
@@ -1178,10 +1180,9 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function    RealSend(var Data : TWSocketData; Len : Integer) : Integer; virtual;
 //  procedure   RaiseExceptionFmt(const Fmt : String; args : array of const); virtual;
     procedure   RaiseException(const Msg : String); virtual;
-    procedure   HandleBackGroundException(E: Exception); override;    
-    function    GetReqVerLow: BYTE;    
-    procedure   SetReqVerLow(const Value: BYTE);    
-    function    GetReqVerHigh: BYTE;    
+    function    GetReqVerLow: BYTE;
+    procedure   SetReqVerLow(const Value: BYTE);
+    function    GetReqVerHigh: BYTE;
     procedure   SetReqVerHigh(const Value: BYTE);
     procedure   TriggerDebugDisplay(Msg : String); { 18/06/05 }
     procedure   TriggerSendData(BytesSent : Integer);
@@ -1311,12 +1312,6 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   ThreadDetach; override;
     procedure   CreateCounter; virtual;
     procedure   DestroyCounter;
-{$IFDEF NOFORMS}
-    property    Terminated         : Boolean        read  FTerminated
-                                                    write FTerminated;
-    property    OnMessagePump      : TNotifyEvent   read  FOnMessagePump
-                                                    write FOnMessagePump;
-{$ENDIF}
     property    BufferedByteCount  : LongInt        read FBufferedByteCount;  { V5.20 }
     property    CurrentSocketFamily: TSocketFamily  read GetCurrentSocketFamily;
   protected
@@ -1342,8 +1337,6 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                                                     write SetLocalAddr;
     property Proto : String                         read  FProtoStr
                                                     write SetProto;
-    property MultiThreaded   : Boolean              read  FMultiThreaded
-                                                    write FMultiThreaded;
     property MultiCast       : Boolean              read  FMultiCast
                                                     write FMultiCast;
     property MultiCastAddrStr: String               read  FMultiCastAddrStr
@@ -1397,8 +1390,6 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                                                     write FOnDnsLookupDone;
     property OnError            : TNotifyEvent      read  FOnError
                                                     write FOnError;
-    property OnBgException      : TBgExceptionEvent read  FOnBgException
-                                                    write FOnBgException;
     { FlushTimeout property is not used anymore }
     property FlushTimeout : Integer                 read  FFlushTimeOut
                                                     write FFlushTimeout;
@@ -2380,20 +2371,11 @@ type
                                
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
-
-{$IFDEF USE_SSL}              // Makes the IDE happy
-  TBaseParentWSocket = TCustomSslWSocket;
-{$ELSE}
-  TBaseParentWSocket = TCustomSocksWSocket;
-{$ENDIF}
-(*
 {$IFDEF USE_SSL}
   TCustomLineWSocket = class (TCustomSslWSocket)
 {$ELSE}
   TCustomLineWSocket = class (TCustomSocksWSocket)
 {$ENDIF}
-*)
-  TCustomLineWSocket = class (TBaseParentWSocket)
   protected
       FRcvdPtr             : TWSocketData;
       FRcvBufSize          : LongInt;
@@ -2413,6 +2395,7 @@ type
       FTimeout             : LongInt;    { Given in milliseconds }
       FTimeStop            : LongInt;    { Milliseconds          }
       FOnLineLimitExceeded : TLineLimitEvent;
+      procedure   InternalAbort(ErrCode : Word); override; { V7.49 }
       procedure   WndProc(var MsgRec: TMessage); override;
       procedure   WMTriggerDataAvailable(var msg: TMessage);
       function    TriggerDataAvailable(ErrCode : Word) : Boolean; override;
@@ -2847,6 +2830,8 @@ function SafeWSocketGCount : Integer;
 
 {$IFDEF USE_SSL}
 function OpenSslErrMsg(const AErrCode: LongWord): String;
+function IsSslRenegotiationDisallowed(Obj: TCustomSslWSocket): Boolean;
+    {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ENDIF}
 {
 const
@@ -5790,27 +5775,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ All exceptions *MUST* be handled. If an exception is not handled, the     }
-{ application will be shut down !                                           }
-procedure TCustomWSocket.HandleBackGroundException(E: Exception);
-var
-    CanAbort : Boolean;
+procedure TCustomWSocket.AbortComponent; { V7.35 }
 begin
-    CanAbort := TRUE;
-    { First call the error event handler, if any }
-    if Assigned(FOnBgException) then begin
-        try
-            FOnBgException(Self, E, CanAbort);
-        except
-        end;
+    try
+        Abort;
+    except
     end;
-    { Then abort the socket }
-    if CanAbort then begin
-        try
-            Abort;
-        except
-        end;
-    end;
+    inherited;
 end;
 
 
@@ -11276,6 +11247,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomLineWSocket.InternalAbort(ErrCode : Word);   { V7.49 }
+begin
+    { Abort as soon as possible, see TriggerSessionClosed below.      }
+    FLineClearData := TRUE; { Skip subsequent calls to DataAvailable. }
+    inherited InternalAbort(ErrCode);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomLineWSocket.TriggerSessionClosed(Error : Word);
 begin
     FLineReceivedFlag := TRUE;
@@ -11346,12 +11326,7 @@ begin
         end;
 
         if ((FTimeout > 0) and (Integer(_GetTickCount) > FTimeStop)) or
-{$IFDEF WIN32}
-{$IFNDEF NOFORMS}
-           Application.Terminated or
-{$ENDIF}
-{$ENDIF}
-           FTerminated then begin
+           Terminated then begin
             { Application is terminated or timeout occured }
             Result := WSA_WSOCKET_TIMEOUT;
             break;
@@ -16078,8 +16053,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsSslRenegotiationDisallowed(Obj: TCustomSslWSocket): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function IsSslRenegotiationDisallowed(Obj: TCustomSslWSocket): Boolean;
 begin
+    Assert((Obj <> nil) and (Obj.FSsl <> nil));
     Result :=
      { In OSSL v0.9.8L and v0.9.8m renegotiation support was disabled   }
      { due to renegotiation vulnerability of the SSL protocol.          }

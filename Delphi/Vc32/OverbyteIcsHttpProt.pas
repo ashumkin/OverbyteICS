@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.08
+Version:      7.11
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -427,7 +427,10 @@ Feb 25, 2010 V7.07 Fix by Bjørnar Nielsen: TSslHttpCli didn't work when used
              is established. Usually proxies use 200 OK and an error text when
              something is wrong. In that case Content-Length is not 0.
 May 24, 2010 V7.08 Angus ensure Ready when relocations exceed maximum to avoid timeout
-
+Oct 10, 2010 V7.09 Arno - MessagePump changes/fixes.
+Nov 05, 2010 V7.10 Arno fixed ERangeErrors after Abort.
+Nov 08, 2010 V7.11 Arno improved final exception handling, more details
+             in OverbyteIcsWndControl.pas (V1.14 comments).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpProt;
@@ -504,8 +507,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 708;
-    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.08 ';
+    HttpCliVersion       = 711;
+    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.11 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -592,7 +595,6 @@ type
         FCtrlSocket           : TWSocket;
         FSocketFamily         : TSocketFamily;
         //FWindowHandle         : HWND;
-        FMultiThreaded        : Boolean;
         FState                : THttpState;
         FLocalAddr            : String;
         FHostName             : String;
@@ -744,6 +746,7 @@ type
         FOnBeforeHeaderSend   : TBeforeHeaderSendEvent;     { Wilfried 9 sep 02}
         FCloseReq             : Boolean;                    { SAE 01/06/04 }
         FTimeout              : UINT;  { V7.04 }            { Sync Timeout Seconds }
+        procedure AbortComponent; override; { V7.11 }
         procedure AllocateMsgHandlers; override;
         procedure FreeMsgHandlers; override;
         function  MsgHandlersCount: Integer; override;
@@ -806,7 +809,10 @@ type
         procedure LocationSessionClosed(Sender: TObject; ErrCode: Word); virtual;
         procedure DoRequestAsync(Rq : THttpRequest); virtual;
         procedure DoRequestSync(Rq : THttpRequest); virtual;
-        procedure SetMultiThreaded(newValue : Boolean); virtual;
+        procedure SetMultiThreaded(const Value : Boolean); override;
+        procedure SetTerminated(const Value: Boolean); override;
+        procedure SetOnMessagePump(const Value: TNotifyEvent); override;
+        procedure SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V7.11 }
         procedure StateChange(NewState : THttpState); virtual;
         procedure TriggerStateChange; virtual;
         procedure TriggerCookie(const Data : String;
@@ -954,8 +960,7 @@ type
         property ContentRangeEnd  : String           read  FContentRangeEnd    {JMR!! Added this line!!!}
                                                      write FContentRangeEnd;   {JMR!! Added this line!!!}
         property AcceptRanges     : String           read  FAcceptRanges;
-        property MultiThreaded    : Boolean          read  FMultiThreaded
-                                                     write SetMultiThreaded;
+        property MultiThreaded;
         property RequestVer       : String           read  FRequestVer
                                                      write SetRequestVer;
         property FollowRelocation : Boolean          read  FFollowRelocation   {TED}
@@ -1064,6 +1069,7 @@ type
         property OnBeforeAuth        : THttpBeforeAuthEvent
                                                      read  FOnBeforeAuth
                                                      write FOnBeforeAuth;
+        property OnBgException;                                             { V7.11 }
         property SocketFamily        : TSocketFamily read  FSocketFamily
                                                      write FSocketFamily;
     end;
@@ -1343,6 +1349,7 @@ begin
     GetOptions;
 {$ENDIF}
     CreateSocket;
+    FCtrlSocket.ExceptAbortProc    := AbortComponent; { V7.11 }
     FCtrlSocket.OnSessionClosed    := SocketSessionClosed;
     FCtrlSocket.OnDataAvailable    := SocketDataAvailable;
     FCtrlSocket.OnSessionConnected := SocketSessionConnected;
@@ -1366,7 +1373,7 @@ end;
 destructor THttpCli.Destroy;
 begin
     FDoAuthor.Free;
-    FCtrlSocket.Free;
+    FreeAndNil(FCtrlSocket);
     FRcvdHeader.Free;
     FReqStream.Free;
     SetLength(FReceiveBuffer, 0);   {AG 03/18/07}
@@ -1385,22 +1392,27 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.CreateSocket;
 begin
-    FCtrlSocket := TWSocket.Create(Self);
+    FCtrlSocket := TWSocket.Create(nil);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.WndProc(var MsgRec: TMessage);
 begin
-     with MsgRec do begin
-         if Msg = FMsg_WM_HTTP_REQUEST_DONE then
-             WMHttpRequestDone(MsgRec)
-         else if Msg = FMsg_WM_HTTP_SET_READY then
-             WMHttpSetReady(MsgRec)
-         else if Msg = FMsg_WM_HTTP_LOGIN     then
-             WMHttpLogin(MsgRec)
-         else
-             inherited WndProc(MsgRec);
+    try { V7.11 }
+        with MsgRec do begin
+            if Msg = FMsg_WM_HTTP_REQUEST_DONE then
+                WMHttpRequestDone(MsgRec)
+            else if Msg = FMsg_WM_HTTP_SET_READY then
+                WMHttpSetReady(MsgRec)
+            else if Msg = FMsg_WM_HTTP_LOGIN     then
+                WMHttpLogin(MsgRec)
+            else
+                inherited WndProc(MsgRec);
+        end;
+    except { V7.11 }
+        on E: Exception do
+            HandleBackGroundException(E);
     end;
 end;
 
@@ -1443,10 +1455,38 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THttpCli.SetMultiThreaded(newValue : Boolean);
+procedure THttpCli.SetMultiThreaded(const Value : Boolean);
 begin
-    FMultiThreaded            := newValue;
-    FCtrlSocket.MultiThreaded := newValue;
+    if Assigned(FCtrlSocket) then
+        FCtrlSocket.MultiThreaded := Value;
+    inherited SetMultiThreaded(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpCli.SetTerminated(const Value: Boolean);
+begin
+    if Assigned(FCtrlSocket) then
+        FCtrlSocket.Terminated := Value;
+    inherited SetTerminated(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpCli.SetOnBgException(const Value: TIcsBgExceptionEvent); { V7.11 }
+begin
+    if Assigned(FCtrlSocket) then
+        FCtrlSocket.OnBgException := Value;
+    inherited SetOnBgException(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpCli.SetOnMessagePump(const Value: TNotifyEvent);
+begin
+    if Assigned(FCtrlSocket) then
+        FCtrlSocket.OnMessagePump := Value;
+    inherited SetOnMessagePump(Value);
 end;
 
 
@@ -1920,7 +1960,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.WMHttpRequestDone(var msg: TMessage);
 begin
-{$IFNDEF NO_DEBUG_LOG}                                                 
+{$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loProtSpecInfo) then  { V1.91 } { replaces $IFDEF DEBUG_OUTPUT  }
             DebugLog(loProtSpecInfo, 'RequestDone');
 {$ENDIF}
@@ -1955,6 +1995,11 @@ var
     bFlag : Boolean;
     Msg   : TMessage;
 begin
+    FLocationFlag := FALSE;  { Do not follow relocations V7.10 }
+    { The following two lines prevent OnRequestDone from trigger twice V7.10 }
+    FRcvdCount    := 0;      { Clear the receive buffer V7.10 }
+    FReceiveLen   := 0;      { Clear the receive buffer V7.10 }
+
     if FState = httpReady then begin
         FState := httpAborting;
         if FCtrlSocket.State <> wsClosed then
@@ -1988,6 +2033,17 @@ begin
     else
         FCtrlSocket.Close;
     StateChange(httpReady);  { 13/02/99 }
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpCli.AbortComponent; { V7.11 }
+begin
+    try
+        Abort;
+    except
+    end;
+    inherited;
 end;
 
 
@@ -2039,6 +2095,7 @@ begin
     FCtrlSocket.SocksUsercode       := FSocksUsercode;
     FCtrlSocket.SocksPassword       := FSocksPassword;
     FCtrlSocket.SocksAuthentication := FSocksAuthentication;
+    FReceiveLen                     := 0; { Clear the receive buffer V7.10 }
 end;
 
 
@@ -3124,6 +3181,7 @@ begin
     FDocName          := '';
     FStatusCode       := 0;
     FRcvdCount        := 0;
+    FReceiveLen       := 0;   { V7.10 }
     FSentCount        := 0;
     FHeaderLineCount  := 0;
     FBodyLineCount    := 0;
@@ -3377,15 +3435,14 @@ begin
     DoRequestAsync(Rq);
     if not Assigned(FCtrlSocket.Counter) then
         FCtrlSocket.CreateCounter;
-    FCtrlSocket.Counter.SetConnected; // Reset counter
+    FCtrlSocket.Counter.LastSendTick := GetTickCount; // Reset counter
     DummyHandle := INVALID_HANDLE_VALUE;
     TimeOutMsec := FTimeOut * 1000;
     while FState <> httpReady do begin
         if MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000,
                                      QS_ALLINPUT) = WAIT_OBJECT_0 then
-            FCtrlSocket.MessagePump;
-        if (FState <> httpReady) and (
-           {$IFNDEF NOFORMS} Application.Terminated or {$ENDIF} FTerminated or
+            MessagePump;
+        if (FState <> httpReady) and (Terminated or
            (IcsCalcTickDiff(FCtrlSocket.Counter.LastAliveTick,
                             GetTickCount) >= TimeOutMsec)) then begin
             bFlag := (FState = httpDnsLookup);
@@ -3398,8 +3455,7 @@ begin
                 { Ignore any exception }
             end;
             FStatusCode := 404;
-            if {$IFNDEF NOFORMS} Application.Terminated or {$ENDIF}
-               FTerminated then begin
+            if Terminated then begin
                 FReasonPhrase     := 'Request aborted';
                 FRequestDoneError := httperrAborted;
             end
@@ -4883,7 +4939,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslHttpCli.CreateSocket;
 begin
-    FCtrlSocket           := TSslWSocket.Create(Self);
+    FCtrlSocket           := TSslWSocket.Create(nil);
     FCtrlSocket.SslEnable := TRUE;
 end;
 

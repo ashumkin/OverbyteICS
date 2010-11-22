@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      1.11
+Version:      1.14
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -82,6 +82,20 @@ Historique:
                  Resolved an Error Insight false positive in TIcsWndhandler.WndProc.
                  An assertion error is now raised if MsgHandlersCount exceeded
                  the maximum number of message IDs per WndHandler.
+10/10/2010 V1.12 Arno - MessagePump changes/fixes.
+08/11/2010 V1.14 Arno - Improved final exception handling. It's now possible to
+                 specify how background exceptions (unhandled exceptions) are
+                 treated on a per thread basis. Call setter function
+                 SetIcsThreadLocalFinalBgExceptionHandling() to enable one of
+                 the following options in current thread context. With
+                 "fehAppHandleException" unhandled exceptions are passed to the
+                 Application exception handler if available, with
+                 "fehShowException" unhandled exceptions are displayed either
+                 in the console or through Windows MessageBox API (owner HWND = 0).
+                 Both options allow tools like MadExcept to catch and display
+                 the exception, with "fehNone" (default) unhandled exceptions
+                 are thrown away silently.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWndControl;
@@ -104,10 +118,13 @@ uses
   System.Runtime.InteropServices,
   {$IFDEF VCL}
   Borland.Vcl.Classes,
+  Borland.Vcl.SysUtils,
   {$ENDIF}
 {$ENDIF}
 {$IFDEF WIN32}
   Windows,
+  SysUtils,
+  Classes,
 {$IFNDEF NOFORMS}
   Forms,
 {$ENDIF}
@@ -115,8 +132,8 @@ uses
   OverbyteIcsTypes, OverbyteIcsLibrary;
 
 const
-  TIcsWndControlVersion  = 111;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2010 F. Piette V1.11 ';
+  TIcsWndControlVersion  = 114;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2010 F. Piette V1.14 ';
 
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 
@@ -127,6 +144,10 @@ type
   TIcsMessageEvent =   procedure (Sender      : TObject;
                                   var MsgRec  : TMessage;
                                   var Handled : Boolean) of object; //Gp//AG
+  TIcsFinalBgExceptionHandling = (fehNone, fehAppHandleException,  { V1.14 }
+    fehShowException);
+
+
   EIcsException        = class(Exception);
   TIcsWndControl       = class;
   TIcsWndHandlerList   = class;
@@ -161,6 +182,10 @@ type
     property OnTimer: TNotifyEvent read FOnTimer write SetOnTimer;
   end;
 
+  { Specifies an additional method that is called when an exception        }
+  { is handled by HandleBackGroundException and CanClose parameter is set. }
+  TIcsExceptAbortProc = procedure of object;                       { V1.14 }
+
 {$IFDEF CLR}
   //[DesignTimeVisibleAttribute(FALSE)]
   // TIcsWndControl = class({$IFDEF VCL}TComponent{$ELSE}Component{$ENDIF})
@@ -192,6 +217,12 @@ type
     FMsgRelease    : UINT;
     FOnBgException : TIcsBgExceptionEvent;
     FOnMessagePump : TNotifyEvent;
+    FExceptAbortProc : TIcsExceptAbortProc;  { V1.14 }
+    procedure   SetMultiThreaded(const Value: Boolean); virtual;
+    function    GetTerminated: Boolean; virtual;
+    procedure   SetTerminated(const Value: Boolean); virtual;
+    procedure   SetOnMessagePump(const Value: TNotifyEvent); virtual;
+    procedure   SetOnBgException(const Value: TIcsBgExceptionEvent); virtual; { V1.14 }
     procedure   WndProc(var MsgRec: TMessage); virtual;
     procedure   HandleBackGroundException(E : Exception); virtual;
     procedure   TriggerBgException(E            : Exception;
@@ -214,18 +245,21 @@ type
     function    ProcessMessage : Boolean; virtual;
     procedure   ProcessMessages; virtual;
     procedure   MessagePump; virtual;
-{$IFDEF NOFORMS}
-    property Terminated         : Boolean             read  FTerminated
-                                                      write FTerminated;
-    property OnMessagePump      : TNotifyEvent        read  FOnMessagePump
-                                                      write FOnMessagePump;
-{$ENDIF}
+    function    PostQuitMessage: Boolean;
+    property MultiThreaded   : Boolean                read  FMultiThreaded
+                                                      write SetMultiThreaded;
+    property Terminated      : Boolean                read  GetTerminated
+                                                      write SetTerminated;
+    property OnMessagePump   : TNotifyEvent           read  FOnMessagePump
+                                                      write SetOnMessagePump;
     property Handle          : HWND                   read  GetHandle;  // R/O
     property WndHandler      : TIcsWndHandler         read  FWndHandler
                                                       write FWndHandler;
     property ThreadID        : DWORD                  read  FThreadID;
     property OnBgException   : TIcsBgExceptionEvent   read  FOnBgException
-                                                      write FOnBgException;
+                                                      write SetOnBgException; { V1.14 }
+    property ExceptAbortProc : TIcsExceptAbortProc    read  FExceptAbortProc  { V1.14 }
+                                                      write FExceptAbortProc;
   end;
 
   TIcsMsgMap = array of TIcsWndControl;
@@ -296,6 +330,13 @@ type
 procedure OutputDebugString(const Msg : TOutputDebugStringType);
 {$ENDIF}
 
+{ Since use of threadvars is not possible across packages/Dlls we provide a
+  setter and getter to set final background exception handling per thread
+  context. The default value is fehNone. } { V1.14 }
+procedure SetIcsThreadLocalFinalBgExceptionHandling(
+    const Value: TIcsFinalBgExceptionHandling);
+function GetIcsThreadLocalFinalBgExceptionHandling: TIcsFinalBgExceptionHandling;
+
 var
   GWndHandlerPool     : TIcsWndHandlerPool;
   GWndHandleCount     : Integer;
@@ -319,11 +360,31 @@ implementation
 
 uses
   OverbyteIcsUtils, OverbyteIcsThreadTimer;
-  
+
 var
   GUIDOffSet   : Integer;
   G_WH_MAX_MSG : Word = 100;
 
+threadvar
+  // Initialized by the RTL to zero = fehNone
+  IcsFinalBgExceptionHandling : TIcsFinalBgExceptionHandling; { V1.14 }
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *} { V1.14 }
+procedure SetIcsThreadLocalFinalBgExceptionHandling(
+  const Value: TIcsFinalBgExceptionHandling);
+begin
+    IcsFinalBgExceptionHandling := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *} { V1.14 }
+function GetIcsThreadLocalFinalBgExceptionHandling: TIcsFinalBgExceptionHandling;
+begin
+    Result := IcsFinalBgExceptionHandling;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 // Forward declaration for our Windows callback function
 function WndControlWindowsProc(
     ahWnd   : HWND;
@@ -597,7 +658,15 @@ begin
         TranslateMessage(MsgRec);
         DispatchMessage(MsgRec)
     end;
-    FTerminated := TRUE;
+    SetTerminated(TRUE);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Call this method to break the message loop, will set Terminated to TRUE   }
+function TIcsWndControl.PostQuitMessage: Boolean;
+begin
+    Result := PostMessage(Handle, WM_QUIT, 0, 0);
 end;
 
 
@@ -605,6 +674,7 @@ end;
 { This function is very similar to TApplication.ProcessMessage              }
 { You can also use it if your application has no TApplication object (Forms }
 { unit not referenced at all).                                              }
+
 function TIcsWndControl.ProcessMessage : Boolean;
 var
     Msg : TMsg;
@@ -613,7 +683,7 @@ begin
     if PeekMessage(Msg, 0, 0, 0, PM_REMOVE) then begin
         Result := TRUE;
         if Msg.Message = WM_QUIT then
-            FTerminated := TRUE
+            SetTerminated(TRUE)
         else begin
             TranslateMessage(Msg);
             DispatchMessage(Msg);
@@ -644,17 +714,17 @@ begin
         Self.ProcessMessages;
 {$ENDIF}
 {$IFDEF WIN32}
+    if Assigned(FOnMessagePump) then
+        FOnMessagePump(Self)
 {$IFDEF NOFORMS}
     { The Forms unit (TApplication object) has not been included.           }
     { We used either an external message pump or our internal message pump. }
     { External message pump has to set Terminated property to TRUE when the }
     { application is terminated.                                            }
-    if Assigned(FOnMessagePump) then
-        FOnMessagePump(Self)
     else
         Self.ProcessMessages;
 {$ELSE}
-    if FMultiThreaded then
+    else if FMultiThreaded then
         Self.ProcessMessages
     else
         Application.ProcessMessages;
@@ -711,6 +781,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsWndControl.GetTerminated: Boolean;
+begin
+{$IFDEF NOFORMS}
+    Result := FTerminated;
+{$ELSE}
+    Result := FTerminated or Application.Terminated;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 // Message handler for all messages. This _must_ be overridden by derived
 // component to handle his own messages and call inherited to handle all
 // ancestor's messages.
@@ -733,15 +814,33 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsFinalHandleException(Sender: TObject);                 { V1.14 }
+begin
+    { These calls are all intercepted by MadExcept.                         }
+    { Pass the unhandled exception to the Application handler if assigned   }
+    if (IcsFinalBgExceptionHandling = fehAppHandleException) and
+       Assigned(Classes.ApplicationHandleException) then
+        Classes.ApplicationHandleException(Sender)
+    else if (IcsFinalBgExceptionHandling = fehShowException) then
+        { Shows it either in the console or with Windows.MessageBox API     }
+        SysUtils.ShowException(ExceptObject, ExceptAddr);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { All exceptions *MUST* be handled. If an exception is not handled, the       }
 { application will be shut down !                                             }
 procedure TIcsWndControl.HandleBackGroundException(E: Exception);
 var
     CanAbort : Boolean;
+    Handled  : Boolean; { V1.14 }
 begin
+    if E is EAbort then { V1.14 }
+        Exit;
     CanAbort := TRUE;
     { First call the error event handler, if any }
-    if Assigned(FOnBgException) then begin
+    Handled := Assigned(FOnBgException); { V1.14 }
+    if Handled then begin                { V1.14 }
         try
             TriggerBgException(E, CanAbort);
         except
@@ -751,11 +850,18 @@ begin
     { Then abort the component }
     if CanAbort then begin
         try
-            Self.AbortComponent;
+            try                          { V1.14 }
+                if Assigned(FExceptAbortProc) then
+                    FExceptAbortProc;
+            finally
+                AbortComponent;
+            end;
         except
             // Ignore any exception here
         end;
     end;
+    if not Handled then
+        IcsFinalHandleException(Self);   { V1.14 }
 end;
 
 
@@ -776,6 +882,34 @@ end;
 procedure TIcsWndControl.Release;
 begin
     PostMessage(Handle, FMsgRelease, 0, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsWndControl.SetMultiThreaded(const Value: Boolean);
+begin
+    FMultiThreaded := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsWndControl.SetOnBgException(const Value: TIcsBgExceptionEvent); { V1.14 }
+begin
+    FOnBgException := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsWndControl.SetOnMessagePump(const Value: TNotifyEvent);
+begin
+    FOnMessagePump := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsWndControl.SetTerminated(const Value: Boolean);
+begin
+    FTerminated := Value;
 end;
 
 
@@ -1090,8 +1224,12 @@ begin
     except
         // All exceptions must be handled otherwise the application
         // will terminate as soon as an exception is raised.
-        on E:Exception do
-            TriggerBgException(E, Dummy);
+        on E:Exception do begin                 { V1.14 }
+            if Assigned(FOnBgException) then
+                TriggerBgException(E, Dummy)
+            else { Unhandled }
+                IcsFinalHandleException(Self);  { V1.14 }
+        end;
     end;
 end;
 
@@ -1389,6 +1527,7 @@ end;
 initialization
     GWndHandlerPool := TIcsWndHandlerPool.Create;
     InitializeCriticalSection(GWndHandlerCritSect);
+
 finalization
     FinalizeGlobalHandler;  { V1.09 }
     GUnitFinalized := True; { V1.09 }

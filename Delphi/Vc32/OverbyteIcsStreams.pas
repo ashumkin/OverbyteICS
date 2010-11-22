@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.14
+Version:      6.16
 Legal issues: Copyright (C) 2005-2010 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
@@ -75,7 +75,8 @@ May 07, 2009 V6.13 TIcsStreamWriter did not convert from ANSI to UTF-7.
              line length restrictions exist, so setting property MaxLineLength
              to >= 1024 should work around this issue.
 Dec 05, 2009 V6.14 Use IcsSwap16Buf() and global code page ID constants.
-
+Oct 20, 2010 V6.15 Fixed a bug in TIcsStreamReader.InternalReadLn.
+Oct 20, 2010 V6.16 Fixed a bug in TIcsStreamReader.ReadLn.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsStreams;
@@ -280,7 +281,10 @@ type
         function    InternalReadLn: Boolean;
         function    InternalReadLnWLe: Boolean;
         function    InternalReadLnWBe: Boolean;
-        procedure   EnsureReadBuffer(Size: Integer); {$IFDEF USE_INLINE} inline;{$ENDIF}
+        procedure   EnsureReadBufferW(Size: Integer; var P: PWideChar);
+                         {$IFDEF USE_INLINE} inline;{$ENDIF}
+        procedure   EnsureReadBufferA(Size: Integer; var P: PAnsiChar);
+                         {$IFDEF USE_INLINE} inline;{$ENDIF}
         procedure   SetMaxLineLength(const Value: Integer);
         procedure   SetCodePage(const Value : LongWord);
     protected
@@ -384,6 +388,67 @@ type
         property    CurrentCodePage : LongWord read FCodePage write FCodePage;
         property    LineBreakStyle  : TIcsLineBreakStyle read  FLineBreakStyle
                                                          write SetLineBreakStyle;
+    end;
+
+    TIcsBinaryReader = class
+    private
+        FStream     : TStream;
+        FOwnsStream : Boolean;
+    protected
+        function GetStream: TStream; virtual;
+    public
+        constructor Create(Stream: TStream); overload;
+        constructor Create(Stream: TStream; AOwnsStream: Boolean = False); overload;
+        constructor Create(const Filename: string); overload;
+        constructor Create; overload;
+        destructor Destroy; override;
+        procedure Close; virtual;
+        function Read(const Buffer: TBytes; Index, Count: Integer): Integer; overload; virtual;
+        function ReadBoolean: Boolean; virtual;
+        function ReadByte: Byte; virtual;
+        function ReadBytes(Count: Integer): TBytes; virtual;
+        function ReadDouble: Double; virtual;
+        function ReadShortInt: ShortInt; virtual;
+        function ReadInteger: Integer; virtual;
+        function ReadLongWord: Longword; virtual;
+        function ReadInt64: Int64; virtual;
+        function ReadSingle: Single; virtual;
+        function ReadAnsiString: AnsiString; virtual;
+        function ReadUTF8String: UTF8String; virtual;
+        function ReadUnicodeString: UnicodeString; virtual;
+        function ReadWord: Word; virtual;
+        procedure SetStream(Value: TStream; AOwnsStream: Boolean); virtual;
+        property Stream: TStream read GetStream;
+    end;
+
+    TIcsBinaryWriter = class
+    private
+        FStream     : TStream;
+        FOwnsStream : Boolean;
+    protected
+        function GetStream: TStream; virtual;
+        constructor Create; overload;
+    public
+        constructor Create(Stream: TStream); overload;
+        constructor Create(Stream: TStream; AOwnsStream: Boolean); overload;
+        constructor Create(const Filename: string; Append: Boolean = False); overload;
+        destructor Destroy; override;
+        procedure Close; virtual;
+        procedure Write(Value: Byte); overload; virtual;
+        procedure Write(Value: Boolean); overload; virtual;
+        procedure Write(const Value: TBytes); overload; virtual;
+        procedure Write(Value: Double); overload; virtual;
+        procedure Write(Value: Integer); overload; virtual;
+        procedure Write(Value: ShortInt); overload; virtual;
+        procedure Write(Value: Word); overload; virtual;
+        procedure Write(Value: LongWord); overload; virtual;
+        procedure Write(Value: Int64); overload; virtual;
+        procedure Write(Value: Single); overload; virtual;
+        procedure Write(const Value: RawByteString); overload; virtual;
+        procedure Write(const Value: UnicodeString); overload; virtual;
+        procedure Write(const Buffer: TBytes; Index, Count: Integer); overload; virtual;
+        procedure SetStream(Value: TStream; AOwnsStream: Boolean); virtual;
+        property Stream: TStream read GetStream;
     end;
 
 implementation
@@ -1661,7 +1726,7 @@ var
 begin
     Flag := FALSE;
     Idx := -1;
-    P := PAnsiChar(FReadBuffer);
+    P := PAnsiChar(@FReadBuffer[0]);
     while Read(Ch, SizeOf(AnsiChar)) = SizeOf(AnsiChar) do begin
         Inc(Idx);
         if (Idx >= FMaxLineLength) then begin
@@ -1673,7 +1738,7 @@ begin
                 Exit;
             end;
         end;
-        EnsureReadBuffer(Idx + 1);
+        EnsureReadBufferA(Idx + 1, P);
         case Ch of
             #10 :
                 begin
@@ -1721,7 +1786,7 @@ var
 begin
     Flag := FALSE;
     Idx := -1;
-    P := PWideChar(FReadBuffer);
+    P := PWideChar(@FReadBuffer[0]);
     while Read(Ch, SizeOf(WideChar)) = SizeOf(WideChar) do
     begin
         Inc(Idx);
@@ -1730,7 +1795,7 @@ begin
             Result := TRUE;
             Exit;
         end;
-        EnsureReadBuffer((Idx + 1) * 2);
+        EnsureReadBufferW((Idx + 1) * 2, P);
         case Ch of
             #10 :
                 begin
@@ -1779,7 +1844,7 @@ var
 begin
     Flag := FALSE;
     Idx := -1;
-    P := PWideChar(FReadBuffer);
+    P := PWideChar(@FReadBuffer[0]);
     while Read(Wrd, SizeOf(Word)) = SizeOf(Word) do begin
         Inc(Idx);
         Ch := WideChar((Wrd shr 8) or (Wrd shl 8));
@@ -1788,7 +1853,7 @@ begin
             Result := TRUE;
             Exit;
         end;
-        EnsureReadBuffer((Idx + 1) * 2);
+        EnsureReadBufferW((Idx + 1) * 2, P);
         case Ch of
             #10 :
                 begin
@@ -1833,16 +1898,16 @@ begin
         CP_UTF16 :
             begin
                 Result := InternalReadLnWLe;
-                S := PWideChar(FReadBuffer);
+                S := PWideChar(@FReadBuffer[0]);
             end;
         CP_UTF16Be :
             begin
                 Result := InternalReadLnWBe;
-                S := PWideChar(FReadBuffer);
+                S := PWideChar(@FReadBuffer[0]);
             end;
         else
             Result := InternalReadLn;
-            S := AnsiToUnicode(PAnsiChar(FReadBuffer), FCodePage);
+            S := AnsiToUnicode(PAnsiChar(@FReadBuffer[0]), FCodePage);
     end;
 end;
 
@@ -1854,16 +1919,16 @@ begin
         CP_UTF16 :
             begin
                 Result := InternalReadLnWLe;
-                S := UnicodeToAnsi(PWideChar(FReadBuffer), CP_ACP, TRUE);
+                S := UnicodeToAnsi(PWideChar(@FReadBuffer[0]), CP_ACP, TRUE);
             end;
         CP_UTF16Be :
             begin
                 Result := InternalReadLnWBe;
-                S := UnicodeToAnsi(PWideChar(FReadBuffer), CP_ACP, TRUE);
+                S := UnicodeToAnsi(PWideChar(@FReadBuffer[0]), CP_ACP, TRUE);
             end;
         else
             Result := InternalReadLn;
-            S := RawByteString(PAnsiChar(FReadBuffer));
+            S := RawByteString(PAnsiChar(@FReadBuffer[0]));
         {$IFDEF COMPILER12_UP}
             if (S <> '') and (FCodePage <> CP_ACP) then
                 PWord(INT_PTR(S) - 12)^ := FCodePage;
@@ -1884,7 +1949,7 @@ begin
                 Read(Buf[0], Length(Buf) - 2);
                 Buf[Length(Buf) - 1] := 0;
                 Buf[Length(Buf) - 2] := 0;
-                S := UnicodeToAnsi(PWideChar(Buf), CP_ACP, TRUE);
+                S := UnicodeToAnsi(PWideChar(@Buf[0]), CP_ACP, TRUE);
             end;
         CP_UTF16Be :
             begin
@@ -1893,7 +1958,7 @@ begin
                 Buf[Length(Buf) - 1] := 0;
                 Buf[Length(Buf) - 2] := 0;
                 IcsSwap16Buf(@Buf[0], @Buf[0], (Length(Buf) - 2) div 2);
-                S := UnicodeToAnsi(PWideChar(Buf), CP_ACP, TRUE);
+                S := UnicodeToAnsi(PWideChar(@Buf[0]), CP_ACP, TRUE);
             end;
         else
             SetLength(S, Size - Position);
@@ -1927,18 +1992,31 @@ begin
             SetLength(Buf, (Size - Position) + 1);
             Read(Buf[0], Length(Buf) - 1);
             Buf[Length(Buf) - 1] := 0;
-            S := AnsiToUnicode(PAnsiChar(Buf), FCodePage);
+            S := AnsiToUnicode(PAnsiChar(@Buf[0]), FCodePage);
     end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsStreamReader.EnsureReadBuffer(Size: Integer);
+procedure TIcsStreamReader.EnsureReadBufferW(Size: Integer; var P: PWideChar);
 begin
     if Size > FReadBufSize then begin
         while Size > FReadBufSize do
             Inc(FReadBufSize, DefaultBufferSize);
         SetLength(FReadBuffer, FReadBufSize);
+        P := @FReadBuffer[0];
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsStreamReader.EnsureReadBufferA(Size: Integer; var P: PAnsiChar);
+begin
+    if Size > FReadBufSize then begin
+        while Size > FReadBufSize do
+            Inc(FReadBufSize, DefaultBufferSize);
+        SetLength(FReadBuffer, FReadBufSize);
+        P := @FReadBuffer[0];
     end;
 end;
 
@@ -2363,6 +2441,357 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TIcsBinaryReader }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryReader.Close;
+begin
+    if FOwnsStream then
+        FreeAndNil(FStream)
+    else
+        FStream := nil;
+end;
 
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryReader.Create;
+begin
+    Create(nil, False);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryReader.Create(Stream: TStream);
+begin
+    Create(Stream, False);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryReader.Create(Stream: TStream; AOwnsStream: Boolean);
+begin
+    inherited Create;
+    FStream := Stream;
+    FOwnsStream := AOwnsStream;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryReader.Create(const Filename: string);
+begin
+    Create(TIcsBufferedStream.Create(FileName, fmOpenRead or fmShareDenyWrite), True);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TIcsBinaryReader.Destroy;
+begin
+    Close;
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.GetStream: TStream;
+begin
+    Result := FStream;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryReader.SetStream(Value: TStream; AOwnsStream: Boolean);
+begin
+    Close;
+    FStream := Value;
+    FOwnsStream := AOwnsStream;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.Read(const Buffer: TBytes; Index,
+  Count: Integer): Integer;
+begin
+    Assert((Index >= 0) and (Count >= 0) and (Length(Buffer) - Index < Count));
+    Result := FStream.Read(Buffer[Index], Count);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadDouble: Double;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadInt64: Int64;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadInteger: Integer;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadLongWord: Longword;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadShortInt: ShortInt;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadSingle: Single;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadUTF8String: UTF8String;
+var
+    Len: Integer;
+begin
+    FStream.ReadBuffer(Len, SizeOf(Integer));
+    SetLength(Result, Len);
+    FStream.ReadBuffer(Pointer(Result)^, Len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadAnsiString: AnsiString;
+var
+    Len: Integer;
+begin
+    FStream.ReadBuffer(Len, SizeOf(Integer));
+    SetLength(Result, Len);
+    FStream.ReadBuffer(Pointer(Result)^, Len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadUnicodeString: UnicodeString;
+var
+    Len: Integer;
+begin
+    FStream.ReadBuffer(Len, SizeOf(Integer));
+    SetLength(Result, Len div 2);
+    FStream.ReadBuffer(Pointer(Result)^, Len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadWord: Word;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadBoolean: Boolean;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadByte: Byte;
+begin
+    FStream.ReadBuffer(Result, SizeOf(Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryReader.ReadBytes(Count: Integer): TBytes;
+begin
+    Assert(Count >= 0);
+    SetLength(Result, Count);
+    if Count > 0 then
+        FStream.ReadBuffer(Result[0], Count);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TIcsBinaryWriter }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Close;
+begin
+    if FOwnsStream then
+        FreeAndNil(FStream)
+    else
+        FStream := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryWriter.Create(Stream: TStream);
+begin
+    Create(Stream, False);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryWriter.Create(Stream: TStream; AOwnsStream: Boolean);
+begin
+    inherited Create;
+    FStream := Stream;
+    FOwnsStream := AOwnsStream;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryWriter.Create(const Filename: string; Append: Boolean);
+begin
+    if (not FileExists(Filename)) or (not Append) then
+        FStream := TIcsBufferedStream.Create(Filename, fmCreate)
+    else begin
+        FStream := TIcsBufferedStream.Create(Filename, fmOpenWrite);
+        FStream.Seek(0, soEnd);
+    end;
+    Create(FStream, True);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBinaryWriter.Create;
+begin
+    Create(nil, False);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TIcsBinaryWriter.Destroy;
+begin
+    Close;
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsBinaryWriter.GetStream: TStream;
+begin
+    Result := FStream;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.SetStream(Value: TStream; AOwnsStream: Boolean);
+begin
+    Close;
+    FStream := Value;
+    FOwnsStream := AOwnsStream;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Boolean);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Byte);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Int64);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: LongWord);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Single);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(const Buffer: TBytes; Index, Count: Integer);
+begin
+    Assert((Index >= 0) and (Count >= 0) and (Length(Buffer) - Index < Count));
+    FStream.WriteBuffer(Buffer[Index], Count);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(const Value: UnicodeString);
+var
+    Len: Integer;
+begin
+    Len := Length(Value) * 2;
+    FStream.Write(Len, SizeOf(Len));
+    FStream.WriteBuffer(Pointer(Value)^, Len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(const Value: RawByteString);
+var
+    Len: Integer;
+begin
+    Len := Length(Value);
+    FStream.Write(Len, SizeOf(Len));
+    FStream.WriteBuffer(Pointer(Value)^, Len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Double);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(const Value: TBytes);
+begin
+    FStream.WriteBuffer(Value[0], Length(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Integer);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: Word);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsBinaryWriter.Write(Value: ShortInt);
+begin
+    FStream.Write(Value, SizeOf(Value));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 end.

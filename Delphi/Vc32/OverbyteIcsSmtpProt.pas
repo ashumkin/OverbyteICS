@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.32
+Version:      7.35
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -385,7 +385,10 @@ Sep 03, 2010 V7.31  Arno - New property THtmlSmtpCli.HtmlImageCidSuffix which
                     our default cid. Thanks to Fabrice Vendé for providing a
                     fix.
 Sep 20, 2010 V7.32  Arno moved HMAC-MD5 code to OverbyteIcsMD5.pas.
-
+Oct 09, 2010 V7.33  Arno added TSyncSmtpCli.SentToFileSync.
+Oct 10, 2010 V7.34  Arno - MessagePump changes/fixes.
+Nov 08, 2010 V7.35  Arno improved final exception handling, more details
+                    in OverbyteIcsWndControl.pas (V1.14 comments).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSmtpProt;
@@ -450,8 +453,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-  SmtpCliVersion     = 732;
-  CopyRight : String = ' SMTP component (c) 1997-2010 Francois Piette V7.32 ';
+  SmtpCliVersion     = 735;
+  CopyRight : String = ' SMTP component (c) 1997-2010 Francois Piette V7.35 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -799,8 +802,12 @@ type
         procedure   FreeMsgHandlers; override;
         function    MsgHandlersCount: Integer; override;
         procedure   WndProc(var MsgRec: TMessage); override;
-        procedure   HandleBackGroundException(E: Exception); override;
         procedure   WMSmtpRequestDone(var msg: TMessage); virtual;
+        procedure   SetMultiThreaded(const Value : Boolean); override;
+        procedure   SetTerminated(const Value: Boolean); override;
+        procedure   SetOnMessagePump(const Value: TNotifyEvent); override;
+        procedure   AbortComponent; override; { V7.35 }
+        procedure   SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V7.35 }
     public
         constructor Create(AOwner : TComponent); override;
         destructor  Destroy;                     override;
@@ -1040,6 +1047,7 @@ type
         property OnSessionConnected;
         property OnSessionClosed;
         property OnMessageDataSent;      {AG}
+        property OnBgException;          { V7.35 }
         property XMailer;
         property EmailFiles : TStrings               read  FEmailFiles
                                                      write SetEmailFiles;
@@ -1068,7 +1076,6 @@ type
     protected
         FTimeout       : Integer;                 { Given in seconds }
         FTimeStop      : LongInt;                 { Milli-seconds    }
-        FMultiThreaded : Boolean;
         function WaitUntilReady : Boolean; virtual;
         function Synchronize(Proc : TSmtpNextProc) : Boolean;
         procedure TriggerGetData(LineNum  : Integer;
@@ -1090,11 +1097,11 @@ type
         function    AbortSync    : Boolean; virtual;
         function    OpenSync     : Boolean; virtual;
         function    MailSync     : Boolean; virtual;
+        function    SendToFileSync(const FileName : String): Boolean; virtual;
     published
         property Timeout : Integer       read  FTimeout
                                          write FTimeout;
-        property MultiThreaded : Boolean read  FMultiThreaded
-                                         write FMultiThreaded;
+        property MultiThreaded;
     end;
 
 { You must define USE_SSL so that SSL code is included in the component.    }
@@ -1642,6 +1649,42 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.SetMultiThreaded(const Value : Boolean);
+begin
+    if Assigned(FWSocket) then
+        FWSocket.MultiThreaded := Value;
+    inherited SetMultiThreaded(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.SetTerminated(const Value: Boolean);
+begin
+    if Assigned(FWSocket) then
+        FWSocket.Terminated := Value;
+    inherited SetTerminated(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.SetOnBgException(const Value: TIcsBgExceptionEvent);
+begin                                                               { V7.35 }
+    if Assigned(FWSocket) then
+        FWSocket.OnBgException := Value;
+    inherited SetOnBgException(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.SetOnMessagePump(const Value: TNotifyEvent);
+begin
+    if Assigned(FWSocket) then
+        FWSocket.OnMessagePump := Value;
+    inherited SetOnMessagePump(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SetShareMode(newValue: TSmtpShareMode);
 begin
 {$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
@@ -1736,6 +1779,7 @@ begin
 {$ELSE}
     FWSocket.Name            := ClassName + '_Socket' + IntToStr(SafeWSocketGCount);
 {$ENDIF}
+    FWSocket.ExceptAbortProc := AbortComponent; { V7.35 }
     FWSocket.OnSessionClosed := WSocketSessionClosed;
     FSocketFamily            := DefaultSocketFamily;
     FState                   := smtpReady;
@@ -1839,27 +1883,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ All exceptions *MUST* be handled. If an exception is not handled, the     }
-{ application will be shut down !                                           }
-procedure TCustomSmtpClient.HandleBackGroundException(E: Exception);
-var
-    CanAbort : Boolean;
+procedure TCustomSmtpClient.AbortComponent; { V7.35 }
 begin
-    CanAbort := TRUE;
-    { First call the error event handler, if any }
-    if Assigned(FOnBgException) then begin
-        try
-            FOnBgException(Self, E, CanAbort);
-        except
-        end;
+    try
+        Abort;
+    except
     end;
-    { Then abort the component }
-    if CanAbort then begin
-        try
-            Abort;
-        except
-        end;
-    end;
+    inherited;
 end;
 
 
@@ -3672,8 +3702,7 @@ begin
         raise Exception.Create('SendToFile requires SendMode smtpToStream');
     if Length(FileName) = 0 then
         raise Exception.Create('File name not specified');
-    if Assigned(FOutStream) then
-        FOutStream.Free;
+    FreeAndNil(FOutStream);
 {$IFDEF USE_BUFFERED_STREAM}
     FOutStream := TBufferedFileStream.Create(FileName, fmCreate, MAX_BUFSIZE);
 {$ELSE}
@@ -4163,14 +4192,7 @@ begin
         begin
             if MsgWaitForMultipleObjects(0, Dummy, False, 250, QS_ALLINPUT) = WAIT_FAILED then
                 raise SmtpException.Create('Wait failed in CalcMsgSizeSync');
-            if FMultiThreaded then
-                FWSocket.ProcessMessages
-            else
-            {$IFNDEF NOFORMS}
-                Application.ProcessMessages;
-            {$ELSE}
-                FWSocket.ProcessMessages;
-            {$ENDIF}
+            MessagePump;
         end;
     except
         FMsgSizeFlag  := FALSE;
@@ -4197,6 +4219,7 @@ var
 begin
     Result    := TRUE;           { Assume success }
     FTimeStop := Integer(GetTickCount) + FTimeout * 1000;
+    DummyHandle := INVALID_HANDLE_VALUE;
     while TRUE do begin
         if FState = smtpReady then begin
             { Back to ready state, the command is finiched }
@@ -4204,7 +4227,7 @@ begin
             break;
         end;
 
-        if  {$IFNDEF NOFORMS} Application.Terminated or {$ENDIF}
+        if Terminated or
             ((FTimeout > 0) and (Integer(GetTickCount) > FTimeStop)) then begin
             { Application is terminated or timeout occured }
             inherited Abort;
@@ -4215,17 +4238,9 @@ begin
         end;
 
         { Do not use 100% CPU }
-        DummyHandle := INVALID_HANDLE_VALUE;                                           //FP
         MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000, QS_ALLINPUT);           //FP
 
-        if FMultiThreaded then
-            FWSocket.ProcessMessages
-        else
-{$IFNDEF NOFORMS}
-            Application.ProcessMessages;
-{$ELSE}
-            FWSocket.ProcessMessages;
-{$ENDIF}
+        MessagePump;
     end;
 end;
 
@@ -4330,6 +4345,49 @@ end;
 function TSyncSmtpCli.AbortSync : Boolean;
 begin
     Result := Synchronize(Abort);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSyncSmtpCli.SendToFileSync(
+    const FileName : String): Boolean;
+const
+    Msg = 'SendToFile';
+var
+    OldSendMode: TSmtpSendMode;
+begin
+    if FState <> smtpReady then
+        raise SmtpException.Create('SMTP component not ready');
+    if Length(FileName) = 0 then
+        raise SmtpException.Create('File name not specified');
+    FreeAndNil(FOutStream);
+{$IFDEF USE_BUFFERED_STREAM}
+    FOutStream := TBufferedFileStream.Create(FileName, fmCreate, MAX_BUFSIZE);
+{$ELSE}
+    FOutStream := TFileStream.Create(FileName, fmCreate);
+{$ENDIF}
+    try
+        OldSendMode := FSendMode;
+        try
+            FSendMode := smtpToStream;
+            FRequestType := smtpToFile;
+            FOkResponses[0] := 200;
+            FOkResponses[1] := 0;
+            FRequestDoneFlag := FALSE;
+            FLastResponse  := '';
+            FStatusCode    := 0;
+            FRequestResult := 0;
+            FMsgSizeFlag   := FALSE;
+            StateChange(smtpInternalBusy);
+            TriggerCommand(Msg);
+            TriggerDisplay('> ' + Msg);
+            Result := Synchronize(Data);
+        finally
+            FSendMode := OldSendMode;
+        end;
+    finally
+        FreeAndNil(FOutStream);
+    end;
 end;
 
 

@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.12
+Version:      V7.17
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -1006,8 +1006,15 @@ Sep 19, 2010 V7.11 Arno - Do not call DataSocketPutDataSent twice! This fixes
              the send loop.
 Sep 20, 2010 V7.12 Angus - ensure FMultiThreaded in TIcsWndControl is set correctly and
                not locally here
-
-
+Oct 10, 2010 V7.13 Arno - MessagePump changes/fixes.
+Oct 15, 2010 V7.14 Arno - Fake AUTHTLS request/response if renegotiation is
+             not available and the SSL is already established.
+Nov 08, 2010 V7.15 Arno improved final exception handling, more details
+             in OverbyteIcsWndControl.pas (V1.14 comments).
+Nov 11, 2010 V7.16 Arno re-enabled component notification for FDataSocket and
+             FControlSocket that was disabled accidentally in V7.13 rev. #610 in
+             method CreateSocket by creating the instances with a nil owner.
+Nov 17, 2010 V7.17 Arno published property ProxyPort.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1081,9 +1088,9 @@ OverbyteIcsZlibHigh,     { V2.102 }
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 712;
-  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.12 ';
-  FtpClientId : String = 'ICS FTP Client V7.12 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 717;
+  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.17 ';
+  FtpClientId : String = 'ICS FTP Client V7.17 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1237,7 +1244,6 @@ type
     FOnStateChange      : TNotifyEvent;
     FOnRequestDone      : TFtpRequestDone;
     FOnReadyToTransmit  : TFtpReadyToTransmit;
-    FOnBgException      : TBgExceptionEvent;
     FLocalStream        : TStream;
     FRequestType        : TFtpRequest;
     FRequestDoneFlag    : Boolean;
@@ -1321,6 +1327,11 @@ type
     procedure DebugLog(LogOption: TLogOption; const Msg : string); virtual; { 2.104 }
     function  CheckLogOptions(const LogOption: TLogOption): Boolean; virtual; { 2.104 }
 {$ENDIF}
+    procedure   AbortComponent; override; { V7.15 }
+    procedure   SetMultiThreaded(const Value : Boolean); override;
+    procedure   SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V7.15 }
+    procedure   SetTerminated(const Value: Boolean); override;
+    procedure   SetOnMessagePump(const Value: TNotifyEvent); override;
     procedure   SetErrorMessage;
     procedure   LocalStreamWrite(const Buffer; Count : Integer); virtual;
     procedure   LocalStreamWriteString(Str: PAnsiChar; Count: Integer); {$IFDEF COMPILER12_UP} overload;
@@ -1387,7 +1398,6 @@ type
     procedure   FreeMsgHandlers; override;
     function    MsgHandlersCount: Integer; override;
     procedure   WndProc(var MsgRec: TMessage); override;
-    procedure   HandleBackGroundException(E: Exception); override;
     procedure   WMFtpRequestDone(var msg: TMessage); virtual;
     procedure   WMFtpSendData(var msg: TMessage); virtual;
     procedure   WMFtpCloseDown(var msg: TMessage); virtual;
@@ -1623,17 +1633,13 @@ type
                                                          write FOnStateChange;
     property OnReadyToTransmit    : TFtpReadyToTransmit  read  FOnReadyToTransmit
                                                          write FOnReadyToTransmit;
-    property OnBgException        : TBgExceptionEvent    read  FOnBgException
-                                                         write FOnBgException;
+    property OnBgException;   { V7.15 }
   end;
 
   TFtpClient = class(TCustomFtpCli)
   protected
     FTimeout       : Integer;                 { Given in seconds }
     FTimeStop      : LongInt;                 { Milli-seconds    }
-{   FMultiThreaded : Boolean;         V7.12 must use versions in TIcsWndControl
-    FTerminated    : Boolean;
-    FOnMessagePump : TNotifyEvent;   }
     function    Progress : Boolean; override;
     function    Synchronize(Proc : TFtpNextProc) : Boolean; virtual;
     function    WaitUntilReady : Boolean; virtual;
@@ -1715,15 +1721,9 @@ type
     function    XDmlsd     : Boolean;    { V7.01   extended MLSD using data channel }
     function    ConnectFeat : Boolean;   { V7.09   same as connect but sends Feat  }
     function    ConnectFeatHost : Boolean;   { V7.09   same as connect but sends Feat and Host  }
-{$IFDEF NOFORMS}
-    property    Terminated         : Boolean        read  FTerminated
-                                                    write FTerminated;
-{$ENDIF}
-    property    OnMessagePump      : TNotifyEvent   read  FOnMessagePump
-                                                    write FOnMessagePump;
   published
     property Timeout       : Integer read FTimeout       write FTimeout;
-    property MultiThreaded : Boolean read FMultiThreaded write FMultiThreaded;
+    property MultiThreaded;
     property HostName;
     property Port;
     property CodePage;
@@ -1742,6 +1742,7 @@ type
     property Options;
     property ConnectionType;
     property ProxyServer;
+    property ProxyPort;   { V7.17 }
     property SocksPassword;
     property SocksPort;
     property SocksServer;
@@ -2166,11 +2167,13 @@ begin
     FClientIdStr        := ftpClientId; {V2.113 string sent for CLNT command }
     FSocketFamily       := DefaultSocketFamily;
     FControlSocket      := CreateSocket;   { V7.08 was  TWSocket.Create(Self); }
+    FControlSocket.ExceptAbortProc    := AbortComponent; { V7.15 }
     FControlSocket.OnSessionConnected := ControlSocketSessionConnected;
     FControlSocket.OnDataAvailable    := ControlSocketDataAvailable;
     FControlSocket.OnSessionClosed    := ControlSocketSessionClosed;
     FControlSocket.OnDnsLookupDone    := ControlSocketDnsLookupDone;
     FDataSocket         := CreateSocket;    { V7.08 was  TWSocket.Create(Self); }
+    FDataSocket.ExceptAbortProc       := AbortComponent; { V7.15 }
     FStreamFlag         := FALSE;
     SetLength(FZlibWorkDir, 1024);
     Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.03 }
@@ -2196,6 +2199,8 @@ end;
 destructor TCustomFtpCli.Destroy;
 begin
     DestroyLocalStream;
+    FDataSocket.Free;
+    FControlSocket.Free;
 {$IFDEF UseBandwidthControl}
     if Assigned(FBandwidthTimer) then begin
         FBandwidthTimer.Free;
@@ -2257,27 +2262,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ All exceptions *MUST* be handled. If an exception is not handled, the     }
-{ application will be shut down !                                           }
-procedure TCustomFtpCli.HandleBackGroundException(E: Exception);
-var
-    CanAbort : Boolean;
+procedure TCustomFtpCli.AbortComponent; { V7.15 }
 begin
-    CanAbort := TRUE;
-    { First call the error event handler, if any }
-    if Assigned(FOnBgException) then begin
-        try
-            FOnBgException(Self, E, CanAbort);
-        except
-        end;
+    try
+        AbortAsync;
+    except
     end;
-    { Then abort the component }
-    if CanAbort then begin
-        try
-            AbortAsync;  { 06/12/2004: Abort replaced by AbortAsync }
-        except
-        end;
-    end;
+    inherited;
 end;
 
 
@@ -2543,6 +2534,50 @@ begin
         TriggerDisplay('< DEBUG !');
 
     TriggerDisplay('< ' + FLastResponse);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.SetMultiThreaded(const Value : Boolean);
+begin
+    if Assigned(FDataSocket) then
+        FDataSocket.MultiThreaded := Value;
+    if Assigned(FControlSocket) then
+        FControlSocket.MultiThreaded := Value;
+    inherited SetMultiThreaded(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.SetTerminated(const Value: Boolean);
+begin
+    if Assigned(FDataSocket) then
+        FDataSocket.Terminated := Value;
+    if Assigned(FControlSocket) then
+        FControlSocket.Terminated := Value;
+    inherited SetTerminated(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.SetOnBgException(const Value: TIcsBgExceptionEvent); { V7.15 }
+begin
+    if Assigned(FDataSocket) then
+        FDataSocket.OnBgException := Value;
+    if Assigned(FControlSocket) then
+        FControlSocket.OnBgException := Value;
+    inherited SetOnBgException(Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.SetOnMessagePump(const Value: TNotifyEvent);
+begin
+    if Assigned(FDataSocket) then
+        FDataSocket.OnMessagePump := Value;
+    if Assigned(FControlSocket) then
+        FControlSocket.OnMessagePump := Value;
+    inherited SetOnMessagePump(Value);
 end;
 
 
@@ -2869,7 +2904,10 @@ begin
            (f_SSL_state(FControlSocket.Ssl) = SSL_ST_OK) then begin
             if (f_SSL_version(FControlSocket.Ssl) >= SSL3_VERSION) then begin
                 if not FControlSocket.SslStartRenegotiation then
-                    raise FtpException.Create('! SslStartRenegotiation failed');
+                begin
+                    HandleError('! SslStartRenegotiation failed');  { V7.14 }
+                    Exit;
+                end;
                 TSslFtpClient(Self).FRenegInitFlag := TRUE;
                 TriggerDisplay('! Re-negotiate SSL');
                 Exit;
@@ -6564,6 +6602,7 @@ var
 begin
     Result    := TRUE;           { Assume success }
     FTimeStop := LongInt(GetTickCount) + LongInt(FTimeout) * 1000;
+    DummyHandle := INVALID_HANDLE_VALUE;
     while TRUE do begin
         if FState in [ftpReady, ftpInternalReady] then begin
             { Back to ready state, the command is finished }
@@ -6571,20 +6610,7 @@ begin
             break;
         end;
 
-        {$IFNDEF VER80}
-        { Do not use 100% CPU }
-        if ftpWaitUsingSleep in FOptions then
-            Sleep(0)
-        else begin
-            DummyHandle := INVALID_HANDLE_VALUE;
-            MsgWaitForMultipleObjects(0, {PChar(0)^}DummyHandle, FALSE, 1000,
-                                      QS_ALLINPUT {or QS_ALLPOSTMESSAGE});
-        end;
-
-        MessagePump;
-        if {$IFNDEF NOFORMS} Application.Terminated or
-           {$ELSE}           Terminated or
-           {$ENDIF}
+        if Terminated or
            ((FTimeout > 0) and (LongInt(GetTickCount) > FTimeStop)) then begin
             { Timeout occured }
             AbortAsync;
@@ -6593,7 +6619,13 @@ begin
             Result        := FALSE; { Command failed }
             break;
         end;
-        {$ENDIF}
+
+        { Do not use 100% CPU }
+        if ftpWaitUsingSleep in FOptions then
+            Sleep(0)
+        else
+            MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000, QS_ALLINPUT);
+        MessagePump;
     end;
 end;
 
@@ -6648,6 +6680,34 @@ procedure TSslFtpClient.AuthAsync;
 var
     S : String;
 begin    
+    { Some SSL versions and some OpenSSL versions do not support renegotiation }
+    { In such a case we fake an OK response if the SSL is already established. }
+    if FConnected and Assigned(FControlSocket.Ssl) and                 { V7.14 }
+       (f_SSL_state(FControlSocket.Ssl) = SSL_ST_OK) then
+    begin
+        if (f_SSL_version(FControlSocket.Ssl) < SSL3_VERSION) or
+           IsSslRenegotiationDisallowed(FControlSocket) then
+        begin
+            if not CheckReady then
+                Exit;
+            if not FHighLevelFlag then
+                FRequestType := ftpAuthAsync;
+            FFctPrv := ftpFctAuth;
+            FOkResponses[0]     := 234;
+            FOkResponses[1]     := 0;
+            FStatusCode         := 234;
+            FLastMultiResponse  := '';
+            FLastResponse       := '234 OK Secure connection already established';
+            FRequestDoneFlag    := FALSE;
+            FNext               := NextExecAsync;
+            FDoneAsync          := nil;
+            FErrormessage       := '';
+            StateChange(ftpWaitingResponse);
+            TriggerRequestDone(0);
+            Exit;
+        end;
+    end;
+
     if FSslType = sslTypeAuthSsl then
         S := 'AUTH SSL'
     else
