@@ -2928,7 +2928,9 @@ type
 
 var
 //    GInitData         : TWSADATA;
+{$IFNDEF NO_ADV_MT}
     CritSecIpList     : TRTLCriticalSection;
+{$ENDIF}
     IPList            : TStrings;
 {$IFDEF CLR}
     GWSAStartupCalled : Boolean = FALSE;

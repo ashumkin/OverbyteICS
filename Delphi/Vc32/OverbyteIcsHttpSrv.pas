@@ -387,7 +387,7 @@ uses
 {$IFNDEF NO_DIGEST_AUTH}
     OverbyteIcsDigestAuth,
 {$ENDIF}
-    OverbyteIcsWSockBuf,
+    OverbyteIcsWSockBuf, OverbyteIcsWinsock,
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
