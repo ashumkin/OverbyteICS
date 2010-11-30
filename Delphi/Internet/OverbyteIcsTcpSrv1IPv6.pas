@@ -77,7 +77,7 @@ type
   public
     RcvdLine    : String;
     ConnectTime : TDateTime;
-    ListiningSocketsPortNum : Integer;
+    ListeningSocketsPortNum : Integer;
   end;
 
   { This record is prepended to binary data }
@@ -302,11 +302,11 @@ begin
         { We may want to check for the listening socket that  }
         { accepted this client and tag the client.            }
         if WSocketServer1.MultiListenIndex = -1 then
-            { it's out main server's socket that accepted this client}
-            ListiningSocketsPortNum := WSocketServer1.PortNum
+            { it's our main server's socket that accepted this client}
+            ListeningSocketsPortNum := WSocketServer1.PortNum
         else
             { it's one of our additional sockets that accepted this client}
-            ListiningSocketsPortNum := WSocketServer1.MultiListenSockets[
+            ListeningSocketsPortNum := WSocketServer1.MultiListenSockets[
                 WSocketServer1.MultiListenIndex].PortNum;
         OnDataAvailable     := ClientDataAvailable;
         OnLineLimitExceeded := ClientLineLimitExceeded;
