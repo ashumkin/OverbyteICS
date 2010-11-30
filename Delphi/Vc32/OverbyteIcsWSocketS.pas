@@ -159,11 +159,6 @@ type
     TCustomWSocketServer       = class;
     TWSocketClient             = class;
     TWSocketClientClass        = class of TWSocketClient;
-    TWSocketBeforeClientCreateEvent = procedure (
-                                 Sender           : TObject;
-                                 ListenSocketInfo : TListenSocketInfo;
-                                 var AClientClass : TWSocketClientClass) of object;
-
     TWSocketClientCreateEvent  = procedure (Sender : TObject;
                                             Client : TWSocketClient) of object;
     TWSocketClientConnectEvent = procedure (Sender : TObject;
@@ -225,7 +220,6 @@ type
         FClientNum              : LongInt;
         FMaxClients             : LongInt;
         FMsg_WM_CLIENT_CLOSED   : UINT;
-        FOnBeforeClientCreate   : TWSocketBeforeClientCreateEvent;
         FOnClientCreate         : TWSocketClientCreateEvent;
         FOnClientConnect        : TWSocketClientConnectEvent;
         FOnClientDisconnect     : TWSocketClientConnectEvent;
@@ -234,7 +228,6 @@ type
         procedure Notification(AComponent: TComponent; operation: TOperation); override;
 {$ENDIF}
         procedure TriggerSessionAvailable(Error : Word); override;
-        procedure TriggerBeforeClientCreate(var AClientClass : TWSocketClientClass); virtual;
         procedure TriggerClientCreate(Client : TWSocketClient); virtual;
         procedure TriggerClientConnect(Client : TWSocketClient; Error : Word); virtual;
         procedure TriggerClientDisconnect(Client : TWSocketClient; Error : Word); virtual;
@@ -286,13 +279,125 @@ type
         property  OnClientCreate         : TWSocketClientCreateEvent
                                                       read  FOnClientCreate
                                                       write FOnClientCreate;
-        { Triggered before a new client is created }
-        property  OnBeforeClientCreate   : TWSocketBeforeClientCreateEvent
-                                                      read  FOnBeforeClientCreate
-                                                      write FOnBeforeClientCreate;
     end;
 
-    TWSocketServer = class(TCustomWSocketServer)
+    TWSocketServer = class;
+    TCustomMultiListenWSocketServer = class;
+
+    TWSocketMultiListenItem = class(TCollectionItem)
+    private
+      FAddr: string;
+      FHSocket: TSocket;
+      FListenBacklog: Integer;
+      FPort: string;
+      FSocketFamily: TSocketFamily;
+      FOldSocketFamily: TSocketFamily;
+      FState: TSocketState;
+      FPortNum: Integer;
+      FLastError: Integer;
+      FCloseInvoked: Boolean;
+      FPaused: Boolean;
+      procedure SetAddr(const Value: string);
+      procedure SetSocketFamily(const Value: TSocketFamily);
+    function GetAddrResolved: string;
+    protected
+      procedure AssignDefaults; virtual;
+    public
+      Fsin: TSockAddrIn6;
+      constructor Create(Collection: TCollection); override;
+      destructor Destroy; override;
+      procedure Close;
+      procedure Listen;
+      function  OwnerServer: TCustomMultiListenWSocketServer;
+      function  Pause: Boolean;
+      function  Resume: Boolean;
+      property  AddrResolved: string read GetAddrResolved;
+      property  CloseInvoked: Boolean read FCloseInvoked write FCloseInvoked;
+      property  HSocket: TSocket read FHSocket write FHSocket;
+      property  LastError: Integer read FLastError write FLastError;
+      property  Paused: Boolean read FPaused;
+      property  PortNum: Integer read FPortNum write FPortNum;
+      property  State: TSocketState read FState write FState;
+    published
+      property Addr: string read FAddr write SetAddr;
+      property ListenBacklog: Integer           read  FListenBacklog
+                                                write FListenBacklog default 5;
+      property Port: string read FPort write FPort;
+      property SocketFamily: TSocketFamily      read  FSocketFamily
+                                                write SetSocketFamily
+                                                default DefaultSocketFamily;
+    end;
+
+    TWSocketMultiListenItemClass = class of TWSocketMultiListenItem;
+
+    TWSocketMultiListenCollection = class(TOwnedCollection)
+    protected
+      function GetItem(Index: Integer): TWSocketMultiListenItem;
+        {$IFDEF USE_INLINE} inline; {$ENDIF}
+      procedure SetItem(Index: Integer; Value: TWSocketMultiListenItem);
+        {$IFDEF USE_INLINE} inline; {$ENDIF}
+    public
+      constructor Create(AOwner     : TPersistent;
+                         AItemClass : TWSocketMultiListenItemClass);
+      function Add: TWSocketMultiListenItem;
+          {$IFDEF USE_INLINE} inline; {$ENDIF}
+      function FindItemIndex(const AHSocket: TSocket): Integer;
+          {$IFDEF USE_INLINE} inline; {$ENDIF}
+      function FindItemHandle(const AHSocket: TSocket): TWSocketMultiListenItem;
+      function FindItemID(ID: Integer): TWSocketMultiListenItem;
+          {$IFDEF USE_INLINE} inline; {$ENDIF}
+      function Insert(Index: Integer): TWSocketMultiListenItem;
+          {$IFDEF USE_INLINE} inline; {$ENDIF}
+      function Owner: TCustomMultiListenWSocketServer;
+      property Items[Index: Integer]: TWSocketMultiListenItem
+                                                        read  GetItem
+                                                        write SetItem; default;
+    end;
+
+    TCustomMultiListenWSocketServer = class(TCustomWSocketServer)
+    private
+        FMultiListenSockets: TWSocketMultiListenCollection;
+        FMultiListenIndex: Integer;
+    protected
+        procedure Ml_Do_FD_ACCEPT(AItem: TWSocketMultiListenItem;
+                                  AMsg: TMessage); virtual;
+        procedure MlListen(AItem: TWSocketMultiListenItem); virtual;
+        procedure MlClose(AItem: TWSocketMultiListenItem); virtual;
+        procedure MlSocketError(AItem           : TWSocketMultiListenItem;
+                                const ASockFunc : String;
+                                ALastError      : Integer = 0); virtual;
+        procedure MlPause(AItem: TWSocketMultiListenItem); virtual;
+        procedure MlResume(AItem: TWSocketMultiListenItem); virtual;
+        procedure MlSetAddr(var FldAddr              : string;
+                            var FldSocketFamily      : TSocketfamily;
+                            const FldOldSocketFamily : TSocketfamily;
+                            const NewValue           : string); virtual;
+        procedure MlSetSocketFamily(var FldSocketFamily    : TSocketfamily;
+                                    var FldOldSocketFamily : TSocketfamily;
+                                    const NewValue         : TSocketFamily);
+        function  MultiListenItemClass: TWSocketMultiListenItemClass; virtual;
+        procedure SetMultiListenIndex(const Value: Integer);
+        procedure TriggerClientConnect(Client: TWSocketClient; Error: Word); override;
+        procedure WMASyncSelect(var msg: TMessage); override;
+    public
+        constructor Create(AOwner: TComponent); override;
+        destructor Destroy; override;
+        function  Accept: TSocket; override;
+        procedure Close; override;
+        procedure Listen; override;
+        procedure MultiListen; virtual;
+        procedure MultiClose; virtual;
+        procedure ThreadAttach; override;
+        procedure ThreadDetach; override;
+        property  MultiListenIndex: Integer read  FMultiListenIndex;
+
+        property  MultiListenSockets: TWSocketMultiListenCollection
+                                                      read  FMultiListenSockets
+                                                      write FMultiListenSockets;
+    end;
+
+
+    TWSocketServer = class(TCustomMultiListenWSocketServer)
     public
         property  ClientClass;
         property  ClientCount;
@@ -304,6 +409,7 @@ type
         property  Banner;
         property  BannerTooBusy;
         property  MaxClients;
+        property  MultiListenSockets;
         property  OnClientDisconnect;
         property  OnClientConnect;
     end;
@@ -331,6 +437,15 @@ const
      SslWSocketServerCopyRight : String = ' TSslWSocket (c) 2003 Francois Piette V1.00.3 ';
 
 type
+    TSslWSocketMultiListenItem = class(TWSocketMultiListenItem)
+    private
+      FSslEnable : Boolean;
+    public
+      constructor Create(Collection: TCollection); override;
+    published
+      property SslEnable : Boolean read FSslEnable write FSslEnable;
+    end;
+
     TSslWSocketClient = class(TWSocketClient)
     public
         constructor Create(AOwner : TComponent); override;
@@ -340,7 +455,7 @@ type
     TSslWSocketServer = class(TWSocketServer)
     protected
         procedure TriggerClientConnect(Client : TWSocketClient; Error : Word); override;
-        procedure TriggerClientCreate(Client : TWSocketClient); override;
+        function  MultiListenItemClass: TWSocketMultiListenItemClass; override;
     public
         constructor Create(AOwner : TComponent); override;
         property  ClientClass;
@@ -537,22 +652,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocketServer.TriggerBeforeClientCreate(
-  var AClientClass: TWSocketClientClass);
-begin
-    if Assigned(FOnBeforeClientCreate) then
-    begin
-        if FMultiListenFlag and (FLSocketInfos <> nil) then
-            FOnBeforeClientCreate(Self,
-                                  FLSocketInfos.GetByHandle(FHCurAcceptSocket),
-                                  AClientClass)
-        else
-            FOnBeforeClientCreate(Self, nil, AClientClass);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocketServer.TriggerClientConnect(
     Client : TWSocketClient; Error : Word);
 begin
@@ -682,6 +781,696 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {*                                                                           *}
+{*                   TCustomMultiListenWSocketServer                         *}
+{*                                                                           *}
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+function SizeOfAddr(const AAddr: TSockAddrIn6): Integer;
+    {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+    if AAddr.sin6_family = AF_INET6 then
+        Result := SizeOf(TSockAddrIn6)
+    else
+        Result := SizeOf(TSockAddrIn);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomMultiListenWSocketServer.Accept: TSocket;
+var
+    Len   : Integer;
+    AItem : TWSocketMultiListenItem;
+begin
+    if FMultiListenIndex = -1 then
+    begin
+        if FState <> wsListening then begin
+            WSocket_WSASetLastError(WSAEINVAL);
+            SocketError('not a listening socket');
+            Result := INVALID_SOCKET;
+            Exit;
+        end;
+        Len := SizeOfAddr(sin6);
+        FASocket := WSocket_Accept(FHSocket, @sin6, @Len);
+
+        if FASocket = INVALID_SOCKET then begin
+            SocketError('Accept');
+            Result := INVALID_SOCKET;
+            Exit;
+        end
+        else
+            Result := FASocket;
+    end
+    else begin
+        AItem := FMultiListenSockets[FMultiListenIndex];
+        if AItem.State <> wsListening then begin
+            WSocket_WSASetLastError(WSAEINVAL);
+            MlSocketError(AItem, 'not a listening socket');
+            Result := INVALID_SOCKET;
+            Exit;
+        end;
+        Len := SizeOfAddr(AItem.Fsin);
+        FASocket := WSocket_Accept(AItem.HSocket, @AItem.Fsin, @Len);
+        if FASocket = INVALID_SOCKET then begin
+            MlSocketError(AItem, 'Accept');
+            Result := INVALID_SOCKET;
+            Exit;
+        end
+        else
+            Result := FASocket;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.Close;
+begin
+    FMultiListenIndex := -1;
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TCustomMultiListenWSocketServer.Create(AOwner: TComponent);
+begin
+    inherited;
+    FMultiListenIndex := -1;
+    FMultiListenSockets := TWSocketMultiListenCollection.Create(
+                              Self, MultiListenItemClass);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TCustomMultiListenWSocketServer.Destroy;
+begin
+  FMultiListenSockets.Free;
+  inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.Listen;
+begin
+    FMultiListenIndex := -1;
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MlClose(
+  AItem: TWSocketMultiListenItem);
+var
+    iStatus : Integer;
+begin
+    FMultiListenIndex := -1;
+    if AItem.HSocket = INVALID_SOCKET then
+    begin
+        AItem.AssignDefaults;
+        Exit;
+    end;
+
+    if AItem.State = wsClosed then
+        Exit;
+
+    if AItem.HSocket <> INVALID_SOCKET then begin
+        repeat
+            { Close the socket }
+            iStatus := OverbyteIcsWinsock.closesocket(AItem.HSocket);
+            if iStatus <> 0 then begin
+                AItem.LastError := OverbyteIcsWinsock.WSAGetLastError;
+                if AItem.LastError <> WSAEWOULDBLOCK then begin
+                    AItem.HSocket := INVALID_SOCKET;
+                    { Ignore the error occuring when winsock DLL not      }
+                    { initialized (occurs when using TWSocket from a DLL) }
+                    if AItem.LastError = WSANOTINITIALISED then
+                        Break;
+                    MlSocketError(AItem, 'Disconnect (closesocket)');
+                    Exit;
+                end;
+                MessagePump;
+            end;
+        until iStatus = 0;
+        AItem.HSocket := INVALID_SOCKET;
+    end;
+    AItem.State := wsClosed;
+    if (not (csDestroying in ComponentState)) and
+       (not AItem.CloseInvoked) {and Assigned(FOnSessionClosed)} then begin
+        AItem.CloseInvoked := TRUE;
+        FMultiListenIndex := AItem.Index;
+        try
+            TriggerSessionClosed(Error);
+        finally
+            FMultiListenIndex := -1;
+        end;
+    end;
+    { 29/09/98 Protect AssignDefaultValue because SessionClosed event handler }
+    { may have destroyed the component.                                       }
+    try
+        AItem.AssignDefaults;
+    except
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MlSocketError(
+    AItem: TWSocketMultiListenItem;
+    const ASockFunc: String;
+    ALastError: Integer = 0);
+var
+    ErrCode  : Integer;
+    Line : String;
+begin
+    FMultiListenIndex := AItem.Index;
+    try
+        if ALastError = 0 then
+            ErrCode := OverbyteIcsWinsock.WSAGetLastError
+        else
+            ErrCode := ALastError;
+        Line  := 'Listening socket index #' + _IntToStr(FMultiListenIndex) + ' ' +
+                  WSocketErrorDesc(ErrCode) + ' (#' + _IntToStr(ErrCode) +
+                  ' in ' + ASockFunc + ')' ;
+
+        if (ErrCode = WSAECONNRESET) or
+           (ErrCode = WSAENOTCONN) then begin
+            OverbyteIcsWinsock.closesocket(AItem.HSocket);
+            AItem.HSocket := INVALID_SOCKET;
+            if AItem.State <> wsClosed then
+               TriggerSessionClosed(ErrCode);
+            AItem.State := wsClosed;
+        end;
+
+        AItem.LastError := ErrCode;
+        RaiseException(Line);
+    finally
+        FMultiListenIndex := -1;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.Ml_Do_FD_ACCEPT(
+    AItem : TWSocketMultiListenItem;
+    AMsg  : TMessage);
+begin
+    if (AItem.HSocket <> INVALID_SOCKET) then begin
+        if not AItem.CloseInvoked then
+        begin
+            AItem.CloseInvoked := TRUE;
+            TriggerSessionClosed(HiWord(AMsg.LParam));
+        end;
+        if AItem.State <> wsClosed then
+            MlClose(AItem);
+    end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MlListen(
+    AItem: TWSocketMultiListenItem);
+var
+    iStatus : Integer;
+begin
+    FMultiListenIndex := AItem.Index;
+    try
+        if (AItem.State <> wsClosed) then begin
+            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            MlSocketError(AItem, 'listen: socket is already listening');
+            Exit;
+        end;
+
+        if _LowerCase(FProtoStr) <> 'tcp' then begin
+            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            MlSocketError(AItem, 'listen: protocol unsupported');
+            Exit;
+        end;
+
+        if AItem.Port = '' then begin
+            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            MlSocketError(AItem, 'listen: port not assigned');
+            Exit;
+        end;
+
+        if AItem.Addr = '' then begin
+            //WSocket_Synchronized_WSASetLastError(WSAEINVAL);
+            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            MlSocketError(AItem, 'listen: address not assigned');
+            Exit;
+        end;
+
+        try
+            { The next line will trigger an exception in case of failure }
+            AItem.PortNum := WSocketResolvePort(
+                                  AnsiString(AItem.Port), AnsiString('tcp'));
+            AItem.Fsin.sin6_port := OverbyteIcsWinsock.htons(AItem.PortNum);
+
+            { The next line will trigger an exception in case of failure }
+            if AItem.SocketFamily = sfIPv4 then
+            begin
+                AItem.Fsin.sin6_family := AF_INET;
+                PSockAddrIn(@AItem.Fsin).sin_addr.s_addr :=
+                    WSocketResolveHost(AnsiString(AItem.Addr)).s_addr;
+            end
+            else
+                WSocketResolveHost(AItem.Addr, AItem.Fsin, AItem.SocketFamily);
+        except
+            on E: Exception do begin
+                AItem.AssignDefaults;
+                raise ESocketException.Create('listen: ' + E.Message);
+            end;
+        end;
+
+        { Remove any data from the internal output buffer }
+        { (should already be empty !)                     }
+        DeleteBufferedData;
+
+        AItem.HSocket :=
+          OverbyteIcsWinsock.socket(AItem.Fsin.sin6_family, SOCK_STREAM, IPPROTO_TCP);
+
+        if AItem.HSocket = INVALID_SOCKET then begin
+            MlSocketError(AItem, 'listen: socket');
+            Exit;
+        end;
+
+        iStatus := OverbyteIcsWinsock.bind(AItem.HSocket, PSockAddr(@AItem.Fsin)^,
+                                           SizeOfAddr(AItem.Fsin));
+        if iStatus = 0 then
+            AItem.State := wsBound
+        else begin
+            MlSocketError(AItem, 'listen: Bind');
+            MlClose(AItem);
+            Exit;
+        end;
+
+        iStatus := OverbyteIcsWinsock.listen(AItem.HSocket, AItem.ListenBacklog);
+        if iStatus = 0 then
+            AItem.State := wsListening
+        else begin
+            MlSocketError(AItem, 'listen: Listen');
+            Exit;
+        end;
+
+        iStatus := OverbyteIcsWinsock.WSAASyncSelect(AItem.HSocket, Handle,
+                                                     FMsg_WM_ASYNCSELECT,
+                                                     FD_ACCEPT or FD_CLOSE);
+        if iStatus <> 0 then begin
+            MlSocketError(AItem, 'listen: WSAASyncSelect');
+            Exit;
+        end;
+    finally
+        FMultiListenIndex := -1;
+    end;
+end;
+
+
+procedure TCustomMultiListenWSocketServer.MlPause(
+    AItem: TWSocketMultiListenItem);
+begin
+    if not AItem.Paused then
+        AItem.FPaused := OverbyteIcsWinsock.WSAASyncSelect(
+                                            AItem.HSocket, Handle, 0, 0) = 0;
+
+end;
+
+procedure TCustomMultiListenWSocketServer.MLResume(
+    AItem: TWSocketMultiListenItem);
+begin
+    if AItem.Paused then
+        AItem.FPaused := not (OverbyteIcsWinsock.WSAASyncSelect(
+                                         AItem.HSocket, Handle,
+                                         FMsg_WM_ASYNCSELECT,
+                                         FD_ACCEPT or FD_CLOSE) = 0);
+
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MlSetAddr(
+  var FldAddr: string; var FldSocketFamily: TSocketfamily;
+  const FldOldSocketFamily: TSocketfamily;
+  const NewValue: string);
+var
+    LSocketFamily: TSocketFamily;
+begin
+    FldAddr := _Trim(NewValue);
+    if FldAddr = '' then
+        Exit;
+    { If the address is either a valid IPv4 or IPv6 address }
+    { change current SocketFamily.                          }
+    if WSocketIsIP(FldAddr, LSocketFamily) then
+    begin
+        if (LSocketFamily = sfIPv4) or (IsIPv6APIAvailable) then
+            FldSocketFamily := LSocketFamily
+        else
+            FldSocketFamily := FldOldSocketFamily;
+    end
+    else
+        FldSocketFamily := FldOldSocketFamily;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MlSetSocketFamily(
+  var FldSocketFamily: TSocketfamily;
+  var FldOldSocketFamily: TSocketfamily;
+  const NewValue: TSocketFamily);
+begin
+    if NewValue <> FldSocketFamily then begin
+        if NewValue <> sfIPv4 then begin
+            try
+                if not IsIPv6APIAvailable then
+                    raise ESocketException.Create(
+                     'SetSocketFamily: New API requires winsock 2.2 ' +
+                     'and Windows XP, property "SocketFamily" reset to "sfIPv4"');
+            except
+                FldSocketFamily := sfIPv4;
+                FldOldSocketFamily := FldSocketFamily;
+                Exit;
+            end;
+        end;
+        FldSocketFamily := NewValue;
+        FldOldSocketFamily :=FldSocketFamily;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MultiClose;
+var
+    I: Integer;
+begin
+    if State <> wsClosed then
+        Close;
+    if Assigned(FMultiListenSockets) then begin
+        for I := 0 to FMultiListenSockets.Count - 1 do
+            if FMultiListenSockets[I].State <> wsClosed then
+                MlClose(FMultiListenSockets[I]);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.MultiListen;
+var
+    I: Integer;
+begin
+    if State <> wsListening then
+        Listen;
+    if Assigned(FMultiListenSockets) then
+        for I := 0 to FMultiListenSockets.Count - 1 do
+            if FMultiListenSockets[I].State <> wsListening then
+            MlListen(FMultiListenSockets[I]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomMultiListenWSocketServer.MultiListenItemClass: TWSocketMultiListenItemClass;
+begin
+    Result := TWSocketMultiListenItem;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.SetMultiListenIndex(
+  const Value: Integer);
+begin
+    FMultiListenIndex := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.ThreadAttach;
+var
+    I : Integer;
+    LItem : TWSocketMultiListenItem;
+begin
+    FMultiListenIndex := -1;
+    inherited ThreadAttach;
+    for I := 0 to FMultiListenSockets.Count -1 do begin
+        LItem := FMultiListenSockets[I];
+        if (LItem.HSocket <> INVALID_SOCKET) then
+            OverbyteIcsWinsock.WSAASyncSelect(LItem.HSocket, Handle,
+                                              FMsg_WM_ASYNCSELECT,
+                                              FD_ACCEPT or FD_CLOSE);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.ThreadDetach;
+var
+    I : Integer;
+    LItem : TWSocketMultiListenItem;
+begin
+    FMultiListenIndex := -1;
+    inherited ThreadDetach;
+    for I := 0 to FMultiListenSockets.Count -1 do begin
+        LItem := FMultiListenSockets[I];
+        if (LItem.HSocket <> INVALID_SOCKET) then
+            OverbyteIcsWinsock.WSAASyncSelect(LItem.HSocket, Handle, 0, 0);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.TriggerClientConnect(
+    Client : TWSocketClient; Error : Word);
+begin
+    inherited TriggerClientConnect(Client, Error);
+    { Finally reset the MultiListenIndex just to avoid bad component use }
+    FMultiListenIndex := -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomMultiListenWSocketServer.WMASyncSelect(var msg: TMessage);
+var
+    Check   : Word;
+    ParamLo : Word;
+    AItem   : TWSocketMultiListenItem;
+begin
+    if msg.wParam = FHSocket then begin
+        FMultiListenIndex := -1;
+
+        if FPaused then
+          Exit;
+
+        ParamLo := LoWord(msg.lParam);
+        Check := ParamLo and FD_ACCEPT;
+        if Check <> 0 then begin
+            FSelectMessage := FD_ACCEPT;
+            Do_FD_ACCEPT(msg);
+        end;
+
+        Check := ParamLo and FD_CLOSE;
+        if Check <> 0 then begin
+            FSelectMessage := FD_CLOSE;
+            Do_FD_CLOSE(msg);
+        end;
+        FSelectMessage := 0;
+
+    end
+    else begin
+        FMultiListenIndex := FMultiListenSockets.FindItemIndex(msg.wParam);
+        if FMultiListenIndex = -1 then
+            Exit;
+        AItem := FMultiListenSockets[FMultiListenIndex];
+
+        if AItem.Paused then
+          Exit;
+
+        ParamLo := LoWord(msg.lParam);
+
+        Check := ParamLo and FD_ACCEPT;
+        if Check <> 0 then
+            Do_FD_ACCEPT(msg);
+
+        Check := ParamLo and FD_CLOSE;
+        if Check <> 0 then
+            Ml_Do_FD_ACCEPT(AItem, msg);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TWSocketMultiListenItem }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+procedure TWSocketMultiListenItem.AssignDefaults;
+begin
+    FHSocket            := INVALID_SOCKET;
+    FPortNum            := 0;
+    FState              := wsClosed;
+    FPaused             := FALSE;
+    FCloseInvoked       := FALSE;
+    FillChar(Fsin, SizeOf(Fsin), 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.Close;
+begin
+    OwnerServer.MlClose(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TWSocketMultiListenItem.Create(Collection: TCollection);
+begin
+    inherited Create(Collection);
+    FListenBackLog := 5;
+    FSocketFamily := DefaultSocketFamily;
+    FOldSocketFamily := FSocketFamily;
+    AssignDefaults;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TWSocketMultiListenItem.Destroy;
+begin
+    if (FState <> wsInvalidState) and (FState <> wsClosed) then
+        OwnerServer.MlClose(Self);
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetAddrResolved: string;
+begin
+    if Fsin.sin6_family = AF_INET6 then
+        Result := WSocketIPv6ToStr(@Fsin)
+    else
+        Result := WSocketIPv4ToStr(PInteger(@Fsin.sin6_addr)^);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.Listen;
+begin
+    OwnerServer.MlListen(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.OwnerServer: TCustomMultiListenWSocketServer;
+begin
+    Result := TWSocketMultiListenCollection(Collection).Owner;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.Pause: Boolean;
+begin
+    OwnerServer.MlPause(Self);
+    Result := FPaused;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.Resume: Boolean;
+begin
+    OwnerServer.MlResume(Self);
+    Result := not FPaused;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetAddr(const Value: string);
+begin
+    OwnerServer.MlSetAddr(FAddr, FSocketFamily, FOldSocketFamily, Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetSocketFamily(const Value: TSocketFamily);
+begin
+    OwnerServer.MlSetSocketFamily(FSocketFamily, FOldSocketFamily, Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TWSocketMultiListenCollection }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+function TWSocketMultiListenCollection.Add: TWSocketMultiListenItem;
+begin
+    Result := TWSocketMultiListenItem(inherited Add);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TWSocketMultiListenCollection.Create(AOwner: TPersistent;
+    AItemClass: TWSocketMultiListenItemClass);
+begin
+    inherited Create(AOwner, AItemClass);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenCollection.FindItemHandle(
+    const AHSocket: TSocket): TWSocketMultiListenItem;
+var
+    I: Integer;
+begin
+    for I := 0 to Count -1 do
+    begin
+      Result := Items[I];
+      if Result.FHSocket = AHSocket then
+          Exit;
+    end;
+    Result := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenCollection.FindItemIndex(
+    const AHSocket: TSocket): Integer;
+begin
+    for Result := 0 to Count -1 do
+    begin
+      if Items[Result].FHSocket = AHSocket then
+          Exit;
+    end;
+    Result := -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenCollection.FindItemID(ID: Integer): TWSocketMultiListenItem;
+begin
+    Result := TWSocketMultiListenItem(inherited FindItemID(ID));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenCollection.GetItem(Index: Integer): TWSocketMultiListenItem;
+begin
+    Result := TWSocketMultiListenItem(inherited GetItem(Index));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenCollection.Insert(
+  Index: Integer): TWSocketMultiListenItem;
+begin
+    Result := TWSocketMultiListenItem(inherited Insert(Index));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenCollection.Owner: TCustomMultiListenWSocketServer;
+begin
+    Result := TCustomMultiListenWSocketServer(GetOwner);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenCollection.SetItem(Index: Integer;
+  Value: TWSocketMultiListenItem);
+begin
+    inherited SetItem(Index, Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{*                                                                           *}
 {*                            TWSocketClient                                 *}
 {*                                                                           *}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -764,9 +1553,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslWSocketServer.TriggerClientCreate(Client : TWSocketClient);
+function TSslWSocketServer.MultiListenItemClass: TWSocketMultiListenItemClass;
 begin
-    inherited TriggerClientCreate(Client);
+    Result := TSslWSocketMultiListenItem;
 end;
 
 
@@ -780,7 +1569,13 @@ begin
     if (Error <> 0) or (Client.State <> wsConnected) or
        (Client.SslState > sslNone) then
         Exit;
-    Client.SslEnable := FSslEnable;
+    if MultiListenIndex = -1 then
+        Client.SslEnable := FSslEnable
+    else begin
+        Assert(MultiListenIndex < MultiListenSockets.Count);
+        Client.SslEnable := TSslWSocketMultiListenItem(
+          MultiListenSockets[MultiListenIndex]).SslEnable;
+    end;
     if Client.SslEnable then begin
         Client.SslMode                  := FSslMode;
         Client.SslAcceptableHosts       := FSslAcceptableHosts;
@@ -822,6 +1617,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TSslWSocketMultiListenItem }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TSslWSocketMultiListenItem.Create(Collection: TCollection);
+begin
+    inherited Create(Collection);
+    FSslEnable := TRUE;
+end;
+
 {$ENDIF} // USE_SSL
 
 end.

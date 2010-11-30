@@ -59,7 +59,8 @@ interface
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls,
-  OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl;
+  OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl,
+  OverbyteIcsWinsock;
 
 const
   TcpSrvVersion = 703;
@@ -76,6 +77,7 @@ type
   public
     RcvdLine    : String;
     ConnectTime : TDateTime;
+    ListiningSocketsPortNum : Integer;
   end;
 
   { This record is prepended to binary data }
@@ -107,8 +109,7 @@ type
       Client: TWSocketClient; Error: Word);
     procedure WSocketServer1BgException(Sender: TObject; E: Exception;
       var CanClose: Boolean);
-    procedure WSocketServer1BeforeClientCreate(Sender: TObject;
-      AListenSocketInfo: TListenSocketInfo; var AClientClass: TWSocketClientClass);
+    procedure WSocketServer1SessionClosed(Sender: TObject; ErrCode: Word);
   private
     FIniFileName : String;
     FInitialized : Boolean;
@@ -219,8 +220,12 @@ end;
 { This is our custom message handler. We posted a WM_APPSTARTUP message     }
 { from FormShow event handler. Now UI is ready and visible.                 }
 procedure TTcpSrvForm.WMAppStartup(var Msg: TMessage);
+const
+    LMsg = '%s index #%d IP/port [%s]:%d State: %s';
 var
     MyHostName : AnsiString;
+    I: Integer;
+    L: TWSocketMultiListenItem;
 begin
     Display(CopyRight);
     Display(OverbyteIcsWSocket.Copyright);
@@ -228,44 +233,53 @@ begin
     WSocket_gethostname(MyHostName);
     Display(' I am "' + String(MyHostName) + '"');
     Display(' IP: ' + LocalIPList(sfAny).Text);
-    { We'll listen on multiple interfaces. Separator is a semicolon ";" }
-    { For each address one port has to be set.                          }
-    { Use any IPv4/IPv6 interface with telnet port and any IPv4         }
-    { interface with port 24                                            }
-    WSocketServer1.Addr        := '0.0.0.0;::;0.0.0.0';
-    WSocketServer1.Port        := 'telnet;telnet;24';
-    { Instanciate our component by default, we may change it in event   }
-    { OnBeforeClientCreate later on.                                    }
+    WSocketServer1.Addr        := '0.0.0.0';
+    WSocketServer1.Port        := 'telnet';
     WSocketServer1.ClientClass := TTcpSrvClient;
-    { Start listening on the specified interfaces and ports.            }
-    { Note that if IPv6 was not available on the system method          }
-    { TcpMultiListen won't make an attempt to listen on IPv6 interfaces.}
-    { If IPv6 was not available those addresses are silently skipped.   }
-    WSocketServer1.TcpMultiListen;
-    Display('Waiting for clients...');
-end;
 
+    WSocketServer1.Listen;
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TTcpSrvForm.WSocketServer1BeforeClientCreate(Sender: TObject;
-  AListenSocketInfo: TListenSocketInfo; var AClientClass: TWSocketClientClass);
-begin
-    { Use this event to get info about the listening socket accepted }
-    { a connection. Optionally change the client class that will be  }
-    { created.                                                       }
-    if AListenSocketInfo <> nil then begin
-       { When listening with method TcpMultiListen AListenSocketInfo }
-       { is assigned.                                                }
-       Display('BeforeClientCreate: Listening socket ' +
-               AListenSocketInfo.FAddrStr + '/' +
-               IntToStr(AListenSocketInfo.FPortNum));
-    end
-    else begin
-        { If method Listen was called AListenSocketInfo is unassigned }
-        Display('BeforeClientCreate: Listening socket ' +
-               TWSocketServer(Sender).Addr + '/' +
-               IntToStr(TWSocketServer(Sender).PortNum));
+    WSocketServer1.MultiListenSockets.Clear;
+    { Let's create some additional listening sockets }
+    if OverbyteIcsWinsock.IsIPv6Available then begin
+        with WSocketServer1.MultiListenSockets.Add do begin
+            Addr := '::'; // IPv6 unspecified address, same as IPv4 "0.0.0.0"
+            Port := 'telnet';
+        end;
     end;
+    with WSocketServer1.MultiListenSockets.Add do begin
+        Addr := 'LocalHost';
+        Port := '24';
+        SocketFamily := sfAny; // OS preference of eather IPv4 or IPv6.
+    end;
+
+    try
+        { MultiListen attempts to listen on all listeners not yet listening  }
+        { including main socket. Note that both Listen and MultiListen raise }
+        { an exception if they fail, most likely this happens because        }
+        { IP:Port is already in use. A real world application must handle    }
+        { the exception, in this demo we just display it.                    }
+        WSocketServer1.MultiListen;
+    except
+        on E: Exception do begin
+            Display(E.ClassName + ' ' + E.Message);
+        end;
+    end;
+
+    { Display status of all listeners. }
+    Display(Format(LMsg, ['Main        ', -1, WSocketServer1.Addr,
+                          WSocketServer1.PortNum,
+                          SocketStateNames[WSocketServer1.State]]));
+    for I := 0 to WSocketServer1.MultiListenSockets.Count -1 do begin
+        L := WSocketServer1.MultiListenSockets[I];
+        Display(Format(LMsg, ['Multi-listen', I, L.AddrResolved, L.PortNum,
+                              SocketStateNames[L.State]]));
+    end;
+
+    { testing.. }
+    {if (WSocketServer1.MultiListenSockets.Count > 1) then
+        if WSocketServer1.MultiListenSockets[1].State = wsListening then
+            WSocketServer1.MultiListenSockets[1].Close;}
 end;
 
 
@@ -277,14 +291,23 @@ procedure TTcpSrvForm.WSocketServer1ClientConnect(
 begin
     with Client as TTcpSrvClient do begin
         Display('Client connected.' +
-                ' Remote: ' + PeerAddr + '/' + PeerPort +
-                ' Local: '  + GetXAddr + '/' + GetXPort);
+                ' Remote: [' + PeerAddr + ']:' + PeerPort +
+                ' Local: ['  + GetXAddr + ']:' + GetXPort);
         Display('There is now ' +
                 IntToStr(TWSocketServer(Sender).ClientCount) +
                 ' clients connected.');
         LineMode            := TRUE;
         LineEdit            := TRUE;
         LineLimit           := 80; { Do not accept long lines }
+        { We may want to check for the listening socket that  }
+        { accepted this client and tag the client.            }
+        if WSocketServer1.MultiListenIndex = -1 then
+            { it's out main server's socket that accepted this client}
+            ListiningSocketsPortNum := WSocketServer1.PortNum
+        else
+            { it's one of our additional sockets that accepted this client}
+            ListiningSocketsPortNum := WSocketServer1.MultiListenSockets[
+                WSocketServer1.MultiListenIndex].PortNum;
         OnDataAvailable     := ClientDataAvailable;
         OnLineLimitExceeded := ClientLineLimitExceeded;
         OnBgException       := ClientBgException;
@@ -311,13 +334,34 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TTcpSrvForm.WSocketServer1SessionClosed(
+    Sender  : TObject;
+    ErrCode : Word);
+var
+    L : TWSocketMultiListenItem;
+begin
+    with Sender as TWSocketServer do
+    begin
+        if MultiListenIndex = -1 then
+            Display('Main session closed [' + Addr + ']:' + IntToStr(PortNum) +
+                    ', error #' + IntToStr(ErrCode))
+        else begin
+           L := MultiListenSockets[MultiListenIndex];
+           Display('Multi-listen session closed [' + L.Addr + ']:' +
+                   IntToStr(L.PortNum) + ', error #' + IntToStr(ErrCode));
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTcpSrvForm.ClientLineLimitExceeded(
     Sender        : TObject;
     Cnt           : LongInt;
     var ClearData : Boolean);
 begin
     with Sender as TTcpSrvClient do begin
-        Display('Line limit exceeded from ' + GetPeerAddr + '. Closing.');
+        Display('Line limit exceeded from [' + GetPeerAddr + ']. Closing.');
         ClearData := TRUE;
         Close;
     end;
@@ -337,7 +381,7 @@ begin
               ((RcvdLine[Length(RcvdLine)] = #13) or
                (RcvdLine[Length(RcvdLine)] = #10)) do
             RcvdLine := Copy(RcvdLine, 1, Length(RcvdLine) - 1);
-        Display('Received from ' + GetPeerAddr + ': ''' + RcvdLine + '''');
+        Display('Received from [' + GetPeerAddr + '] : ''' + RcvdLine + '''');
         ProcessData(Sender as TTcpSrvClient);
     end;
 end;

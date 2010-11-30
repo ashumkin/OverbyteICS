@@ -992,6 +992,8 @@ type
         procedure DebugLog(LogOption: TLogOption; const Msg : string); virtual; { V1.38 }
         function  CheckLogOptions(const LogOption: TLogOption): Boolean; virtual; { V1.38 }
 {$ENDIF}
+        function  GetMultiListenSockets: TWSocketMultiListenCollection;
+        procedure SetMultiListenSockets(const Value: TWSocketMultiListenCollection);
         function  CreateServerSecret: TULargeInteger; virtual;
         procedure Notification(AComponent: TComponent; operation: TOperation); override;
         procedure CreateSocket; virtual;
@@ -1066,6 +1068,9 @@ type
 {$ENDIF}
         property ListenBacklog  : Integer           read  FListenBacklog
                                                     write FListenBacklog; {Bjørnar}
+        property MultiListenSockets : TWSocketMultiListenCollection
+                                                    read  GetMultiListenSockets
+                                                    write SetMultiListenSockets;
         { Component source version }
         property SrcVersion    : String          read GetSrcVersion;
         { We will listen to that port. Default to 80 for http service }
@@ -2042,6 +2047,25 @@ begin
     finally
         FHeartBeatBusy := FALSE;
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpServer.GetMultiListenSockets: TWSocketMultiListenCollection;
+begin
+    if Assigned(FWSocketServer) then
+        Result := FWSocketServer.MultiListenSockets
+    else
+        Result := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.SetMultiListenSockets(
+  const Value: TWSocketMultiListenCollection);
+begin
+    if Assigned(FWSocketServer) then
+        FWSocketServer.MultiListenSockets := Value;
 end;
 
 

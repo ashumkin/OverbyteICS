@@ -75,7 +75,7 @@ object TcpSrvForm: TTcpSrvForm
     MaxClients = 0
     OnClientDisconnect = WSocketServer1ClientDisconnect
     OnClientConnect = WSocketServer1ClientConnect
-    OnBeforeClientCreate = WSocketServer1BeforeClientCreate
+    MultiListenSockets = <>
     Left = 38
     Top = 68
   end

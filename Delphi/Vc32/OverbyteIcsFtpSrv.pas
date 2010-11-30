@@ -1051,6 +1051,9 @@ type
         FOnLang                 : TFtpSrvLangEvent;          { angus V7.01 }
         FSystemCodePage         : LongWord;                  { AG 7.02 }
         FOnAddVirtFiles         : TFtpSrvAddVirtFilesEvent;  { angus V7.08 }
+        procedure CreateSocket; virtual;
+        function  GetMultiListenSockets: TWSocketMultiListenCollection;
+        procedure SetMultiListenSockets(const Value: TWSocketMultiListenCollection);
         procedure SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V7.15 }
 {$IFNDEF NO_DEBUG_LOG}
         function  GetIcsLogger: TIcsLogger;                                      { V1.46 }
@@ -1516,6 +1519,9 @@ type
                                                       write FPort;
         property  ListenBackLog          : Integer    read  FListenBackLog
                                                       write FListenBackLog;
+        property MultiListenSockets      : TWSocketMultiListenCollection
+                                                      read  GetMultiListenSockets
+                                                      write SetMultiListenSockets;
         property  Banner                 : String     read  FBanner
                                                       write FBanner;
         property  UserData               : LongInt    read  FUserData
@@ -1753,7 +1759,7 @@ Description:  A component adding TLS/SSL support to TFtpServer.
         FOnSslSetSessionIDContext           : TSslSetSessionIDContext;
         FMsg_WM_FTPSRV_ABORT_TRANSFER       : UINT;
         FMsg_WM_FTPSRV_Close_Data           : UINT;
-
+        procedure CreateSocket; override;
         procedure ClientPassiveSessionAvailable(Sender : TObject;
                                                 AError : Word); override;
         procedure ClientDataSent(Sender : TObject; AError : Word); override; { 1.03 }
@@ -2111,6 +2117,13 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.CreateSocket;
+begin
+    FSocketServer := TWSocketServer.Create(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TFtpServer.Create(AOwner: TComponent);
 var
     Len : Cardinal;
@@ -2119,7 +2132,8 @@ begin
     AllocateHWnd;
  { angus V7.00 WSocketServer instead of WSocket }
     FClientClass          := TFtpCtrlSocket;
-    FSocketServer         := TWSocketServer.Create(Self);
+    //FSocketServer         := TWSocketServer.Create(Self);
+    CreateSocket;
     FSocketServer.Name    := 'WSocketServer';
     FSocketServer.ClientClass         := FClientClass;
     FSocketServer.OnClientConnect     := ServerClientConnect;
@@ -6742,6 +6756,25 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TFtpServer.GetMultiListenSockets: TWSocketMultiListenCollection;
+begin
+    if Assigned(FSocketServer) then
+        Result := FSocketServer.MultiListenSockets
+    else
+        Result := nil;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServer.SetMultiListenSockets(
+  const Value: TWSocketMultiListenCollection);
+begin
+    if Assigned(FSocketServer) then
+        FSocketServer.MultiListenSockets := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF NO_DEBUG_LOG}
 function TFTPServer.GetIcsLogger: TIcsLogger;                         { V1.46 }
 begin
@@ -8034,6 +8067,13 @@ begin
     end
     else
         Answer := Format(msgErrInSslOnly, ['PBSZ']);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslFtpServer.CreateSocket;
+begin
+    FSocketServer := TSslWSocketServer.Create(Self);
 end;
 
 
