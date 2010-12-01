@@ -883,7 +883,7 @@ procedure TCustomMultiListenWSocketServer.MlClose(
 var
     iStatus : Integer;
 begin
-    FMultiListenIndex := -1;
+    FMultiListenIndex := AItem.Index;
     if AItem.HSocket = INVALID_SOCKET then
     begin
         AItem.AssignDefaults;
@@ -917,12 +917,7 @@ begin
     if (not (csDestroying in ComponentState)) and
        (not AItem.CloseInvoked) {and Assigned(FOnSessionClosed)} then begin
         AItem.CloseInvoked := TRUE;
-        FMultiListenIndex := AItem.Index;
-        try
-            TriggerSessionClosed(Error);
-        finally
-            FMultiListenIndex := -1;
-        end;
+        TriggerSessionClosed(Error);
     end;
     { 29/09/98 Protect AssignDefaultValue because SessionClosed event handler }
     { may have destroyed the component.                                       }
@@ -1084,6 +1079,7 @@ begin
 end;
 
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomMultiListenWSocketServer.MlPause(
     AItem: TWSocketMultiListenItem);
 begin
@@ -1093,6 +1089,8 @@ begin
 
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomMultiListenWSocketServer.MLResume(
     AItem: TWSocketMultiListenItem);
 begin
@@ -1103,6 +1101,7 @@ begin
                                          FD_ACCEPT or FD_CLOSE) = 0);
 
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomMultiListenWSocketServer.MlSetAddr(
