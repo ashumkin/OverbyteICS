@@ -361,7 +361,7 @@ type
         FMultiListenSockets: TWSocketMultiListenCollection;
         FMultiListenIndex: Integer;
     protected
-        procedure Ml_Do_FD_ACCEPT(AItem: TWSocketMultiListenItem;
+        procedure Ml_Do_FD_CLOSE(AItem: TWSocketMultiListenItem;
                                   AMsg: TMessage); virtual;
         procedure MlListen(AItem: TWSocketMultiListenItem); virtual;
         procedure MlClose(AItem: TWSocketMultiListenItem); virtual;
@@ -970,7 +970,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomMultiListenWSocketServer.Ml_Do_FD_ACCEPT(
+procedure TCustomMultiListenWSocketServer.Ml_Do_FD_CLOSE(
     AItem : TWSocketMultiListenItem;
     AMsg  : TMessage);
 begin
@@ -984,6 +984,7 @@ begin
             MlClose(AItem);
     end;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomMultiListenWSocketServer.MlListen(
@@ -1286,7 +1287,7 @@ begin
 
         Check := ParamLo and FD_CLOSE;
         if Check <> 0 then
-            Ml_Do_FD_ACCEPT(AItem, msg);
+            Ml_Do_FD_CLOSE(AItem, msg);
     end;
 end;
 
