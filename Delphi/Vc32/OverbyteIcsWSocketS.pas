@@ -299,9 +299,12 @@ type
       FPaused: Boolean;
       procedure SetAddr(const Value: string);
       procedure SetSocketFamily(const Value: TSocketFamily);
-    function GetAddrResolved: string;
+      function GetAddrResolved: string;
     protected
       procedure AssignDefaults; virtual;
+      procedure SetCloseInvoked(const AValue: Boolean);
+      function  GetCloseInvoked: Boolean;
+      property  CloseInvoked: Boolean read GetCloseInvoked write SetCloseInvoked;
     public
       Fsin: TSockAddrIn6;
       constructor Create(Collection: TCollection); override;
@@ -312,7 +315,6 @@ type
       function  Pause: Boolean;
       function  Resume: Boolean;
       property  AddrResolved: string read GetAddrResolved;
-      property  CloseInvoked: Boolean read FCloseInvoked write FCloseInvoked;
       property  HSocket: TSocket read FHSocket write FHSocket;
       property  LastError: Integer read FLastError write FLastError;
       property  Paused: Boolean read FPaused;
@@ -1342,6 +1344,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetCloseInvoked: Boolean;
+begin
+    Result := FCloseInvoked;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TWSocketMultiListenItem.Listen;
 begin
     OwnerServer.MlListen(Self);
@@ -1375,6 +1384,13 @@ end;
 procedure TWSocketMultiListenItem.SetAddr(const Value: string);
 begin
     OwnerServer.MlSetAddr(FAddr, FSocketFamily, FOldSocketFamily, Value);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetCloseInvoked(const AValue: Boolean);
+begin
+    FCloseInvoked := AValue;
 end;
 
 
