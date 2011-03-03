@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.31
+Version:      7.35
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -301,12 +301,26 @@ Sep 10, 2010 V7.29 RTT: Added OnUnknownRequestMethod event, triggered when
                    the document. Added PersistentHeader property to define
                    Header items that should be included in any response header.
 Nov 06, 2010 V7.30 A. Garrels - Fixed posted data handling in case of posted
-                   data is not accepted. Without this fix both posted data 
+                   data is not accepted. Without this fix both posted data
                    and a valid new request could be received on the same line.
                    This also fixes NTLM authentication with POST requests.
                    RequestContentLength field type change to Int64.
 Nov 08, 2010 V7.31 Arno improved final exception handling, more details
                    in OverbyteIcsWndControl.pas (V1.14 comments).
+Jan 25, 2011 V7.32 FPiette fixed HtmlPageProducerToString for an unicode issue.
+                   Thanks to Busai Péter for his help.
+Jan 27, 2011 V7.33 Arno fixed a Unicode issue in VarRecToString, found by Péter
+                   Busai. Methods THttpConnection.AnswerPage,
+                   THttpConnection.HtmlPageProducerXy and helper functions take
+                   optional code page parameter (D2009+ only).
+Feb 4,  2011 V7.34 Angus added bandwidth throttling using TCustomThrottledWSocket
+                   Set BandwidthLimit property to maximum bytes server wide, for
+                   specific clients set BandwidthLimit in a client connect event
+                   (requires BUILTIN_THROTTLE to be defined in project options or
+                   enabled OverbyteIcsDefs.inc)
+Feb 17, 2011 V7.35 FPiette fixed ExtractURLEncodedValue which returned a nul
+                   byte when last character was a '%'. Now return a '%'.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -391,8 +405,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 731;
-    CopyRight : String = ' THttpServer (c) 1999-2010 F. Piette V7.31 ';
+    THttpServerVersion = 735;
+    CopyRight : String = ' THttpServer (c) 1999-2011 F. Piette V7.35 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
 
@@ -748,14 +762,24 @@ type
                                const Header   : String;
                                const HtmlFile : String;  // Template file name
                                UserData       : TObject;
-                               Tags           : array of const); overload; virtual;
+                               Tags           : array of const
+                           {$IFDEF COMPILER12_UP};
+                               FileCodepage   : LongWord = CP_ACP;
+                               DstCodepage    : LongWord = CP_ACP
+                           {$ENDIF}
+                               ); overload; virtual;
         procedure   AnswerPage(var   Flags    : THttpGetFlag;
                                const Status   : String;
                                const Header   : String;
                                const ResName  : String;    // Template resource name
                                const ResType  : PChar;     // Template resource type
                                UserData       : TObject;
-                               Tags           : array of const); overload; virtual;
+                               Tags           : array of const
+                           {$IFDEF COMPILER12_UP};
+                               ResCodepage    : LongWord = CP_ACP;
+                               DstCodepage    : LongWord = CP_ACP
+                           {$ENDIF}
+                               ); overload; virtual;
         procedure   AnswerStream(var   Flags    : THttpGetFlag;
                                  const Status   : String;
                                  const ContType : String;
@@ -782,17 +806,31 @@ type
           recursively use HtmlPageProducerToString to build complex pages. }
         function HtmlPageProducerToString(const HtmlFile: String;
                                           UserData: TObject;
-                                          Tags: array of const): String; virtual;
+                                          Tags: array of const
+                                      {$IFDEF COMPILER12_UP};
+                                          FileCodepage: LongWord = CP_ACP
+                                      {$ENDIF}
+                                          ): String; virtual;
         { Mostly like AnswerPage but the result is given into a stream }
         procedure HtmlPageProducerToStream(const HtmlFile: String;
                                            UserData: TObject;
                                            Tags: array of const;
-                                           DestStream: TStream); overload; virtual;
+                                           DestStream: TStream
+                                       {$IFDEF COMPILER12_UP};
+                                           FileCodepage: LongWord = CP_ACP;
+                                           DstCodepage: LongWord = CP_ACP
+                                       {$ENDIF}
+                                           ); overload; virtual;
         procedure HtmlPageProducerToStream(const ResName : String;
                                            const ResType : PChar;
                                            UserData: TObject;
                                            Tags: array of const;
-                                           DestStream: TStream); overload; virtual;
+                                           DestStream: TStream
+                                       {$IFDEF COMPILER12_UP};
+                                           ResCodepage: LongWord = CP_ACP;
+                                           DstCodepage: LongWord = CP_ACP
+                                       {$ENDIF}
+                                           ); overload; virtual;
         property SndBlkSize : Integer read FSndBlkSize write SetSndBlkSize;
         { Method contains GET/POST/HEAD as requested by client }
         property Method                    : String read  FMethod;
@@ -971,6 +1009,10 @@ type
         FSizeCompressMin          : Integer;  { V7.20 }
         FSizeCompressMax          : Integer;  { V7.20 }
         FPersistentHeader         : String;   { V7.29 }
+{$IFDEF BUILTIN_THROTTLE}
+        FBandwidthLimit           : LongWord;   { angus V7.34 Bytes per second, null = disabled }
+        FBandwidthSampling        : LongWord;   { angus V7.34 Msec sampling interval }
+{$ENDIF}
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         FAuthTypes                : TAuthenticationTypes;
         FAuthRealm                : String;
@@ -1114,6 +1156,14 @@ type
         {Header items to always included in any response header} { V7.29 }
         property PersistentHeader:string         read  FPersistentHeader
                                                  write FPersistentHeader;
+{$IFDEF BUILTIN_THROTTLE}
+        { BandwidthLimit slows down speeds, bytes per second, null = disabled }
+        property BandwidthLimit : LongWord       read  FBandwidthLimit
+                                                 write FBandwidthLimit;     { angus V7.34 }
+       { BandwidthSampling interval in msec }
+        property BandwidthSampling : LongWord    read  FBandwidthSampling
+                                                 write FBandwidthSampling;  { angus V7.34 }
+{$ENDIF}
         { OnServerStrated is triggered when server has started listening }
         property OnServerStarted    : TNotifyEvent
                                                  read  FOnServerStarted
@@ -1416,34 +1466,57 @@ function HtmlPageProducer(const FromStream   : TStream;
                           Tags               : array of const;
                           RowDataGetter      : PTableRowDataGetter;
                           UserData           : TObject;
-                          DestStream         : TStream) : Boolean; overload;
+                          DestStream         : TStream
+                      {$IFDEF COMPILER12_UP};
+                          FromCodepage       : LongWord = CP_ACP;
+                          DestCodePage       : LongWord = CP_ACP
+                      {$ENDIF}
+                          ) : Boolean; overload;
 function HtmlPageProducer(const HtmlFileName : String;
                           Tags               : array of const;
                           RowDataGetter      : PTableRowDataGetter;
                           UserData           : TObject;
-                          DestStream         : TStream) : Boolean; overload;
+                          DestStream         : TStream
+                      {$IFDEF COMPILER12_UP};
+                          FileCodepage       : LongWord = CP_ACP;
+                          DestCodePage       : LongWord = CP_ACP
+                      {$ENDIF}
+                          ) : Boolean; overload;
 function HtmlPageProducer(const ResName      : String;
                           const ResType      : PChar;
                           Tags               : array of const;
                           RowDataGetter      : PTableRowDataGetter;
                           UserData           : TObject;
-                          DestStream         : TStream) : Boolean; overload;
+                          DestStream         : TStream
+                      {$IFDEF COMPILER12_UP};                          
+                          ResCodepage        : LongWord = CP_ACP;
+                          DestCodePage       : LongWord = CP_ACP
+                      {$ENDIF}
+                          ) : Boolean; overload;
 function HtmlPageProducerFromMemory(
     Buf                : PChar;
     BufLen             : Integer;
     TagData            : TStringIndex;
     RowDataGetter      : PTableRowDataGetter;
     UserData           : TObject;
-    DestStream         : TStream) : Boolean;
+    DestStream         : TStream
+{$IFDEF COMPILER12_UP};
+    DestCodePage       : LongWord = CP_ACP
+{$ENDIF}
+    ) : Boolean;
 function HtmlPageProducerSetTagPrefix(const Value : String) : String;
 function RemoveHtmlSpecialChars(const S : String) : String;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
 function AuthTypesToString(Types : TAuthenticationTypes) : String;
 {$ENDIF}
-function StreamWriteStrA(AStrm : TStream; const AStr: String): Integer;
-function StreamWriteLnA(AStrm : TStream; const AStr: String): Integer;
-function StreamReadStrA(AStrm : TStream; ByteCnt: Integer): String;
-function StreamWriteA(AStream : TStream; Buf: PChar; CharCnt: Integer): Integer;
+function StreamWriteStrA(AStrm : TStream; const AStr: String
+  {$IFDEF COMPILER12_UP}; DstCodePage: LongWord = CP_ACP {$ENDIF}): Integer;
+function StreamWriteLnA(AStrm : TStream; const AStr: String
+  {$IFDEF COMPILER12_UP}; DstCodePage: LongWord = CP_ACP {$ENDIF}): Integer;
+function StreamReadStrA(AStrm : TStream; ByteCnt: Integer
+  {$IFDEF COMPILER12_UP}; SrcCodePage: LongWord = CP_ACP {$ENDIF}): String;
+function StreamWriteA(AStream : TStream; Buf: PChar; CharCnt: Integer
+  {$IFDEF COMPILER12_UP}; DstCodePage: LongWord = CP_ACP {$ENDIF}): Integer;
 function VarRecToString(V : TVarRec) : String;
 
 const
@@ -1463,12 +1536,16 @@ const
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StreamWriteStrA(AStrm : TStream; const AStr: String): Integer;
+function StreamWriteStrA(AStrm : TStream; const AStr: String
+{$IFDEF COMPILER12_UP};
+    DstCodePage: LongWord = CP_ACP
+{$ENDIF}
+    ): Integer;
 {$IFDEF COMPILER12_UP}
 var
     S : AnsiString;
 begin
-    S := UnicodeToAnsi(AStr);
+    S := UnicodeToAnsi(AStr, DstCodePage);
     Result := AStrm.Write(Pointer(S)^, Length(S));
 {$ELSE}
 begin
@@ -1478,28 +1555,37 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function StreamWriteLnA(AStrm : TStream; const AStr: String
+{$IFDEF COMPILER12_UP};
+    DstCodePage: LongWord = CP_ACP
+{$ENDIF}
+    ): Integer;
 const
-    CRLF : String = Char($0D) + Char($0A);
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StreamWriteLnA(AStrm : TStream; const AStr: String): Integer;
+    AsciiLineBreak : array [0..1] of AnsiChar = (#13, #10);
 begin
     if Length(AStr) > 0 then
-        Result := StreamWriteStrA(AStrm, AStr)
+        Result := StreamWriteStrA(AStrm, AStr
+                              {$IFDEF COMPILER12_UP},
+                                  DstCodePage
+                              {$ENDIF}
+                                  )
     else
         Result := 0;
-    Result := Result + StreamWriteStrA(AStrm, CRLF);
+    Result := Result + AStrm.Write(AsciiLineBreak, SizeOf(AsciiLineBreak));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StreamReadStrA(AStrm : TStream; ByteCnt: Integer): String;
+function StreamReadStrA(AStrm : TStream; ByteCnt: Integer
+{$IFDEF COMPILER12_UP};
+    SrcCodePage: LongWord = CP_ACP
+{$ENDIF}
+    ): String;
 var
     Len : Integer;
 {$IFNDEF COMPILER12_UP}
 begin
-    if ByteCnt > 0 then
-    begin
+    if ByteCnt > 0 then begin
         SetLength(Result, ByteCnt);
         Len := AStrm.Read(Pointer(Result)^, ByteCnt);
         if Len <> ByteCnt then
@@ -1508,13 +1594,12 @@ begin
 {$ELSE}
     Str : AnsiString;
 begin
-    if ByteCnt > 0 then
-    begin
+    if ByteCnt > 0 then begin
         SetLength(Str, ByteCnt);
         Len := AStrm.Read(Pointer(Str)^, ByteCnt);
         if Len <> ByteCnt then
             SetLength(Str, Len);
-        Result := AnsiToUnicode(Str); // Cast to Unicode
+        Result := AnsiToUnicode(Str, SrcCodePage); // Cast to Unicode
     end
 {$ENDIF}
     else
@@ -1523,10 +1608,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function StreamWriteA(AStream : TStream; Buf: PChar; CharCnt: Integer): Integer;
+function StreamWriteA(AStream : TStream; Buf: PChar; CharCnt: Integer
+{$IFDEF COMPILER12_UP};
+    DstCodePage: LongWord = CP_ACP
+{$ENDIF}
+    ): Integer;
 begin
 {$IFDEF COMPILER12_UP}
-    Result:= StreamWriteString(AStream, Buf, CharCnt, CP_ACP);
+    Result := StreamWriteString(AStream, Buf, CharCnt, DstCodePage);
 {$ELSE}
     Result := AStream.Write(Buf^, CharCnt);
 {$ENDIF}
@@ -1570,6 +1659,10 @@ begin
     FHeartBeat.Enabled    := TRUE;
     SizeCompressMin       := CompressMinSize;  { V7.20 only compress responses within a size range }
     SizeCompressMax       := CompressMaxSize;
+{$IFDEF BUILTIN_THROTTLE}
+    FBandwidthLimit       := 0;       { angus V7.34 no bandwidth limit, yet, bytes per second }
+    FBandwidthSampling    := 1000;    { angus V7.34 Msec sampling interval, less is not possible }
+{$ENDIF}
 end;
 
 
@@ -1645,6 +1738,10 @@ begin
         'Content-type: text/plain' + #13#10 +
         'Content-length: ' + _IntToStr(Length(BusyText)) + #13#10#13#10 +
         BusyText;
+{$IFDEF BUILTIN_THROTTLE}
+    FWSocketServer.BandwidthLimit     := FBandwidthLimit;     { angus V7.34 slow down control connection }
+    FWSocketServer.BandwidthSampling  := FBandwidthSampling;  { angus V7.34 }
+{$ENDIF}
 {$IFNDEF NO_DIGEST_AUTH}
     FAuthDigestServerSecret           := CreateServerSecret;
 {$ENDIF}
@@ -2754,16 +2851,34 @@ end;
 function THttpConnection.HtmlPageProducerToString(
     const HtmlFile : String;
     UserData       : TObject;
-    Tags           : array of const) : String;
+    Tags           : array of const
+{$IFDEF COMPILER12_UP};
+    FileCodepage   : LongWord = CP_ACP
+{$ENDIF}
+    ) : String;
 var
     Stream : TMemoryStream;
+const
+    NulByte : Byte = 0;
 begin
     Stream := TMemoryStream.Create;
     try
-        HtmlPageProducerToStream(HtmlFile, UserData, Tags, Stream);
+        HtmlPageProducerToStream(HtmlFile, UserData, Tags, Stream
+                             {$IFDEF COMPILER12_UP},
+                                 FileCodepage
+                             {$ENDIF}
+                                 );
+{$IFDEf COMPILER12_UP}
+        // For unicode char compiler (D2009 and up)
+        // Add a nul byte at the end of string
+        Stream.Write(NulByte, 1);
+        Result := String(PAnsiChar(Stream.Memory));
+{$ELSE}
+        // For ansi char compiler
         SetLength(Result, Stream.Size);
         Stream.Seek(0, 0);
         Stream.Read(Result[1], Stream.Size);
+{$ENDIF}
     finally
         Stream.Free;
     end;
@@ -2775,7 +2890,12 @@ procedure THttpConnection.HtmlPageProducerToStream(
     const HtmlFile : String;
     UserData       : TObject;
     Tags           : array of const;
-    DestStream     : TStream);
+    DestStream     : TStream
+{$IFDEF COMPILER12_UP};
+    FileCodepage   : LongWord = CP_ACP;
+    DstCodepage    : LongWord = CP_ACP
+{$ENDIF}
+    );
 var
     UD : THttpSrvRowDataGetterUserData;
 begin
@@ -2785,10 +2905,18 @@ begin
         UD.Event    := Self.TriggerGetRowData;
         if FTemplateDir = '' then
             HtmlPageProducer(HtmlFile, Tags,
-                             @RowDataGetterProc, UD, DestStream)
+                             @RowDataGetterProc, UD, DestStream
+                         {$IFDEF COMPILER12_UP},
+                             FileCodepage, DstCodepage
+                         {$ENDIF}
+                             )
         else
             HtmlPageProducer(FTemplateDir + '\' + HtmlFile, Tags,
-                             @RowDataGetterProc, UD, DestStream);
+                             @RowDataGetterProc, UD, DestStream
+                         {$IFDEF COMPILER12_UP},
+                             FileCodepage, DstCodepage
+                         {$ENDIF}
+                             );
     finally
         UD.Free;
     end;
@@ -2801,7 +2929,12 @@ procedure THttpConnection.HtmlPageProducerToStream(
     const ResType : PChar;
     UserData      : TObject;
     Tags          : array of const;
-    DestStream    : TStream);
+    DestStream    : TStream
+{$IFDEF COMPILER12_UP};
+    ResCodepage   : LongWord = CP_ACP;
+    DstCodepage   : LongWord = CP_ACP
+{$ENDIF}
+    );
 var
     UD : THttpSrvRowDataGetterUserData;
 begin
@@ -2810,7 +2943,11 @@ begin
         UD.UserData := UserData;
         UD.Event    := Self.TriggerGetRowData;
         HtmlPageProducer(ResName, ResType, Tags,
-                         @RowDataGetterProc, UD, DestStream);
+                         @RowDataGetterProc, UD, DestStream
+                     {$IFDEF COMPILER12_UP},
+                         ResCodepage, DstCodepage
+                     {$ENDIF}
+                         );
     finally
         UD.Free;
     end;
@@ -2824,11 +2961,20 @@ procedure THttpConnection.AnswerPage(
     const Header   : String;   { Do not use Content-Length nor Content-Type }
     const HtmlFile : String;
     UserData       : TObject;
-    Tags           : array of const);
+    Tags           : array of const
+{$IFDEF COMPILER12_UP};
+    FileCodepage   : LongWord = CP_ACP;
+    DstCodepage    : LongWord = CP_ACP
+{$ENDIF}
+    );
 begin
     DocStream.Free;
     DocStream := TMemoryStream.Create;
-    HtmlPageProducerToStream(HtmlFile, UserData, Tags, DocStream);
+    HtmlPageProducerToStream(HtmlFile, UserData, Tags, DocStream
+                        {$IFDEF COMPILER12_UP},
+                             FileCodepage, DstCodepage
+                        {$ENDIF}
+                             );
     AnswerStream(Flags, Status, 'text/html', Header);
 end;
 
@@ -2841,11 +2987,20 @@ procedure THttpConnection.AnswerPage(
     const ResName  : String;
     const ResType  : PChar;
     UserData       : TObject;
-    Tags           : array of const);
+    Tags           : array of const
+{$IFDEF COMPILER12_UP};
+    ResCodepage    : LongWord = CP_ACP;
+    DstCodepage    : LongWord = CP_ACP
+{$ENDIF}
+    );
 begin
     DocStream.Free;
     DocStream := TMemoryStream.Create;
-    HtmlPageProducerToStream(ResName, ResType, UserData, Tags, DocStream);
+    HtmlPageProducerToStream(ResName, ResType, UserData, Tags, DocStream
+                        {$IFDEF COMPILER12_UP},
+                             ResCodepage, DstCodepage
+                        {$ENDIF}
+                             );
     AnswerStream(Flags, Status, 'text/html', Header);
 end;
 
@@ -4131,7 +4286,8 @@ begin
             while (P^ <> #0) and (P^ <> '&') do begin
                 Ch := AnsiChar(Ord(P^)); // should contain nothing but < ord 128
                 if Ch = '%' then begin
-                    Ch := AnsiChar(htoi2(P + 1));
+                    if P[1] <> #0 then    // V1.35 Added test
+                        Ch := AnsiChar(htoi2(P + 1));
                     Inc(P, 2);
                 end
                 else if Ch = '+' then
@@ -4860,7 +5016,11 @@ procedure HandleTableRow(
     BufLen             : Integer;
     RowDataGetter      : PTableRowDataGetter;
     UserData           : TObject;
-    DestStream         : TStream);
+    DestStream         : TStream
+{$IFDEF COMPILER12_UP};
+    DestCodePage       : LongWord = CP_ACP
+{$ENDIF}
+    );
 var
     More    : Boolean;
     TagData : TStringIndex;
@@ -4880,7 +5040,11 @@ begin
                     break;
                 HtmlPageProducerFromMemory(Buf, BufLen, TagData,
                                            RowDataGetter, UserData,
-                                           DestStream);
+                                           DestStream
+                                       {$IFDEF COMPILER12_UP},
+                                           DestCodePage
+                                       {$ENDIF}
+                                           );
                 TagData.Clear;
             end;
         finally
@@ -4905,7 +5069,11 @@ function HtmlPageProducerFromMemory(
     TagData            : TStringIndex;
     RowDataGetter      : PTableRowDataGetter;
     UserData           : TObject;
-    DestStream         : TStream) : Boolean;
+    DestStream         : TStream
+{$IFDEF COMPILER12_UP};
+    DestCodePage       : LongWord = CP_ACP
+{$ENDIF}
+    ) : Boolean;
 const
     MAX_BUF  = 50;
 var
@@ -4937,14 +5105,22 @@ begin
         Dec(I);
         if P[I] <> '<' then begin
             { No starting tag found, write source to destination }
-            StreamWriteA(DestStream, P, Cnt);
+            StreamWriteA(DestStream, P, Cnt
+                     {$IFDEF COMPILER12_UP},
+                         DestCodePage
+                     {$ENDIF}
+                        );
             break;
         end;
 
         { Delimiter found
           Write from source to destination until start tag }
         if I > 0 then
-            StreamWriteA(DestStream, P, I);
+            StreamWriteA(DestStream, P, I
+                     {$IFDEF COMPILER12_UP},
+                         DestCodePage
+                     {$ENDIF}
+                         );
         { Search ending delimiter }
         J := I;
         while (J < Cnt) and (P[J] <> '>') and (P[J] <> ' ') and (P[J] <> #9) do
@@ -4967,7 +5143,11 @@ begin
                 Q := P + Cnt;
             //Feb 08, 2010 TRL the row to handle was 1 char too long
             HandleTableRow(TagParams, P + J + 1, Q - P - J - 1,
-                           RowDataGetter, UserData, DestStream);
+                           RowDataGetter, UserData, DestStream
+                       {$IFDEF COMPILER12_UP},
+                           DestCodePage
+                       {$ENDIF}
+                           );
             Cnt := P + Cnt - Q;
             P := Q;
             Continue;
@@ -4975,7 +5155,11 @@ begin
 
         if TagData.Find(TagName, TagValue) then begin
 //OutputDebugString(PChar('TagValue = ' + TagValue));
-            StreamWriteStrA(DestStream, TagValue);
+            StreamWriteStrA(DestStream, TagValue
+                        {$IFDEF COMPILER12_UP},
+                            DestCodePage
+                        {$ENDIF}
+                            );
         end;
         Inc(J);
         Inc(P, J);
@@ -5095,8 +5279,8 @@ begin
     vtPChar:          Result := String(_StrPas(V.VPChar));
     vtObject:         Result := 'Unsupported TVarRec.VType = vtObject';
     vtClass:          Result := 'Unsupported TVarRec.VType = vtClass';
-    vtWideChar:       Result := 'Unsupported TVarRec.VType = vtWideChar';
-    vtPWideChar:      Result := 'Unsupported TVarRec.VType = vtPWideChar';
+    vtWideChar:       Result := String(V.VWideChar);
+    vtPWideChar:      Result := String(V.VPWideChar);
     vtAnsiString:     Result := String(_StrPas(V.VPChar));
     vtCurrency:       Result := 'Unsupported TVarRec.VType = vtCurrency';
     vtVariant:        Result := 'Unsupported TVarRec.VType = vtVariant';
@@ -5120,7 +5304,12 @@ function HtmlPageProducer(
     Tags              : array of const;
     RowDataGetter     : PTableRowDataGetter;
     UserData          : TObject;
-    DestStream        : TStream) : Boolean;
+    DestStream        : TStream
+{$IFDEF COMPILER12_UP};
+    FromCodepage      : LongWord = CP_ACP;
+    DestCodePage      : LongWord = CP_ACP
+{$ENDIF}
+    ) : Boolean;
 var
     Str        : String;
     TagData    : TStringIndex;
@@ -5148,11 +5337,20 @@ begin
                         VarRecToString(Tags[TagIndex + 1]));
             Inc(TagIndex, 2);
         end;
-        Str    := StreamReadStrA(FromStream, FromStream.Size);
+        Str := StreamReadStrA(FromStream, FromStream.Size
+                          {$IFDEF COMPILER12_UP},
+                              FromCodepage
+                          {$ENDIF}
+                              );
+
         Result := HtmlPageProducerFromMemory(PChar(Str), Length(Str){ + 1},
                                              TagData,
                                              RowDataGetter, UserData,
-                                             DestStream);
+                                             DestStream
+                                         {$IFDEF COMPILER12_UP},
+                                             DestCodePage
+                                         {$ENDIF}
+                                             );
     finally
         TagData.Free;
     end;
@@ -5166,7 +5364,12 @@ function HtmlPageProducer(
     Tags               : array of const;
     RowDataGetter      : PTableRowDataGetter;
     UserData           : TObject;
-    DestStream         : TStream) : Boolean;
+    DestStream         : TStream
+{$IFDEF COMPILER12_UP};
+    ResCodepage        : LongWord = CP_ACP;
+    DestCodePage       : LongWord = CP_ACP
+{$ENDIF}
+    ) : Boolean;
 var
     FromStream : TResourceStream;
 begin
@@ -5185,7 +5388,12 @@ begin
     end;
     try
         Result := HtmlPageProducer(FromStream, Tags, RowDataGetter,
-                                   UserData, DestStream);
+                                   UserData, DestStream
+                               {$IFDEF COMPILER12_UP},
+                                   ResCodepage,
+                                   DestCodePage
+                               {$ENDIF}
+                                   );
     finally
         FromStream.Free;
     end;
@@ -5198,7 +5406,12 @@ function HtmlPageProducer(
     Tags               : array of const;
     RowDataGetter      : PTableRowDataGetter;
     UserData           : TObject;
-    DestStream         : TStream) : Boolean;
+    DestStream         : TStream
+{$IFDEF COMPILER12_UP};
+    FileCodepage       : LongWord = CP_ACP;
+    DestCodePage       : LongWord = CP_ACP
+{$ENDIF}
+    ) : Boolean;
 var
     FromStream : TFileStream;
 begin
@@ -5217,7 +5430,12 @@ begin
     end;
     try
         Result := HtmlPageProducer(FromStream, Tags, RowDataGetter,
-                                   UserData, DestStream);
+                                   UserData, DestStream
+                               {$IFDEF COMPILER12_UP},
+                                   FileCodepage,
+                                   DestCodePage
+                               {$ENDIF}
+                                   );
     finally
         FromStream.Free;
     end;

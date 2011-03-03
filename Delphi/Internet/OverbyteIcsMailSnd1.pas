@@ -4,12 +4,12 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.08
+Version:      6.10
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1997-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -73,6 +73,9 @@ Jan 17, 2009  V6.06 A. Garrels added a progress bar and RFC-1870 SIZE extension.
 May 10, 2009  V6.07 A. Garrels added charset and code page properties which
               makes it easy to play with and test the new features.
 May 17, 2009  V6.08 A.Garrels added correct casts to PAnsiChar in SmtpClientHeaderLine.
+Feb 15, 2011  V6.09 Arno added proxy demo.
+Mar 01, 2011  V6.10 Arno enable/disable the proxy-controls depending on proxy
+              setting.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMailSnd1;
@@ -100,11 +103,12 @@ uses
   OverbyteIcsIniFiles,
   OverbyteIcsCharsetUtils,
   OverbyteIcsWndControl,
+  OverbyteIcsWSocket,
   OverbyteIcsSmtpProt;
 
 const
-    SmtpTestVersion    = 6.08;
-    CopyRight : String = ' MailSnd (c) 1997-2010 F. Piette V6.08 ';
+    SmtpTestVersion    = 6.09;
+    CopyRight : String = ' MailSnd (c) 1997-2011 F. Piette V6.09 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -180,6 +184,19 @@ type
     CharsetInfoLabel1: TLabel;
     ToggleCsViewButton: TButton;
     IcsCharsetComboBox1: TIcsCharsetComboBox;
+    ProxyTabsheet: TTabSheet;
+    ProxyHostEdit: TEdit;
+    ProxyPortEdit: TEdit;
+    ProxyPasswordEdit: TEdit;
+    ProxyUserEdit: TEdit;
+    ProxyTypeComboBox: TComboBox;
+    ProxyHttpAuthTypeComboBox: TComboBox;
+    Label18: TLabel;
+    Label19: TLabel;
+    Label20: TLabel;
+    Label21: TLabel;
+    Label22: TLabel;
+    Label23: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure ClearDisplayButtonClick(Sender: TObject);
     procedure ConnectButtonClick(Sender: TObject);
@@ -213,6 +230,8 @@ type
     procedure CharsetTestButtonClick(Sender: TObject);
     procedure ToggleCsViewButtonClick(Sender: TObject);
     procedure IcsCharsetComboBox1Change(Sender: TObject);
+    procedure ProxyTypeComboBoxCloseUp(Sender: TObject);
+    procedure ProxyHttpAuthTypeComboBoxCloseUp(Sender: TObject);
   private
     FIniFileName  : String;
     FInitialized  : Boolean;
@@ -231,6 +250,10 @@ var
 implementation
 
 {$R *.dfm}
+
+uses
+    TypInfo;
+
 const
     SectionData       = 'Data';
     KeyHost           = 'HostName';
@@ -264,6 +287,12 @@ const
     KeyWrapAt         = 'WrapAt';
     KeyCharSet        = 'Charset';
     KeyDefTransEnc    = 'DefaultTransferEncoding';
+    KeyProxyHost      = 'ProxyHost';
+    KeyProxyPort      = 'ProxyPort';
+    KeyProxyType      = 'ProxyType';
+    KeyProxyHttpAuth  = 'ProxyHttpAuth';
+    KeyProxyUser      = 'ProxyUser';
+    KeyProxyPassword  = 'ProxyPassword';
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Display a message in display memo box, making sure we don't overflow it.  }
@@ -338,12 +367,27 @@ end;
 procedure TSmtpTestForm.FormShow(Sender: TObject);
 var
     IniFile    : TIcsIniFile;
+    Pt         : TSmtpProxyType;
+    Htat       : THttpTunnelAuthType;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
         Application.HintHidePause := MaxInt;
         SettingsPageControl.ActivePageIndex := 0;
         CharsetInfoLabel1.Caption := '';
+
+        { Fill some combo boxes }
+        ProxyTypeComboBox.Items.Clear;
+        ProxyTypeComboBox.Style := csDropDownList;
+        for Pt := Low(TSmtpProxyType) to high(TSmtpProxyType) do
+            ProxyTypeComboBox.Items.Add(GetEnumName(Typeinfo(TSmtpProxyType), Ord(Pt)));
+        ProxyTypeComboBox.ItemIndex := 0;
+        ProxyHttpAuthTypeComboBox.Items.Clear;
+        ProxyHttpAuthTypeComboBox.Style := csDropDownList;
+        for Htat := Low(THttpTunnelAuthType) to high(THttpTunnelAuthType) do
+            ProxyHttpAuthTypeComboBox.Items.Add(GetEnumName(Typeinfo(THttpTunnelAuthType), Ord(Htat)));
+        ProxyHttpAuthTypeComboBox.ItemIndex := 0;
+
         IniFile := TIcsIniFile.Create(FIniFileName);
         HostEdit.Text    := IniFile.ReadString(SectionData, KeyHost,
                                                'localhost');
@@ -397,6 +441,15 @@ begin
             'The next one has only a single dot' + #13#10 +
             '.' + #13#10 +
             'Finally the last one' + #13#10;
+
+        ProxyTypeComboBox.ItemIndex := IniFile.ReadInteger(SectionData, KeyProxyType, 0);
+        ProxyHttpAuthTypeComboBox.ItemIndex := IniFile.ReadInteger(SectionData, KeyProxyHttpAuth, 0);
+        ProxyHostEdit.Text := IniFile.ReadString(SectionData, KeyProxyHost, '192.168.1.1');
+        ProxyPortEdit.Text := IniFile.ReadString(SectionData, KeyProxyPort, '8080');
+        ProxyUserEdit.Text := IniFile.ReadString(SectionData, KeyProxyUser, 'ics');
+        ProxyPasswordEdit.Text := IniFile.ReadString(SectionData, KeyProxyPassword, 'ics');
+        ProxyTypeComboBoxCloseUp(ProxyTypeComboBox);
+
         Top    := IniFile.ReadInteger(SectionWindow, KeyTop,    (Screen.Height - Height) div 2);
         Left   := IniFile.ReadInteger(SectionWindow, KeyLeft,   (Screen.Width - Width) div 2);
         Width  := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
@@ -437,6 +490,12 @@ begin
     IniFile.WriteInteger(SectionData, KeyDefTransEnc, DefEncodingComboBox.ItemIndex);
     IniFile.WriteStrings(SectionFileAttach, KeyFileAttach, FileAttachMemo.Lines);
     IniFile.WriteStrings(SectionMsgMemo, KeyMsgMemo, MsgMemo.Lines);
+    IniFile.WriteInteger(SectionData, KeyProxyType, ProxyTypeComboBox.ItemIndex);
+    IniFile.WriteInteger(SectionData, KeyProxyHttpAuth, ProxyHttpAuthTypeComboBox.ItemIndex);
+    IniFile.WriteString(SectionData, KeyProxyHost, ProxyHostEdit.Text);
+    IniFile.WriteString(SectionData, KeyProxyPort, ProxyPortEdit.Text);
+    IniFile.WriteString(SectionData, KeyProxyUser, ProxyUserEdit.Text);
+    IniFile.WriteString(SectionData, KeyProxyPassword, ProxyPasswordEdit.Text);
     IniFile.WriteInteger(SectionWindow, KeyTop,    Top);
     IniFile.WriteInteger(SectionWindow, KeyLeft,   Left);
     IniFile.WriteInteger(SectionWindow, KeyWidth,  Width);
@@ -535,10 +594,19 @@ end;
 { Connect to the mail server }
 procedure TSmtpTestForm.ConnectButtonClick(Sender: TObject);
 begin
-    ProgressBar1.Position  := 0;
-    FAllInOneFlag          := FALSE;
-    SmtpClient.Host        := HostEdit.Text;
-    SmtpClient.Port        := PortEdit.Text;
+    ProgressBar1.Position         := 0;
+    FAllInOneFlag                 := FALSE;
+    SmtpClient.Host               := HostEdit.Text;
+    SmtpClient.Port               := PortEdit.Text;
+    SmtpClient.ProxyServer        := ProxyHostEdit.Text;
+    SmtpClient.ProxyPort          := ProxyPortEdit.Text;
+    SmtpClient.ProxyUserCode      := ProxyUserEdit.Text;
+    SmtpClient.ProxyPassword      := ProxyPasswordEdit.Text;
+    SmtpClient.ProxyType          := TSmtpProxyType(ProxyTypeComboBox.ItemIndex);
+    SmtpClient.ProxyHttpAuthType  := THttpTunnelAuthType(ProxyHttpAuthTypeComboBox.ItemIndex);
+    if (SmtpClient.ProxyType <> smtpNoProxy) and
+      (SmtpClient.ProxyServer = '') then
+        raise Exception.Create('Proxy host is not assigned');
     SmtpClient.Connect;
 end;
 
@@ -624,14 +692,24 @@ end;
 {  Connect, Ehlo and Auth.                                                  }
 procedure TSmtpTestForm.OpenButtonClick(Sender: TObject);
 begin
-    ProgressBar1.Position      := 0;
-    FAllInOneFlag              := FALSE;
-    SmtpClient.Host            := HostEdit.Text;
-    SmtpClient.Port            := PortEdit.Text;
-    SmtpClient.SignOn          := SignOnEdit.Text;
-    SmtpClient.Username        := UsernameEdit.Text;
-    SmtpClient.Password        := PasswordEdit.Text;
-    SmtpClient.AuthType        := TSmtpAuthType(AuthComboBox.ItemIndex);
+    ProgressBar1.Position         := 0;
+    FAllInOneFlag                 := FALSE;
+    SmtpClient.Host               := HostEdit.Text;
+    SmtpClient.Port               := PortEdit.Text;
+    SmtpClient.SignOn             := SignOnEdit.Text;
+    SmtpClient.Username           := UsernameEdit.Text;
+    SmtpClient.Password           := PasswordEdit.Text;
+    SmtpClient.AuthType           := TSmtpAuthType(AuthComboBox.ItemIndex);
+    SmtpClient.ProxyServer        := ProxyHostEdit.Text;
+    SmtpClient.ProxyPort          := ProxyPortEdit.Text;
+    SmtpClient.ProxyUserCode      := ProxyUserEdit.Text;
+    SmtpClient.ProxyPassword      := ProxyPasswordEdit.Text;
+    SmtpClient.ProxyType          := TSmtpProxyType(ProxyTypeComboBox.ItemIndex);
+    SmtpClient.ProxyHttpAuthType  := THttpTunnelAuthType(ProxyHttpAuthTypeComboBox.ItemIndex);
+
+    if (SmtpClient.ProxyType <> smtpNoProxy) and
+      (SmtpClient.ProxyServer = '') then
+        raise Exception.Create('Proxy host is not assigned');
     SmtpClient.Open;
 end;
 
@@ -766,12 +844,21 @@ procedure TSmtpTestForm.SmtpClientRequestDone(
     Error  : Word);
 begin
     { For every operation, we display the status }
-    if (Error > 0) and  (Error < 10000) then
-        Display('RequestDone Rq=' + IntToStr(Ord(RqType)) +
-                    ' Error='+ SmtpClient.ErrorMessage)
+    if (Error > 0) then begin
+        { Someting went wrong }
+        if (Error < 600) or WSocketIsProxyErrorCode(Error) then
+            { In case of SMTP status codes and proxy error codes the error }
+            { message is available in property ErrorMessage.               }
+            Display('RequestDone Rq=' + IntToStr(Ord(RqType)) +
+                    ' Error: '+ SmtpClient.ErrorMessage)
+        else
+            { Function SmtpCliErrorMsgFromErrorCode translates all known }
+            { error codes to an error message.                           }
+            Display('RequestDone Rq=' + IntToStr(Ord(RqType)) +
+                    ' Error: '+ SmtpCliErrorMsgFromErrorCode(Error));
+    end
     else
-        Display('RequestDone Rq=' + IntToStr(Ord(RqType)) +
-                            ' Error='+ IntToStr(Error));
+        Display('RequestDone Rq=' + IntToStr(Ord(RqType)) + ' No Error');
 
     { Just set the progress bar to 100%                 }
     if ProgressCheckBox.Checked then begin
@@ -817,6 +904,16 @@ begin
         Display('Please quit or abort the connection first.');
         Exit;
     end;
+
+    SmtpClient.ProxyServer        := ProxyHostEdit.Text;
+    SmtpClient.ProxyPort          := ProxyPortEdit.Text;
+    SmtpClient.ProxyUserCode      := ProxyUserEdit.Text;
+    SmtpClient.ProxyPassword      := ProxyPasswordEdit.Text;
+    SmtpClient.ProxyType          := TSmtpProxyType(ProxyTypeComboBox.ItemIndex);
+    SmtpClient.ProxyHttpAuthType  := THttpTunnelAuthType(ProxyHttpAuthTypeComboBox.ItemIndex);
+    if (SmtpClient.ProxyType <> smtpNoProxy) and
+      (SmtpClient.ProxyServer = '') then
+        raise Exception.Create('Proxy host is not assigned');
 
     FAllInOneFlag          := TRUE;
 
@@ -926,6 +1023,37 @@ end;
 procedure TSmtpTestForm.IcsCharsetComboBox1Change(Sender: TObject);
 begin
     CharsetInfoLabel1.Caption := '"' + IcsCharsetComboBox1.CharSet + '"';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.ProxyTypeComboBoxCloseUp(Sender: TObject);
+begin
+    { Just to visualize the properties required depending on proxy settings }
+    Assert(TComboBox(Sender).ItemIndex >= 0);
+    ProxyHttpAuthTypeComboBox.Enabled :=
+              (TSmtpProxyType(TComboBox(Sender).ItemIndex) = smtpHttpProxy);
+    ProxyHostEdit.Enabled :=
+        (TSmtpProxyType(TComboBox(Sender).ItemIndex) <> smtpNoProxy);
+    ProxyPortEdit.Enabled := ProxyHostEdit.Enabled;
+    ProxyUserEdit.Enabled := ProxyHostEdit.Enabled and not
+      (ProxyHttpAuthTypeComboBox.Enabled and
+      (THttpTunnelAuthType(ProxyHttpAuthTypeComboBox.ItemIndex) = htatNone));
+    ProxyPasswordEdit.Enabled := ProxyUserEdit.Enabled and not
+     (TSmtpProxyType(TComboBox(Sender).ItemIndex) in [smtpSocks4, smtpSocks4A]);
+    if ProxyHttpAuthTypeComboBox.Enabled then
+        ProxyHttpAuthTypeComboBoxCloseUp(ProxyHttpAuthTypeComboBox);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSmtpTestForm.ProxyHttpAuthTypeComboBoxCloseUp(Sender: TObject);
+begin
+    { Just to visualize the properties required depending on proxy settings }
+    Assert(TComboBox(Sender).ItemIndex >= 0);
+    ProxyUserEdit.Enabled :=
+        (THttpTunnelAuthType(TCombobox(Sender).ItemIndex) <> htatNone);
+    ProxyPasswordEdit.Enabled := ProxyUserEdit.Enabled;
 end;
 
 

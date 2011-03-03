@@ -2,14 +2,14 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.17
+Version:      V7.22
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1996-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
               Berlin, Germany, contact: <arno.garrels@gmx.de>
@@ -1015,7 +1015,21 @@ Nov 11, 2010 V7.16 Arno re-enabled component notification for FDataSocket and
              FControlSocket that was disabled accidentally in V7.13 rev. #610 in
              method CreateSocket by creating the instances with a nil owner.
 Nov 17, 2010 V7.17 Arno published property ProxyPort.
-
+Feb 09, 2011 V7.18 Arno added HTTP v1.1 proxy-support and some conditional
+             defines to be able to build with smaller internal buffers.
+Feb 13, 2011 V7.19 Arno fixed a bug in TCustomFtpCli.ControlSocketSessionClosed
+             that caused RequestDone being triggered with error code null if
+             the server unexpectedly closed the connection without sending any
+             response. Error messages from proxy servers are now available.
+Feb 14, 2011 V7.20 Arno - Clear HTTP tunnel server name from data and ctrl
+             socket properly as well as properties LastResponse, ErrorMessage
+             and StatusCode in method OpenAsync.
+Feb 15, 2011 V7.21 Arno - HTTP tunnel server name now cleared correctly.
+             Use function WSocketIsProxyErrorCode from OverbyteIcsWSocket.pas.
+Mar 01, 2011 V7.22 Arno - **Warning, possibly a breaking change**. The component
+             does no longer enforce passive mode with native FTP-proxy
+             connections, it's an option now.
+             
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpCli;
@@ -1088,14 +1102,30 @@ OverbyteIcsZlibHigh,     { V2.102 }
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 717;
-  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.17 ';
-  FtpClientId : String = 'ICS FTP Client V7.17 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 722;
+  CopyRight : String = ' TFtpCli (c) 1996-2010 F. Piette V7.22 ';
+  FtpClientId : String = 'ICS FTP Client V7.22 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
-  FTP_SND_BUF_SIZE = 32768;  { angus V7.00 increased from 1460 }
-  FTP_RCV_BUF_SIZE = 32768;  { angus V7.00 increased from 4096 }
+
+{$IFDEF FTPCLI_BUFFER_OLD}
+  FTP_SND_BUF_SIZE = 1460;  { arno V7.18 }
+  FTP_RCV_BUF_SIZE = 4096;  { arno V7.18 }
+{$ELSE}
+  {$IFDEF FTPCLI_BUFFER_SMALL}
+    FTP_SND_BUF_SIZE = 8192;  { arno V7.18 }
+    FTP_RCV_BUF_SIZE = 8192;  { arno V7.18 }
+  {$ELSE}
+    {$IFDEF FTPCLI_BUFFER_MEDIUM}
+      FTP_SND_BUF_SIZE = 16384;  { arno V7.18 }
+      FTP_RCV_BUF_SIZE = 16384;  { arno V7.18 }
+    {$ELSE}
+      FTP_SND_BUF_SIZE = 32768;  { angus V7.00 increased from 1460 }
+      FTP_RCV_BUF_SIZE = 32768;  { angus V7.00 increased from 4096 }
+    {$ENDIF}
+  {$ENDIF}
+{$ENDIF}
 
 type
   { sslTypeAuthTls, sslTypeAuthSsl are known as explicit SSL }
@@ -1172,7 +1202,7 @@ type
                      ftpShareDenyWrite, ftpShareDenyRead,
                      ftpShareDenyNone);
   TFtpDisplayFileMode = (ftpLineByLine, ftpBinary);
-  TFtpConnectionType  = (ftpDirect, ftpProxy, ftpSocks4, ftpSocks4A, ftpSocks5);
+  TFtpConnectionType  = (ftpDirect, ftpProxy, ftpSocks4, ftpSocks4A, ftpSocks5, ftpHttpProxy);
   TFtpDisplay     = procedure(Sender    : TObject;
                               var Msg   : String) of object;
   TFtpProgress64  = procedure(Sender    : TObject;
@@ -1299,6 +1329,13 @@ type
     FSocksPort          : String;        { V7.00 }
     FSocksServer        : String;        { V7.00 }
     FSocksUserCode      : String;        { V7.00 }
+
+    FHttpTunnelAuthType : THttpTunnelAuthType;
+    FHttpTunnelPassword : String;        { V7.18 }
+    FHttpTunnelPort     : String;        { V7.18 }
+    FHttpTunnelServer   : String;        { V7.18 }
+    FHttpTunnelUserCode : String;        { V7.18 }
+
     FLanguage           : String;        { V7.01 language argment for LANG command }
     FLangSupport        : String;        { V7.01 list of languages server supports }
     FZStreamState       : TZStreamState; { V2.102 current Zlib stream state }
@@ -1411,6 +1448,9 @@ type
     procedure   CreateLocalFileStream;         { V2.113 }
     function    CreateSocket: TWSocket; virtual;   { V7.08 }
     property    SocketFamily: TSocketFamily read FSocketFamily write FSocketFamily;
+    procedure   HandleHttpTunnelError(Sender: TObject; ErrCode: Word;
+        TunnelServerAuthTypes: THttpTunnelServerAuthTypes; const Msg: String);
+    procedure   HandleSocksError(Sender: TObject; ErrCode: Integer; Msg: String);
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
@@ -1594,6 +1634,19 @@ type
                                                          write FProxyServer;
     property ProxyPort            : String               read  FProxyPort
                                                          write FProxyPort;
+    property HttpTunnelAuthType   : THttpTunnelAuthType
+                                                         read  FHttpTunnelAuthType  { V7.18 }
+                                                         write FHttpTunnelAuthType
+                                                         default htatDetect;
+    property HttpTunnelPassword   : String               read  FHttpTunnelPassword  { V7.18 }
+                                                         write FHttpTunnelPassword;
+    property HttpTunnelPort       : String               read  FHttpTunnelPort      { V7.18 }
+                                                         write FHttpTunnelPort;
+    property HttpTunnelServer     : String               read  FHttpTunnelServer    { V7.18 }
+                                                         write FHttpTunnelServer;
+    property HttpTunnelUserCode   : String               read  FHttpTunnelUserCode  { V7.18 }
+                                                         write FHttpTunnelUserCode;
+
     property SocksPassword        : String               read  FSocksPassword
                                                          write FSocksPassword;      { V7.00 }
     property SocksPort            : String               read  FSocksPort
@@ -1747,6 +1800,11 @@ type
     property SocksPort;
     property SocksServer;
     property SocksUserCode;
+    property HttpTunnelAuthType;
+    property HttpTunnelPassword;
+    property HttpTunnelPort;
+    property HttpTunnelServer;
+    property HttpTunnelUserCode;
     property Account;
     property Language;
     property OnDisplay;
@@ -2711,13 +2769,37 @@ begin
     FSupportedExtensions := [];   { V2.94 supported extensions }
     FLangSupport         := '';   { V7.01 supported languages }
     FControlSocket.SocketFamily := FSocketFamily;
+    FLastResponse        := '';
+    FErrorMessage        := '';
+    FStatusCode          := 0;
+
 { angus V7.00 always set proxy and SOCKS options before opening socket  }
     FControlSocket.SocksAuthentication := socksNoAuthentication;
+
+    if FConnectionType <> ftpHttpProxy then begin
+        { Disable connection thru HTTP proxy. It's not done in   }
+        { in the component because the last successful AuthType  }
+        { is cached to avoid slow detection. Changing property   }
+        { HttpTunnelServer clears the cache.                     }
+        FControlSocket.HttpTunnelServer := '';
+        FDataSocket.HttpTunnelServer    := '';
+    end;
+
     case FConnectionType of
-        ftpProxy:   FPassive := TRUE;
+       // ftpProxy:   FPassive := TRUE;     { V7.22 } 
         ftpSocks4:  FControlSocket.SocksLevel := '4';
         ftpSocks4A: FControlSocket.SocksLevel := '4A';
         ftpSocks5:  FControlSocket.SocksLevel := '5';
+        ftpHttpProxy : { V7.18 }
+            begin
+                FPassive := TRUE;
+                FControlSocket.HttpTunnelAuthType := HttpTunnelAuthType;
+                FControlSocket.HttpTunnelServer   := FHttpTunnelServer;
+                FControlSocket.HttpTunnelPort     := FHttpTunnelPort;
+                FControlSocket.HttpTunnelUsercode := FHttpTunnelUserCode;
+                FControlSocket.HttpTunnelPassword := FHttpTunnelPassword;
+                FControlSocket.OnHttpTunnelError  := HandleHttpTunnelError;
+            end;
     end;
     if FConnectionType in [ftpSocks4, ftpSocks4A, ftpSocks5] then begin
         FPassive := TRUE;
@@ -2726,10 +2808,11 @@ begin
         FControlSocket.SocksPort            := FSocksPort;
         FControlSocket.SocksUsercode        := FSocksUsercode;
         FControlSocket.SocksPassword        := FSocksPassword;
+        FControlSocket.OnSocksError         := HandleSocksError;
     end;
     StateChange(ftpDnsLookup);
     case FConnectionType of
-        ftpDirect, ftpSocks4, ftpSocks4A, ftpSocks5:
+        ftpDirect, ftpSocks4, ftpSocks4A, ftpSocks5, ftpHttpProxy: { V7.18 }
             begin
                 FControlSocket.Addr := FHostName;
                 FControlSocket.DnsLookup(FHostName);
@@ -3452,7 +3535,7 @@ begin
     if Assigned(FControlSocket.OnSslShutDownComplete) then
         TSslFtpClient(Self).ControlSocketSslShutDownComplete(FControlSocket,
         TRUE, 426);
-{$ENDIF}                  
+{$ENDIF}
     DestroyLocalStream;
     FResumeAt := 0;        { V2.111 clear starting position }
 
@@ -4208,7 +4291,7 @@ begin
 
     if ErrCode <> 0 then begin
         FLastResponse := 'Unable to establish data connection - ' +
-                         GetWinsockErr(ErrCode);
+                         WSocketGetErrorMsgFromErrorCode(ErrCode);
         FStatusCode   := 550;
         SetErrorMessage;
         FDataSocket.Close;
@@ -4258,7 +4341,7 @@ begin
 
     if ErrCode <> 0 then begin
         FLastResponse := 'Unable to establish data connection - ' +
-                         GetWinsockErr(ErrCode);
+                         WSocketGetErrorMsgFromErrorCode(ErrCode);
         FStatusCode   := 550;
         SetErrorMessage;
         FDataSocket.Close;
@@ -4864,11 +4947,13 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetPassive(NewValue: Boolean);
 begin
-    { Passive state must not be changed if Proxy or Socks connection        }
-    { type is selected                                                      }
+    { Passive mode must not be changed if HTTP-proxy or Socks connection    }
+    { type is selected. Most native FTP-proxies support both active and     }
+    { passive mode.                                                         }
     case FConnectionType of
-        ftpDirect: FPassive := NewValue;
-        ftpProxy, ftpSocks4, ftpSocks4A, ftpSocks5: FPassive := TRUE;
+        ftpDirect, ftpProxy     : FPassive := NewValue;             { V7.22 }
+        ftpSocks4, ftpSocks4A, 
+        ftpSocks5, ftpHttpProxy : FPassive := TRUE;                 { V7.22 }
     end;
 end;
 
@@ -4904,6 +4989,13 @@ begin
         FDataSocket.SocksPort            := FSocksPort;
         FDataSocket.SocksUsercode        := FSocksUsercode;
         FDataSocket.SocksPassword        := FSocksPassword;
+    end
+    else if FConnectionType = ftpHttpProxy then begin { V7.18 }
+        FDataSocket.HttpTunnelAuthType := FControlSocket.HttpTunnelAuthType;
+        FDataSocket.HttpTunnelServer   := FHttpTunnelServer;
+        FDataSocket.HttpTunnelPort     := FHttpTunnelPort;
+        FDataSocket.HttpTunnelUsercode := FHttpTunnelUserCode;
+        FDataSocket.HttpTunnelPassword := FHttpTunnelPassword;
     end;
 end;
 
@@ -5235,6 +5327,13 @@ begin
         FDataSocket.SocksPort            := FSocksPort;
         FDataSocket.SocksUsercode        := FSocksUsercode;
         FDataSocket.SocksPassword        := FSocksPassword;
+    end
+    else if FConnectionType = ftpHttpProxy then begin { V7.18 }
+        FDataSocket.HttpTunnelAuthType := FControlSocket.HttpTunnelAuthType;
+        FDataSocket.HttpTunnelServer   := FHttpTunnelServer;
+        FDataSocket.HttpTunnelPort     := FHttpTunnelPort;
+        FDataSocket.HttpTunnelUsercode := FHttpTunnelUserCode;
+        FDataSocket.HttpTunnelPassword := FHttpTunnelPassword;
     end;
 end;
 
@@ -5667,12 +5766,40 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.HandleHttpTunnelError(
+    Sender                : TObject;
+    ErrCode               : Word;
+    TunnelServerAuthTypes : THttpTunnelServerAuthTypes;
+    const Msg             : String);
+begin
+    FLastResponse := Msg;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomFtpCli.HandleSocksError(
+    Sender  : TObject;
+    ErrCode : Integer;
+    Msg     : String);
+begin
+    FLastResponse := Msg;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ControlSocketSessionConnected(Sender: TObject; ErrCode: Word);
 begin
     { Do not trigger the client SessionConnected from here. We must wait }
     { to have received the server banner.                                }
     if ErrCode <> 0 then begin
-        FLastResponse  := '500 Connect error - ' + GetWinsockErr(ErrCode) ;
+        if (ErrCode >= WSABASEERR) and (ErrCode < ICS_SOCKS_BASEERR) then
+            FLastResponse  := '500 Connect error - ' + GetWinsockErr(ErrCode)
+        else if WSocketIsProxyErrorCode(ErrCode) then
+            FLastResponse  := '500 Connect error - ' + FLastResponse +
+                              ' (#' + _IntToStr(ErrCode) + ')'
+        else
+            FLastResponse  := '500 Connect Unknown Error (#' +
+                              _IntToStr(ErrCode) + ')';
         FStatusCode    := 500;
         FRequestResult := FStatusCode;  { Heedong Lim, 05/14/1999 }
         SetErrorMessage; { Heedong Lim, 05/14/1999 }
@@ -5926,7 +6053,10 @@ end;
 procedure TCustomFtpCli.ControlSocketSessionClosed(
     Sender  : TObject;
     ErrCode : Word);
+var
+    LClosedState : TFtpState;
 begin
+    LClosedState := FState;
     if FConnected then begin
         FConnected := FALSE;
         if FState <> ftpAbort then
@@ -5936,12 +6066,13 @@ begin
     end;
     if FState <> ftpAbort then
         StateChange(ftpInternalReady);
-    if not (FRequestType in [ftpRqAbort]) then begin
-        if ErrCode <> 0 then begin
+    if FRequestType <> ftpRqAbort then begin
+        if (ErrCode <> 0) or ((FRequestType <> ftpQuitAsync) and
+           (LClosedState in [ftpWaitingBanner, ftpWaitingResponse])) then begin
             FLastResponse  := '500 Control connection closed - ' +
-                              GetWinsockErr(ErrCode) ;
+                               WSocketGetErrorMsgFromErrorCode(ErrCode);
             FStatusCode    := 500;
-            FRequestResult :=  FStatusCode;    { 06 apr 2002 }
+            FRequestResult := FStatusCode;    { 06 apr 2002 }
             SetErrorMessage;
         end;
         TriggerRequestDone(FRequestResult);

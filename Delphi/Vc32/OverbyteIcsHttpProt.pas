@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.12
+Version:      7.15
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -11,8 +11,8 @@ Credit:       This component was based on a freeware from by Andreas
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1997-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
               Berlin, Germany, contact: <arno.garrels@gmx.de>
@@ -421,9 +421,9 @@ Dec 02, 2009 V7.05 Bjornar found a HTTPS POST bug with proxy basic
 Feb 15, 2010 V7.06 Yuri Semenov fixed a bug with content coding and chunked
              transfer encoding.
 Feb 25, 2010 V7.07 Fix by Bjørnar Nielsen: TSslHttpCli didn't work when used
-             against Websense-Content_Gateway (http://www.websense.com) and 
+             against Websense-Content_Gateway (http://www.websense.com) and
              some others. The problem was that this (and some other proxies too)
-             answer 200 OK to notify client that connection to remote server 
+             answer 200 OK to notify client that connection to remote server
              is established. Usually proxies use 200 OK and an error text when
              something is wrong. In that case Content-Length is not 0.
 May 24, 2010 V7.08 Angus ensure Ready when relocations exceed maximum to avoid timeout
@@ -432,6 +432,22 @@ Nov 05, 2010 V7.10 Arno fixed ERangeErrors after Abort.
 Nov 08, 2010 V7.11 Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 Nov 22, 2010 V7.12 Arno made CheckDelaySetReady virtual.
+Feb 4,  2011 V7.13 Angus - if conditional BUILTIN_THROTTLE is defined the
+             bandwidth control uses TWSocket's built-in throttle code rather
+             than THttpCli's.
+Feb 18, 2011 V7.14 Arno - Proxy authentication with relocations (hopefully) fixed.
+             SSL not tested yet. If it still doesn't work it's probably a buggy
+             proxy server i.e. 3Proxy. Parse NTLM user codes into domain and
+             username parts and pass them to NtlmGetMessage3 in method
+             GetNTLMMessage3.
+Feb 19, 2011 V7.15 Arno - Proxy authentication with relocations still did not
+             work properly :( It's not perfect but works better now:
+             Reset only NTLM AuthState in LocationSessionClosed and do not call
+             SetReady while FLocationFlag is set, also call StartRelocation in
+             GetHeaderLineNext if there's no body and the connection is not
+             expected to close, also the relocation counter was incremented
+             twice per relocation when the connection closed.
+             Fix in Digest authentication.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpProt;
@@ -463,7 +479,11 @@ interface
 {$IFNDEF NO_ADVANCED_HTTP_CLIENT_FEATURES}
     {$DEFINE UseNTLMAuthentication}
     {$DEFINE UseDigestAuthentication}
-    {$DEFINE UseBandwidthControl}
+    {$IFNDEF BUILTIN_THROTTLE}   { V7.13 }
+        {$DEFINE UseBandwidthControl}
+    {$ELSE}
+        {$UNDEF UseBandwidthControl}
+    {$ENDIF}
     {$DEFINE UseContentCoding}
 {$ENDIF}
 {$IFDEF CLR}
@@ -508,8 +528,8 @@ uses
     OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-    HttpCliVersion       = 712;
-    CopyRight : String   = ' THttpCli (c) 1997-2010 F. Piette V7.12 ';
+    HttpCliVersion       = 715;
+    CopyRight : String   = ' THttpCli (c) 1997-2011 F. Piette V7.15 ';
     DefaultProxyPort     = '80';
     HTTP_RCV_BUF_SIZE    = 8193;
     HTTP_SND_BUF_SIZE    = 8193;
@@ -706,9 +726,11 @@ type
         //FProxyAuth            : String;
         FServerAuth           : THttpAuthType;
         FProxyAuth            : THttpAuthType;
-{$IFDEF UseBandwidthControl}
+{$IF DEFINED(UseBandwidthControl) or DEFINED(BUILTIN_THROTTLE)}
         FBandwidthLimit       : Integer;  // Bytes per second
         FBandwidthSampling    : Integer;  // mS sampling interval
+{$IFEND}
+{$IFDEF UseBandwidthControl}
         FBandwidthCount       : Int64;    // Byte counter
         FBandwidthMaxCount    : Int64;    // Bytes during sampling period
         FBandwidthTimer       : TIcsTimer;
@@ -747,6 +769,7 @@ type
         FOnBeforeHeaderSend   : TBeforeHeaderSendEvent;     { Wilfried 9 sep 02}
         FCloseReq             : Boolean;                    { SAE 01/06/04 }
         FTimeout              : UINT;  { V7.04 }            { Sync Timeout Seconds }
+        FWMLoginQueued        : Boolean;
         procedure AbortComponent; override; { V7.11 }
         procedure AllocateMsgHandlers; override;
         procedure FreeMsgHandlers; override;
@@ -792,6 +815,7 @@ type
         procedure StartAuthDigest; virtual;
         procedure StartProxyAuthDigest; virtual;
 {$ENDIF}
+        procedure LoginDelayed; {$IFDEF USE_INLINE} inline; {$ENDIF}
         function GetBasicAuthorizationHeader(
             const HttpMethod: String; ProxyAuth: Boolean): String;
         procedure CleanupRcvdStream;
@@ -979,12 +1003,12 @@ type
                                                      write FServerAuth;
         property ProxyAuth        : THttpAuthType    read  FProxyAuth
                                                      write FProxyAuth;
-{$IFDEF UseBandwidthControl}
+{$IF DEFINED(UseBandwidthControl) or DEFINED(BUILTIN_THROTTLE)}
         property BandwidthLimit       : Integer      read  FBandwidthLimit
                                                      write FBandwidthLimit;
         property BandwidthSampling    : Integer      read  FBandwidthSampling
                                                      write FBandwidthSampling;
-{$ENDIF}
+{$IFEND}
 {$IFDEF UseContentCoding}
         property Options          : THttpCliOptions  read  GetOptions
                                                      write SetOptions;
@@ -1359,10 +1383,10 @@ begin
     FCtrlSocket.OnSocksError       := DoSocksError;
     FCtrlSocket.OnSocksConnected   := DoSocksConnected;
     FCtrlSocket.OnError            := SocketErrorTransfer;
-{$IFDEF UseBandwidthControl}
+{$IF DEFINED(UseBandwidthControl) or DEFINED(BUILTIN_THROTTLE)}
     FBandwidthLimit                := 10000;  { Bytes per second     }
     FBandwidthSampling             := 1000;   { mS sampling interval }
-{$ENDIF}
+{$IFEND}
     FLocationChangeMaxCount        := 5;  {  V1.90 }
     FLocationChangeCurCount        := 0;  {  V1.90 }
     FTimeOut                       := 30;
@@ -1406,7 +1430,7 @@ begin
                 WMHttpRequestDone(MsgRec)
             else if Msg = FMsg_WM_HTTP_SET_READY then
                 WMHttpSetReady(MsgRec)
-            else if Msg = FMsg_WM_HTTP_LOGIN     then
+            else if Msg = FMsg_WM_HTTP_LOGIN then
                 WMHttpLogin(MsgRec)
             else
                 inherited WndProc(MsgRec);
@@ -1533,10 +1557,10 @@ begin
         {$ENDIF}
     {$ENDIF}
                 if FStatusCode = 401 then begin
-                    { If the connection will be closed then check if we must
-                      repeat a proxy authentication, otherwise we must clear
-                      it }
-                    if FCloseReq then begin
+                    { If the connection will be closed or is already closed
+                      then check if we must repeat a proxy authentication,
+                      otherwise we must clear it }
+                    if FCloseReq or (FCtrlSocket.State = wsClosed) then begin
                     {$IFDEF UseNTLMAuthentication}
                         if FProxyAuthNTLMState = ntlmDone then
                             FProxyAuthNTLMState := ntlmMsg1
@@ -1576,7 +1600,7 @@ begin
                 end;
             end
             else
-            TriggerRequestDone;
+                TriggerRequestDone;
         end;
     end;
 end;
@@ -1801,7 +1825,7 @@ begin
 {$IFNDEF NO_DEBUG_LOG}                                                  { V1.91 }
     //THttpNTLMState   = (ntlmNone, ntlmMsg1, ntlmMsg2, ntlmMsg3, ntlmDone);
     if CheckLogOptions(loProtSpecDump) then begin
-        DebugLog(loProtSpecDump, Format('PrepareNTLMAuth end, FStatusCode = %d ' +
+        DebugLog(loProtSpecDump, Format('PrepareNTLMAuth begin, FStatusCode = %d ' +
                                         'FProxyAuthNTLMState=%d FAuthNTLMState=%d',
                                         [FStatusCode, Ord(FProxyAuthNTLMState),
                                         Ord(FAuthNTLMState)]));
@@ -2055,6 +2079,10 @@ begin
     if CheckLogOptions(loProtSpecInfo) then  { V1.91 } { replaces $IFDEF DEBUG_OUTPUT  }
             DebugLog(loProtSpecInfo, 'Login ' + FHostName);
 {$ENDIF}
+    FWMLoginQueued := FALSE;
+    FStatusCode    := 0;
+    FLocationFlag  := False;
+     
     FCtrlSocket.OnSessionClosed := SocketSessionClosed;
 
     if FCtrlSocket.State = wsConnected then begin
@@ -2097,6 +2125,14 @@ begin
     FCtrlSocket.SocksPassword       := FSocksPassword;
     FCtrlSocket.SocksAuthentication := FSocksAuthentication;
     FReceiveLen                     := 0; { Clear the receive buffer V7.10 }
+{$IFDEF BUILTIN_THROTTLE}
+    if httpoBandwidthControl in FOptions then begin
+        FCtrlSocket.BandwidthLimit     := FBandwidthLimit;
+        FCtrlSocket.BandwidthSampling  := FBandwidthSampling;
+    end
+    else
+        FCtrlSocket.BandwidthLimit := 0;
+{$ENDIF}
 end;
 
 
@@ -2411,6 +2447,17 @@ begin
         if FModifiedSince <> 0 then
             Headers.Add('If-Modified-Since: ' +
                         RFC1123_Date(FModifiedSince) + ' GMT');
+
+        if not FProxyConnected then begin
+            { We did not call SetReady while in relocation, adjust }
+            { ProxyAuthNtlmState if we got disconnected from proxy }
+          {$IFDEF UseNTLMAuthentication}
+            if FProxyAuthNtlmState = ntlmDone then
+                FProxyAuthNtlmState := ntlmMsg1;
+          {$ENDIF}
+        end;
+        
+
 {$IFDEF UseNTLMAuthentication}
         if (FProxyAuthNTLMState <> ntlmMsg1) then begin
             if (FAuthNTLMState = ntlmMsg1) then
@@ -2707,7 +2754,7 @@ begin
                 { [rawbite 31.08.2004 Connection controll] }
                 (FCloseReq) then     { SAE 01/06/04 }
                 FCtrlSocket.CloseDelayed
-            else
+            else if not FLocationFlag then
                 CheckDelaySetReady;  { 09/26/08 ML }
         end;
     end;
@@ -2884,6 +2931,8 @@ begin
                 FNext := nil;                                     //AG 05/27/08
                 SetReady;                                         //AG 05/27/08
             end                                                   //AG 05/27/08
+            else if FLocationFlag then
+                StartRelocation
             else
                 CheckDelaySetReady;  { 09/26/08 ML }
             Exit;
@@ -3356,7 +3405,7 @@ begin
 {$ENDIF}
 {$IFDEF UseDigestAuthentication}
             if FProxyAuth = httpAuthDigest then
-                FProxyAuthDigestState := digestMsg1
+                FProxyAuthDigestState := digestDone
             else
 {$ENDIF}
             if FProxyAuth = httpAuthBasic then
@@ -3377,8 +3426,8 @@ begin
 {$ENDIF}
 {$IFDEF UseDigestAuthentication}
         if FServerAuth = httpAuthDigest then
-            FAuthDigestState := digestMsg1
-        else    
+            FAuthDigestState := digestDone
+        else
 {$ENDIF}
         if FServerAuth = httpAuthBasic then
             FAuthBasicState := basicMsg1;
@@ -3485,6 +3534,14 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpCli.LoginDelayed;
+begin
+    if not FWMLoginQueued then
+        FWMLoginQueued := PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.LocationSessionClosed(Sender: TObject; ErrCode: Word);
 var
     Proto, User, Pass, Host, Port, Path : String;
@@ -3492,12 +3549,37 @@ var
     I                                   : Integer;
     AllowMoreRelocations                : Boolean;
 begin
-    { Remove any bookmark from the URL }
+  { Remove any bookmark from the URL }
     I := Pos('#', FLocation);
     if I > 0 then
         RealLocation := Copy(FLocation, 1, I - 1)
     else
         RealLocation := FLocation;
+
+  {$IFDEF UseNTLMAuthentication}
+    if FProxyAuthNtlmState <> ntlmNone then
+        { Connection thru proxy with NTLM. Reset the AuthState. }
+        FProxyAuthNtlmState := ntlmMsg1; //ntlmDone;
+  {$ENDIF}
+
+    if FWMLoginQueued then begin
+    { StartRelocation already queued a new Login }
+        FConnected      := FALSE;
+        FProxyConnected := FALSE;
+        FLocationFlag   := FALSE;
+        { Clear header from previous operation }
+        FRcvdHeader.Clear;
+        { Clear status variables from previous operation }
+        FHeaderLineCount  := 0;
+        FBodyLineCount    := 0;
+        FContentLength    := -1;
+        FContentType      := '';
+        FTransferEncoding := ''; { 28/12/2003 }
+    {$IFDEF UseContentCoding}
+        FContentEncoding  := '';
+    {$ENDIF}
+        Exit; //***
+    end;
 
     { Parse the URL }
     ParseURL(RealLocation, Proto, User, Pass, Host, Port, Path);
@@ -3535,7 +3617,7 @@ begin
     FBodyLineCount    := 0;
     FContentLength    := -1;
     FContentType      := '';
-    FStatusCode       := 0;
+    //FStatusCode       := 0; // Moved to Login
     FTransferEncoding := ''; { 28/12/2003 }
 {$IFDEF UseContentCoding}
     FContentEncoding  := '';
@@ -3547,7 +3629,7 @@ begin
     CleanupRcvdStream; {11/11/04}
     CleanupSendStream;
     { Restart at login procedure }
-    PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+    LoginDelayed;
 end;
 
 
@@ -3893,24 +3975,25 @@ begin
     FHeaderLineCount  := 0;
     FBodyLineCount    := 0;
 
-{  V1.90 25 Nov 2005 - restrict number of relocations to avoid continuous loops }
-    inc (FLocationChangeCurCount) ;
-    if FLocationChangeCurCount > FLocationChangeMaxCount then begin
-        AllowMoreRelocations := false;
-        if Assigned (FOnLocationChangeExceeded) then
-            FOnLocationChangeExceeded(Self, FLocationChangeCurCount,
-                                                     AllowMoreRelocations) ;
-        if not AllowMoreRelocations then begin
-            SetReady;
-            exit;
-        end ;
-    end ;
     if {(FResponseVer     = '1.1') and}
         { [rawbite 31.08.2004 Connection controll] }
        (FCurrentHost     = FHostName) and
        (FCurrentPort     = FPort) and
        (FCurrentProtocol = FProtocol) and
        (not FCloseReq) then begin      { SAE 01/06/04 }
+
+        Inc (FLocationChangeCurCount) ;
+        if FLocationChangeCurCount > FLocationChangeMaxCount then begin
+            AllowMoreRelocations := false;
+            if Assigned (FOnLocationChangeExceeded) then
+                FOnLocationChangeExceeded(Self, FLocationChangeCurCount,
+                                                         AllowMoreRelocations) ;
+            if not AllowMoreRelocations then begin
+                SetReady;
+                exit;
+            end ;
+        end;
+
         { No need to disconnect }
         { Trigger the location changed event  27/04/2003 }
         if Assigned(FOnLocationChange) then
@@ -3927,7 +4010,7 @@ begin
         { Must clear what we already received }
         CleanupRcvdStream; {11/11/04}
         CleanupSendStream;
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else begin
         FCtrlSocket.OnSessionClosed := LocationSessionClosed;
@@ -4006,7 +4089,7 @@ begin
            (FResponseVer = '') then                            // <== 12/29/05 AG
             FCurrConnection := 'Keep-alive';
 
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FAuthNTLMState = ntlmMsg1 then begin
         I := FDoAuthor.Count - 1;
@@ -4019,7 +4102,7 @@ begin
             Exit;
         FNTLMMsg2Info     := NtlmGetMessage2(Copy(FDoAuthor.Strings[I], 6, 1000));
         FAuthNTLMState    := ntlmMsg3;
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FAuthNTLMState = ntlmMsg3 then begin
         FDoAuthor.Clear;
@@ -4059,7 +4142,7 @@ begin
            (FResponseVer = '') then                            // <== 12/29/05 AG
             FCurrProxyConnection := 'Keep-alive';
 
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FProxyAuthNTLMState = ntlmMsg1 then begin
         I := FDoAuthor.Count - 1;
@@ -4072,7 +4155,7 @@ begin
             Exit;
         FProxyNTLMMsg2Info  := NtlmGetMessage2(Copy(FDoAuthor.Strings[I], 6, 1000));
         FProxyAuthNTLMState := ntlmMsg3;
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FProxyAuthNTLMState = ntlmMsg3 then begin
         FDoAuthor.Clear;
@@ -4103,7 +4186,7 @@ begin
 {$IFDEF UseDigestAuthentication}
         FAuthDigestState  := digestNone;
 {$ENDIF}
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FAuthBasicState = basicMsg1 then begin
         FDoAuthor.Clear;
@@ -4133,7 +4216,7 @@ begin
 {$IFDEF UseDigestAuthentication}
         FProxyAuthDigestState := digestNone;
 {$ENDIF}
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FProxyAuthBasicState = basicMsg1 then begin
         FDoAuthor.Clear;
@@ -4304,7 +4387,7 @@ begin
         FAuthNTLMState    := ntlmNone; { Other authentication must be cleared }
     {$ENDIF}
         FAuthBasicState   := basicNone;
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
     else if FAuthDigestState = digestMsg1 then begin
         FDoAuthor.Clear;
@@ -4332,9 +4415,9 @@ begin
         FProxyAuthNTLMState  := ntlmNone; { Other authentication must be cleared }
     {$ENDIF}
         FProxyAuthBasicState := basicNone;
-        PostMessage(Handle, FMsg_WM_HTTP_LOGIN, 0, 0);
+        LoginDelayed;
     end
-    else if FProxyAuthBasicState = basicMsg1 then begin
+    else if FProxyAuthDigestState = digestMsg1 then begin
         FDoAuthor.Clear;
         FProxyAuthDigestState := digestNone;
         { We come here when Digest has failed }
@@ -4783,6 +4866,7 @@ function THttpCli.GetNTLMMessage3(const HttpMethod: String;
   const ForProxy: Boolean): String;
 var
     Hostname : String;
+    LDomain, LUser: String;
 begin
     { get local hostname }
     try
@@ -4791,23 +4875,24 @@ begin
         Hostname := '';
     end;
 
-    { domain is not used             }
     { hostname is the local hostname }
-    if ForProxy then
+    if ForProxy then begin
+        NtlmParseUserCode(FProxyUsername, LDomain, LUser, FALSE);
         Result := 'Proxy-Authorization: NTLM ' +
-                  NtlmGetMessage3('',
+                  NtlmGetMessage3(LDomain,
                                   Hostname,
-                                  FProxyUsername,
+                                  LUser,
                                   FProxyPassword,
-                                  FProxyNTLMMsg2Info.Challenge)
-
-    else
+                                  FProxyNTLMMsg2Info.Challenge);
+    end
+    else begin
+        NtlmParseUserCode(FCurrUsername, LDomain, LUser, FALSE);
         Result := 'Authorization: NTLM ' +
-                  NtlmGetMessage3('',
+                  NtlmGetMessage3(LDomain,
                                   Hostname,
-{                                 FNTLMUsercode, FNTLMPassword, }
-                                  FCurrUsername, FCurrPassword,
+                                  LUser, FCurrPassword,
                                   FNTLMMsg2Info.Challenge);
+    end;
 end;
 {$ENDIF}
 
