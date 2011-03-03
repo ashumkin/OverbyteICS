@@ -110,6 +110,7 @@ type
     procedure WSocketServer1BgException(Sender: TObject; E: Exception;
       var CanClose: Boolean);
     procedure WSocketServer1SessionClosed(Sender: TObject; ErrCode: Word);
+    procedure WSocketServer1SessionAvailable(Sender: TObject; ErrCode: Word);
   private
     FIniFileName : String;
     FInitialized : Boolean;
@@ -250,7 +251,7 @@ begin
     with WSocketServer1.MultiListenSockets.Add do begin
         Addr := 'LocalHost';
         Port := '24';
-        SocketFamily := sfAny; // OS preference of eather IPv4 or IPv6.
+        SocketFamily := sfAny; // OS preference of either IPv4 or IPv6.
     end;
 
     try
@@ -334,20 +335,41 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ This event is triggered before a connection is accepted and before a      }
+{ client object is instantiated.}
+procedure TTcpSrvForm.WSocketServer1SessionAvailable(Sender: TObject;
+  ErrCode: Word);
+var
+    L : TWSocketMultiListenItem;
+begin
+    with Sender as TWSocketServer do begin
+        if MultiListenIndex = -1 then
+            Display('Main socket received a connection request on [' + Addr +
+                    ']:' + IntToStr(PortNum) +  ', error #' + IntToStr(ErrCode))
+        else begin
+           L := MultiListenSockets[MultiListenIndex];
+           Display('Multi-listen socket index #' + IntToStr(MultiListenIndex) +
+                   ' received a connection request on [' + L.AddrResolved +
+                   ']:' + IntToStr(L.PortNum) + ', error #' + IntToStr(ErrCode));
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TTcpSrvForm.WSocketServer1SessionClosed(
     Sender  : TObject;
     ErrCode : Word);
 var
     L : TWSocketMultiListenItem;
 begin
-    with Sender as TWSocketServer do
-    begin
+    with Sender as TWSocketServer do begin
         if MultiListenIndex = -1 then
             Display('Main session closed [' + Addr + ']:' + IntToStr(PortNum) +
                     ', error #' + IntToStr(ErrCode))
         else begin
            L := MultiListenSockets[MultiListenIndex];
-           Display('Multi-listen session closed [' + L.Addr + ']:' +
+           Display('Multi-listen session closed [' + L.AddrResolved + ']:' +
                    IntToStr(L.PortNum) + ', error #' + IntToStr(ErrCode));
         end;
     end;

@@ -69,6 +69,8 @@ object TcpSrvForm: TTcpSrvForm
     ListenBacklog = 5
     ReqVerLow = 2
     ReqVerHigh = 2
+    OnSessionClosed = WSocketServer1SessionClosed
+    OnSessionAvailable = WSocketServer1SessionAvailable
     OnBgException = WSocketServer1BgException
     Banner = 'Welcome to TcpSrv'
     BannerTooBusy = 'Sorry, too many clients'
