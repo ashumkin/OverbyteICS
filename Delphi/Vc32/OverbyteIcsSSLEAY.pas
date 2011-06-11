@@ -4,12 +4,12 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.05
+Version:      1.09
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2003-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
               Berlin, Germany, contact: <arno.garrels@gmx.de>
@@ -60,7 +60,12 @@ Dec 20, 2009 A.Garrels added plenty of stuff. Some is not yet used some is, like
              Server Name Indication (SNI).
 May 08, 2010 A. Garrels added two declarations required to support
              Open SSL 0.9.8n.
-             
+Apr 23, 2011 A. Garrels added C-macro f_SSL_clear_options.
+Apr 24, 2011 Arno - Record TEVP_PKEY_st changed in 1.0.0 and had to 
+             be declared as dummy. See helper functions Ics_Ssl_EVP_PKEY_xxx
+             in OverbyteIcsLibeay.pas.
+May 03, 2011 Arno added some function declarations.
+May 31, 2011 Arno removed the packed modifier from non-dummy records.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -70,6 +75,7 @@ May 08, 2010 A. Garrels added two declarations required to support
 {$J+}                                 { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
 {$I OverbyteIcsSslDefs.inc}
+{$A8}
 
 unit OverbyteIcsSSLEAY;
 
@@ -92,8 +98,8 @@ uses
     Windows, SysUtils, OverbyteIcsUtils;
 
 const
-    IcsSSLEAYVersion   = 105;
-    CopyRight : String = ' IcsSSLEAY (c) 2003-2010 F. Piette V1.05 ';
+    IcsSSLEAYVersion   = 109;
+    CopyRight : String = ' IcsSSLEAY (c) 2003-2011 F. Piette V1.09 ';
 
     EVP_MAX_IV_LENGTH                 = 16;       { 03/02/07 AG }
     EVP_MAX_BLOCK_LENGTH              = 32;       { 11/08/07 AG }
@@ -109,6 +115,20 @@ type
     // directly. They all must be used thru pointers only. If you really need
     // to use those structure, you must replace Dummy member with the actual
     // members defined in the OpenSSL header !
+    TCRYPTO_THREADID_st = packed record
+        Dummy : array [0..0] of Byte;
+	      //ptr : Pointer;
+	      //val : LongWord;
+    end;
+    PCRYPTO_THREADID = ^TCRYPTO_THREADID_st;
+
+{$IFNDEF OPENSSL_NO_ENGINE}
+    TEngine_st = record
+        Dummy : array [0..0] of Byte;
+    end;
+    PENGINE = ^TEngine_st;
+{$ENDIF}
+
     TSSL_st = packed record
         Dummy : array [0..0] of Byte;
     end;
@@ -231,11 +251,18 @@ type
     end;
     PEC_KEY = ^TEC_KEY_st;
 
-    // 0.9.7g, 0.9.8a, 0.9.8e
+    { We may no longer define it since changed in 1.0.0+               }
+    { See helper functions Ics_Ssl_EVP_PKEYxxx in OverbyteIcsLibeay32  }
     TEVP_PKEY_st = packed record
+        Dummy : array [0..0] of Byte;
+    (*
         type_       : Longint;
         save_type   : Longint;
         references  : Longint;
+    {OSSL_100 two fields added}
+        ameth       : Pointer; //PEVP_PKEY_ASN1_METHOD;
+        engine      : Pointer; //PENGINE;
+    {/OSSL_100}
         case Integer of
         0 : (ptr  : PAnsiChar);
         1 : (rsa  : PRSA); // RSA
@@ -245,6 +272,7 @@ type
         { more not needed ...
         int save_parameters;
         STACK_OF(X509_ATTRIBUTE) *attributes; /* [ 0 ] */ }
+    *)
     end;
     PEVP_PKEY = ^TEVP_PKEY_st;
     PPEVP_PKEY = ^PEVP_PKEY;
@@ -259,7 +287,7 @@ type
     end;
     PASN1_OBJECT = ^TASN1_OBJECT_st;
 
-    TX509_ALGOR_st = packed record
+    TX509_ALGOR_st = record
         algorithm : PASN1_OBJECT;
         parameter : PASN1_TYPE;
     end;
@@ -270,8 +298,8 @@ type
     end;
     PX509_PURPOSE = ^TX509_PURPOSE_st;
 
-    // 0.9.7g, 0.9.8a, 0.9.8e
-    TASN1_STRING_st = packed record
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TASN1_STRING_st = record
         length : Integer;
         type_  : Integer;
         data   : PAnsiChar;
@@ -299,14 +327,16 @@ type
     PASN1_VALUE  = ^TASN1_VALUE_st;
     PPASN1_VALUE = ^PASN1_VALUE;
 
-    TEVP_CIPHER_INFO_st = packed record      { 03/02/07 AG }
+    // 0.9.7g, 0.9.8a 0.9.8e, 1.0.0d
+    TEVP_CIPHER_INFO_st = record      { 03/02/07 AG }
         cipher : PEVP_CIPHER;
         iv     : array [0..EVP_MAX_IV_LENGTH - 1] of AnsiChar;
     end;
     EVP_CIPHER_INFO  = TEVP_CIPHER_INFO_st;
     PEVP_CIPHER_INFO = ^EVP_CIPHER_INFO;
 
-    TPrivate_key_st = packed record            //AG
+    // 0.9.7g, 0.9.8a 0.9.8e, 1.0.0d
+    TPrivate_key_st = record            //AG
         //Dummy : array [0..0] of Byte;
         version     : Integer;
         // The PKCS#8 data types
@@ -329,7 +359,8 @@ type
     end;
     PX509_REQ = ^TX509_REQ_st;
 
-    TX509_CRL_INFO_st = packed record
+    // 0.9.7g, 0.9.8a 0.9.8e, 1.0.0d
+    TX509_CRL_INFO_st = record
         version     : PASN1_INTEGER;
         sig_alg     : PX509_ALGOR;
         issuer      : PX509_NAME;
@@ -342,12 +373,13 @@ type
     end;
     PX509_CRL_INFO = ^TX509_CRL_INFO_st;
 
-    TX509_CRL_st = packed record
+    TX509_CRL_st = record
         //* actual signature *//
         crl       : PX509_CRL_INFO;
         sig_alg   : PX509_ALGOR;
         signature : PASN1_BIT_STRING;
         references: Integer;
+        {more..}
     end;
     PX509_CRL = ^TX509_CRL_st;
     PPX509_CRL = ^PX509_CRL;
@@ -356,8 +388,8 @@ type
     PX509  = ^TX509_st;
     PPX509 = ^PX509;
     
-    // 0.9.7g, 0.9.8a 0.9.8e
-    TX509_INFO_st = packed record
+    // 0.9.7g, 0.9.8a 0.9.8e, 1.0.0d
+    TX509_INFO_st = record
         x509        : PX509;
         crl         : PX509_CRL;
         x_pkey      : PX509_PKEY;
@@ -380,21 +412,23 @@ type
     PX509_EXTENSION = ^TX509_EXTENSION;
     *)
 
-    TX509_VAL_st = packed record                    {AG 02/06/06}
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TX509_VAL_st = record                    {AG 02/06/06}
         notBefore : PASN1_TIME;
         notAfter  : PASN1_TIME;
     end;
     PX509_VAL = ^TX509_VAL_st;
 
-    TX509_PUBKEY_st = packed record                 //AG
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TX509_PUBKEY_st = record                 //AG
         algor       : PX509_ALGOR;
         public_key  : PASN1_BIT_STRING;
         pkey        : PEVP_PKEY;
     end;
     PX509_PUBKEY = ^TX509_PUBKEY_st;
 
-    { Certinfo }  // 0.9.7g, 0.9.8a, 0.9.8e         {AG 02/06/06}
-    TX509_CINF_st = packed record
+    { Certinfo }  // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d         {AG 02/06/06}
+    TX509_CINF_st = record
         version         : PASN1_INTEGER;            // [ 0 ] default of v1
         serialNumber    : PASN1_INTEGER;
         signature       : PX509_ALGOR;
@@ -408,16 +442,17 @@ type
     end;
     PX509_CINF = ^TX509_CINF_st;
 
-    // 0.9.7g, 0.9.8a, 0.9.8e             {11/07/05 AG}
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d             {11/07/05 AG}
     ASN1_BOOLEAN = {$IFNDEF NoTypeEnforce}type{$ENDIF} Longint;
-    TX509_EXTENSION_st = packed record
+    TX509_EXTENSION_st = record
         object_       : PASN1_OBJECT;
         critical      : ASN1_BOOLEAN;
         value         : PASN1_OCTET_STRING;
     end;
     PX509_EXTENSION = ^TX509_EXTENSION_st;
 
-    TX509_st = packed record
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TX509_st = record
         cert_info   : PX509_CINF;
         sig_alg     : PX509_ALGOR;
         signature   : PASN1_BIT_STRING;
@@ -449,8 +484,8 @@ type
 
     { Caution! Structures may change in future versions 0.96g-0.98 beta OK} {AG}
     { However needed for S/MIME PKCS#7 parsing }
-
-    TPKCS7_SIGNER_INFO_st = packed record
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TPKCS7_SIGNER_INFO_st = record
         version             : PASN1_INTEGER;                // version 1
         issuer_and_serial   : PPKCS7_ISSUER_AND_SERIAL;
         digest_alg          : PX509_ALGOR;
@@ -464,16 +499,18 @@ type
     //PKCS7_SIGNER_INFO = ^TPKCS7_SIGNER_INFO_st; // **Name conflict with wincrypt.h**
     PKCS7_SIGNER_INFO_OSSL = ^TPKCS7_SIGNER_INFO_st;
 
-    TPKCS7_ENVELOPED_st = packed record
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TPKCS7_ENVELOPED_st = record
         version       : PASN1_INTEGER;
         recipientinfo : PSTACK_OF_PKCS7_SIGNER_INFO;
         enc_data      : PPKCS7_ENC_CONTENT;
     end;
     PPKCS7_ENVELOPE = ^TPKCS7_ENVELOPED_st;
 
-    PPKCS7  = ^TPKCS7_st;                           
+    PPKCS7  = ^TPKCS7_st;
 
-    TPKCS7_SIGNED_st = packed record
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TPKCS7_SIGNED_st = record
         version     : PASN1_INTEGER;
         md_algs     : PSTACK_OF_X509_ALGOR;
         cert        : PSTACK_OF_X509;
@@ -483,7 +520,8 @@ type
     end;
     PPKCS7_SIGNED = ^TPKCS7_SIGNED_st;
 
-    PKCS7_signedandenveloped = packed record
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    PKCS7_signedandenveloped = record
         version         : PASN1_INTEGER;
         md_algs         : PSTACK_OF_X509_ALGOR;
         cert            : PSTACK_OF_X509;
@@ -494,8 +532,8 @@ type
     end;
     PPKCS7_SIGN_ENVELOPE = ^PKCS7_signedandenveloped;
     
-
-    TPKCS7_st = packed record                         //AG
+    // 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TPKCS7_st = record                         //AG
       { The following is non NULL if it contains ASN1 encoding of this structure }
         asn1        : PAnsiChar;
         length      : Integer;
@@ -535,7 +573,7 @@ type
     PV3_EXT_CTX = ^TV3_EXT_CTX_st;
 
     // 0.9.7g, 0.9.8a, 0.9.8e
-    TCONF_VALUE = packed record
+    TCONF_VALUE = record
         Section : PAnsiChar;
         Name    : PAnsiChar;
         Value   : PAnsiChar;
@@ -565,8 +603,8 @@ type
     PX509V3_EXT_I2R    = function(X509V3_EXT_METHOD: Pointer; Ext: Pointer; Output: PBIO; Indent: Integer): Integer; cdecl;
     PX509V3_EXT_R2I    = function(X509V3_EXT_METHOD: Pointer; Ctx: PV3_EXT_CTX; S: PAnsiChar): Pointer; cdecl;
 
-    // V3 extension structure
-    TX509V3_EXT_METHOD = packed record
+    // V3 extension structure 0.9.7g, 0.9.8a, 0.9.8e, 1.0.0d
+    TX509V3_EXT_METHOD = record // struct v3_ext_method
         ext_nid   : Integer;
         ext_flags : Integer;
 
@@ -695,7 +733,8 @@ const
     SSL_CTRL_SET_SESS_CACHE_MODE                = 44;
     SSL_CTRL_GET_SESS_CACHE_MODE                = 45;
 
-    SSL_CTRL_GET_RI_SUPPORT                     = 76; { 0.9.8n }    
+    SSL_CTRL_GET_RI_SUPPORT                     = 76; { 0.9.8n }
+    SSL_CTRL_CLEAR_OPTIONS                      = 77; { 0.9.8n }
 
     SSL_OP_MICROSOFT_SESS_ID_BUG                = $00000001;
     SSL_OP_NETSCAPE_CHALLENGE_BUG               = $00000002;
@@ -716,7 +755,9 @@ const
     SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS          = $00000800;
     //SSL_OP_ALL: various bug workarounds that should be rather harmless.
     //This used to be 0x000FFFFFL before 0.9.7.
+    // 0.9.8h, 0.9.8n, 0.9.8e, 0.9.7g $00000FFF
     SSL_OP_ALL                                  = $00000FFF;
+    //SSL_OP_ALL                                  = $80000FFF; 1.0.0d
 
     //* DTLS options */ since 0.9.8
     SSL_OP_NO_QUERY_MTU                         = $00001000;
@@ -728,7 +769,8 @@ const
 
     // As server, disallow session resumption on renegotiation
     SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION  = $00010000;
-
+    // Don't use compression even if supported
+    SSL_OP_NO_COMPRESSION                          = $00020000; // 1.0.0x
     // Permit unsafe legacy renegotiation { 0.9.8n }
     // which can be set with SSL_CTX_set_options(). This is really
     // not recommended unless you know what you are doing.
@@ -754,6 +796,11 @@ const
     SSL_OP_NETSCAPE_CA_DN_BUG                   = $20000000;
     //SSL_OP_NON_EXPORT_FIRST                     = $40000000;
     SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG      = $40000000;
+    // Make server add server-hello extension from early version of
+    // cryptopro draft, when GOST ciphersuite is negotiated.
+    // Required for interoperability with CryptoPro CSP 3.x
+    SSL_OP_CRYPTOPRO_TLSEXT_BUG                 = $80000000; // 1.0.0x
+
 
     SSL_MODE_ENABLE_PARTIAL_WRITE               = $00000001;
 
@@ -938,8 +985,15 @@ const
     f_SSL_CTX_sess_get_new_cb:                 function (CTX: PSSL_CTX): TNew_session_cb; cdecl = nil; //AG
     f_SSL_SESSION_get_id:                      function (const Ses: PSSL_SESSION; var Len: LongInt): PAnsiChar; cdecl = nil; //AG
 {$ENDIF}
+    { The next four functions are only useful for TLS/SSL servers. }
     f_SSL_CTX_add_client_CA :                  function(C: PSSL_CTX; CaCert: PX509): Integer; cdecl = nil; //AG
+    f_SSL_add_client_CA :                      function(ssl: PSSL; CaCert: PX509): Integer; cdecl = nil; //AG
     f_SSL_CTX_set_client_CA_list :             procedure(C: PSSL_CTX; List: PSTACK_OF_X509_NAME); cdecl = nil; //AG
+    f_SSL_set_client_CA_list :                 procedure(s: PSSL; List: PSTACK_OF_X509_NAME); cdecl = nil; //AG
+
+{$IFNDEF OPENSSL_NO_ENGINE}
+    f_SSL_CTX_set_client_cert_engine :         function(Ctx: PSSL_CTX; e: PENGINE): Integer; cdecl = nil; //AG
+{$ENDIF}
     f_SSL_load_client_CA_file :                function(const FileName: PAnsiChar): PSTACK_OF_X509_NAME; cdecl = nil; //AG
 
     f_SSL_get_ex_data_X509_STORE_CTX_idx:      function: Integer; cdecl = nil;
@@ -952,6 +1006,7 @@ const
     f_SSL_get_wfd:                             function(S: PSSL): Integer; cdecl = nil; // B.S.
 
     f_SSL_get_SSL_CTX:                         function(const S: PSSL): PSSL_CTX; cdecl = nil;
+    f_SSL_get_client_CA_list :                 function(const S: PSSL): PSTACK_OF_X509_NAME; cdecl = nil;
 {$IFNDEF OPENSSL_NO_TLSEXT}
     f_SSL_set_SSL_CTX:                         function(S: PSSL; ctx: PSSL_CTX): PSSL_CTX; cdecl = nil;
     f_SSL_get_servername:                      function(const S: PSSL; const type_: Integer): PAnsiChar; cdecl = nil;
@@ -970,6 +1025,7 @@ function  f_SSL_CTX_set_options(C: PSSL_CTX; Op: LongInt): LongInt; {$IFDEF USE_
 function  f_SSL_CTX_get_options(C: PSSL_CTX): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_get_options(S: PSSL): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_set_options(S: PSSL; Op: LongInt): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function  f_SSL_clear_options(S: PSSL; Op: LongInt): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_want_read(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_want_write(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_want_nothing(S: PSSL) : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -1204,7 +1260,12 @@ begin
     f_SSL_SESSION_get_id                     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_SESSION_get_id'); //AG
 {$ENDIF}
     f_SSL_CTX_add_client_CA                  := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_add_client_CA'); //AG
+    f_SSL_add_client_CA                      := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_add_client_CA'); //AG
     f_SSL_CTX_set_client_CA_list             := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_client_CA_list'); //AG
+    f_SSL_set_client_CA_list                 := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_client_CA_list'); //AG
+{$IFNDEF OPENSSL_NO_ENGINE}
+    f_SSL_CTX_set_client_cert_engine         := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_CTX_set_client_cert_engine'); //AG
+{$ENDIF}    
     f_SSL_load_client_CA_file                := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_load_client_CA_file'); //AG
 
     f_SSL_get_ex_data_X509_STORE_CTX_idx     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_ex_data_X509_STORE_CTX_idx');
@@ -1217,6 +1278,7 @@ begin
     f_SSL_get_wfd                            := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_wfd'); // B.S.
 
     f_SSL_get_SSL_CTX                        := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_SSL_CTX'); //AG
+    f_SSL_get_client_CA_list                 := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_client_CA_list'); //AG
 {$IFNDEF OPENSSL_NO_TLSEXT}
     f_SSL_set_SSL_CTX                        := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_set_SSL_CTX'); //AG
     f_SSL_get_servername                     := GetProcAddress(GSSLEAY_DLL_Handle, 'SSL_get_servername'); //AG
@@ -1325,7 +1387,12 @@ begin
                    (@f_SSL_SESSION_get_id                     = nil) or
               {$ENDIF}
                    (@f_SSL_CTX_add_client_CA                  = nil) or
+                   (@f_SSL_add_client_CA                      = nil) or
                    (@f_SSL_CTX_set_client_CA_list             = nil) or
+                   (@f_SSL_set_client_CA_list                 = nil) or
+              {$IFNDEF OPENSSL_NO_ENGINE}
+                   (@f_SSL_CTX_set_client_cert_engine         = nil) or
+              {$ENDIF}     
                    (@f_SSL_load_client_CA_file                = nil) or
 
                    (@f_SSL_get_ex_data_X509_STORE_CTX_idx     = nil) or
@@ -1337,8 +1404,9 @@ begin
                    (@f_SSL_get_rfd                            = nil) or
                    (@f_SSL_get_wfd                            = nil) or
                    (@f_SSL_CTX_use_PrivateKey                 = nil) or
+                   (@f_SSL_get_SSL_CTX                        = nil) or
 
-                   (@f_SSL_get_SSL_CTX                        = nil)
+                   (@f_SSL_get_client_CA_list                 = nil)
               {$IFNDEF OPENSSL_NO_TLSEXT}
                                                                      or
 
@@ -1457,7 +1525,12 @@ begin
     if @f_SSL_SESSION_get_id                     = nil then Result := Result + ' SSL_SESSION_get_id';
 {$ENDIF}
     if @f_SSL_CTX_add_client_CA                  = nil then Result := Result + ' SSL_CTX_add_client_CA';
+    if @f_SSL_add_client_CA                      = nil then Result := Result + ' SSL_add_client_CA';
     if @f_SSL_CTX_set_client_CA_list             = nil then Result := Result + ' SSL_CTX_set_client_CA_list';
+    if @f_SSL_set_client_CA_list                 = nil then Result := Result + ' SSL_set_client_CA_list';
+{$IFNDEF OPENSSL_NO_ENGINE}
+    if @f_SSL_CTX_set_client_cert_engine         = nil then Result := Result + ' SSL_CTX_set_client_cert_engine';
+{$ENDIF}
     if @f_SSL_load_client_CA_file                = nil then Result := Result + ' SSL_load_client_CA_file';
 
     if @f_SSL_get_ex_data_X509_STORE_CTX_idx     = nil then Result := Result + ' SSL_get_ex_data_X509_STORE_CTX_idx';
@@ -1470,6 +1543,7 @@ begin
     if @f_SSL_get_wfd                            = nil then Result := Result + ' SSL_get_wfd';
 
     if @f_SSL_get_SSL_CTX                        = nil then Result := Result + ' SSL_get_SSL_CTX';
+    if @f_SSL_get_client_CA_list                 = nil then Result := Result + ' SSL_get_client_CA_list';
 {$IFNDEF OPENSSL_NO_TLSEXT}
     if @f_SSL_set_SSL_CTX                        = nil then Result := Result + ' SSL_set_SSL_CTX';
     if @f_SSL_get_servername                     = nil then Result := Result + ' SSL_get_servername';
@@ -1501,6 +1575,13 @@ end;
 function f_SSL_set_options(S: PSSL; Op: LongInt): LongInt;
 begin
     Result := f_SSL_ctrl(S, SSL_CTRL_OPTIONS, Op, nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function f_SSL_clear_options(S: PSSL; Op: LongInt): LongInt;
+begin
+    Result := f_SSL_ctrl(S, SSL_CTRL_CLEAR_OPTIONS, Op, nil);
 end;
 
 

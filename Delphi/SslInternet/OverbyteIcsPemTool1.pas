@@ -6,15 +6,14 @@ Description:  A small utility to export SSL certificate from IE certificate
               store to a directory using OpenSSL PEM file format.
               Make use of the ICS Delphi encapsulation for SSLEAY32.DLL &
               LIBEAY32.DLL (OpenSSL) by Francois Piette <francois.piette@overbyte.be>
-              Make use of OpenSSL (http://www.openssl.org)
-              Make use of the Jedi CryptoAPI2
-              (http://delphi-jedi.org/Jedi:APILIBRARY:172871)(CryptoAPI2.zip).
-Version:      1.11
+              Makes use of OpenSSL (http://www.openssl.org)
+              Makes use of the Jedi JwaWincrypt.pas (MPL).
+Version:      1.12
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2003-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -63,12 +62,14 @@ Dec 20, 2009 V1.11 Memory leak fixed.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsPemtool1;
+
 {$IFNDEF USE_SSL}
-    Bomb('Add USE_SSL in the define section in project options');
+  {$MESSAGE FATAL 'Define conditional define "USE_SSL" in the project options'};
 {$ENDIF}
-{$IFDEF VER80}
-    Bomb('This unit require a 32 bit compiler !');
-{$ENDIF}
+{$IF CompilerVersion < 15}
+  {$MESSAGE FATAL 'This demo requires at least Delphi 7 or better'};
+{$IFEND}
+
 {$B-}                                 { Enable partial boolean evaluation   }
 {$T-}                                 { Untyped pointers                    }
 {$X+}                                 { Enable extended syntax              }
@@ -80,17 +81,15 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Controls, Forms, Dialogs,
   StdCtrls, OverbyteIcsIniFiles, ComCtrls, Menus, ImgList, ExtCtrls, CommCtrl,
-  { Uses Jedi CryptoAPI2, see 'Description' above }
-  Wcrypt2,
-  { Uses ICS SSL code, see 'Description' above }
+  WinCrypt,
   OverbyteIcsWSocket, OverbyteIcsSsleay, OverbyteIcsLibeay,
   OverbyteIcsLibeayEx, OverbyteIcsSslX509Utils, OverByteIcsMimeUtils;
 
 const
-     PemToolVersion     = 111;
+     PemToolVersion     = 112;
      PemToolDate        = 'January 29, 2009';
      PemToolName        = 'PEM Certificate Tool';
-     CopyRight : String = '(c) 2003-2010 by François PIETTE V1.11 ';
+     CopyRight : String = '(c) 2003-2011 by François PIETTE V1.12 ';
      CaptionMain        = 'ICS PEM Certificate Tool - ';
      WM_APPSTARTUP      = WM_USER + 1;
 

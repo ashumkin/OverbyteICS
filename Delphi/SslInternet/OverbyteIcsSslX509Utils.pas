@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Aug 26, 2007
 Description:
-Version:      1.03
+Version:      1.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -45,6 +45,10 @@ Jan 29, 2009 V1.03 A.Garrels added overloads which take UnicodeStrings to
              CreateCertRequest() and CreateSelfSignedCert() in D2009 and better.
              Both functions now create UTF-8 certificate fields if they contain
              characters beyond the ASCII range.
+Apr 24, 2011 V1.04 Record TEVP_PKEY_st changed in OpenSSL 1.0.0 and had to be 
+             declared as dummy. Use new functions from OverbyteIcsLibeay to
+             make this unit compatible with OpenSSL 1.0.0+.
+Apr 24, 2011 V1.05 Include OverbyteIcsTypes.pas to make inlining work.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -54,7 +58,9 @@ interface
 
 uses
     Windows, SysUtils, Classes, OverbyteIcsSSLEAY, OverbyteIcsLibeay,
-    OverbyteIcsLibeayEx, OverByteIcsMD5, OverbyteIcsMimeUtils, OverbyteIcsUtils;
+    OverbyteIcsLibeayEx, OverByteIcsMD5,
+    OverbyteIcsTypes,
+    OverbyteIcsMimeUtils, OverbyteIcsUtils;
 
 procedure CreateCertRequest(const RequestFileName, KeyFileName, Country,
   State, Locality, Organization, OUnit, CName, Email: AnsiString;
@@ -445,7 +451,7 @@ begin
 
         f_sk_pop_free(Exts, @f_X509_EXTENSION_free);
 
-        if f_X509_REQ_sign(Req, PK, f_EVP_sha1) <= 0 then
+        if f_X509_REQ_sign(Req, PK, f_EVP_sha256) <= 0 then
             raise Exception.Create('Failed to sign request');
 
         FileBio := f_BIO_new_file(PAnsiChar(AnsiString(KeyFileName)), PAnsiChar('w+'));
@@ -589,7 +595,7 @@ begin
         *)
 
         { Sign it }
-        if f_X509_sign(X, PK, f_EVP_sha1) <= 0 then
+        if f_X509_sign(X, PK, f_EVP_sha256) <= 0 then
             raise Exception.Create('Failed to sign certificate');
 
         { We write private key as well as certificate to the same file }
@@ -750,7 +756,7 @@ begin
         LoadLibeayEx;
     if not Assigned(PubKey) then
         raise Exception.Create('Public key not assigned');
-    if PubKey^.type_ <> EVP_PKEY_RSA then
+    if Ics_Ssl_EVP_PKEY_GetType(PubKey) <> EVP_PKEY_RSA then
         raise Exception.Create('No RSA key');
     if (InBuf = nil) or (InLen = 0) then
         raise Exception.Create('Invalid input buffer');
@@ -795,7 +801,7 @@ begin
                                             Bytes,
                                             InBufPtr,
                                             OutBufPtr,
-                                            PubKey^.rsa,
+                                            Ics_Ssl_EVP_PKEY_GetKey(PubKey),
                                             IntPad);
             if BytesRet <> BlockSize then
             begin
@@ -837,7 +843,7 @@ begin
         LoadLibeayEx;
     if PrivKey = nil then
         raise Exception.Create('Private key not loaded');
-    if PrivKey^.type_ <> EVP_PKEY_RSA then
+    if Ics_Ssl_EVP_PKEY_GetType(PrivKey) <> EVP_PKEY_RSA then
         raise Exception.Create('No RSA key');
     if (InBuf = nil) or (InLen = 0) then
         raise Exception.Create('Invalid input buffer');
@@ -867,7 +873,7 @@ begin
                                              Bytes,
                                              InBufPtr,
                                              OutBufPtr,
-                                             PrivKey^.rsa,
+                                             Ics_Ssl_EVP_PKEY_GetKey(PrivKey),
                                              IntPad);
             if BytesRet = -1 then
                 RaiseLastOpenSslError(Exception, TRUE,

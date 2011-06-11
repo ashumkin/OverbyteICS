@@ -45,7 +45,10 @@ Aug 05, 2008 F. Piette added a cast to avoid warning for AnsiString to
              String implicit convertion
 Sep 21, 2008 Arno - Removed $EXTERNALSYM from some winsock2 symbols
              (CBuilder compat.)
-Jun 07, 2010 Arno fixed a late Unicode bug in WSocket2GetInterfaceList()				 
+Jun 07, 2010 Arno fixed a late Unicode bug in WSocket2GetInterfaceList()
+Apr 10, 2011 Another Unicode bug in record sockaddr.
+May 06, 2011 Prepared for 64-bit.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWinsock2;

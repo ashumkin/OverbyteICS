@@ -3,12 +3,12 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      7.37
+Version:      7.40
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2002-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -108,8 +108,10 @@ Apr 26, 2010 V7.34 Arno removed some Windows dependencies. Charset conversion
 		    defining conditional "USE_ICONV".  			 
 May 07, 2010 V7.35 Arno added IcsIsSBCSCodepage.			 
 Aug 21, 2010 V7.36 Arno fixed a bug in the UTF-8 constructor of TIcsFileStreamW.
-Sep 05, 2010 V.37 Arno added procedure IcsNameThreadForDebugging
-
+Sep 05, 2010 V7.37 Arno added procedure IcsNameThreadForDebugging
+Apr 15, 2011 V7.38 Arno prepared for 64-bit.
+May 06, 2011 V7.39 Arno moved TThreadID to OverbyteIcsTypes.
+Jun 08, 2011 v7.40 Arno added x64 assembler routines, untested so far.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -142,6 +144,9 @@ interface
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
+{$IFDEF CPUX64}
+  {.$DEFINE PUREPASCAL}
+{$ENDIF}
 
 uses
 {$IFDEF MSWINDOWS}
@@ -158,7 +163,7 @@ uses
     SysUtils,
     RtlConsts,
     SysConst,
-    OverbyteIcsTypes; // for TBytes
+    OverbyteIcsTypes; // for TBytes and TThreadID
 
 type
 {$IFNDEF COMPILER12_UP}
@@ -174,7 +179,6 @@ type
 
 {$IFNDEF COMPILER15_UP}
     PLongBool     =  ^LongBool;
-    TThreadID     = LongWord;
 {$ENDIF}
     TIcsDbcsLeadBytes = TSysCharset;
     
@@ -388,6 +392,7 @@ const
     procedure IcsSwap16Buf(Src, Dst: PWord; WordCount: Integer);
     function  IcsSwap32(Value: LongWord): LongWord;
     procedure IcsSwap32Buf(Src, Dst: PLongWord; LongWordCount: Integer);
+    function  IcsSwap64(Value: Int64): Int64;
     procedure IcsSwap64Buf(Src, Dst: PInt64; QuadWordCount: Integer);
     procedure IcsNameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1));
 { Wide library }
@@ -1393,6 +1398,9 @@ begin
     Result := (Value shr 8) or (Value shl 8);
 {$ELSE}
 asm
+{$IFDEF CPUX64}
+    MOV   AX, CX
+{$ENDIF}
     XCHG  AL, AH
 {$ENDIF}
 end;
@@ -1411,8 +1419,53 @@ begin
         Inc(Dst);
     end;
 {$ELSE}
-{ Thanks to Jens Dierks for this code }
 asm
+{$IFDEF CPUX64}
+{ Src in RCX
+  Dst in RDX
+  WordCount in R8D }
+
+       SUB    RCX, RDX
+       SUB    R8D, 4
+       JS     @@2
+@@1:
+       MOV    EAX, [RCX + RDX]
+       MOV    R9D, [RCX + RDX + 4]
+       BSWAP  EAX
+       BSWAP  R9D
+       MOV    WORD PTR [RDX + 2], AX
+       MOV    WORD PTR [RDX + 6], R9W
+       SHR    EAX, 16
+       SHR    R9D, 16
+       MOV    WORD PTR [RDX], AX
+       MOV    WORD PTR [RDX + 4], R9W
+       ADD    RDX, 8
+       SUB    R8D, 4
+       JNS    @@1
+@@2:
+       ADD    R8D, 2
+       JS     @@3
+       MOV    EAX, [RCX + RDX]
+       BSWAP  EAX
+       MOV    WORD PTR [RDX + 2], AX
+       SHR    EAX, 16
+       MOV    WORD PTR [EDX], AX
+       ADD    RDX, 4
+       SUB    R8D, 2
+@@3:
+       INC    R8D
+       JNZ    @@Exit
+       MOV    RAX, [RCX + RDX]
+       XCHG   AL, AH
+       MOV    WORD PTR [RDX], AX
+@@Exit:
+
+{$ELSE}
+{ Thanks to Jens Dierks for this code }
+{ Src in EAX
+  Dst in EDX
+  WordCount in ECX }
+
        PUSH   ESI
        PUSH   EBX
        SUB    EAX,EDX
@@ -1452,6 +1505,7 @@ asm
        POP    EBX
        POP    ESI
 {$ENDIF}
+{$ENDIF}
 end;
 
 
@@ -1463,6 +1517,9 @@ begin
               Word((Word(Value) shr 8) or (Word(Value) shl 8)) shl 16;
 {$ELSE}
 asm
+{$IFDEF CPUX64}
+    MOV    EAX, ECX
+{$ENDIF}
     BSWAP  EAX
 {$ENDIF}
 end;
@@ -1483,6 +1540,37 @@ begin
     end;
 {$ELSE}
 asm
+{$IFDEF CPUX64}
+{ Src in RCX
+  Dst in RDX
+  LongWordCount in R8D }
+
+       SUB    RCX, RDX
+       SUB    R8D, 2
+       JS     @@2
+@@1:
+       MOV    EAX, [RCX + RDX]
+       MOV    R9D, [RCX + RDX + 4]
+       BSWAP  EAX
+       BSWAP  R9D
+       MOV    DWORD PTR [RDX], EAX
+       MOV    DWORD PTR [RDX + 4], R9D
+       ADD    RDX, 8
+       SUB    R8D, 2
+       JNS    @@1
+@@2:
+       INC    R8D
+       JS     @Exit
+       MOV    EAX, [RCX + RDX]
+       BSWAP  EAX
+       MOV    DWORD PTR [RDX], EAX
+@Exit:
+
+{$ELSE}
+{ Src in EAX
+  Dst in EDX
+  LongWordCount in ECX }
+
        PUSH   ESI
        PUSH   EBX
        SUB    EAX, EDX
@@ -1508,6 +1596,35 @@ asm
        POP    EBX
        POP    ESI
 {$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsSwap64(Value: Int64): Int64;
+{$IFDEF PUREPASCAL}
+var
+    H, L: LongWord;
+begin
+    H := LongWord(Value shr 32);
+    L := LongWord(Value);
+    H := Word(((H shr 16) shr 8) or ((H shr 16) shl 8)) or
+         Word((Word(H) shr 8) or (Word(H) shl 8)) shl 16;
+    L := Word(((L shr 16) shr 8) or ((L shr 16) shl 8)) or
+         Word((Word(L) shr 8) or (Word(L) shl 8)) shl 16;
+    Result := Int64(H) or Int64(L) shl 32;
+{$ELSE}
+asm
+{$IFDEF CPUX64}
+    MOV    RAX, RCX
+    BSWAP  RAX
+{$ELSE}
+    MOV   EDX,  [EBP - 8]
+    MOV   EAX,  [EBP - 4]
+    BSWAP EAX
+    BSWAP EDX
+{$ENDIF}
+{$ENDIF}
 end;
 
 
@@ -1532,6 +1649,37 @@ begin
     end;
 {$ELSE}
 asm
+{$IFDEF CPUX64}
+{ Src in RCX
+  Dst in RDX
+  QuadWordCount in R8D }
+
+       SUB    RCX, RDX
+       SUB    R8D, 2
+       JS     @@2
+@@1:
+       MOV    RAX, [RCX + RDX]
+       MOV    R9,  [RCX + RDX + 8]
+       BSWAP  RAX
+       BSWAP  R9
+       MOV    [RDX], RAX
+       MOV    [RDX + 8], R9
+       ADD    RDX, 16
+       SUB    R8D, 2
+       JNS    @@1
+@@2:
+       INC    R8D
+       JS     @Exit
+       MOV    RAX, [RCX + RDX]
+       BSWAP  RAX
+       MOV    [RDX], RAX
+@Exit:
+
+{$ELSE}
+{ Src in EAX
+  Dst in EDX
+  QuadWordCount in ECX }
+
        PUSH   ESI
        PUSH   EBX
        SUB    EAX, EDX
@@ -1550,6 +1698,7 @@ asm
 @Exit:
        POP    EBX
        POP    ESI
+{$ENDIF}
 {$ENDIF}
 end;
 
@@ -2761,7 +2910,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure IcsNameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID);
-{$IF CompilerVersion < 21}
+{$IFNDEF COMPILER14_UP}
 type
     TThreadNameInfo = record
         FType: LongWord;     // must be 0x1000
@@ -2787,7 +2936,7 @@ begin
 {$ELSE}
 begin
     TThread.NameThreadForDebugging(AThreadName, AThreadID);
-{$IFEND}
+{$ENDIF}
 end;
 
 

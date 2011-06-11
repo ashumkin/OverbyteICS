@@ -3,12 +3,12 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      1.14
+Version:      1.16
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2002-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -95,6 +95,8 @@ Historique:
                  Both options allow tools like MadExcept to catch and display
                  the exception, with "fehNone" (default) unhandled exceptions
                  are thrown away silently.
+15/04/2011 V1.15 Arno prepared for 64-bit.
+06/05/2011 V1.16 Arno - Make use of type TThreadID.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -104,6 +106,10 @@ unit OverbyteIcsWndControl;
 {$T-}             { Untyped pointers                    }
 {$X+}             { Enable extended syntax              }
 {$I OverbyteIcsDefs.inc}
+{$IFDEF VER_UNKNOWN}
+  { Emit a single warning (see OverbyteIcsDefs.inc), this unit seems the right place }
+  {$MESSAGE WARN 'You are compiling ICS with an unknown and untested compiler version!'}
+{$ENDIF}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
     {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
@@ -121,7 +127,7 @@ uses
   Borland.Vcl.SysUtils,
   {$ENDIF}
 {$ENDIF}
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
   Windows,
   SysUtils,
   Classes,
@@ -132,8 +138,8 @@ uses
   OverbyteIcsTypes, OverbyteIcsLibrary;
 
 const
-  TIcsWndControlVersion  = 114;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2010 F. Piette V1.14 ';
+  TIcsWndControlVersion  = 116;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2011 F. Piette V1.16 ';
 
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 
@@ -203,14 +209,13 @@ type
 {$IFDEF CLR}
   strict protected
     procedure   Dispose(Disposing: Boolean); override;
-{$ENDIF}
-{$IFDEF WIN32}
+{$ELSE}
   protected
     procedure   Dispose(Disposing: Boolean); virtual;
 {$ENDIF}
   protected
     FHandle        : HWND;
-    FThreadId      : DWORD;
+    FThreadId      : TThreadID;
     FTerminated    : Boolean;
     FMultiThreaded : Boolean;
     FWndHandler    : TIcsWndHandler;
@@ -255,7 +260,7 @@ type
     property Handle          : HWND                   read  GetHandle;  // R/O
     property WndHandler      : TIcsWndHandler         read  FWndHandler
                                                       write FWndHandler;
-    property ThreadID        : DWORD                  read  FThreadID;
+    property ThreadID        : TThreadID              read  FThreadID;
     property OnBgException   : TIcsBgExceptionEvent   read  FOnBgException
                                                       write SetOnBgException; { V1.14 }
     property ExceptAbortProc : TIcsExceptAbortProc    read  FExceptAbortProc  { V1.14 }
@@ -299,7 +304,7 @@ type
 
   TIcsWndHandlerList = class(TList)
   protected
-    ThreadID : THandle;
+    ThreadID : TThreadID;
   end;
 
   TWhMaxMsgIDs = 50..1000;
@@ -312,7 +317,7 @@ type
     constructor Create;
     destructor  Destroy; override;
     function    GetWndHandler(HandlerCount : UINT;
-                              ThreadID     : THandle): TIcsWndHandler;
+                              ThreadID     : TThreadID): TIcsWndHandler;
     procedure   FreeWndHandler(var WndHandler : TIcsWndHandler);
     procedure   Lock;
     procedure   UnLock;
@@ -321,8 +326,7 @@ type
 
 {$IFDEF CLR}
   TOutputDebugStringType = type String;
-{$ENDIF}
-{$IFDEF WIN32}
+{$ELSE}
   TOutputDebugStringType = PChar;
 {$ENDIF}
 
@@ -484,7 +488,7 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
 // WndControlWindowsProc is a callback function used for message handling
 function WndControlWindowsProc(
     ahWnd   : HWND;
@@ -510,8 +514,11 @@ begin
 
     // When the window was created, we stored a reference to the object
     // into the storage space we asked windows to have
+{$IFDEF WIN64}
+    Obj := TObject(GetWindowLongPtr(ahWnd, 0));
+{$ELSE}
     Obj := TObject(GetWindowLong(ahWnd, 0));
-
+{$ENDIF}
     // Check if the reference is actually our object type
     if not (Obj is TIcsWndHandler) then
         Result := DefWindowProc(ahWnd, auMsg, awParam, alParam)
@@ -713,7 +720,7 @@ begin
     else
         Self.ProcessMessages;
 {$ENDIF}
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
     if Assigned(FOnMessagePump) then
         FOnMessagePump(Self)
 {$IFDEF NOFORMS}
@@ -763,7 +770,7 @@ end;
 destructor TIcsWndControl.Destroy;
 begin
     //OutputDebugString('Destroy');
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
     Dispose(TRUE);
 {$ENDIF}
     inherited Destroy;
@@ -974,7 +981,7 @@ begin
 end;
 {$ENDIF}
 
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
 procedure TIcsWndHandler.AllocateHWnd;
 var
     TempClass                : TWndClass;
@@ -1032,11 +1039,13 @@ begin
                 ' Error #' + _IntToStr(GetLastError) + '.');
 
         // We have a window. In the associated data, we record a reference
-        // to our object. Thjis will later allow to call the WndProc method to
+        // to our object. This will later allow to call the WndProc method to
         // handle messages sent to the window.
+    {$IFDEF WIN64}
+        SetWindowLongPtr(FHandle, 0, INT_PTR(Self));
+    {$ELSE}
         SetWindowLong(FHandle, 0, Longint(Self));
-        // Guess this will change to SetWindowLongPtr() in Win64 
-
+    {$ENDIF}
         Inc(GWndHandleCount);
     finally
         LeaveCriticalSection(GWndHandlerCritSect);
@@ -1046,7 +1055,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
 procedure TIcsWndHandler.DeallocateHWnd;
 begin
     // Pas de handle, rien à faire !
@@ -1055,8 +1064,11 @@ begin
 
     // Clear message map
     FillChar(FMsgMap[0], G_WH_MAX_MSG * SizeOf(Pointer), 0);
-
+{$IFDEF WIN64}
+    SetWindowLongPtr(FHandle, 0, 0); // Supprime la référence vers l'objet
+{$ELSE}
     SetWindowLong(FHandle, 0, 0); // Supprime la référence vers l'objet
+{$ENDIF}
     DestroyWindow(FHandle);       // Détruit la fenêtre cachée
     FHandle := 0;                 // On n'a plus de handle !
 
@@ -1315,7 +1327,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsWndHandlerPool.GetWndHandler(
     HandlerCount : UINT;
-    ThreadID     : THandle) : TIcsWndHandler;
+    ThreadID     : TThreadID) : TIcsWndHandler;
 var
     I : Integer;
     L : TIcsWndHandlerList;

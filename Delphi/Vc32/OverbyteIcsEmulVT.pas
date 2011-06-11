@@ -5,12 +5,12 @@ Description:  Delphi component which does Ansi terminal emulation
               Not every escape sequence is implemented, but a large subset.
 Author:       François PIETTE
 Creation:     May, 1996
-Version:      7.01
+Version:      7.03
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1996-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -90,7 +90,8 @@ Aug 15, 2008 V7.00 Delphi 2009 (Unicode) support. The terminal is not
              unicode, but the component support unicode strings.
 Oct 03, 2008 V7.01 A. Garrels moved IsCharInSysCharSet, xdigit and xdigit2
                    to OverbyteIcsUtils.pas.
-
+Mar 03, 2011 V7.02 F.Piette fixed TScreen.Eol 
+May 06, 2011 V7.03 Small change to prepare for 64-bit.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsEmulVT;
@@ -133,8 +134,8 @@ uses
     OverbyteIcsUtils;
 
 const
-  EmulVTVersion      = 701;
-  CopyRight : String = ' TEmulVT (c) 1996-2010 F. Piette V7.01 ';
+  EmulVTVersion      = 703;
+  CopyRight : String = ' TEmulVT (c) 1996-2011 F. Piette V7.03 ';
   MAX_ROW            = 50;
   MAX_COL            = 160;
   NumPaletteEntries  = 16;
@@ -1077,7 +1078,7 @@ begin
     Buf := IntToHex(Cnt, 4) + ' ' + #0;
     OutputDebugString(@Buf[1]);
 
-{$IFNDEF WIN32}
+{$IFDEF CLR}
     if Length(Msg) < High(Msg) then
         Msg[Length(Msg) + 1] := #0;
 {$ENDIF}
@@ -1088,7 +1089,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF WIN32}
+{$IFDEF CLR}
 procedure SetLength(var S: String; NewLength: Integer);
 begin
     S[0] := chr(NewLength);
@@ -1555,11 +1556,11 @@ end;
 procedure TScreen.Eol;
 begin
     with Lines[FRow] do begin
-{$IFDEF UNICODE}
+{$IF SizeOf(Txt[0]) <> 1}  // V 7.02
         FillWChar(@Txt[FCol], FColCount - FCol, ' ');
 {$ELSE}
         FillChar(Txt[FCol], FColCount - FCol, ' ');
-{$ENDIF}
+{$IFEND}
         FillChar(Att[FCol], (FColCount - FCol) * SizeOf(Att[FCol]), FAttribute);
     end;
     InvRect(Frow, FCol);

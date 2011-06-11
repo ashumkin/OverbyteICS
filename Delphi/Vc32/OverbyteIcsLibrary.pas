@@ -3,12 +3,12 @@
 Author:       François PIETTE
 Description:
 Creation:     April 2004
-Version:      1.16
+Version:      1.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2004-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2004-2011 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -75,6 +75,7 @@ May 09, 2009 V1.15 Arno added const CP_UTF7, and procedure _ShowException
 May 15, 2009 V1.16 Arno added some EXTERNALSYM directives to make C++Builder
                    happy (Ambiguity between '_fastcall Application()' and
                    'Forms::Application')
+Apr 15, 2011 V1.17 Arno prepared for 64-bit.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -106,8 +107,7 @@ uses
   System.Runtime.InteropServices,
   System.Reflection,
   System.Text,
-{$ENDIF}
-{$IFDEF WIN32}
+{$ELSE}
   Windows, Classes, Messages,
 {$IFNDEF NOFORMS}
   Forms,
@@ -117,8 +117,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  OverbyteIcsLibraryVersion = 115;
-  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2010 F. Piette V1.15 ';
+  OverbyteIcsLibraryVersion = 117;
+  CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2011 F. Piette V1.17 ';
 
 
 {$IFDEF CLR}
@@ -259,9 +259,8 @@ function  CompareStr(const S1, S2: String): Integer;
 function  CompareText(const S1, S2 : String) : Integer;
 function  FileExists(const FileName: String): Boolean;
 
-{$ENDIF}
+{$ELSE}
 
-{$IFDEF WIN32}
 const
   {$EXTERNALSYM fmOpenRead}
   fmOpenRead       = SysUtils.fmOpenRead;
@@ -284,7 +283,9 @@ const
   {$EXTERNALSYM MinDateTime}
   MinDateTime      : TDateTime = -657434.0;
   {$EXTERNALSYM MaxDateTime}
+{$HINTS OFF}
   MaxDateTime      : TDateTime = 2958465.99999;
+{$HINTS ON}
   {$EXTERNALSYM opRemove}
   opRemove         = Classes.opRemove;
   {$EXTERNALSYM csDesigning}
@@ -293,6 +294,7 @@ const
   csDestroying     = Classes.csDestroying;
   {$EXTERNALSYM lnDeleted}
   lnDeleted        = Classes.lnDeleted;
+{$IFDEF MSWINDOWS}
   {$EXTERNALSYM WM_QUIT}
   WM_QUIT          = Messages.WM_QUIT;
   {$EXTERNALSYM WM_USER}
@@ -315,6 +317,7 @@ const
   CP_UTF8          = Windows.CP_UTF8;
   {$EXTERNALSYM CP_UTF7}
   CP_UTF7          = Windows.CP_UTF7;
+{$ENDIF MSWINDOWS}
 
 {#$EXTERNALSYM SysErrorMessage}
 function  _SysErrorMessage(ErrCode: Integer): String;
@@ -460,6 +463,8 @@ function  _Now: TDateTime;
 {#$EXTERNALSYM StringReplace}
 function  _StringReplace(const S: String; const OldPattern: String;
     const NewPattern: String; Flags: TReplaceFlags): String;
+
+{$IFDEF MSWINDOWS}
 {#$EXTERNALSYM GetTimeZoneInformation}
 function  _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
 {#$EXTERNALSYM GetWindowLong}
@@ -520,12 +525,13 @@ function _GetACP: Cardinal;
 procedure _OutputDebugString(lpOutputString: PChar);
 function _IsWindow(hWnd: HWND): BOOL;
 procedure _GetSystemInfo(var lpSystemInfo: TSystemInfo);
+{$ENDIF MSWINDOWS}
 
 {$IFNDEF NOFORMS}
 {$EXTERNALSYM Application}
 function Application : TApplication;
 {$ENDIF}
-{$ENDIF WIN32}
+{$ENDIF not CLR}
 
 {$EXTERNALSYM MakeWord}
 function MakeWord(a, b: Byte): Word;
@@ -817,9 +823,8 @@ begin
     Result := System.IO.File.Exists(FileName);
 end;
 
-{$ENDIF}
+{$ELSE}
 
-{$IFDEF WIN32}
 function _SysErrorMessage(ErrCode: Integer): String;
 begin
     Result := SysUtils.SysErrorMessage(ErrCode);
@@ -1372,11 +1377,6 @@ begin
     Result := SysUtils.StringReplace(S, OldPattern, NewPattern, Flags);
 end;
 
-function _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
-begin
-     Result := Windows.GetTimeZoneInformation(lpTimeZoneInformation);
-end;
-
 function _FileExists(const FileName: String): Boolean;
 begin
     Result := SysUtils.FileExists(FileName);
@@ -1490,6 +1490,12 @@ end;
 function _FloatToStr(Value: Extended): String;
 begin
     Result := SysUtils.FloatToStr(Value);
+end;
+
+{$IFDEF MSWINDOWS}
+function _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
+begin
+     Result := Windows.GetTimeZoneInformation(lpTimeZoneInformation);
 end;
 
 function _GetWindowLong(H: HWND; nIndex: Integer): Longint;
@@ -1632,6 +1638,7 @@ function _GetACP: Cardinal;
 begin
     Result := Windows.GetACP;
 end;
+{$ENDIF}
 
 procedure _OutputDebugString(lpOutputString: PChar);
 begin
@@ -1654,7 +1661,7 @@ begin
     Result := Forms.Application;
 end;
 {$ENDIF}
-{$ENDIF WIN32}
+{$ENDIF no CLR}
 
 function MakeWord(a, b: Byte): Word;
 begin
