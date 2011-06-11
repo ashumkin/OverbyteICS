@@ -33,7 +33,11 @@ type
 { The new type to be used in all
   instances which refer to sockets. }
   {$EXTERNALSYM TSocket}
+{$IFDEF WIN32}
   TSocket = u_int;
+{$ELSE}
+  TSocket = IntPtr;
+{$ENDIF}
 
 const
   {$EXTERNALSYM FD_SETSIZE}
@@ -118,8 +122,13 @@ type
   servent = record
     s_name: PAnsiChar;
     s_aliases: ^PAnsiChar;
+  {$IFDEF WIN64}
+    s_proto: PAnsiChar;
+    s_port: Word;
+  {$ELSE}
     s_port: Word;
     s_proto: PAnsiChar;
+  {$ENDIF}
   end;
   TServEnt = servent;
 
@@ -317,16 +326,25 @@ type
   TScopeID = SCOPE_ID;
   PScopeID = PSCOPE_ID;
 {$ENDIF}
+
   PWSAData = ^TWSAData;
   {$EXTERNALSYM WSAData}
   WSAData = record // !!! also WSDATA
     wVersion: Word;
     wHighVersion: Word;
+  {$IFDEF WIN64}
+    iMaxSockets: Word;
+    iMaxUdpDg: Word;
+    lpVendorInfo: PAnsiChar;
+    szDescription: array[0..WSADESCRIPTION_LEN] of AnsiChar;
+    szSystemStatus: array[0..WSASYS_STATUS_LEN] of AnsiChar;
+  {$ELSE}
     szDescription: array[0..WSADESCRIPTION_LEN] of AnsiChar;
     szSystemStatus: array[0..WSASYS_STATUS_LEN] of AnsiChar;
     iMaxSockets: Word;
     iMaxUdpDg: Word;
     lpVendorInfo: PAnsiChar;
+  {$ENDIF}
   end;
   TWSAData = WSAData;
 
