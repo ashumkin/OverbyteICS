@@ -458,7 +458,7 @@ uses
 {$ENDIF}
     SysUtils, Classes,
 (* Icke
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
 {$IFDEF BCB}
     Winsock,
 {$ENDIF}
