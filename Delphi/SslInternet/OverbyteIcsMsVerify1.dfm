@@ -154,8 +154,8 @@ object MsVerifyForm: TMsVerifyForm
     ReuseAddr = False
     ComponentOptions = []
     ListenBacklog = 5
-    ReqVerLow = 1
-    ReqVerHigh = 1
+    ReqVerLow = 2
+    ReqVerHigh = 2
     OnDataAvailable = SslWSocket1DataAvailable
     OnSessionClosed = SslWSocket1SessionClosed
     OnSessionConnected = SslWSocket1SessionConnected
