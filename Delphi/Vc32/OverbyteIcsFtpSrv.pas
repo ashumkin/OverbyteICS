@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.17
+Version:      7.19
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -397,11 +397,15 @@ Nov 08, 2010 V7.15 Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 Feb 7,  2010 V7.16 Angus ensure control channel is correctly BandwidthLimited
 May 21, 2011 V7.17 Arno ensure CommandAUTH resets the SSL prot-level correctly.
+Aug 8,  2011 V7.19 Angus added client SndBufSize and RcvBufSize to set data socket
+             buffers sizes for better performance, set to 32K to double speeds
+
+
+
 
 Angus pending -
 CRC on the fly
 MD5 on the fly for downloads if not cached already
-bandwidth restrictions
 test app - cache zlib files and CRCs and lock updates
 
 
@@ -488,8 +492,8 @@ uses
 
 
 const
-    FtpServerVersion         = 717;
-    CopyRight : String       = ' TFtpServer (c) 1998-2011 F. Piette V7.17 ';
+    FtpServerVersion         = 719;
+    CopyRight : String       = ' TFtpServer (c) 1998-2011 F. Piette V7.19 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -675,6 +679,8 @@ type
         FCodePage          : LongWord;       { AG 7.02 }
         FCurrentCodePage   : LongWord;       { AG 7.02 }
         FEpsvAllArgReceived: Boolean;
+        FSndBufSize        : Integer;        { Angus V7.19}
+        FRcvBufSize        : Integer;        { Angus V7.19}
         procedure TriggerSessionConnected(Error : Word); override;
         function  TriggerDataAvailable(Error : Word) : boolean; override;
         procedure TriggerCommand(CmdBuf : PAnsiChar; CmdLen : Integer); virtual; { AG 7.02 }
@@ -684,6 +690,8 @@ type
         procedure SetCodePage(const Value: LongWord);   { AG 7.02 }
         procedure SetCurrentCodePage(const Value: LongWord); { AG 7.02 }
         procedure SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V7.15 }
+        procedure SetRcvBufSize(newValue : Integer);   { Angus V7.19}
+        procedure SetSndBufSize(newValue : Integer);   { Angus V7.19}
     public
         FtpServer         : TFtpServer; { AG V7.02 }
         BinaryMode        : Boolean;
@@ -820,6 +828,10 @@ type
                                                  write FHost;
         property    Lang           : String      read  FHost
                                                  write FHost;
+        property    SndBufSize     : Integer     read FSndBufSize       { Angus V7.19}
+                                                 write SetSndBufSize;
+        property    RcvBufSize     : Integer     read FRcvBufSize       { Angus V7.19}
+                                                 write SetRcvBufSize;
         property    OnDisplay      : TDisplayEvent
                                                  read  FOnDisplay
                                                  write FOnDisplay;
@@ -3636,6 +3648,8 @@ begin
         Client.DataSocket.BandwidthSampling   := Client.CBandwidthSampling;  { angus V7.12 }
 {$ENDIF}
         Client.DataSocket.Connect;
+        if Client.DataSocket.SocketRcvBufSize <> Client.FRcvBufSize then     { angus  V7.18 }
+           Client.DataSocket.SocketRcvBufSize := Client.FRcvBufSize;         { angus  V7.18 }
     end;
 end;
 
@@ -4306,6 +4320,10 @@ begin
 {$ENDIF}
     Client.DataSocket.HSocket                 := HSocket;
     Client.PassiveConnected                   := TRUE;
+    if Client.DataSocket.SocketRcvBufSize <> Client.FRcvBufSize then         { angus  V7.18 }
+        Client.DataSocket.SocketRcvBufSize    := Client.FRcvBufSize;         { angus  V7.18 }
+    if Client.DataSocket.SocketSndBufSize <> Client.FSndBufSize then         { angus  V7.18 }
+        Client.DataSocket.SocketSndBufSize    := Client.FSndBufSize;         { angus  V7.18 }
     if Client.PassiveStart then
         Client.DataSocket.OnSessionConnected(Client.DataSocket, 0);
 end;
@@ -4341,6 +4359,8 @@ begin
         Client.DataSocket.BandwidthSampling   := Client.CBandwidthSampling;  { angus V7.12 }
 {$ENDIF}
         Client.DataSocket.Connect;
+        if Client.DataSocket.SocketSndBufSize <> Client.FSndBufSize then     { angus  V7.18 }
+            Client.DataSocket.SocketSndBufSize := Client.FSndBufSize;        { angus  V7.18 }
     end;
 end;
 
@@ -7046,6 +7066,8 @@ begin
     TotPutBytes      := 0;    { angus V1.54 how many bytes PUT during session, data and control }
     FailedAttempts   := 0;    { angus V7.06 count failed login attempts }
     DelayAnswerTick  := TriggerDisabled;  { angus V7.06 when to send a delayed failed login answer }
+    FSndBufSize      := DefaultRcvSize;   { Angus V7.19 datasocket buffer}
+    FRcvBufSize      := DefaultRcvSize;   { Angus V7.19 datasocket buffer}
 end;
 
 
@@ -7090,6 +7112,26 @@ begin
     { If size is nul, then do not allocated the buffer }
     if newValue > 0 then
         GetMem(FRcvBuf, FRcvSize);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpCtrlSocket.SetRcvBufSize(newValue : Integer);   { Angus V7.19}
+begin
+    if newValue < 1024 then
+        FRcvBufSize := 1024
+    else
+        FRcvBufSize := newValue;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpCtrlSocket.SetSndBufSize(newValue : Integer);   { Angus V7.19}
+begin
+    if newValue < 1024 then
+        FSndBufSize := 1024
+    else
+        FSndBufSize := newValue;
 end;
 
 
