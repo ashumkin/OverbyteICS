@@ -76,7 +76,7 @@ void __fastcall TServerForm::SrvSocketSessionAvailable(TObject *Sender,
     WORD Error)
 {
     int         NewHSocket;
-    TSockAddrIn PeerName;
+    Overbyteicswinsock::TSockAddrIn PeerName;
     AnsiString  Peer;
 
     // We need to accept the client connection

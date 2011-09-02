@@ -12,7 +12,7 @@ Description:  Implements a fast cache-like data storage based on two
               65536 requires at most 16 compares.
               Uses an AVL-Tree as it is described in the book
               "Algorithms & Data Structures", Prof. Niklaus Wirth.
-Version:      1.04
+Version:      1.05
 EMail:        Arno Garrels <arno.garrels@gmx.de>
 Support:      Don't expect any support, however please report bugs/fixes.
 Credits:      Many thanks to Benjamin Stadin <stadin@gmx.de>, without
@@ -48,7 +48,7 @@ interface
 
 uses
     Windows,
-    SysUtils,
+	SysUtils,
     Classes,
     OverbyteIcsTypes;
 
@@ -891,6 +891,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$HINTS OFF}
 // a < self :-1  a=self :0  a > self :+1
 function TCacheTree.Compare(Node1, Node2: TAvlTreeNode): Integer;
 begin
@@ -900,7 +901,7 @@ begin
         Result := AnsiCompareText(TCacheNode(Node1).FKey, TCacheNode(Node2).FKey);
 
 end;
-
+{$HINTS ON}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCacheTree.CopyNode(Source, Destination: TAvlTreeNode);

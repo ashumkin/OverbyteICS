@@ -32,7 +32,8 @@ PROJECTS = OverbyteIcsConFtp.exe \
   OverbyteIcsSrvDemo.exe OverbyteIcsSrvTcp.exe OverbyteIcsSvcTcp.exe \
   OverbyteIcsThrdSrv.exe OverbyteIcsThrdSrvV2.exe OverbyteIcsThrdSrvV3.exe \
   OverbyteIcsTnDemo.exe OverbyteIcsTnSrv.exe OverbyteIcsTWSChat.exe \
-  OverbyteIcsUdpLstn.exe OverbyteIcsUdpSend.exe
+  OverbyteIcsUdpLstn.exe OverbyteIcsUdpSend.exe OverbyteIcsBatchDnsLookup.exe \
+  OverbyteIcsTcpSrvIPv6.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -241,4 +242,9 @@ OverbyteIcsUdpLstn.exe: OverbyteIcsUdpLstn.dpr
 OverbyteIcsUdpSend.exe: OverbyteIcsUdpSend.dpr
   $(DCC)
 
+OverbyteIcsBatchDnsLookup.exe: OverbyteIcsBatchDnsLookup.dpr
+  $(DCC)  
+  
+OverbyteIcsTcpSrvIPv6.exe: OverbyteIcsTcpSrvIPv6.dpr
+  $(DCC)
 

@@ -1258,7 +1258,7 @@ var
     ParamLo : Word;
     AItem   : TWSocketMultiListenItem;
 begin
-    if msg.wParam = FHSocket then begin
+    if msg.wParam = WPARAM(FHSocket) then begin
         FMultiListenIndex := -1;
 
         if FPaused then
