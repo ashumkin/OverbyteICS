@@ -41,15 +41,15 @@ interface
   {$HPPEMIT '#include <event.h>' } // ToBeChecked
 
 type  { should be defined in types.h }
-  uintptr_t	= NativeUInt;
+  uintptr_t = NativeUInt;
   {$EXTERNALSYM uintptr_t}
-	int16_t		= SmallInt;
+  int16_t   = SmallInt;
   {$EXTERNALSYM int16_t}
-	uint16_t	= Word;
+  uint16_t  = Word;
   {$EXTERNALSYM uint16_t}
-	uint32_t	= LongWord;
+  uint32_t  = LongWord;
   {$EXTERNALSYM uint32_t}
-	intptr_t	= NativeInt;
+  intptr_t  = NativeInt;
   {$EXTERNALSYM intptr_t}
   int64_t   = Int64;
   {$EXTERNALSYM int64_t}
@@ -77,12 +77,12 @@ const
   {$EXTERNALSYM EVFILT_FS}
   EVFILT_USER     = -10; { User events }
   {$EXTERNALSYM EVFILT_USER}
-  EVFILT_SESSION	=	-11; { Audit session events }
+  EVFILT_SESSION	= -11; { Audit session events }
   {$EXTERNALSYM EVFILT_SESSION}
 
   EVFILT_SYSCOUNT = 11;
   {$EXTERNALSYM EVFILT_SYSCOUNT}
-  EVFILT_THREADMARKER	= EVFILT_SYSCOUNT; { Internal use only }
+  EVFILT_THREADMARKER = EVFILT_SYSCOUNT; { Internal use only }
   {$EXTERNALSYM EVFILT_THREADMARKER}
 
   { actions }
@@ -94,7 +94,7 @@ const
   {$EXTERNALSYM EV_ENABLE}
   EV_DISABLE      = $0008;  { disable event (not reported)  }
   {$EXTERNALSYM EV_DISABLE}
-  EV_RECEIPT	    = $0040;	{ force EV_ERROR on success, data == 0 }
+  EV_RECEIPT      = $0040;  { force EV_ERROR on success, data == 0 }
   {$EXTERNALSYM EV_RECEIPT}
 
 { flags  }
@@ -107,7 +107,7 @@ const
 
   EV_SYSFLAGS     = $F000;  { reserved by system  }
   {$EXTERNALSYM EV_SYSFLAGS}
-  EV_FLAG0	      = $1000;	{ filter-specific flag }
+  EV_FLAG0        = $1000;  { filter-specific flag }
   {$EXTERNALSYM EV_FLAG0}
   EV_FLAG1        = $2000;  { filter-specific flag  }
   {$EXTERNALSYM EV_FLAG1}
@@ -136,9 +136,9 @@ const
  * data count indicates the number of bytes available after it.  In either
  * case, it's the amount of data one could expect to receive next.
  *}
-  EV_POLL	        = EV_FLAG0;
+  EV_POLL         = EV_FLAG0;
   {$EXTERNALSYM EV_POLL}
-  EV_OOBAND	      = EV_FLAG1;
+  EV_OOBAND       = EV_FLAG1;
   {$EXTERNALSYM EV_OOBAND}
 
 {*
@@ -148,7 +148,7 @@ const
 {*
  * On input, NOTE_TRIGGER causes the event to be triggered for output.
  *}
-  NOTE_TRIGGER	  = $01000000;
+  NOTE_TRIGGER    = $01000000;
   {$EXTERNALSYM NOTE_TRIGGER}
   EV_TRIGGER      = $0100; // deprecated--for backwards compatibility only
   {$EXTERNALSYM EV_TRIGGER}
@@ -192,7 +192,7 @@ const
   {$EXTERNALSYM NOTE_RENAME}
   NOTE_REVOKE     = $00000040;  { vnode access was revoked  }
   {$EXTERNALSYM NOTE_REVOKE}
-  NOTE_NONE	      = $00000080;	{ No specific vnode event: to test for EVFILT_READ activation }
+  NOTE_NONE       = $00000080;  { No specific vnode event: to test for EVFILT_READ activation }
   {$EXTERNALSYM NOTE_NONE}
 
 { data/hint flags for EVFILT_PROC, shared with userspace   }
@@ -206,7 +206,7 @@ const
   {$EXTERNALSYM NOTE_PCTRLMASK}
   NOTE_PDATAMASK  = $000fffff;  { mask for pid  }
   {$EXTERNALSYM NOTE_PDATAMASK}
-  //NOTE_PCTRLMASK	(~NOTE_PDATAMASK) { ?? }
+  //NOTE_PCTRLMASK  (~NOTE_PDATAMASK) { ?? }
 
 {*
  * data/hint fflags for EVFILT_TIMER, shared with userspace.
@@ -215,15 +215,15 @@ const
  *
  * All timeouts are implicitly EV_CLEAR events.
  *}
-  NOTE_SECONDS	  = $00000001;		{ data is seconds         }
+  NOTE_SECONDS    = $00000001;    { data is seconds         }
   {$EXTERNALSYM NOTE_SECONDS}
-  NOTE_USECONDS	  = $00000002;		{ data is microseconds    }
+  NOTE_USECONDS   = $00000002;    { data is microseconds    }
   {$EXTERNALSYM NOTE_USECONDS}
-  NOTE_NSECONDS	  = $00000004;		{ data is nanoseconds     }
+  NOTE_NSECONDS   = $00000004;    { data is nanoseconds     }
   {$EXTERNALSYM NOTE_NSECONDS}
-  NOTE_ABSOLUTE	  = $00000008;		{ absolute timeout        }
+  NOTE_ABSOLUTE   = $00000008;    { absolute timeout        }
   {$EXTERNALSYM NOTE_ABSOLUTE}
-						{ ... implicit EV_ONESHOT }
+      { ... implicit EV_ONESHOT }
 
 {*
  * data/hint fflags for EVFILT_MACHPORT, shared with userspace.
@@ -254,21 +254,21 @@ const
  * NOTE_AS_UPDATE may be going away since struct auditinfo_addr may become
  * immutable once initially set.
  *}
-  NOTE_AS_START	  = $00000001;		{ start of new session }
+  NOTE_AS_START   = $00000001;  { start of new session }
   {$EXTERNALSYM NOTE_AS_START}
-  NOTE_AS_END	    = $00000002;		{ start of new session }
+  NOTE_AS_END     = $00000002;  { start of new session }
   {$EXTERNALSYM NOTE_AS_END}
-  NOTE_AS_ERR	    = $00000004;		{ error tracking new session }
+  NOTE_AS_ERR     = $00000004;  { error tracking new session }
   {$EXTERNALSYM NOTE_AS_ERR}
-  NOTE_AS_CLOSE	  = $00000008;		{ currently unsupported }
+  NOTE_AS_CLOSE   = $00000008;  { currently unsupported }
   {$EXTERNALSYM NOTE_AS_CLOSE}
-  NOTE_AS_UPDATE	= $00000010;		{ session data updated }
+  NOTE_AS_UPDATE  = $00000010;  { session data updated }
   {$EXTERNALSYM NOTE_AS_UPDATE}
 
 {*
  * Kevent ident value for any session.
  *}
-  AS_ANY_ASID	    = $FFFFFFFF;
+  AS_ANY_ASID     = $FFFFFFFF;
   {$EXTERNALSYM AS_ANY_ASID}
 
 {*
@@ -307,13 +307,13 @@ type
 //#pragma pack() //Sets the alignment to the one that was in effect when compilation started
   {$A8} // shouldn't matter
   kevent64_s = record
-		ident   : uint64_t;		                { identifier for this event }
-		filter  : int16_t;		                { filter for event }
-		flags   : uint16_t;		                { general flags }
-		fflags  : uint32_t;		                { filter-specific flags }
-		data    : int64_t;		                { filter-specific data }
-		udata   : uint64_t;		                { opaque user data identifier }
-		ext     : array [0..1] of uint64_t;		{ filter-specific extensions }
+    ident   : uint64_t;                   { identifier for this event }
+    filter  : int16_t;                    { filter for event }
+    flags   : uint16_t;                   { general flags }
+    fflags  : uint32_t;                   { filter-specific flags }
+    data    : int64_t;                    { filter-specific data }
+    udata   : uint64_t;                   { opaque user data identifier }
+    ext     : array [0..1] of uint64_t;   { filter-specific extensions }
   end;
   {$EXTERNALSYM kevent64_s}
   TKEvent64_s = kevent64_s;
