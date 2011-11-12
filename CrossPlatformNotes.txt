@@ -1,0 +1,25 @@
+12/11/2011 
+
+This is the first ICS beta version that runs on MacOS and FireMonkey.
+Not all units have been ported yet and currently MacOS support
+has been tested in Delphi only.
+
+Folder \Delphi\PlatformDemos contains some FireMonkey and
+cross platform console applications, they have been ported
+from their original windows versions.
+
+It is very important that you add conditional define "FMX" to
+any FireMonkey application's project options for _all platforms
+otherwise most of the ICS components won't compile.
+
+Currently ICS components can only be dropped on a FireMonkey form
+if one of the Windows platform targets is active in project manager,
+when OSX target is active ICS components on the Tool Palette are
+greyed out. 
+
+Enjoy
+
+Arno Garrels
+
+ 
+ 

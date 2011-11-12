@@ -100,166 +100,33 @@ interface
 {#$DEFINE USE_ICS_RTL}
 
 uses
-{$IFDEF CLR}
-  System.Collections,
-  System.IO,
-  System.Threading,
-  System.Runtime.InteropServices,
-  System.Reflection,
-  System.Text,
-{$ELSE}
-  Windows, Classes, Messages,
+{$IFDEF MSWINDOWS}
+  Windows,
+  Messages,
+{$ENDIF}
+{$IFDEF POSIX}
+  Posix.Pthread,
+  Ics.Posix.WinTypes,
+  Ics.Posix.Messages,
+{$ENDIF}
+{$IFDEF MACOS}
+  MacApi.CoreServices,
+{$ENDIF}
+  Classes,
 {$IFNDEF NOFORMS}
-  Forms,
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
+    Forms,
+  {$ENDIF}
 {$ENDIF}
   SysUtils,
-{$ENDIF}
   OverbyteIcsTypes;
 
 const
   OverbyteIcsLibraryVersion = 117;
   CopyRight : String        = ' OverbyteIcsLibrary (c) 2004-2011 F. Piette V1.17 ';
 
-
-{$IFDEF CLR}
-type
-  TRTLCriticalSection = class
-  end;
-
-  TList = class(ArrayList)  
-    function  GetItems(Index: Integer): TObject;
-    procedure SetItems(Index: Integer; const Value: TObject);
-  public
-    procedure Delete(Index : Integer);
-    function  First: TObject;
-    function  Last: TObject;
-    procedure Pack;
-    property Items[Index : Integer] : TObject read  GetItems
-                                              write SetItems;
-  end;
-  TStrings = class
-  public
-    procedure SetStrings(nIndex: Integer; const Value: String); virtual; abstract;
-    function  GetStrings(nIndex: Integer): String; virtual; abstract;
-  public
-    procedure Clear; virtual; abstract;
-    procedure Add(const S: String); virtual; abstract;
-    function  Count : Integer; virtual; abstract;
-    property Strings[nIndex : Integer] : String read  GetStrings
-                                                write SetStrings;
-  end;
-  TStringList = class(TStrings)
-  protected
-    FStrings : TList;
-  public
-    procedure SetStrings(nIndex: Integer; const Value: String); override;
-    function  GetStrings(nIndex: Integer): String; override;
-  public
-    constructor Create;
-    procedure Clear; override;
-    procedure Add(const S: String); override;
-    function  Count : Integer; override;
-  end;
-{$ENDIF}
-
-{$IFNDEF VCL}
-const
-    fmCreate         = $FFFF;
-    fmOpenRead       = $0000;
-    fmOpenWrite      = $0001;
-    fmOpenReadWrite  = $0002;
-    fmShareCompat    = $0000 platform; // DOS compatibility mode is not portable
-    fmShareExclusive = $0010;
-    fmShareDenyWrite = $0020;
-    fmShareDenyRead  = $0030 platform; // write-only not supported on all platforms
-    fmShareDenyNone  = $0040;
-    soFromBeginning  = 0;
-    soFromCurrent    = 1;
-    soFromEnd        = 2;
-type
-    TFileStream = class
-    protected
-        FFileName  : String;
-        FClrStream : System.IO.Stream;
-        function  GetSize : Int64;
-        procedure SetSize(Value : Int64);
-    public
-        constructor Create(const AFileName : String; Mode : Integer);
-        procedure Seek(Offset : Int64; Origin : Integer);
-        procedure Write(Ch : Char); overload;
-        property Size : Int64 read GetSize write SetSize;
-    end;
-{$ENDIF}
-
-{$IFDEF CLR}
-const
-  WM_CREATE           = 1;
-  WM_DESTROY          = 2;
-  WM_CLOSE            = 16;
-  WM_NCCREATE         = 129;
-  WM_QUIT             = $0012;
-  WM_TIMER            = $0113;
-  WS_POPUP            = DWORD($80000000);
-  WS_CAPTION          = $C00000;      { WS_BORDER or WS_DLGFRAME  }
-  WS_CLIPSIBLINGS     = $4000000;
-  WS_SYSMENU          = $80000;
-  WS_MAXIMIZEBOX      = $10000;
-  WS_MINIMIZEBOX      = $20000;
-  WS_EX_TOOLWINDOW    = $80;
-  WM_USER             = $0400;
-  PM_NOREMOVE         = 0;
-  PM_REMOVE           = 1;
-  PM_NOYIELD          = 2;
-  //WM_MY_MSG           = WM_USER + 1;
-  //GWL_WNDPROC         = -4;
-
-function DefWindowProc(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT;
-function SetWindowLong(hWnd: HWND; nIndex: Integer; dwNewLong: IntPtr): IntPtr; overload;
-function GetWindowLongIntPtr(hWnd: HWND; nIndex: Integer): IntPtr;
-function GetMessage(out lpMsg: TMsg; hWnd: HWND; wMsgFilterMin, wMsgFilterMax: UINT): BOOL;
-function PostMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): BOOL;
-function TranslateMessage(const lpMsg: TMsg): BOOL;
-function DispatchMessage(const lpMsg: TMsg): Longint;
-function PeekMessage(out lpMsg: TMsg; hWnd: HWND; wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL;
-function RegisterClass(const lpWndClass: TWndClass): ATOM; overload;
-function RegisterClass(const lpWndClassInfo: TWndClassInfo): ATOM; overload;
-function UnregisterClass(lpClassName: String; hInstance: HINST): BOOL;
-function GetClassInfo(hInstance: HINST; lpClassName: String;out lpWndClass: TWndClassInfo): BOOL;
-function CreateWindowEx(dwExStyle: DWORD; lpClassName: String;
-  lpWindowName: String; dwStyle: DWORD; X, Y, nWidth, nHeight: Integer;
-  hWndParent: HWND; hMenu: HMENU; hInstance: HINST; lpParam: IntPtr): HWND; overload;
-function DestroyWindow(hWnd: HWND): BOOL;
-function KillTimer(hWnd: HWND; uIDEvent: Cardinal): BOOL;
-function SetTimer(
-    H           : HWND;
-    uIDEvent    : Cardinal;
-    uElapse     : Cardinal;
-    lpTimerFunc : IntPtr): UINT;
-
-function  HInstance: HINST;
-function  GetCurrentThreadId: DWORD;
-procedure Sleep(dwMilliseconds: DWORD);
-function  GetTickCount: DWORD;
-function FormatMessage(dwFlags: DWORD; lpSource: IntPtr;
-  dwMessageId: DWORD; dwLanguageId: DWORD;
-  lpBuffer: StringBuilder; nSize: DWORD; Arguments: IntPtr): DWORD;
-function  SysErrorMessage(ErrCode: Integer): String;
-
-procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-
-function  IntToStr(N : Integer) : String;
-function  IntToHex(N : Integer; Digits : Integer = 0) : String;
-function  Trim(const S: String): String;
-function  LowerCase(const S: String): String;
-function  UpperCase(const S: String): String;
-function  CompareStr(const S1, S2: String): Integer;
-function  CompareText(const S1, S2 : String) : Integer;
-function  FileExists(const FileName: String): Boolean;
-
-{$ELSE}
 
 const
   {$EXTERNALSYM fmOpenRead}
@@ -294,7 +161,9 @@ const
   csDestroying     = Classes.csDestroying;
   {$EXTERNALSYM lnDeleted}
   lnDeleted        = Classes.lnDeleted;
-{$IFDEF MSWINDOWS}
+
+ {$IFDEF MSWINDOWS}
+
   {$EXTERNALSYM WM_QUIT}
   WM_QUIT          = Messages.WM_QUIT;
   {$EXTERNALSYM WM_USER}
@@ -317,214 +186,136 @@ const
   CP_UTF8          = Windows.CP_UTF8;
   {$EXTERNALSYM CP_UTF7}
   CP_UTF7          = Windows.CP_UTF7;
-{$ENDIF MSWINDOWS}
 
-{#$EXTERNALSYM SysErrorMessage}
+ {$ENDIF MSWINDOWS}
+
 function  _SysErrorMessage(ErrCode: Integer): String;
 procedure _ShowException(ExceptObject: TObject; ExceptAddr: Pointer);
-{#$EXTERNALSYM BoolToStr}
 function  _BoolToStr(B: Boolean; UseBoolStrs: Boolean = False): String;
-{#$EXTERNALSYM IntToStr}
 function  _IntToStr(const N : Integer) : String; overload;
 function  _IntToStr(const N : Int64) : String; overload;
+
 {$IFDEF COMPILER12_UP}
-function  _IntToStr(const N : Cardinal) : String; overload;
+  function  _IntToStr(const N : Cardinal) : String; overload;
 {$ENDIF}
+
 function IcsIntToStrA(N : Integer): AnsiString;
 function IcsIntToHexA(N : Integer; Digits: Byte) : AnsiString;
-{#$EXTERNALSYM IntToHex}
 function  _IntToHex(Value: Integer; Digits: Integer): String; overload;
 function  _IntToHex(Value: Int64; Digits: Integer): String; overload;
+
 {$IFDEF COMPILER16_UP}
 function  _IntToHex(Value: UInt64; Digits: Integer): String; overload;
 {$ENDIF}
-{#$EXTERNALSYM StrToInt}
+
 function  _StrToInt(const S: String): Integer;
 function  _StrToInt64(const S: String): Int64;
 function  _StrToIntDef(const S: String; ADefault: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
-
 function  _StrPas(const P : PAnsiChar) : AnsiString; {$IFDEF COMPILER12_UP} overload;
 function  _StrPas(const P : PWideChar) : UnicodeString; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrPas}
-
+                {$ENDIF}
 function  _StrLen(const P : PAnsiChar) : Cardinal; {$IFDEF COMPILER12_UP} overload;
 function  _StrLen(const P : PWideChar) : Cardinal; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrLen}
-
+                {$ENDIF}
 function  _StrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar; {$IFDEF COMPILER12_UP} overload;
 function  _StrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrCopy}
-
-{#$EXTERNALSYM FloatToStr}
+                {$ENDIF}
 function  _FloatToStr(Value: Extended): String;
-
 function _Trim(const Str : AnsiString) : AnsiString; {$IFDEF COMPILER12_UP} overload;
 function _Trim(const Str : UnicodeString) : UnicodeString; overload;
-{$ENDIF}
-{#$EXTERNALSYM Trim}
-
+                {$ENDIF}
 function _StrLower(Str: PAnsiChar): PAnsiChar; {$IFDEF COMPILER12_UP} overload;
 function _StrLower(Str: PWideChar): PWideChar; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrLower}
-
+                {$ENDIF}
 function _StrIComp(const Str1, Str2: PAnsiChar): Integer; {$IFDEF COMPILER12_UP} overload;
 function _StrIComp(const Str1, Str2: PWideChar): Integer; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrIComp}
-
+                {$ENDIF}
 function  _StrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar; {$IFDEF COMPILER12_UP} overload;
 function  _StrPCopy(Dest: PWideChar; const Source: UnicodeString): PWideChar; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrPCopy}
-
+                {$ENDIF}
 function  _StrComp(const Str1, Str2: PAnsiChar): Integer; {$IFDEF COMPILER12_UP} overload;
 function  _StrComp(const Str1, Str2: PWideChar): Integer; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrComp}
-
+                {$ENDIF}
 function  _StrLComp(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer; {$IFDEF COMPILER12_UP} overload;
 function  _StrLComp(const Str1, Str2: PWideChar; MaxLen: Cardinal): Integer; overload;
-{$ENDIF}
-{#$EXTERNALSYM StrLComp}
-
+                {$ENDIF}
 function  _StrLIComp(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer; {$IFDEF COMPILER12_UP} overload;
 function  _StrLIComp(const Str1, Str2: PWideChar; MaxLen: Cardinal): Integer;  overload;
-{$ENDIF}
-{#$EXTERNALSYM StrLIComp}
-
+                {$ENDIF}
 function _StrToDateTime(const S: String): TDateTime; overload;
 function _StrToDateTime(const S: String; const FormatSettings: TFormatSettings): TDateTime; overload;
-{#$EXTERNALSYM StrToDateTime}
-
 function  _LowerCase(const S: AnsiString): AnsiString; {$IFDEF COMPILER12_UP} overload;
 function  _LowerCase(const S: UnicodeString): UnicodeString; overload;
-{$ENDIF}
-{#$EXTERNALSYM LowerCase}
-
+                {$ENDIF}
 function  _UpperCase(const S: AnsiString): AnsiString; {$IFDEF COMPILER12_UP} overload;
 function  _UpperCase(const S: UnicodeString): UnicodeString; overload;
-{$ENDIF}
-{#$EXTERNALSYM UpperCase}
+                {$ENDIF}
 function IcsUpperCaseA(const S: AnsiString): AnsiString;
 function IcsLowerCaseA(const S: AnsiString): AnsiString;
 function IcsCompareTextA(const S1, S2: AnsiString): Integer;
 function IcsTrimA(const Str: AnsiString): AnsiString;
 function IcsSameTextA(const S1, S2: AnsiString): Boolean;
-
-{#$EXTERNALSYM CompareStr}
 function  _CompareStr(const S1, S2: AnsiString): Integer; {$IFDEF COMPILER12_UP} overload;
 function  _CompareStr(const S1, S2: UnicodeString): Integer; overload;
-{$ENDIF}
-{#$EXTERNALSYM CompareText}
-
+                {$ENDIF}
 function  _CompareText(const S1, S2: AnsiString): Integer;{$IFDEF COMPILER12_UP} overload;
 function  _CompareText(const S1, S2: UnicodeString): Integer; overload;
-{$ENDIF}
-
+                {$ENDIF}
 function _AnsiStrComp(S1, S2: PAnsiChar): Integer;
-{#$EXTERNALSYM FileExists}
 function  _FileExists(const FileName: String): Boolean;
-{#$EXTERNALSYM DeleteFile}
 function  _DeleteFile(const FileName: String): Boolean;
-{#$EXTERNALSYM ExtractFileExt}
 function  _ExtractFileExt(const FileName: String): String;
-{#$EXTERNALSYM ExtractFilePath}
 function  _ExtractFilePath(const FileName: String): String;
-{#$EXTERNALSYM DateTimeToStr}
 function  _DateTimeToStr(const DateTime: TDateTime): String;
-{#$EXTERNALSYM DecodeDate}
 procedure _DecodeDate(Date: TDateTime; var Year, Month, Day: Word);
-{#$EXTERNALSYM DecodeTime}
 procedure _DecodeTime(Time: TDateTime; var Hour, Min, Sec, MSec: Word);
-{#$EXTERNALSYM EncodeTime}
 function  _EncodeTime(Hour, Min, Sec, MSec: Word): TDateTime;
-{#$EXTERNALSYM DirectoryExists}
 function  _DirectoryExists(const Name: String): Boolean;
-{#$EXTERNALSYM ExcludeTrailingPathDelimiter}
 function  _ExcludeTrailingPathDelimiter(const S: String): String;
-{#$EXTERNALSYM IncludeTrailingPathDelimiter}
 function  _IncludeTrailingPathDelimiter(const S: String): String;
-{#$EXTERNALSYM Format}
 function  _Format(const Fmt: String; const Args: array of const): String;
-{#$EXTERNALSYM FindFirst}
 function  _FindFirst(const Path: String; Attr: Integer; var F: TSearchRec): Integer;
-{#$EXTERNALSYM FindNext}
 function  _FindNext(var F: TSearchRec): Integer;
-{#$EXTERNALSYM FindClose}
 procedure _FindClose(var F: TSearchRec);
-{#$EXTERNALSYM FileDateToDateTime}
 function  _FileDateToDateTime(FileDate: Integer): TDateTime;
-{#$EXTERNALSYM FreeAndNil}
 procedure _FreeAndNil(var Obj);
-{#$EXTERNALSYM Date}
 function  _Date : TDateTime;
-{#$EXTERNALSYM Now}
 function  _Now: TDateTime;
-{#$EXTERNALSYM StringReplace}
 function  _StringReplace(const S: String; const OldPattern: String;
     const NewPattern: String; Flags: TReplaceFlags): String;
+function _GetTickCount: LongWord;
+function  _GetCurrentThreadId: TThreadID;
+function  _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LongBooL;
+function  _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
+procedure _Sleep(dwMilliseconds: LongWord);
+function _FreeLibrary(hLibModule: HMODULE): LongBool;
 
 {$IFDEF MSWINDOWS}
-{#$EXTERNALSYM GetTimeZoneInformation}
 function  _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
-{#$EXTERNALSYM GetWindowLong}
 function  _GetWindowLong(H: HWND; nIndex: Integer): Longint;
-{#$EXTERNALSYM DefWindowProc}
 function  _DefWindowProc(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
-{#$EXTERNALSYM GetCurrentThreadId}
-function  _GetCurrentThreadId: DWORD;
-{#$EXTERNALSYM GetMessage}
 function  _GetMessage(var lpMsg: TMsg; H: HWND;
                      wMsgFilterMin, wMsgFilterMax: UINT): BOOL;
-{#$EXTERNALSYM TranslateMessage}
 function  _TranslateMessage(const lpMsg: TMsg): BOOL;
-{#$EXTERNALSYM DispatchMessage}
 function  _DispatchMessage(const lpMsg: TMsg): LongInt;
-{#$EXTERNALSYM PeekMessage}
 function  _PeekMessage(var lpMsg: TMsg; H: HWND;
                wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL;
-{#$EXTERNALSYM PostMessage}
-function  _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): BOOL;
-function  _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
-{#$EXTERNALSYM EnterCriticalSection}
 procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
 function _TryEnterCriticalSection(var lpCriticalSection: TRTLCriticalSection): BOOL;
-{#$EXTERNALSYM LeaveCriticalSection}
 procedure _LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-{#$EXTERNALSYM InitializeCriticalSection}
 procedure _InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-{#$EXTERNALSYM DeleteCriticalSection}
 procedure _DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-{#$EXTERNALSYM GetClassInfo}
 function  _GetClassInfo(hInstance: HINST; lpClassName: PChar;
                        var lpWndClass: TWndClass): BOOL;
-{#$EXTERNALSYM RegisterClass}
 function _RegisterClass(const lpWndClass: TWndClass): ATOM;
-{#$EXTERNALSYM UnregisterClass}
 function _UnregisterClass(lpClassName: PChar; hInstance: HINST): BOOL;
-{#$EXTERNALSYM CreateWindowEx}
 function _CreateWindowEx(dwExStyle: DWORD; lpClassName: PChar;
   lpWindowName: PChar; dwStyle: DWORD; X, Y, nWidth, nHeight: Integer;
   hWndParent: HWND; h_Menu: HMENU; hInstance: HINST; lpParam: Pointer): HWND;
-{#$EXTERNALSYM DestroyWindow}
 function _DestroyWindow(H: HWND): BOOL;
-{#$EXTERNALSYM SetWindowLong}
 function _SetWindowLong(H: HWND; nIndex: Integer; dwNewLong: Longint): Longint;
-{#$EXTERNALSYM WM_USER}
 function _LoadLibrary(lpLibFileName: PChar): HMODULE;
-{#$EXTERNALSYM LoadLibrary}
-function _FreeLibrary(hLibModule: HMODULE): BOOL;
-{#$EXTERNALSYM GetProcAddress}
 function _GetProcAddress(hModule: HMODULE; lpProcName: LPCSTR): FARPROC;
-{#$EXTERNALSYM GetTickCount}
-function _GetTickCount: DWORD;
-{#$EXTERNALSYM Sleep}
-procedure _Sleep(dwMilliseconds: DWORD);
-{#$EXTERNALSYM Sleep}
 function _GetACP: Cardinal;
 procedure _OutputDebugString(lpOutputString: PChar);
 function _IsWindow(hWnd: HWND): BOOL;
@@ -535,299 +326,13 @@ procedure _GetSystemInfo(var lpSystemInfo: TSystemInfo);
 {$EXTERNALSYM Application}
 function Application : TApplication;
 {$ENDIF}
-{$ENDIF not CLR}
-
-{$EXTERNALSYM MakeWord}
-function MakeWord(a, b: Byte): Word;
-{$EXTERNALSYM MakeLong}
-function MakeLong(a, b: Word): Longint;
-{$EXTERNALSYM HiWord}
-function HiWord(L: DWORD): Word;
 
 implementation
 
-{$IFDEF CLR}
-const
-    user32   = 'user32.dll';
-    kernel32 = 'kernel32.dll';
-
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = False, EntryPoint = 'DefWindowProc')]
-function DefWindowProc(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'SetWindowLong')]
-function SetWindowLong(hWnd: HWND; nIndex: Integer; dwNewLong: IntPtr): IntPtr; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'GetWindowLong')]
-function GetWindowLongIntPtr(hWnd: HWND; nIndex: Integer): IntPtr; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'GetMessage')]
-function GetMessage; external;
-[DllImport(user32, CharSet = CharSet.Ansi, SetLastError = True, EntryPoint = 'TranslateMessage')]
-function TranslateMessage; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'DispatchMessage')]
-function DispatchMessage; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'PeekMessage')]
-function PeekMessage; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'PostMessage')]
-function PostMessage; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'RegisterClass')]
-function RegisterClass(const lpWndClass: TWndClass): ATOM; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'RegisterClass')]
-function RegisterClass(const lpWndClassInfo: TWndClassInfo): ATOM; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'UnregisterClass')]
-function UnregisterClass; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'GetClassInfo')]
-function GetClassInfo; external;
-[DllImport(user32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'CreateWindowEx')]
-function CreateWindowEx(dwExStyle: DWORD; lpClassName: String;
-  lpWindowName: String; dwStyle: DWORD; X, Y, nWidth, nHeight: Integer;
-  hWndParent: HWND; hMenu: HMENU; hInstance: HINST; lpParam: IntPtr): HWND; external;
-[DllImport(user32, CharSet = CharSet.Ansi, SetLastError = True, EntryPoint = 'DestroyWindow')]
-function DestroyWindow; external;
-[DllImport(user32, CharSet = CharSet.Ansi, SetLastError = True, EntryPoint = 'SetTimer')]
-function SetTimer; external;
-[DllImport(user32, CharSet = CharSet.Ansi, SetLastError = True, EntryPoint = 'KillTimer')]
-function KillTimer; external;
-
-[DllImport(kernel32, CharSet = CharSet.Ansi, SetLastError = True, EntryPoint = 'GetTickCount')]
-function GetTickCount; external;
-[DllImport(kernel32, CharSet = CharSet.Ansi, SetLastError = True, EntryPoint = 'Sleep')]
-procedure Sleep; external;
-[DllImport(kernel32, CharSet = CharSet.Auto, SetLastError = True, EntryPoint = 'FormatMessage')]
-function FormatMessage; external;
-
-const
-  FORMAT_MESSAGE_ALLOCATE_BUFFER = $100;
-  FORMAT_MESSAGE_IGNORE_INSERTS  = $200;
-  FORMAT_MESSAGE_FROM_STRING     = $400;
-  FORMAT_MESSAGE_FROM_HMODULE    = $800;
-  FORMAT_MESSAGE_FROM_SYSTEM     = $1000;
-  FORMAT_MESSAGE_ARGUMENT_ARRAY  = $2000;
-  FORMAT_MESSAGE_MAX_WIDTH_MASK  = 255;
-
-function SysErrorMessage(ErrCode: Integer): String;
-var
-    Buffer  : StringBuilder;
-    BufSize : Integer;
-    Len     : Integer;
-begin
-    BufSize := 256;
-    Buffer  := StringBuilder.Create(BufSize);
-    Len     := FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM or
-                             FORMAT_MESSAGE_IGNORE_INSERTS or
-                             FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                             nil, ErrCode, 0, Buffer, BufSize, nil);
-  while (Len > 0) and
-        (AnsiChar(Buffer[Len - 1]) in [#0..#32, '.']) do   
-      Dec(Len);
-  Buffer.Length := Len;
-  Result        := Buffer.ToString;
-end;
-
-function  GetCurrentThreadId: DWORD;
-begin
-    Result := Thread.CurrentThread.GetHashCode;
-end;
-
-function HInstance: HINST;
-begin
-    Result := HINST(Integer(Marshal.GetHInstance(Assembly.GetCallingAssembly.GetModules[0])));
-end;
-
-procedure EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-begin
-    Monitor.Enter(lpCriticalSection);
-end;
-
-procedure LeaveCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-begin
-    Monitor.Exit(lpCriticalSection);
-end;
-
-procedure InitializeCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-begin
-    lpCriticalSection := TRTLCriticalSection.Create;
-end;
-
-procedure DeleteCriticalSection(var lpCriticalSection: TRTLCriticalSection);
-begin
-    lpCriticalSection.Free;
-end;
-
-function TList.GetItems(Index: Integer): TObject;
-begin
-    Result := Item[Index];
-end;
-
-procedure TList.SetItems(Index: Integer; const Value: TObject);
-begin
-    Item[Index] := Value;
-end;
-
-procedure TList.Delete(Index : Integer);
-begin
-    RemoveAt(Index);
-end;
-
-function TList.First: TObject;
-begin
-    Result := Item[0];
-end;
-
-function TList.Last: TObject;
-begin
-    Result := Item[Count - 1];
-end;
-
-procedure TList.Pack;
-begin
-
-end;
-
-constructor TStringList.Create;
-begin
-    inherited Create;
-    FStrings := TList.Create;
-end;
-
-procedure TStringList.Clear;
-begin
-    FStrings.Clear;
-end;
-
-procedure TStringList.Add(const S: String);
-begin
-    FStrings.Add(S);
-end;
-
-function TStringList.Count : Integer;
-begin
-    Result := FStrings.Count;
-end;
-
-procedure TStringList.SetStrings(nIndex: Integer; const Value: String);
-begin
-    FStrings.Items[nIndex] := Value;
-end;
-
-function TStringList.GetStrings(nIndex: Integer): String;
-begin
-    Result := String(FStrings.Items[nIndex]);
-end;
-
-{$IFNDEF VCL}
-constructor TFileStream.Create(const AFileName: String; Mode: Integer);
-var
-    LMode   : System.IO.FileMode;
-    LAccess : System.IO.FileAccess;
-    LShare  : System.IO.FileShare;
-begin
-    inherited Create;
-    if Mode = fmCreate then begin
-        LMode   := System.IO.FileMode.Create;
-        LAccess := System.IO.FileAccess.ReadWrite;
-    end
-    else begin
-        LMode := System.IO.FileMode.Open;
-        case Mode and $F of
-        fmOpenReadWrite: LAccess := System.IO.FileAccess.ReadWrite;
-        fmOpenWrite:     LAccess := System.IO.FileAccess.Write;
-        else
-            LAccess := System.IO.FileAccess.Read;
-        end;
-    end;
-    case Mode and $F0 of
-    fmShareDenyWrite: LShare := System.IO.FileShare.Read;
-    fmShareDenyRead:  LShare := System.IO.FileShare.Write;
-    fmShareDenyNone:  LShare := System.IO.FileShare.None;
-    else
-        LShare := System.IO.FileShare.ReadWrite;
-    end;
-    FClrStream := System.IO.FileStream.Create(AFileName, LMode, LAccess, LShare);
-    FFileName  := AFileName;
-end;
-
-function TFileStream.GetSize: Int64;
-begin
-    Result := FClrStream.Length;
-end;
-
-procedure TFileStream.SetSize(Value: Int64);
-begin
-    FClrStream.SetLength(Value);
-end;
-
-procedure TFileStream.Seek(Offset : Int64; Origin: Integer);
-var
-    so : System.IO.SeekOrigin;
-begin
-    case Origin of
-    soFromBeginning : so := System.IO.SeekOrigin.Begin;
-    soFromCurrent   : so := System.IO.SeekOrigin.Current;
-    soFromEnd       : so := System.IO.SeekOrigin.End;
-    else
-                      so := System.IO.SeekOrigin.Begin;
-    end;
-    FClrStream.Seek(Offset, so);
-end;
-
-procedure TFileStream.Write(Ch: Char);
-begin
-    FClrStream.WriteByte(Byte(Ch));
-end;
+{$IFDEF POSIX}
+uses
+    Posix.Unistd, Posix.String_;
 {$ENDIF}
-
-function IntToStr(N : Integer) : String;
-begin
-    Result := N.ToString;
-end;
-
-function IntToHex(N : Integer; Digits : Integer) : String;
-begin
-    if Digits = 0 then
-        Result := System.String.Format('{0:X}', System.Object(N))
-    else
-        Result := System.String.Format('{0:X' + Digits.ToString() + '}',
-                                       System.Object(N));
-end;
-
-function Trim(const S: String): String;
-begin
-    if S = '' then
-        Result := ''
-    else
-        Result := S.Trim;
-end;
-
-function LowerCase(const S: String): String;
-begin
-    Result := S.ToLower;
-end;
-
-function UpperCase(const S: String): String;
-begin
-    Result := S.ToUpper;
-end;
-
-function CompareText(const S1, S2 : String) : Integer;
-begin
-    if S1.ToUpper = S2.ToUpper then
-        Result := 0
-    else if S1.ToUpper < S2.ToUpper then
-        Result := -1
-    else
-        Result := 1;
-end;
-
-function CompareStr(const S1, S2 : String) : Integer;
-begin
-    Result := System.String.Compare(S1, S2);
-end;
-
-
-function FileExists(const FileName: String): Boolean;
-begin
-    Result := System.IO.File.Exists(FileName);
-end;
-
-{$ELSE}
 
 function _SysErrorMessage(ErrCode: Integer): String;
 begin
@@ -1508,10 +1013,72 @@ begin
     Result := SysUtils.FloatToStr(Value);
 end;
 
+function _GetTickCount: LongWord;
+{$IFDEF MSWINDOWS}
+begin
+    Result := Windows.GetTickCount;
+end;
+{$ENDIF}
+{$IFDEF MACOS}
+begin
+  Result := AbsoluteToNanoseconds(UpTime) div 1000000;
+end;
+{$ENDIF MACOS}
+
+function _GetCurrentThreadId: TThreadID;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := Windows.GetCurrentThreadID;
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Result := Posix.Pthread.GetCurrentThreadID;
+  {$ENDIF}
+end;
+
+function _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LongBool;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := Windows.PostMessage(H, Msg, ParamW, ParamL);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Result := Ics.Posix.Messages.PostMessage(H, Msg, ParamW, ParamL)
+  {$ENDIF}
+end;
+
+function _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := Windows.SendMessage(H, Msg, ParamW, ParamL);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Result := Ics.Posix.Messages.SendMessage(H, Msg, ParamW, ParamL)
+  {$ENDIF}
+end;
+
+procedure _Sleep(dwMilliseconds: LongWord);
+begin
+  {$IFDEF MSWINDOWS}
+    Windows.Sleep(dwMilliseconds);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    SysUtils.Sleep(dwMilliseconds);
+  {$ENDIF}
+end;
+
+function _FreeLibrary(hLibModule: HMODULE): LongBool;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := Windows.FreeLibrary(hLibModule);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Result := SysUtils.FreeLibrary(hLibModule);
+  {$ENDIF}
+end;
+
 {$IFDEF MSWINDOWS}
 function _GetTimeZoneInformation(var lpTimeZoneInformation: TTimeZoneInformation): DWORD;
 begin
-     Result := Windows.GetTimeZoneInformation(lpTimeZoneInformation);
+    Result := Windows.GetTimeZoneInformation(lpTimeZoneInformation);
 end;
 
 function _GetWindowLong(H: HWND; nIndex: Integer): Longint;
@@ -1522,11 +1089,6 @@ end;
 function _DefWindowProc(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
 begin
     Result := Windows.DefWindowProc(H, Msg, ParamW, ParamL);
-end;
-
-function _GetCurrentThreadId: DWORD;
-begin
-    Result := Windows.GetCurrentThreadId;
 end;
 
 function _GetMessage(
@@ -1552,16 +1114,6 @@ function _PeekMessage(
 begin
     Result := Windows.PeekMessage(lpMsg, H,
                                   wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
-end;
-
-function _PostMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): BOOL;
-begin
-    Result := Windows.PostMessage(H, Msg, ParamW, ParamL);
-end;
-
-function _SendMessage(H: HWND; Msg: UINT; ParamW: WPARAM; ParamL: LPARAM): LRESULT;
-begin
-    Result := Windows.SendMessage(H, Msg, ParamW, ParamL);
 end;
 
 procedure _EnterCriticalSection(var lpCriticalSection: TRTLCriticalSection);
@@ -1625,11 +1177,6 @@ begin
     Result := Windows.UnregisterClass(lpClassName, hInstance);
 end;
 
-function _FreeLibrary(hLibModule: HMODULE): BOOL;
-begin
-    Result := Windows.FreeLibrary(hLibModule);
-end;
-
 function _LoadLibrary(lpLibFileName: PChar): HMODULE;
 begin
     Result := Windows.LoadLibrary(lpLibFileName);
@@ -1640,21 +1187,10 @@ begin
     Result := Windows.GetProcAddress(hModule, lpProcName);
 end;
 
-function _GetTickCount: DWORD;
-begin
-    Result := Windows.GetTickCount;
-end;
-
-procedure _Sleep(dwMilliseconds: DWORD);
-begin
-    Windows.Sleep(dwMilliseconds);
-end;
-
 function _GetACP: Cardinal;
 begin
     Result := Windows.GetACP;
 end;
-{$ENDIF}
 
 procedure _OutputDebugString(lpOutputString: PChar);
 begin
@@ -1670,28 +1206,18 @@ procedure _GetSystemInfo(var lpSystemInfo: TSystemInfo);
 begin
     Windows.GetSystemInfo(lpSystemInfo);
 end;
+{$ENDIF MSWINDOWS}
 
 {$IFNDEF NOFORMS}
 function Application : TApplication;
 begin
+{$IFNDEF FMX}
     Result := Forms.Application;
+{$ELSE}
+    Result := FMX.Forms.Application;
+{$ENDIF}
 end;
 {$ENDIF}
-{$ENDIF no CLR}
 
-function MakeWord(a, b: Byte): Word;
-begin
-    Result := A or B shl 8;
-end;
-
-function MakeLong(a, b: Word): Longint;
-begin
-    Result := A or B shl 16;
-end;
-
-function HiWord(L: DWORD): Word;
-begin
-  Result := L shr 16;
-end;
 
 end.

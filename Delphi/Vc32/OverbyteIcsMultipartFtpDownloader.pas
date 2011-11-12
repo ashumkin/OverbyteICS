@@ -62,8 +62,16 @@ unit OverbyteIcsMultipartFtpDownloader;
 interface
 
 uses
-    Windows, Messages, SysUtils, Classes, IniFiles,
-    OverbyteIcsWndControl, OverbyteIcsFtpCli;
+{$IFDEF MSWINDOWS}
+    Messages,
+    Windows,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
+{$ENDIF}
+    SysUtils, Classes, IniFiles,
+    OverbyteIcsUtils, OverbyteIcsWndControl, OverbyteIcsFtpCli;
 
 type
     TFtpBigInt                = int64;
@@ -289,7 +297,7 @@ begin
     FContentLength := -1;
     FTotalCount    := 0;
     FPrevCount     := 0;
-    FPrevTick      := GetTickCount;
+    FPrevTick      := IcsGetTickCount;
     FStartTime     := Now;
     FElapsedTime   := 0;
     TriggerShowStats;
@@ -613,7 +621,7 @@ begin
                     Inc(FTotalCount, MyFtp.FDataCount);
                 end;
                 FPrevCount    := FTotalCount;
-                FPrevTick     := GetTickCount;
+                FPrevTick     := IcsGetTickCount;
                 FStartTime    := Now;
                 FElapsedTime  := 0;
             finally
@@ -929,7 +937,7 @@ begin
         Done    := Done and (FtpCli.FDone);
     end;
 
-    Tick         := GetTickCount;
+    Tick         := IcsGetTickCount;
     FCurSpeed    := 8 * (FTotalCount - FPrevCount) / (Tick - FPrevTick);
     FElapsedTime := Now - FStartTime;
     if FContentLength = 0 then

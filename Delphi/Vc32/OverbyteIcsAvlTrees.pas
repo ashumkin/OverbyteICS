@@ -47,8 +47,15 @@ interface
 {$ENDIF}
 
 uses
+  {$IFDEF MSWINDOWS}
     Windows,
-	SysUtils,
+  {$ELSE}
+    System.SyncObjs,
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+  {$ENDIF}
+	  SysUtils,
     Classes,
     OverbyteIcsTypes;
 
@@ -313,7 +320,11 @@ type
     TIcsThreadAvlPointerTree = class
     private
         FTree: TIcsAvlPointerTree;
+      {$IFDEF MSWINDOWS}
         FLock: TRTLCriticalSection;
+      {$ELSE}
+        FLock: TCriticalSection;
+      {$ENDIF}
     public
         constructor Create;
         destructor Destroy; override;
@@ -1862,14 +1873,8 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsAvlPointerTree.Contains(Data: Pointer): Boolean;
-var
-    it: PIcsAvlPointerNode;
 begin
-    it := SearchNode(Data);
-    if it <> nil then
-        Result := TRUE
-    else
-        Result := FALSE;
+    Result := SearchNode(Data) <> nil;
 end;
 
 
@@ -2089,7 +2094,11 @@ end;
 constructor TIcsThreadAvlPointerTree.Create;
 begin
     inherited Create;
+  {$IFDEF MSWINDOWS}
     InitializeCriticalSection(FLock);
+  {$ELSE}
+    FLock := TCriticalSection.Create;
+  {$ENDIF}
     FTree := TIcsAvlPointerTree.Create;
 end;
 
@@ -2103,7 +2112,11 @@ begin
         inherited Destroy;
     finally
         UnlockTree;
+      {$IFDEF MSWINDOWS}
         DeleteCriticalSection(FLock);
+      {$ELSE}
+        FLock.Free;
+      {$ENDIF}
     end;
 end;
 
@@ -2111,7 +2124,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsThreadAvlPointerTree.LockTree: TIcsAvlPointerTree;
 begin
+  {$IFDEF MSWINDOWS}
     EnterCriticalSection(FLock);
+  {$ELSE}
+    FLock.Enter;
+  {$ENDIF}
     Result := FTree;
 end;
 
@@ -2131,7 +2148,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsThreadAvlPointerTree.UnlockTree;
 begin
+  {$IFDEF MSWINDOWS}
     LeaveCriticalSection(FLock);
+  {$ELSE}
+    FLock.Leave;
+  {$ENDIF}
 end;
 
 

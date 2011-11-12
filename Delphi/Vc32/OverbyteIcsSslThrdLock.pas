@@ -59,9 +59,6 @@ May 06, 2011 V1.03 Arno - Make use of new CRYPTO_THREADID_set_callback.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslThrdLock;
-{$IFDEF VER80}
-    Bomb('This unit requires a 32 bit compiler !');
-{$ENDIF}
 {$B-}              { Enable partial boolean evaluation   }
 {$T-}              { Untyped pointers                    }
 {$X+}              { Enable extended syntax              }
@@ -87,18 +84,16 @@ uses
 {$IFDEF MSWINDOWS}
     Windows,
 {$ENDIF}
-{$IFDEF POSIX}
-    PosixGlue, PosixSysTypes,
-{$ENDIF}
     Classes,
     SysUtils,
+    SyncObjs,
     OverbyteIcsLIBEAY,
     OverbyteIcsSSLEAY,
     OverbyteIcsWSocket;
 
 type
     ESslLockException = class(Exception);
-    TMutexBuf  = array of TRTLCriticalSection;
+    TMutexBuf  = array of TCriticalSection;
     TSslStaticLock = class(TComponent)
     protected
         FSslInitialized : Boolean;
@@ -159,30 +154,34 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexSetup(var Mutex : TRTLCriticalSection); {$IFDEF USE_INLINE} inline; {$ENDIF}
+procedure MutexSetup(var Mutex : TCriticalSection);
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    InitializeCriticalSection(Mutex);
+    Mutex := TCriticalSection.Create;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexCleanup(var Mutex : TRTLCriticalSection); {$IFDEF USE_INLINE} inline; {$ENDIF}
+procedure MutexCleanup(var Mutex : TCriticalSection);
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    DeleteCriticalSection(Mutex);
+    FreeAndNil(Mutex);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexLock(Mutex: TRTLCriticalSection); {$IFDEF USE_INLINE} inline; {$ENDIF}
+procedure MutexLock(Mutex: TCriticalSection);
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    EnterCriticalSection(Mutex);
+    Mutex.Enter;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexUnlock(Mutex : TRTLCriticalSection); {$IFDEF USE_INLINE} inline; {$ENDIF}
+procedure MutexUnlock(Mutex : TCriticalSection);
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    LeaveCriticalSection(Mutex);
+    Mutex.Leave;
 end;
 
 
@@ -209,9 +208,10 @@ end;
 {$ELSE}
 procedure ThreadIdCallback(ID : PCRYPTO_THREADID); cdecl;
 begin
-    f_CRYPTO_THREADID_set_pointer(ID, Pointer(GetCurrentThreadID));  //? To check
+    f_CRYPTO_THREADID_set_pointer(ID, Pointer(GetCurrentThreadID));  // ToCheck
 end;
 {$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslStaticLock.SetEnabled(const Value: Boolean);
@@ -227,10 +227,11 @@ begin
         begin
             SetLength(MutexBuf, f_CRYPTO_num_locks);
             try
+                FillChar(MutexBuf[0], Length(MutexBuf) * SizeOf(Pointer), 0);
                 for I := Low(MutexBuf) to High(MutexBuf) do
                     MutexSetup(MutexBuf[I]);
             except
-                on E : Exception do begin
+                on E: Exception do begin
                     for I := Low(MutexBuf) to High(MutexBuf) do
                         MutexCleanup(MutexBuf[I]);
                     SetLength(MutexBuf, 0);
@@ -240,7 +241,7 @@ begin
         {$IFDEF MSWINDOWS}
             f_CRYPTO_set_id_callback(IDCallback);
         {$ELSE}
-            if Assigned(f_CRYPTO_THREADID_set_callback) then // v1.0.0+
+            if Assigned(f_CRYPTO_THREADID_set_callback) then // OpenSSL v1.0.0+
             begin
                 Assert(Assigned(f_CRYPTO_THREADID_set_pointer));
                 f_CRYPTO_THREADID_set_callback(ThreadIdCallback);

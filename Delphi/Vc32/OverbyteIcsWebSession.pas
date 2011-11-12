@@ -64,7 +64,15 @@ unit OverbyteIcsWebSession;
 interface
 
 uses
-    Windows, Messages, SysUtils, Classes, SyncObjs,
+{$IFDEF MSWINDOWS}
+    Windows,
+    Messages,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
+{$ENDIF}
+    SysUtils, Classes, SyncObjs,
     OverbyteIcsTimeList,
     OverbyteIcsUtils;
 
@@ -196,6 +204,8 @@ var
     GWebSessions : TWebSessions;
 
 implementation
+
+{$I Ics.InterlockedApi.inc}
 
 var
     GSessionID        : Integer    = 0;

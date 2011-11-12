@@ -100,10 +100,8 @@ interface
 {$ENDIF}
 
 uses
-{$IFDEF UseWindows}
+{$IFDEF MSWindows}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
 {$ENDIF}
     Classes, SysUtils,
     OverbyteIcsCRC,        { angus V7.7 }
@@ -136,9 +134,10 @@ type
     TIcsFileRecs = array of TIcsFileRec ;   { lots of records }
     PTIcsFileRec = ^TIcsFileRec ;           { pointer once record added to TList }
 
-function GetLocalBiasUTC : LongInt;
+function GetLocalBiasUTC : LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function FileUtcStr(const cFileName : String) : String;
-function UTCToLocalDT(dtDT : TDateTime) : TDateTime;
+function UTCToLocalDT(dtDT : TDateTime) : TDateTime; {$IFDEF USE_INLINE} inline; {$ENDIF}
+function LocalToUtcDT(dtDT : TDateTime) : TDateTime; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function UpdateFileAge (const FName: String; const NewDT: TDateTime): boolean;
 function UpdateUFileAge (const FName: String; const NewDT: TDateTime): boolean;
 function MDTM2Date (S: String): TDateTime;
@@ -228,30 +227,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetLocalBiasUTC : LongInt;
-{$IFDEF VER80}
-{ Delphi 1 doesn't support GetTimeZoneInformation }
 begin
-    Result := 0;
+    Result := OverbyteIcsUtils.IcsGetLocalTimeZoneBias;
 end;
-{$ELSE}
-var
-    tzInfo : TTimeZoneInformation;
-
-{$IFNDEF COMPILER4_UP}
-const
-  TIME_ZONE_ID_STANDARD = 1;
-  TIME_ZONE_ID_DAYLIGHT = 2;
-{$ENDIF}
-
-begin
-    case GetTimeZoneInformation(tzInfo) of
-    TIME_ZONE_ID_STANDARD: Result := tzInfo.Bias + tzInfo.StandardBias;
-    TIME_ZONE_ID_DAYLIGHT: Result := tzInfo.Bias + tzInfo.DaylightBias;
-    else
-        Result := tzInfo.Bias;
-    end;
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -307,13 +285,22 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function UTCToLocalDT(dtDT : TDateTime) : TDateTime;
 begin
-    Result := dtDT - GetLocalBiasUTC / (60.0 * 24.0);
+    Result := dtDT - IcsGetLocalTimeZoneBias / (60.0 * 24.0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function LocalToUtcDT(dtDT : TDateTime) : TDateTime;
+begin
+    Result := dtDT + IcsGetLocalTimeZoneBias / (60.0 * 24.0);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Set file time stamp, local time                                           }
+{ Sets modified date                                                        }
 function UpdateFileAge(const FName: String; const NewDT: TDateTime): boolean;
+{$IFNDEF COMPILER16_UP}
 var
     H: Integer;
 begin
@@ -324,12 +311,18 @@ begin
     FileSetDate(H, DateTimeToFileDate (NewDT));
     FileClose(H);
     Result := TRUE;
+{$ELSE}
+begin
+    Result := FileSetDate(FName, DateTimeToFileDate(NewDT)) = 0;
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Set file time stamp, UTC time                                             }
+{ Sets modified date                                                        }
 function UpdateUFileAge(const FName: String; const NewDT: TDateTime): boolean;
+{$IFDEF MSWINDOWS}
 var
     H, Age   : Integer;
     FileTime : TFileTime;
@@ -344,6 +337,11 @@ begin
             Result := TRUE;
     end;
     FileClose(H);
+{$ELSE}
+begin
+    Result := FileSetDate(FName,
+      DateTimeToFileDate(NewDT + (IcsGetLocalTimeZoneBias / (60.0 * 24.0)))) = 0;
+{$ENDIF}
 end;
 
 
@@ -499,7 +497,7 @@ function IcsGetTickCountX: longword ;
 var
     newtick: Int64 ;
 begin
-    Result := GetTickCount ;
+    Result := IcsGetTickCount ;
   {ensure special trigger values never returned - V7.07 }
     if (Result = TriggerDisabled) or (Result = TriggerImmediate) then Result := 1 ;
     if TicksTestOffset = 0 then
@@ -904,6 +902,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function FileTimeToInt64 (const FileTime: TFileTime): Int64 ;
 begin
     Move (FileTime, Result, SizeOf (Result));    // 29 Sept 2004, poss problem with 12/00 mixup
@@ -929,7 +928,7 @@ begin
     Result := FileTimeToInt64 (FileTime) / FileTimeStep ;
     Result := Result + FileTimeBase ;
 end;
-
+{$ENDIF MSWINDOWS}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { get file written UTC DateTime and size in bytes - no change for summer time }
@@ -938,16 +937,24 @@ function GetUAgeSizeFile (const filename: string; var FileUDT: TDateTime;
 var
    SResult: integer ;
    SearchRec: TSearchRec ;
+{$IFDEF MSWINDOWS}
    TempSize: TULargeInteger ;  { 64-bit integer record }
+{$ENDIF}
 begin
    Result := FALSE ;
    FSize := -1;
    SResult := SysUtils.FindFirst(filename, faAnyFile, SearchRec);
    if SResult = 0 then begin
+     {$IFDEF MSWINDOWS}
         TempSize.LowPart  := SearchRec.FindData.nFileSizeLow ;
         TempSize.HighPart := SearchRec.FindData.nFileSizeHigh ;
         FSize             := TempSize.QuadPart ;
         FileUDT := FileTimeToDateTime (SearchRec.FindData.ftLastWriteTime);
+      {$ENDIF}
+      {$IFDEF POSIX}
+        FSize := SearchRec.Size;
+        FileUDT := SearchRec.TimeStamp;
+      {$ENDIF}
         Result            := TRUE ;
    end;
    SysUtils.FindClose(SearchRec);
@@ -967,12 +974,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { get free space for path or drive }
 function GetFreeSpacePath (const Path: String): int64;
-var
-    TotalSpace, FreeSpace : Int64;
 begin
-    Result := -1;
-    if not GetDiskFreeSpaceEx (Pchar (Path), FreeSpace, TotalSpace, nil) then Exit;
-    Result := FreeSpace;
+    Result := IcsGetFreeDiskSpace(Path);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}     { V7.07 }

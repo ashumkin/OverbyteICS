@@ -90,11 +90,13 @@ unit OverbyteIcsDnsQuery;
 interface
 
 uses
+{$IFDEF MSWINDOWS}
     Messages,
-{$IFDEF USEWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes, OverbyteIcsWinsock, OverbyteIcsWSocket;
 

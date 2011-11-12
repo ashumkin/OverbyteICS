@@ -441,19 +441,34 @@ unit OverbyteIcsFtpSrv;
     {$ObjExportAll On}
 {$ENDIF}
 
-{$DEFINE BIND_FTP_DATA}
-
 interface
 
 uses
-    Messages,
-{$IFDEF USEWINDOWS}
+{$IFDEF MSWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+    Messages,
+    OverbyteIcsWinSock,
+    OverbyteIcsWinsock2,
 {$ENDIF}
+{$IFDEF POSIX}
+    Posix.Errno,
+    Posix.Stdio,
+    Posix.Time,
+    Posix.SysTypes,
+    Posix.Unistd,
+    Posix.Fcntl,
+    Posix.SysSocket,
+    Ics.Posix.Wintypes,
+    Ics.Posix.Messages,
+    System.IOUtils,
+{$ENDIF}
+    SysUtils, Classes,
 {$IFNDEF NOFORMS}
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
     Forms,
+  {$ENDIF}
 {$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
@@ -461,14 +476,6 @@ uses
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY,
 {$ENDIF}
-    SysUtils, Classes,
-(* Icke
-{$IFDEF MSWINDOWS}
-{$IFDEF BCB}
-    Winsock,
-{$ENDIF}
-{$ENDIF}
-*)
     OverbyteIcsStreams,
     {$I OverbyteIcsZlib.inc}
     OverbyteIcsZlibHigh,
@@ -480,8 +487,7 @@ uses
     OverbyteIcsTypes,
     OverbyteIcsUtils,
     OverbyteIcsWndControl,
-    OverbyteIcsWinsock,
-    OverbyteIcsWinsock2, { AG V1.51 }
+    { AG V1.51 }
     OverbyteIcsWSocket,
     OverbyteIcsWSocketS, { angus V7.00 }
     OverbyteIcsFtpSrvT,
@@ -567,6 +573,12 @@ const
     ftpcPROT      = 61;
     ftpcLast      = 61;
 {$ENDIF}
+
+  {$IFDEF POSIX}
+    PathSep       = '/';
+  {$ELSE}
+    PathSep       = '\';
+  {$ENDIF}
 
 type
  { published server options }
@@ -1004,6 +1016,7 @@ type
         FCodePage               : LongWord;     { angus V7.01 for UTF8 support }
         FLanguage               : String;       { angus V7.01 for UTF8 support }
         FMaxAttempts            : Integer;      { angus V7.06 }
+        FBindFtpData            : Boolean;
 {$IFDEF BUILTIN_THROTTLE}
         FBandwidthLimit         : LongWord;     { angus V7.12 Bytes per second, null = disabled }
         FBandwidthSampling      : LongWord;     { angus V7.12 Msec sampling interval }
@@ -1527,6 +1540,8 @@ type
 {$ENDIF}
         property  Addr                   : String     read  FAddr
                                                       write FAddr;
+        property  BindFtpData            : Boolean    read  FBindFtpData
+                                                      write FBindFtpData default True;
         property  SocketFamily           : TSocketFamily
                                                       read  FSocketFamily
                                                       write FSocketFamily;
@@ -2023,6 +2038,7 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function DirExists(const Dir : String) : Boolean;                 { V1.52 AG}
 { INVALID_HANDLE_VALUE = INVALID_FILE_ATTRIBUTES = DWORD(-1) }
+{$IFDEF MSWINDOWS}
 var
     Res : DWORD;
 begin
@@ -2030,13 +2046,24 @@ begin
     Result := (Res <> INVALID_HANDLE_VALUE) and
               ((Res and FILE_ATTRIBUTE_DIRECTORY) <> 0);
 end;
+{$ENDIF}
+{$IFDEF POSIX}
+begin
+    Result := SysUtils.DirectoryExists(Dir);
+end;
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function CreateUniqueFile(Dir, Prefix, Extension: String): String; { V1.52 AG}
 var
     FileName  : String;
     I         : Integer;
+  {$IFDEF MSWINDOWS}
     hFile     : THandle;
+  {$ENDIF}
+  {$IFDEF POSIX}
+    FileHandle : Integer;
+  {$ENDIF}
     Err       : DWord;
 begin
     Result := '';
@@ -2050,6 +2077,7 @@ begin
     Extension := Trim(Extension);
     Dir := Dir + Prefix + FormatDateTime('yymdh', Now);
     I   := 0;
+  {$IFDEF MSWINDOWS}
     Err := ERROR_FILE_EXISTS;
     while (Err = ERROR_FILE_EXISTS) and (I < MaxInt) do begin
         FileName := Dir + IntToStr(I) + Extension;
@@ -2066,7 +2094,26 @@ begin
             Err := GetLastError;
         Inc(I);
     end;
+  {$ENDIF}
+  {$IFDEF POSIX}   { ToBeChecked }
+    ERR := EEXIST;
+    while (Err = EEXIST) and (I < MaxInt) do begin
+        FileName := Dir + IntToStr(I) + Extension;
+        if Length(FileName) > MAX_PATH then
+            Break;
+        FileHandle := __open(PAnsiChar(UTF8String(FileName)), O_RDWR or O_CREAT or O_EXCL, FileAccessRights);
+        if FileHandle <> -1 then begin
+            __close(FileHandle);
+            Result := FileName;
+            Break;
+        end
+        else
+            Err := GetLastError;
+        Inc(I);
+    end;
+  {$ENDIF}
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetZlibCacheFileName(const S : String) : String;  { angus V1.54 }
@@ -2140,8 +2187,10 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TFtpServer.Create(AOwner: TComponent);
+{$IFDEF MSWINDOWS}
 var
     Len : Cardinal;
+{$ENDIF}
 begin
     inherited Create(AOwner);
     AllocateHWnd;
@@ -2171,8 +2220,13 @@ begin
     FZlibMaxLevel       := 9;       { angus V1.54 }
     FZlibNoCompExt      := '.zip;.rar;.7z;.cab;.lzh;.gz;.avi;.wmv;.mpg;.mp3;.jpg;.png;'; { angus V1.54 }
     SetLength(FZlibWorkDir, 1024);
+  {$IFDEF MSWINDOWS}
     Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.04 }
     SetLength(FZlibWorkDir, Len);                                     { AG V6.04 }
+  {$ENDIF}
+  {$IFDEF POSIX}
+    FZlibWorkDir := TPath.GetTempPath;
+  {$ENDIF}
     FZlibWorkDir        := IncludeTrailingPathDelimiter (FZlibWorkDir) + 'icsftpsrv\' ;  { angus V1.54 }
     FZlibMinSpace       := 50000000;               { angus V1.54 50 Mbyte }
     FZlibMaxSize        := 500000000;              { angus V1.55 - 500 meg }
@@ -2187,6 +2241,7 @@ begin
     FLanguage           := 'EN*';   { angus V7.01 we only support ENglish }
     FSystemCodePage     := GetAcp;  { AG 7.02 }
     FMaxAttempts        := 12 ;     { angus V7.06 }
+    FBindFtpData        := True;
 {$IFDEF BUILTIN_THROTTLE}
     FBandwidthLimit     := 0;       { angus V7.12 no bandwidth limit, yet, bytes per second }
     FBandwidthSampling  := 1000;    { angus V7.12 Msec sampling interval, less is not possible }
@@ -2706,7 +2761,6 @@ var
 begin
     Client := Sender as TFtpCtrlSocket;
     if Client.CloseRequest then begin
-        Client.CloseRequest := FALSE;
         PostMessage(Handle, FMsg_WM_FTPSRV_CLOSE_REQUEST,
                     WPARAM(Client.ID), LPARAM(Client));
     end;
@@ -3425,7 +3479,11 @@ var
 begin
     OldDir := Client.Directory;
     try
+      {$IFDEF MSWINDOWS}
         Params := SlashesToBackSlashes(Params);
+      {$ELSE}
+        Params := BackSlashesToSlashes(Params);
+      {$ENDIF}
         Client.Directory := Trim(Params);
         Allowed := IsPathAllowed(Client, Client.Directory);  { V1.52 AG }
         { should this event be before the ftpsCdupHome test??? }
@@ -3440,7 +3498,11 @@ begin
             { angus V1.38 make sure windows path exists }
             if (not (ftpCwdCheck in Client.Options)) or DExists or
                     (DExists and (Length(Client.Directory) <= 3)) or  { angus V1.39 }
-                    (LowerCase(Client.HomeDir) = LowerCase(Client.Directory)) then { angus V1.42 }
+                  {$IFDEF MSWINDOWS}
+                    (AnsiLowerCase(Client.HomeDir) = AnsiLowerCase(Client.Directory)) then { angus V1.42 }
+                  {$ELSE}
+                    (Client.HomeDir = Client.Directory) then
+                  {$ENDIF}
                 Answer := Format(msgCWDSuccess, [FormatResponsePath(Client, Client.Directory)])
             else begin
                 Answer := Format(msgCWDNoDir, [FormatResponsePath(Client, Client.Directory)]);   { angus V1.38 }
@@ -3643,10 +3705,10 @@ begin
         Client.DataSocket.OnDataSent          := nil;
         Client.DataSocket.LingerOnOff         := wsLingerOff;
         Client.DataSocket.LingerTimeout       := 0;
-{$IFDEF BIND_FTP_DATA}
-        Client.DataSocket.LocalAddr           := Client.GetXAddr;
-        Client.DataSocket.LocalPort           := 'ftp-data'; {20}
-{$ENDIF}
+        if FBindFtpData then begin
+            Client.DataSocket.LocalAddr           := Client.GetXAddr;
+            Client.DataSocket.LocalPort           := 'ftp-data'; {20}
+        end;
         Client.DataSocket.ComponentOptions    := [wsoNoReceiveLoop];
 {$IFDEF BUILTIN_THROTTLE}
         Client.DataSocket.BandwidthLimit      := Client.CBandwidthLimit;     { angus V7.12 }
@@ -3976,14 +4038,23 @@ begin
         if NewFileName <> '' then
             Result := TRUE  { end V7.08 change }
         else if ExcludeBackslash then
-          Result := (Pos(LowerCase(ExcludeTrailingPathDelimiter(Client.HomeDir)),
-                         LowerCase(Path)) = 1)
-       else
-          Result := (Pos(LowerCase(Client.HomeDir), LowerCase(Path)) = 1);
+        {$IFDEF MSWINDOWS}
+          Result := Pos(AnsiLowerCase(ExcludeTrailingPathDelimiter(Client.HomeDir)),
+                        AnsiLowerCase(Path)) = 1
+        {$ELSE}
+          Result := Pos(ExcludeTrailingPathDelimiter(Client.HomeDir), Path) = 1
+        {$ENDIF}
+        else
+       {$IFDEF MSWINDOWS}
+          Result := Pos(AnsiLowerCase(Client.HomeDir), AnsiLowerCase(Path)) = 1;
+       {$ELSE}
+          Result := Pos(Client.HomeDir, Path) = 1;
+       {$ENDIF}
     end
     else
         Result := TRUE;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TFtpServer.FormatResponsePath(                                       { AG V1.52 angus V7.08 }
@@ -4002,11 +4073,15 @@ begin
         NewPath := '';
         TriggerBuildFilePath(Client, InPath, '?', NewPath);  { ? used as flag for reverse translation }
         if NewPath = '' then NewPath := InPath ;         { no virtual dir, use original path }
-		Home := ExcludeTrailingPathDelimiter(Client.HomeDir);
-        if Pos(LowerCase(Home), LowerCase(InPath)) = 1 then
+		    Home := ExcludeTrailingPathDelimiter(Client.HomeDir);
+      {$IFDEF MSWINDOWS}
+        if Pos(AnsiLowerCase(Home), AnsiLowerCase(InPath)) = 1 then
+      {$ELSE}
+        if Pos(Home, InPath) = 1 then
+      {$ENDIF}
             Result := Copy(InPath, Length(Home) + 1, Length(InPath));
     end;
-    while (Length(Result) > 0) and (Result[Length(Result)] = '\') do
+    while (Length(Result) > 0) and (Result[Length(Result)] = PathSep) do
         SetLength(Result, Length(Result) - 1);
     if (Length(Result) = 0) then
         Result := Slash
@@ -4029,7 +4104,11 @@ var
     Drive : String;
     Path  : String;
 begin
+  {$IFDEF MSWINDOWS}
     FileName := SlashesToBackSlashes(FileName);
+  {$ELSE}
+    FileName := BackSlashesToSlashes(FileName);
+  {$ENDIF}
     PatchIE5(FileName);
 
     { Gives the application a chance to do the work for us }
@@ -4041,7 +4120,7 @@ begin
     if IsUNC(FileName) then
         Result := FileName
     else if IsUNC(Directory) then begin
-        if (Length(FileName) > 0) and (FileName[1] = '\') then begin
+        if (Length(FileName) > 0) and (FileName[1] = PathSep) then begin
             if (ftpCdUpHome in Client.Options) then              { AG V1.52 }
                 { absolute path, HomeDir }
                 Result := Client.HomeDir + Copy(FileName, 2, Length(FileName))
@@ -4057,7 +4136,7 @@ begin
             Path  := Copy(FileName, 3, Length(FileName));
         end
         else if (ftpCdUpHome in Client.Options) and              { AG V1.52 }
-                (Length(FileName) > 0) and (FileName[1] = '\') then begin
+                (Length(FileName) > 0) and (FileName[1] = PathSep) then begin
                 { absolute path, HomeDir }
                 Drive := ExtractFileDrive(Client.HomeDir);
                 Path  := Copy(Client.HomeDir, Length(Drive) + 1, Length(Client.HomeDir)) +
@@ -4067,7 +4146,7 @@ begin
             Drive := Copy(Directory, 1, 2);
             Path  := FileName;
         end;
-        if (Length(Path) > 0) and (Path[1] = '\') then
+        if (Length(Path) > 0) and (Path[1] = PathSep) then
             Result := Drive + Path
         else begin
             if Drive <> Copy(Directory, 1, 2) then
@@ -4354,10 +4433,10 @@ begin
         Client.DataSocket.OnDataSent         := ClientRetrDataSent;
         Client.DataSocket.LingerOnOff        := wsLingerOff;
         Client.DataSocket.LingerTimeout      := 0;
-{$IFDEF BIND_FTP_DATA}
-        Client.DataSocket.LocalAddr           := Client.GetXAddr;
-        Client.DataSocket.LocalPort           := 'ftp-data'; {20}
-{$ENDIF}
+        if FBindFtpData then begin
+            Client.DataSocket.LocalAddr           := Client.GetXAddr;
+            Client.DataSocket.LocalPort           := 'ftp-data'; {20}
+        end;
         Client.DataSocket.ComponentOptions    := [wsoNoReceiveLoop];
 {$IFDEF BUILTIN_THROTTLE}
         Client.DataSocket.BandwidthLimit      := Client.CBandwidthLimit;     { angus V7.12 }
@@ -4635,8 +4714,11 @@ begin
         NOTE2: we don't yet support multiple arguments, ie only -R or -AL, not both
         NOTE3: -R or -SUBDIRS recursive listings have a file name with path and leading /, ie
                /download/ALLDEPOTS/all/30=page-022864.zip  }
-
+         {$IFDEF MSWINDOWS}
             Params := SlashesToBackSlashes(Params);
+         {$ELSE}
+            Params := BackSlashesToSlashes(Params);
+         {$ENDIF}
             Path := '';
             Args := '';
             Client.DirListHidden := FALSE;
@@ -4756,12 +4838,12 @@ begin
                params is now only path or file name }
 
  { angus 1.54 remove leading / to keep BuildFilePath happy, probably not backward compatible!! }
-    if (Length (Path) >= 1) and (Path [1] = '\') then Path := Copy (Path, 2, 999);
+    if (Length (Path) >= 1) and (Path [1] = PathSep) then Path := Copy (Path, 2, 999);
     if Path = '' then
 {        Client.DirListPath := Client.Directory + '*.*'   V7.08 }
         Client.DirListPath := BuildFilePath(Client, Client.Directory, '*.*')  { angus V7.08 must not skip buildpath }
     else begin
-        if Path[Length(Path)] = '\' then Path := Path + '*.*';
+        if Path[Length(Path)] = PathSep then Path := Path + '*.*';
         Client.DirListPath := BuildFilePath(Client, Client.Directory, Path);
     end;
 
@@ -5327,7 +5409,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsIpPrivate(saddr : TInAddr): Boolean;                    { AG V1.51 }
+function IsIpPrivate(saddr : TIcsInAddr): Boolean;                    { AG V1.51 }
 begin
     Result := (Byte(saddr.S_un_b.s_b1) = 10) or   // private class A
               (saddr.S_un_w.s_w1       = 4268) or // private class B
@@ -5345,8 +5427,8 @@ var
     saddr     : TSockAddrIn;
     saddrlen  : Integer;
     DataPort  : Integer;
-    IPAddr    : TInAddr;
-    PASVAddr  : TInAddr;
+    IPAddr    : TIcsInAddr;
+    PASVAddr  : TIcsInAddr;
     APasvIp   : TFtpString;
     SetPasvIp : Boolean;
 begin
@@ -5363,7 +5445,7 @@ begin
         { Get our IP address from our control socket }
         saddrlen := SizeOf(saddr);
         Client.GetSockName(saddr, saddrlen);
-        IPAddr   := saddr.sin_addr;
+        IPAddr   := PIcsInAddr(@saddr.sin_addr)^;
 
         { FLD Make sure to free up a previous connected passive data-socket!! }
         { can happen if a PASV-command is issued, but a passive connection is }
@@ -5393,15 +5475,15 @@ begin
 
         if Client.sin.sin_addr.s_addr = WSocket_htonl($7F000001) then
             Answer := Format(msgPasvLocal,
-                          [HiByte(DataPort),
-                           LoByte(DataPort)])
+                          [IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)])
         else begin
             APasvIp := FPasvIpAddr;
-            SetPasvIp := (APasvIp <> '') and (not
+            SetPasvIp := (APasvIp <> '') {$IFDEF MSWINDOWS} and (not
                          (((ftpsNoPasvIpAddrInLan in FOptions) and
                            IsIpPrivate(Client.PeerSAddr.sin_addr)) or
                           ((ftpsNoPasvIpAddrSameSubnet in FOptions) and
-                           WSocket2IsAddrInSubNet(Client.PeerSAddr.sin_addr))));
+                           WSocket2IsAddrInSubNet(Client.PeerSAddr.sin_addr)))) {$ENDIF};
 
             if Assigned(FOnPasvIpAddr) then begin
                 FOnPasvIpAddr(Self, Client, APasvIp, SetPasvIp);
@@ -5414,21 +5496,21 @@ begin
                            ord(IPAddr.S_un_b.s_b2),
                            ord(IPAddr.S_un_b.s_b3),
                            ord(IPAddr.S_un_b.s_b4),
-                           HiByte(DataPort),
-                           LoByte(DataPort)])
+                           IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)])
             else begin
                 PASVAddr.S_addr := WSocket_inet_addr(AnsiString(APasvIp));
                 if (PASVAddr.S_addr = u_long(INADDR_NONE)) or
                             (PASVAddr.S_addr = 0) then { angus v1.53 0.0.0.0 not allowed }
-                        raise Exception.Create('Invalid PASV IP Address')
+                    raise Exception.Create('Invalid PASV IP Address')
                 else
-                        Answer := Format(msgPasvRemote,
-                              [ord(PASVAddr.S_un_b.s_b1),
-                               ord(PASVAddr.S_un_b.s_b2),
-                               ord(PASVAddr.S_un_b.s_b3),
-                               ord(PASVAddr.S_un_b.s_b4),
-                               HiByte(DataPort),
-                               LoByte(DataPort)]);
+                    Answer := Format(msgPasvRemote,
+                          [ord(PASVAddr.S_un_b.s_b1),
+                           ord(PASVAddr.S_un_b.s_b2),
+                           ord(PASVAddr.S_un_b.s_b3),
+                           ord(PASVAddr.S_un_b.s_b4),
+                           IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)]);
             end;
         end;
         
@@ -7351,14 +7433,14 @@ begin
         GetMem(Buf, Len);
         try
             BytesRead := DataStream.Read(Buf^, Len);
-            L1 := MultiByteToWideChar(SrcCodePage, 0, Buf, BytesRead, nil, 0);
+            L1 :=  IcsMbToWc{MultiByteToWideChar}(SrcCodePage, 0, Buf, BytesRead, nil, 0);
             GetMem(BufW, L1 * SizeOf(WideChar));
             try
-                MultiByteToWideChar(SrcCodePage, 0, Buf, BytesRead, BufW, L1);
-                L2 := WideCharToMultibyte(CP_ACP, 0, BufW, L1, nil, 0, nil, nil);
+                IcsMbToWc{MultiByteToWideChar}(SrcCodePage, 0, Buf, BytesRead, BufW, L1);
+                L2 := IcsWcToMb{WideCharToMultibyte}(CP_ACP, 0, BufW, L1, nil, 0, nil, nil);
                 if L2 <> Len then
                     ReallocMem(Buf, L2);
-                L1 := WideCharToMultibyte(CP_ACP, 0, BufW, L1, Buf, L2, nil, nil);
+                L1 := IcsWcToMb{WideCharToMultibyte}(CP_ACP, 0, BufW, L1, Buf, L2, nil, nil);
                 SetLength(Str, L1);
                 Move(Buf[0], Pointer(Str)^, L1);
             finally
@@ -7383,17 +7465,17 @@ begin
     if SrcCodePage <> 1200 {CP_UTF16} then begin
         if Len <= SizeOf(SBuf) then begin
             eLen := DataStream.Read(SBuf[0], Len);
-            Len := MultiByteToWideChar(SrcCodePage, 0, @SBuf, eLen, nil, 0);
+            Len := IcsMbToWc{MultiByteToWideChar}(SrcCodePage, 0, @SBuf, eLen, nil, 0);
             SetLength(Str, Len);
-            MultiByteToWideChar(SrcCodePage, 0, @SBuf, eLen, Pointer(Str), Len);
+            IcsMbToWc{MultiByteToWideChar}(SrcCodePage, 0, @SBuf, eLen, Pointer(Str), Len);
         end
         else begin
             GetMem(HBuf, Len);
             try
                 eLen := DataStream.Read(HBuf^, Len);
-                Len := MultiByteToWideChar(SrcCodePage, 0, HBuf, eLen, nil, 0);
+                Len := IcsMbToWc{MultiByteToWideChar}(SrcCodePage, 0, HBuf, eLen, nil, 0);
                 SetLength(Str, Len);
-                MultiByteToWideChar(SrcCodePage, 0, HBuf, eLen, Pointer(Str), Len);
+                IcsMbToWc{MultiByteToWideChar}(SrcCodePage, 0, HBuf, eLen, Pointer(Str), Len);
             finally
                 FreeMem(HBuf);
             end;
@@ -7434,6 +7516,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 procedure TFtpCtrlSocket.SetDirectory(newValue : String);
 var
     newDrive : String;
@@ -7534,15 +7617,82 @@ begin
 
     FDirectory := newDrive + newPath;
 end;
+{$ENDIF MSWINDOWS}
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF POSIX}
+procedure TFtpCtrlSocket.SetDirectory(newValue : String);
+var
+    newPath  : String;
+    I        : Integer;
+begin
+    if FDirectory = newValue then
+        Exit;
+    PatchIE5(newValue);
+
+    if (newValue = FHomeDir) then begin
+        FDirectory := FHomeDir;
+        Exit;
+    end;
+
+    if (ftpCdUpHome in Options) then begin
+        if (Length(newValue) > 0) and (newValue[1] = PathSep) then begin
+            { absolute path, HomeDir }
+            newPath  := FHomeDir + Copy(newValue, 2, MaxInt)
+        end
+        else begin
+            newPath  := newValue;
+        end;
+    end
+    else begin
+      newPath  := newValue;
+    end;
+
+    if Pos(':', newPath) <> 0 then
+        raise Exception.Create('Invalid directory name syntax');
+
+    if newPath = '..' then begin
+        newPath := FDirectory;
+        I := Length(newPath) - 1;
+        while (I > 0) and (newPath[I] <> PathSep) do
+            Dec(I);
+        SetLength(newPath, I);
+    end;
+
+    if (Length(newPath) > 0) and (newPath[1] <> PathSep) then begin
+        { Relative path }
+        if Pos('.\', newPath) <> 0 then
+            raise Exception.Create('Cannot accept relative path using dot notation');
+        if newPath = '.' then
+            newPath := FDirectory
+        else
+            newPath := FDirectory + newPath;
+
+    end
+    else begin
+        if Pos('.\', newPath) <> 0 then
+            raise Exception.Create('Cannot accept relative path using dot notation');
+    end;
+
+    if Length(newPath) = 0 then begin
+        newPath := FDirectory;
+    end;
+
+    { Always terminate with a backslash }
+    if (Length(newPath) > 0) and (newPath[Length(newPath)] <> PathSep) then
+        newPath := newPath + PathSep;
+
+    FDirectory := newPath;
+end;
+{$ENDIF POSIX}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpCtrlSocket.SetHomeDir(const newValue: String);
 begin
     if FHomeDir = newValue then
         Exit;
-    if (Length(newValue) > 0) and (newValue[Length(newValue)] <> '\') then
-        FHomeDir := newValue + '\'
+    if (Length(newValue) > 0) and (newValue[Length(newValue)] <> PathSep) then
+        FHomeDir := newValue + PathSep
     else
         FHomeDir := newValue;
 end;
@@ -7582,6 +7732,9 @@ var
     Hour, Min        : Integer;
     SizeStr          : String;
     TimeStr          : String;
+  {$IFDEF POSIX}
+    UT: tm;
+  {$ENDIF}
 const
     StrMonth : array [1..12] of String =
         ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
@@ -7605,18 +7758,39 @@ begin
         Attr[7]  := 'x';
         Attr[10] := 'x';
     end;
-
-    Day   := (HIWORD(F.Time) and $1F);
-    Month := ((HIWORD(F.Time) shr 5) and $0F);
-    Year  := ((HIWORD(F.Time) shr 9) and $3F) + 1980;
+{$IFDEF MSWINDOWS}
+    Year  := IcsHiWord(F.Time) shr 9 + 1980;
+    Month := IcsHiWord(F.Time) shr 5 and $0F;
+    Day   := IcsHiWord(F.Time) and $1F;
+    Hour  := IcsLoWord(F.Time) shr 11;
+    Min   := IcsLoWord(F.Time) shr 5 and $3F;
+    (*
+    Day   := (IcsHiWord(F.Time) and $1F);
+    Month := ((IcsHiWord(F.Time) shr 5) and $0F);
+    Year  := ((IcsHiWord(F.Time) shr 9) and $3F) + 1980;
     Min   := ((F.Time shr 5) and $3F);
     Hour  := ((F.Time shr 11) and $1F);
+    *)
+{$ENDIF}
+{$IFDEF POSIX}
+    localtime_r(F.Time, UT);
+    Year  := UT.tm_year + 1900;
+    Month := UT.tm_mon + 1;
+    Day   := UT.tm_mday;
+    Hour  := UT.tm_hour;
+    Min   := UT.tm_min;
+{$ENDIF}
 
+  {$IFDEF MSWINDOWS}
     if F.FindData.nFileSizeHigh = 0 then
         SizeStr := IntToStr(F.FindData.nFileSizeLow)
     else
         SizeStr := IntToStr(F.FindData.nFileSizeLow +
                            (Int64(F.FindData.nFileSizeHigh) shl 32));
+  {$ENDIF}
+  {$IFDEF POSIX}
+        SizeStr := IntToStr(F.Size);
+  {$ENDIF}
     if Year = ThisYear then
         TimeStr := Format('%2.2d:%2.2d', [Hour, Min])
     else
@@ -7629,6 +7803,7 @@ begin
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function FileTimeToStr(const FileTime: TFileTime): String;     { angus V1.38 }
 const
   FileTimeBase = -109205.0;   { days between years 1601 and 1900 }
@@ -7641,6 +7816,13 @@ begin
     TempDT := TempDT + FileTimeBase;
     Result := FormatDateTime (UtcDateMaskPacked, TempDT);
 end;
+{$ENDIF}
+{$IFDEF POSIX}
+function FileTimeToStr(const DT: TDateTime): String; // creation time
+begin
+    Result := FormatDateTime(UtcDateMaskPacked, DT);
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -7664,6 +7846,9 @@ size=0;type=dir;perm=fdelcmp;create=20020801100314;modify=20031004124403; zip lo
 function FormatFactsDirEntry(F : TSearchRec; const FileName: string) : String;  { angus V1.38, 1.54 added FileName }
 var
     SizeStr : String;
+  {$IFDEF POSIX}
+    CreateDT, ModifyDT : TDateTime;
+  {$ENDIF}
 begin
 {$WARNINGS OFF}
     (*  faVolumeID not used in Win32
@@ -7673,12 +7858,16 @@ begin
         Exit;
     end;
     *)
+  {$IFDEF MSWINDOWS}
     if F.FindData.nFileSizeHigh = 0 then
         SizeStr := IntToStr(F.FindData.nFileSizeLow)
     else
         SizeStr := IntToStr(F.FindData.nFileSizeLow +
                            (Int64(F.FindData.nFileSizeHigh) shl 32));
-
+  {$ENDIF}
+  {$IFDEF POSIX}
+        SizeStr := IntToStr(F.Size);
+  {$ENDIF}
     { PERMissions is advisory only, max 10 characters - not properly set here }
     { a - APPE allowed for a file                                             }
     { c - files may be created in this directory                              }
@@ -7705,10 +7894,27 @@ begin
         else
             result := result + 'fdrwa;';
     end;
+  {$IFDEF MSWINDOWS}
     result := result +
         'create=' + FileTimeToStr (F.FindData.ftCreationTime) +
         ';modify=' + FileTimeToStr (F.FindData.ftLastWriteTime) +
         '; ' + FileName;    { note space before filename is delimiter }
+  {$ENDIF}
+
+  {$IFDEF POSIX}
+    if (F.Attr and faDirectory) <> 0 then begin
+        CreateDT := TDirectory.GetCreationTimeUtc(F.PathOnly);
+        ModifyDT := TDirectory.GetLastWriteTimeUtc(F.PathOnly);
+    end
+    else begin
+        CreateDT := TFile.GetCreationTimeUtc(F.PathOnly + FileName);
+        ModifyDT := TFile.GetLastWriteTimeUtc(F.PathOnly + FileName);
+    end;
+    result := result +
+        'create=' + FileTimeToStr(CreateDT) +
+        ';modify=' + FileTimeToStr(ModifyDT) +
+        '; ' + FileName;
+  {$ENDIF}
 end;
 
 

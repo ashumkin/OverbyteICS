@@ -467,25 +467,25 @@ unit OverbyteIcsHttpProt;
 interface
 
 {$I OverbyteIcsDefs.inc}
+{$IFNDEF COMPILER7_UP}
+  {$MESSAGE FATAL 'Sorry, we do not want to support ancient compilers any longer'};
+{$ENDIF}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
     {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
   {$ENDIF}
 {$ENDIF}
-{$IFNDEF COMPILER7_UP}
-    'Sorry, we do not want to support ancient compilers any longer'
-{$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
+
+{$WARN SYMBOL_PLATFORM   OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
+
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
 {$X+}             { Enable extended syntax              }
 {$H+}             { Use long strings                    }
 {$J+}             { Allow typed constant to be modified }
-{$IFDEF BCB3_UP}
+{$IFDEF BCB}
     {$ObjExportAll On}
 {$ENDIF}
 {$IFNDEF NO_ADVANCED_HTTP_CLIENT_FEATURES}
@@ -498,25 +498,24 @@ interface
     {$ENDIF}
     {$DEFINE UseContentCoding}
 {$ENDIF}
-{$IFDEF CLR}
-    {$UNDEF UseNTLMAuthentication}
-    {$UNDEF UseDigestAuthentication}
-    {$UNDEF UseContentCoding}
-{$ENDIF}
 
 uses
+{$IFDEF MSWINDOWS}
     Messages,
-{$IFDEF USEWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+    OverbyteIcsWinSock,
 {$ENDIF}
-{$IFDEF CLR}
-    System.Text, System.IO, System.Threading,
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes,
 {$IFNDEF NOFORMS}
-    Forms, Controls,
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
+    Forms,
+  {$ENDIF}
 {$ENDIF}
 { You must define USE_SSL so that SSL code is included in the component.   }
 { Either in OverbyteIcsDefs.inc or in the project/package options.         }
@@ -537,14 +536,15 @@ uses
 {$IFDEF UseDigestAuthentication}
     OverbyteIcsDigestAuth,
 {$ENDIF}
-    OverbyteIcsWinSock, OverbyteIcsWndControl, OverbyteIcsWSocket;
+    OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
     HttpCliVersion       = 720;
     CopyRight : String   = ' THttpCli (c) 1997-2011 F. Piette V7.20 ';
+
     DefaultProxyPort     = '80';
-    HTTP_RCV_BUF_SIZE    = 8193;
-    HTTP_SND_BUF_SIZE    = 8193;
+    //HTTP_RCV_BUF_SIZE    = 8193;
+    //HTTP_SND_BUF_SIZE    = 8193;
     { EHttpException error code }
     httperrNoError                  = 0;
     httperrBusy                     = 1;
@@ -563,8 +563,6 @@ type
         ErrorCode : Word;
         constructor Create(const Msg : String; ErrCode : Word);
     end;
-
-    // TBytes = array of Byte;
 
     THttpEncoding    = (encUUEncode, encBase64, encMime);
     THttpRequest     = (httpABORT, httpGET, httpPOST, httpPUT,
@@ -593,12 +591,7 @@ type
     TOnCommand       = procedure (Sender : TObject;
                                   var S: String) of object;
     TDocDataEvent    = procedure (Sender : TObject;
-                                  {$IFDEF CLR}
-                                  var Buffer : TBytes;
-                                  Offset     : Integer;
-                                  {$ELSE}
                                   Buffer : Pointer;
-                                  {$ENDIF}
                                   Len    : Integer) of object;
     TCookieRcvdEvent = procedure (Sender       : TObject;
                                   const Data   : String;
@@ -863,27 +856,13 @@ type
         procedure TriggerHeaderBegin; virtual;
         procedure TriggerHeaderEnd; virtual;
         procedure TriggerDocBegin; virtual;
-        procedure TriggerDocData(
-{$IFDEF CLR}
-            var Data : TBytes;
-            Offset   : Integer;
-{$ELSE}
-            Data : Pointer;
-{$ENDIF}
-            Len : Integer); virtual;
+        procedure TriggerDocData(Data : Pointer; Len : Integer); virtual;
         procedure TriggerDocEnd; virtual;
         procedure TriggerSendBegin; virtual;
-        procedure TriggerSendData(
-{$IFDEF CLR}
-            var Data : TBytes;
-            Offset   : Integer;
-{$ELSE}
-            Data     : Pointer;
-{$ENDIF}
-            Len      : Integer); virtual;
+        procedure TriggerSendData(Data : Pointer; Len : Integer); virtual;
         procedure TriggerSendEnd; virtual;
         procedure TriggerRequestDone; virtual;
-        procedure WndProc(var MsgRec: OverbyteIcsTypes.TMessage); override;
+        procedure WndProc(var MsgRec: TMessage); override;
         procedure SetReady; virtual;
         procedure AdjustDocName; virtual;
         procedure SetRequestVer(const Ver : String);
@@ -901,7 +880,7 @@ type
                                    var Disconnect : Boolean);
 {$ENDIF}
     public
-        constructor Create(Aowner:TComponent); override;
+        constructor Create(AOwner: TComponent); override;
         destructor  Destroy; override;
         procedure   Get;        { Synchronous blocking Get         }
         procedure   Post;       { Synchronous blocking Post        }
@@ -1190,12 +1169,8 @@ type
 {$ENDIF} // USE_SSL
 
 procedure ReplaceExt(var FName : String; const newExt : String);
-{$IFDEF CLR}
-function EncodeStr(Encoding : THttpEncoding; const Value : String) : String;
-{$ENDIF}
 function RFC1123_Date(aDate : TDateTime) : String;
 function RFC1123_StrToDate(aDate : String) : TDateTime;
-{$IFNDEF CLR}
 function EncodeLine(
     Encoding : THttpEncoding;
     SrcData  : PAnsiChar;
@@ -1207,23 +1182,14 @@ function EncodeStr(
     Encoding    : THttpEncoding;
     const Value : UnicodeString;
     ACodePage   : LongWord = CP_ACP ) : UnicodeString; overload;
-{$ENDIF}
 
 implementation
 
 const
-{$IFDEF MSWINDOWS}
     bin2uue  : AnsiString = '`!"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_';
     bin2b64  : AnsiString = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     uue2bin  : AnsiString = ' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_ ';
     b642bin  : AnsiString = '~~~~~~~~~~~^~~~_TUVWXYZ[\]~~~|~~~ !"#$%&''()*+,-./0123456789~~~~~~:;<=>?@ABCDEFGHIJKLMNOPQRS';
-{$ENDIF}
-{$IFDEF CLR}
-    bin2uue  : String = '`!"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_';
-    bin2b64  : String = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    uue2bin  : String = ' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_ ';
-    b642bin  : String = '~~~~~~~~~~~^~~~_TUVWXYZ[\]~~~|~~~ !"#$%&''()*+,-./0123456789~~~~~~:;<=>?@ABCDEFGHIJKLMNOPQRS';
-{$ENDIF}
     linesize = 45;
 type
     TCharSet = set of AnsiChar;
@@ -1249,15 +1215,6 @@ begin
     inherited Create(Msg);
     ErrorCode := ErrCode;
 end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF DELPHI1}
-procedure SetLength(var S: string; NewLength: Integer);
-begin
-    S[0] := chr(NewLength);
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1297,7 +1254,7 @@ begin
     Result := EncodeDate(Year, Month, Day);
     Result := Result + EncodeTime(Hour, Min, Sec, 0);
 end;
-
+(*
 {$IFDEF NOFORMS}
 { This function is a callback function. It means that it is called by       }
 { windows. This is the very low level message handler procedure setup to    }
@@ -1329,7 +1286,7 @@ begin
     end;
 end;
 {$ENDIF}
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function THttpCli.MsgHandlersCount : Integer;
@@ -1361,7 +1318,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor THttpCli.Create(Aowner:TComponent);
+constructor THttpCli.Create(AOwner:TComponent);
 begin
     inherited Create(AOwner);
     AllocateHWnd;
@@ -1703,16 +1660,11 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.TriggerDocData(
-{$IFDEF CLR}
-    var Data : TBytes;
-    Offset   : Integer;
-{$ELSE}
     Data : Pointer;
-{$ENDIF}
     Len : Integer);
 begin
     if Assigned(FOnDocData) then
-        FOnDocData(Self, Data, {$IFDEF CLR}Offset, {$ENDIF}Len);
+        FOnDocData(Self, Data, Len);
 end;
 
 
@@ -1734,16 +1686,11 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.TriggerSendData(
-{$IFDEF CLR}
-    var Data : TBytes;
-    Offset   : Integer;
-{$ELSE}
     Data : Pointer;
-{$ENDIF}
     Len  : Integer);
 begin
     if Assigned(FOnSendData) then
-        FOnSendData(Self, Data, {$IFDEF CLR}Offset, {$ENDIF}Len);
+        FOnSendData(Self, Data, Len);
 end;
 
 
@@ -2353,20 +2300,6 @@ end;
 procedure THttpCli.SendCommand(const Cmd : String);
 const
     CRLF : String[2] = #13#10;
-{$IFDEF CLR}
-var
-    Buf : String;
-    I   : Integer;
-begin
-    Buf := Cmd;
-    if Assigned(FOnCommand) then
-        FOnCommand(Self, Buf);
-    for I := 1 to Length(Buf) do
-        FReqStream.Write(Byte(Buf[I]));
-    FReqStream.Write(Byte(CRLF[1]));
-    FReqStream.Write(Byte(CRLF[2]));
-end;
-{$ELSE}
 var
     Buf : String;
 begin
@@ -2374,14 +2307,13 @@ begin
     if Assigned(FOnCommand) then
         FOnCommand(Self, Buf);
     if Length(Buf) > 0 then
-{$IFDEF COMPILER12_UP}
+    {$IFDEF COMPILER12_UP}
         StreamWriteString(FReqStream, Buf, CP_ACP);
-{$ELSE}
+    {$ELSE}
         FReqStream.Write(Buf[1], Length(Buf));
-{$ENDIF}
+    {$ENDIF}
     FReqStream.Write(CRLF[1], 2);
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2402,11 +2334,7 @@ begin
         // Number of bytes we allow during a sampling period
         FBandwidthMaxCount := Int64(FBandwidthLimit) * FBandwidthSampling div 1000;
         FBandwidthPaused   := FALSE;
-    {$IFDEF CLR}
-        FCtrlSocket.ComponentOptions := FCtrlSocket.ComponentOptions or wsoNoReceiveLoop;
-    {$ELSE}
         FCtrlSocket.ComponentOptions := FCtrlSocket.ComponentOptions + [wsoNoReceiveLoop];
-    {$ENDIF CLR}
     end;
 {$ENDIF}
     Headers := TStringList.Create;
@@ -2654,20 +2582,14 @@ begin
                     N := N - K;
                     FRcvdCount := FRcvdCount + K;
                     FChunkRcvd := FChunkRcvd + K;
-{$IFDEF UseContentCoding}
+                {$IFDEF UseContentCoding}
 //                  FContentCodingHnd.WriteBuffer(P, K);
                     FContentCodingHnd.WriteBuffer(@FReceiveBuffer[P], K);   // FP 09/09/06
-{$ELSE}
-{$IFDEF CLR}
-                    if Assigned(FRcvdStream) then
-                        FRcvdStream.Write(FReceiveBuffer[P], P, K);
-                    TriggerDocData(@FReceiveBuffer[P], P, K);
-{$ELSE}
+                {$ELSE}
                     if Assigned(FRcvdStream) then
                         FRcvdStream.WriteBuffer(FReceiveBuffer[P], K);
                     TriggerDocData(@FReceiveBuffer[P], K);
-{$ENDIF}
-{$ENDIF}
+                {$ENDIF}
                     P := P + K;
                 end;
                 if FChunkRcvd >= FChunkLength then
@@ -2734,15 +2656,9 @@ begin
 //          FContentCodingHnd.WriteBuffer(FBodyData, FBodyDataLen);
             FContentCodingHnd.WriteBuffer(@FReceiveBuffer[FBodyData], FBodyDataLen); // FP 09/09/06
 {$ELSE}
-{$IFDEF CLR}
-            if Assigned(FRcvdStream) then
-                FRcvdStream.Write(FReceiveBuffer[FBodyData], FBodyData, FBodyDataLen);
-            TriggerDocData(@FReceiveBuffer[FBodyData], FBodyData, FBodyDataLen);
-{$ELSE}
             if Assigned(FRcvdStream) then
                 FRcvdStream.WriteBuffer(FReceiveBuffer[FBodyData], FBodyDataLen);
             TriggerDocData(@FReceiveBuffer[FBodyData], FBodyDataLen);
-{$ENDIF}
 {$ENDIF}
         end;
 
@@ -2823,30 +2739,9 @@ procedure MoveTBytes(
     var Buffer : Tbytes;
     OffsetFrom : Integer;
     OffsetTo   : Integer;
-    Count      : Integer);
+    Count      : Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-{$IFDEF CLR}
-    if OffsetFrom > OffsetTo then begin
-        while Count > 0 do begin
-            Buffer[OffsetTo] := Buffer[OffsetFrom];
-            Inc(OffsetFrom);
-            Inc(OffsetTo);
-            Dec(Count);
-        end;
-    end
-    else if OffsetFrom <> OffsetTo then begin
-        Inc(OffsetFrom, Count);
-        Inc(OffsetTo,   Count);
-        while Count > 0 do begin
-            Buffer[OffsetTo] := Buffer[OffsetFrom];
-            Dec(OffsetFrom);
-            Dec(OffsetTo);
-            Dec(Count);
-        end;
-    end;
-{$ELSE}
     Move(Buffer[OffsetFrom], Buffer[OffsetTo], Count);
-{$ENDIF}
 end;
 
 
@@ -3301,13 +3196,17 @@ begin
                                     httpErrNoData);
 
     if Rq = httpCLOSE then begin
+        StateChange(httpClosing);
         FStatusCode   := 200;
         FReasonPhrase := 'OK';
-        StateChange(httpClosing);
-        if FCtrlSocket.State = wsClosed then
-            SetReady
+        if FCtrlSocket.State = wsClosed then begin
+            FLocationFlag := False;
+            FRequestType := Rq;
+            InternalClear;
+            SetReady;
+        end
         else
-           FCtrlSocket.CloseDelayed;
+            FCtrlSocket.CloseDelayed;
         Exit;
     end;
 
@@ -3503,24 +3402,30 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.DoRequestSync(Rq : THttpRequest);  { V7.04 Timeout added }
 var
-    DummyHandle     : {$IFDEF CLR}Borland.Vcl.Windows.THandle;
-                      {$ELSE} THandle;{$ENDIF}
+  {$IFDEF MSWINDOWS}
+    DummyHandle     : THandle;
+  {$ENDIF}
     TimeOutMsec     : UINT;
     bFlag           : Boolean;
 begin
     DoRequestAsync(Rq);
     if not Assigned(FCtrlSocket.Counter) then
         FCtrlSocket.CreateCounter;
-    FCtrlSocket.Counter.LastSendTick := GetTickCount; // Reset counter
+    FCtrlSocket.Counter.LastSendTick := IcsGetTickCount; // Reset counter
+  {$IFDEF MSWINDOWS}
     DummyHandle := INVALID_HANDLE_VALUE;
+  {$ENDIF}
     TimeOutMsec := FTimeOut * 1000;
     while FState <> httpReady do begin
+      {$IFDEF MSWINDOWS}
         if MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000,
                                      QS_ALLINPUT) = WAIT_OBJECT_0 then
+      {$ENDIF}
             MessagePump;
+
         if (FState <> httpReady) and (Terminated or
            (IcsCalcTickDiff(FCtrlSocket.Counter.LastAliveTick,
-                            GetTickCount) >= TimeOutMsec)) then begin
+                            IcsGetTickCount) >= TimeOutMsec)) then begin
             bFlag := (FState = httpDnsLookup);
             StateChange(httpAborting);
 
@@ -3722,9 +3627,6 @@ var
     Len     : Integer;
     I       : Integer;
 //  VoidBuf : String;  FP 09/09/06
-{$IFDEF CLR}
-    TempBuf : TBytes;
-{$ENDIF}
 const
     BUF_SIZE = 8192;
 begin
@@ -3755,19 +3657,7 @@ begin
     end;
     I := Length(FReceiveBuffer) - FReceiveLen - 1;     // Preserve the nul byte
 
-{$IFDEF CLR}
-    if FReceiveLen = 0 then
-        Len := FCtrlSocket.Receive(FReceiveBuffer, I)
-    else begin
-        // Can't receive in the middle of a byte array !
-        SetLength(TempBuf, I);
-        Len := FCtrlSocket.Receive(TempBuf, I);
-        for I := 0 to Len - 1 do
-            FReceiveBuffer[FReceiveLen + I] := TempBuf[I];
-    end;
-{$ELSE}
     Len := FCtrlSocket.Receive(@FReceiveBuffer[FReceiveLen], I);
-{$ENDIF}
 
     // Debugging purpose only, fill the buffer with constant character
     //if (Len > 0) and (Len < I) then
@@ -3784,7 +3674,7 @@ begin
     {$IFNDEF NO_DEBUG_LOG}
         if CheckLogOptions(loProtSpecInfo) then  { V1.91 } { replaces $IFDEF DEBUG_OUTPUT  }
             DebugLog(loProtSpecInfo, '**data available. Len=' + IntToStr(Len));
-{$ENDIF}
+    {$ENDIF}
         Exit;
     end;
 
@@ -4549,11 +4439,7 @@ begin
 
     if Length(FSendBuffer) = 0 then
         SetLength(FSendBuffer, 8192);
-{$IFDEF CLR}
-    Len := FSendStream.Read(FSendBuffer, Length(FSendBuffer));
-{$ELSE}
     Len := FSendStream.Read(FSendBuffer[0], Length(FSendBuffer));
-{$ENDIF}
     if Len <= 0 then begin
         FAllowedToSend := FALSE;
         TriggerSendEnd;
@@ -4566,13 +4452,8 @@ begin
 
     if Len > 0 then begin
         FSentCount := FSentCount + Len;
-{$IFDEF CLR}
-        TriggerSendData(FSendBuffer, 0, Len);
-        FCtrlSocket.Send(FSendBuffer, Len);
-{$ELSE}
         TriggerSendData(@FSendBuffer[0], Len);
         FCtrlSocket.Send(@FSendBuffer[0], Len);
-{$ENDIF}
     end;
 end;
 
@@ -4694,7 +4575,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF CLR}
 function EncodeLine(
     Encoding : THttpEncoding;
     SrcData  : PAnsiChar;
@@ -4792,87 +4672,6 @@ begin
     AStr := UnicodeToAnsi(Value, ACodePage);
     Result := String(EncodeLine(Encoding, PAnsiChar(AStr), Length(AStr)));
 end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF CLR}
-function EncodeStr(Encoding : THttpEncoding; const Value : String) : String;
-var
-    Offset : Integer;
-    Pos1   : Integer;
-    Pos2   : Integer;
-    I      : Integer;
-    Buf    : StringBuilder;
-    Size   : Integer;
-begin
-    Size   := Length(Value);
-    Buf    := StringBuilder.Create(Size * 4 div 3 + 4);
-
-    if Encoding = encUUEncode then begin
-        Buf[0] := Char(((Size - 1) and $3f) + $21);
-        Size   := ((Size + 2) div 3) * 3;
-    end;
-    Offset := 2;
-    Pos1   := 1;
-    Pos2   := 0;
-    case Encoding of
-        encUUEncode:        Pos2 := 1;
-        encBase64, encMime: Pos2 := 0;
-    end;
-    Buf[Pos2] := #0;
-
-    while Pos1 < Size do begin
-        if Offset > 0 then begin
-            Buf[Pos2] := Char(ord(Result[Pos2]) or
-                                 ((ord(Value[Pos1]) and
-                                  ($3f shl Offset)) shr Offset));
-            Offset := Offset - 6;
-            Inc(Pos2);
-            Buf[Pos2] := #0;
-        end
-        else if Offset < 0 then begin
-            Offset := Abs(Offset);
-            Buf[Pos2] := Char(ord(Result[Pos2]) or
-                                 ((ord(Value[Pos1]) and
-                                  ($3f shr Offset)) shl Offset));
-            Offset := 8 - Offset;
-            Inc(Pos1);
-        end
-        else begin
-            Buf[Pos2] := Char(ord(Result[Pos2]) or
-                                 ((ord(Value[Pos1]) and $3f)));
-            Inc(Pos2);
-            Inc(Pos1);
-            Buf[Pos2] := #0;
-            Offset    := 2;
-        end;
-    end;
-
-    case Encoding of
-    encUUEncode:
-        begin
-            if Offset = 2 then
-                Dec(Pos2);
-            for i := 2 to Pos2 do
-                Buf[i] := bin2uue[ord(Buf[i])+1];
-        end;
-    encBase64, encMime:
-        begin
-            if Offset = 2 then
-                Dec(Pos2);
-            for i := 1 to Pos2 do
-                Buf[i] := bin2b64[ord(Buf[i])+1];
-            while (Pos2 and 3) <> 0  do begin
-                Inc(Pos2);
-                Buf[Pos2] := '=';
-            end;
-        end;
-    end;
-    Buf.Length := Pos2;
-    Result := Buf.ToString;
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -4905,7 +4704,7 @@ begin
 
     { hostname is the local hostname }
     if ForProxy then begin
-        NtlmParseUserCode(FProxyUsername, LDomain, LUser, FALSE);
+        NtlmParseUserCode(FProxyUsername, LDomain, LUser);
         Result := 'Proxy-Authorization: NTLM ' +
                   NtlmGetMessage3(LDomain,
                                   Hostname,
@@ -4916,7 +4715,7 @@ begin
                                   FProxyNTLMMsg2Info.Unicode);
     end
     else begin
-        NtlmParseUserCode(FCurrUsername, LDomain, LUser, FALSE);
+        NtlmParseUserCode(FCurrUsername, LDomain, LUser);
         Result := 'Authorization: NTLM ' +
                   NtlmGetMessage3(LDomain,
                                   Hostname,

@@ -1039,6 +1039,8 @@ Jul 24, 2011 V7.26 Arno added published property DataSocketSndBufSize
              in order to make uploads faster. Both values default to value 8192
              which is the default winsock size. Removed useless call to
              WSocket_getsockopt in TCustomFtpCli.DataSocketPutSessionAvailable.
+Oct 24, 2011 V7.27 Arno - Set state ftpInternalReady in DoneQuitAsync.
+             Check for component connected in PortAsync.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1079,15 +1081,25 @@ unit OverbyteIcsFtpCli;
 interface
 
 uses
-    Messages,
-{$IFDEF USEWINDOWS}
+{$IFDEF MSWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+    Messages,
+    OverbyteIcsWinSock,
+{$ENDIF}
+{$IFDEF POSIX}
+    System.IOUtils,
+    Posix.Unistd,
+    Posix.SysSocket,
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes,
 {$IFNDEF NOFORMS}
-    Forms, Controls,
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
+    Forms,
+  {$ENDIF}
 {$ENDIF}
 { You must define USE_SSL so that SSL code is included in the component.   }
 { Either in OverbyteIcsDefs.inc or in the project/package options.         }
@@ -1095,11 +1107,11 @@ uses
     OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
 {$ENDIF}
 {$I OverbyteIcsZlib.inc}
-OverbyteIcsZlibHigh,     { V2.102 }
+    OverbyteIcsZlibHigh,     { V2.102 }
 {$IFDEF USE_ZLIB_OBJ}
-     OverbyteIcsZLibObj,     {interface to access ZLIB C OBJ files}
+    OverbyteIcsZLibObj,     {interface to access ZLIB C OBJ files}
 {$ELSE}
-     OverbyteIcsZLibDll,     {interface to access zLib1.dll}
+    OverbyteIcsZLibDll,     {interface to access zLib1.dll}
 {$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
@@ -1108,13 +1120,12 @@ OverbyteIcsZlibHigh,     { V2.102 }
     OverbyteIcsUtils,
     OverbyteIcsLibrary,
     OverbyteIcsOneTimePw,  { V2.113 }
-    OverbyteIcsWinSock,
     OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 726;
-  CopyRight : String = ' TFtpCli (c) 1996-2011 F. Piette V7.26 ';
-  FtpClientId : String = 'ICS FTP Client V7.26 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 727;
+  CopyRight : String = ' TFtpCli (c) 1996-2011 F. Piette V7.27 ';
+  FtpClientId : String = 'ICS FTP Client V7.27 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1208,6 +1219,7 @@ type
                      ftpFctRein,       ftpFctHost,       ftpFctLang,          { V6.09 }
                      ftpFctXCmlsd,     ftpFctXDmlsd);                         { V7.01 }
   TFtpFctSet      = set of TFtpFct;
+
   TFtpShareMode   = (ftpShareCompat,    ftpShareExclusive,
                      ftpShareDenyWrite, ftpShareDenyRead,
                      ftpShareDenyNone);
@@ -1239,9 +1251,9 @@ type
     FSocketFamily       : TSocketFamily;
     FCodePage           : LongWord;
     FSystemCodepage     : LongWord; { AG 7.02 }
-    FDataPortRangeStart : DWORD;  {JT}
-    FDataPortRangeEnd   : DWORD;  {JT}
-    FLastDataPort       : DWORD;  {JT}
+    FDataPortRangeStart : LongWord;  {JT}
+    FDataPortRangeEnd   : LongWord;  {JT}
+    FLastDataPort       : LongWord;  {JT}
     FDSocketSndBufSize  : Integer;{AG V7.26}
     FDSocketRcvBufSize  : Integer;{AG V7.26}
     FLocalAddr          : String; {bb}
@@ -1325,8 +1337,8 @@ type
     FRemFacts           : String;     { V2.90 response to MLST command, facts about remote file }
     FLastMultiResponse  : String;     { V2.90  last command response, may be multiple lines, all with CRLF }
     FMd5Result          : String;     { V2.94 result for MD5 }
-    FCloseEndTick       : DWORD;      { V2.100 to avoid waiting for ever  }
-    FCloseEndSecs       : DWORD;      { V2.100 how long to wait for final packet to be sent }
+    FCloseEndTick       : LongWord;   { V2.100 to avoid waiting for ever  }
+    FCloseEndSecs       : LongWord;      { V2.100 how long to wait for final packet to be sent }
     FNewOpts            : string;        { V2.102 arguments for OPTS command }
     FTransferMode       : TFtpTransMode; { V2.102 new tranfer mode }
     FCurrTransMode      : TFtpTransMode; { V2.102 current transfer mode }
@@ -1453,10 +1465,11 @@ type
     procedure   DestroyLocalStream;
     procedure   SetLocalStream (Stream:TStream);
     procedure   SetLocalFileName (FileName:String);
-    procedure   SetDataPortRangeStart (NewValue:DWord); {JT}
-    procedure   SetDataPortRangeEnd (NewValue:DWord); {JT}
+    procedure   SetDataPortRangeStart (NewValue: LongWord); {JT}
+    procedure   SetDataPortRangeEnd (NewValue: LongWord); {JT}
     procedure   RestAsyncGetResumePos; virtual;
     function    OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
+      {$IFDEF USE_INILE} inline; {$ENDIF}
     procedure   CreateLocalFileStream;         { V2.113 }
     function    CreateSocket: TWSocket; virtual;   { V7.08 }
     property    SocketFamily: TSocketFamily read FSocketFamily write FSocketFamily;
@@ -1612,9 +1625,9 @@ type
                                                          write FHostName;
     property Port                 : String               read  FPort
                                                          write FPort;
-    property DataPortRangeStart   : DWORD                read  FDataPortRangeStart
+    property DataPortRangeStart   : LongWord             read  FDataPortRangeStart
                                                          write SetDataPortRangeStart; {JT}
-    property DataPortRangeEnd     : DWORD                read  FDataPortRangeEnd
+    property DataPortRangeEnd     : LongWord             read  FDataPortRangeEnd
                                                          write SetDataPortRangeEnd; {JT}
     property LocalAddr            : String               read  FLocalAddr
                                                          write FLocalAddr; {bb}
@@ -1671,7 +1684,7 @@ type
                                                          write FSocksUserCode;      { V7.001 }
     property Account              : String               read  FAccount
                                                          write FAccount;
-    property CloseEndSecs         : DWORD                read  FCloseEndSecs        { V2.100 }
+    property CloseEndSecs         : LongWord             read  FCloseEndSecs        { V2.100 }
                                                          write FCloseEndSecs;
     property Language             : String               read  FLanguage
                                                          write FLanguage;           { V7.01 }
@@ -2088,17 +2101,23 @@ begin
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 function GetFileSize(FileName : String) : TFtpBigInt; { V2.108 }
 var
     SR : TSearchRec;
-    TempSize: TULargeInteger ;  // 64-bit integer record
+{$IFDEF MSWINDOWS}
+    TempSize: TULargeInteger;  // 64-bit integer record
+{$ENDIF}
 begin
     if FindFirst(FileName, faReadOnly or faHidden or
                  faSysFile or faArchive, SR) = 0 then begin
+      {$IFDEF MSWINDOWS}
         TempSize.LowPart  := SR.FindData.nFileSizeLow;
         TempSize.HighPart := SR.FindData.nFileSizeHigh;
         Result := TempSize.QuadPart;
+      {$ENDIF}
+      {$IFDEF POSIX}
+        Result := SR.Size;
+      {$ENDIF}
         FindClose(SR);
     end
     else
@@ -2220,8 +2239,10 @@ end;
 {* *                                                                     * *}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TCustomFtpCli.Create(AOwner: TComponent);
+{$IFDEF MSWINDOWS}
 var
     Len : Cardinal;
+{$ENDIF}
 begin
     inherited Create(AOwner);
     AllocateHWnd;
@@ -2255,9 +2276,14 @@ begin
     FDataSocket         := CreateSocket;    { V7.08 was  TWSocket.Create(Self); }
     FDataSocket.ExceptAbortProc       := AbortComponent; { V7.15 }
     FStreamFlag         := FALSE;
+{$IFDEF MSWINDOWS}
     SetLength(FZlibWorkDir, 1024);
     Len := GetTempPath(Length(FZlibWorkDir) - 1, PChar(FZlibWorkDir));{ AG V6.03 }
-    SetLength(FZlibWorkDir, Len);                                 { AG V6.03 }
+    SetLength(FZlibWorkDir, Len);
+{$ENDIF}
+{$IFDEF POSIX}
+    FZlibWorkDir := TPath.GetTempPath;
+{$ENDIF}
     FZlibWorkDir := IncludeTrailingPathDelimiter (FZlibWorkDir);  { V2.113 }
 {$IF DEFINED(UseBandwidthControl) or DEFINED(BUILTIN_THROTTLE)}
     FBandwidthLimit     := 10000;  // Bytes per second
@@ -2337,7 +2363,7 @@ begin
                  inherited WndProc(MsgRec);
         end;
     except
-        on E:Exception do
+        on E: Exception do
             HandleBackGroundException(E);
     end;
 end;
@@ -2458,7 +2484,7 @@ begin
         end;
     end;
     if Assigned(FLocalStream) and (FStreamFlag = FALSE) then begin
-        FLocalStream.Destroy;
+        FLocalStream.Free;
         FLocalStream := nil;
     end;
 end;
@@ -2466,7 +2492,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomFtpCli.OpenFileStream (const FileName: string; Mode: Word): TStream;  { V2.113 }
 begin
-    result := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
+    //Result := TIcsBufferedStream.Create(FileName, Mode, MAX_BUFSIZE);
+    Result := TBufferedFileStream.Create(FileName, Mode, MAX_BUFSIZE);
+    { Buffered stream makes sense with small block sizes only }
+    //Result := TFileStream.Create(FileName, Mode);
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2474,15 +2503,12 @@ procedure TCustomFtpCli.CreateLocalFileStream;         { V2.113 }
 begin
     try
         if NOT FStreamFlag then begin
-            if Assigned(FLocalStream) then begin
-                FLocalStream.Destroy;
-                FLocalStream := nil;
-            end;
+            FreeAndNil(FLocalStream);
             FLocalStream := OpenFileStream(FLocalFileName, fmCreate);
             if FShareMode <> 0 then begin
                 { Not default mode, need to close and reopen file with }
                 { the given mode                                       }
-                FLocalStream.Destroy;
+                FreeAndNil(FLocalStream);
                 FLocalStream := OpenFileStream(FLocalFileName, fmOpenWrite + FShareMode);
             end;
         end;
@@ -2586,7 +2612,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SetDataPortRangeStart(NewValue: DWORD); {JT}
+procedure TCustomFtpCli.SetDataPortRangeStart(NewValue: LongWord); {JT}
 begin
     if NewValue > 65535 then
         HandleError('DataPortRangeStart must be in the range 0..65535')
@@ -2596,7 +2622,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomFtpCli.SetDataPortRangeEnd(NewValue: DWORD); {JT}
+procedure TCustomFtpCli.SetDataPortRangeEnd(NewValue: LongWord); {JT}
 begin
     if NewValue > 65535 then
         HandleError('DataPortRangeEnd must be in the range 0..65535')
@@ -3119,6 +3145,7 @@ procedure TCustomFtpCli.DoneQuitAsync;
 begin
    { It's IMO debatable whether or not the client has to call Close at all }
    { since the server must close the connection after QUIT.                }
+   StateChange(ftpInternalReady); { V7.27 }
    FControlSocket.CloseDelayed;  { V7.24 }
 end;
 
@@ -4332,7 +4359,7 @@ begin
     FDataSocket.OnDataSent      := nil;
 
     { Record the starting time }
-    FStartTime := LongInt(GetTickCount);
+    FStartTime := LongInt(IcsGetTickCount);
     FDurationMsecs := 0;  { V2.113 }
 
     if ErrCode <> 0 then begin
@@ -4384,7 +4411,7 @@ begin
     FPutSessionOpened := TRUE;
 
     { Record the starting time }
-    FStartTime := LongInt(GetTickCount);
+    FStartTime := LongInt(IcsGetTickCount);
     FDurationMsecs := 0;  { V2.113 }
 
     if ErrCode <> 0 then begin
@@ -4437,6 +4464,12 @@ begin
     { Accept the incomming connection initiated by the FTP server for data }
     aSocket := FDataSocket.Accept;
 
+  {$IFDEF POSIX}
+    { Very important to first clear the internal events since we reuse the }
+    { the FDataSocket with a new HSocket.                                  }
+    //WSocket_WSAASyncSelect(FDataSocket, 0, 0, 0);
+  {$ENDIF}
+
     { Close the listening socket, we don't need it anymore }
     FDataSocket.Close;
 
@@ -4478,7 +4511,7 @@ begin
     end;
 {$ENDIF}
     { Record the starting time }
-    FStartTime := LongInt(GetTickCount);
+    FStartTime := LongInt(IcsGetTickCount);
     FDurationMsecs := 0;  { V2.113 }
 {$IFNDEF NO_DEBUG_LOG}                                             { 2.105 }
     if CheckLogOptions(loProtSpecInfo) then
@@ -4584,7 +4617,7 @@ end;
 procedure TCustomFtpCli.WMFtpSendData(var msg: TMessage);
 begin
     { Record the starting time }
-    FStartTime := LongInt(GetTickCount);
+    FStartTime := LongInt(IcsGetTickCount);
     FDurationMsecs := 0;  { V2.113 }
 
     { Send first data block }
@@ -4598,7 +4631,7 @@ procedure  TCustomFtpCli.WMFtpCloseDown(var msg: TMessage);      { V2.100 }
 begin
     { see if last buffer has been fully sent, or given up waiting }
     if (FDataSocket.BufferedByteCount = 0) or 
-       (FCloseEndTick < GetTickCount) then begin
+       (FCloseEndTick < IcsGetTickCount) then begin
         FDataSocket.ShutDown(1); { 18/05/2005 was CloseDelayed; }
         FEofFlag := TRUE;
     end
@@ -4667,7 +4700,7 @@ begin
             {  Sleep(100);  did not really work }
 
             { V2.100 new close down message which repeats until last buffer sent }
-            FCloseEndTick := GetTickCount + (FCloseEndSecs * 1000);  { but not forever }
+            FCloseEndTick := IcsGetTickCount + (FCloseEndSecs * 1000);  { but not forever }
             PostMessage(Handle, FMsg_WM_FTP_CLOSEDOWN, 0, 0);
             exit;
             {$ENDIF}
@@ -4729,12 +4762,12 @@ var
     BytesSec : Int64 ;
     Duration : Int64 ;  { V2.100 allow wrap at 49 days, don't show 0 secs or silly bps }
 begin
-    FStopTime := LongInt(GetTickCount);
+    FStopTime := LongInt(IcsGetTickCount);
     Buffer    := IntToKByte(FByteCount) + 'bytes received/sent in ';
-    if DWORD (FStopTime) >= DWORD (FStartTime) then   { V2.102 fix zero duration downloads }
-        Duration := DWORD (FStopTime) - DWORD (FStartTime)
+    if LongWord (FStopTime) >= LongWord (FStartTime) then   { V2.102 fix zero duration downloads }
+        Duration := LongWord (FStopTime) - LongWord (FStartTime)
     else
-        Duration := ($FFFFFFFF - DWORD (FStartTime)) + DWORD (FStopTime);
+        Duration := ($FFFFFFFF - LongWord (FStartTime)) + LongWord (FStopTime);
     if Duration < 5000 then
         Buffer := Buffer + IntToStr(Duration) + ' milliseconds'
     else begin
@@ -4794,34 +4827,38 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.SetShareMode(newValue : TFtpShareMode);
 begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+{$WARNINGS OFF}
     case newValue of
-    ftpShareCompat    : FShareMode := fmShareCompat;
-    ftpShareExclusive : FShareMode := fmShareExclusive;
-    ftpShareDenyWrite : FShareMode := fmShareDenyWrite;
-    ftpShareDenyRead  : FShareMode := fmShareDenyRead;
-    ftpShareDenyNone  : FShareMode := fmShareDenyNone;
+        ftpShareCompat    : FShareMode := {$IFDEF MSWINDOWS} fmShareCompat {$ELSE} fmShareExclusive {$ENDIF};
+        ftpShareExclusive : FShareMode := fmShareExclusive;
+        ftpShareDenyWrite : FShareMode := fmShareDenyWrite;
+        ftpShareDenyRead  : FShareMode := {$IFDEF MSWINDOWS} fmShareDenyRead {$ELSE} fmShareExclusive {$ENDIF};
+        ftpShareDenyNone  : FShareMode := fmShareDenyNone;
     else
         FShareMode := fmShareExclusive;
     end;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
+{$WARNINGS ON}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomFtpCli.GetShareMode : TFtpShareMode;
 begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+{$WARNINGS OFF}
     case FShareMode of
-    fmShareCompat    : Result := ftpShareCompat;
-    fmShareExclusive : Result := ftpShareExclusive;
-    fmShareDenyWrite : Result := ftpShareDenyWrite;
-    fmShareDenyRead  : Result := ftpShareDenyRead;
-    fmShareDenyNone  : Result := ftpShareDenyNone;
+      {$IFDEF MSWINDOWS}
+        fmShareCompat    : Result := ftpShareCompat;
+      {$ENDIF}
+        fmShareExclusive : Result := ftpShareExclusive;
+        fmShareDenyWrite : Result := ftpShareDenyWrite;
+      {$IFDEF MSWINDOWS}
+        fmShareDenyRead  : Result := ftpShareDenyRead;
+      {$ENDIF}
+        fmShareDenyNone  : Result := ftpShareDenyNone;
     else
         Result := ftpShareExclusive;
     end;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
+{$WARNINGS ON}
 end;
 
 
@@ -5124,7 +5161,7 @@ begin
                 if FShareMode <> 0 then begin
                     { Not default mode, need to close and reopen file with }
                     { the given mode                                       }
-                    FLocalStream.Destroy;
+                    FreeAndNil(FLocalStream);
                     FLocalStream := OpenFileStream(FLocalFileName, fmOpenWrite + FShareMode);
                 end;
             end;
@@ -5485,8 +5522,7 @@ begin
                 except
                 end;
                 if Assigned(FLocalStream) and (FStreamFlag = FALSE) then begin   { V1.113 }
-                    FLocalStream.Destroy;
-                    FLocalStream := nil;
+                    FreeAndNil(FLocalStream);
                 end;
                 HandleError('Failed to Compress Stream - ' + E.Message);
                 FStatusCode   := 426;
@@ -5639,14 +5675,21 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.PortAsync;
+type
+    T4Bytes = array[0..3] of Byte;
+    P4Bytes = ^T4Bytes;
 var
     Msg          : String;
     saddr        : TSockAddrIn6;
     saddrlen     : Integer;
-    DataPort     : DWORD;  { 10/30/99 }
+    DataPort     : LongWord;  { 10/30/99 }
     IPAddr       : TInAddr;
-    StartDataPort: DWORD;
+    StartDataPort: LongWord;
 begin
+    if not FConnected then begin
+        HandleError('FTP component not connected');
+        Exit;
+    end;
     { Makes the data socket listening for data connection }
     FDataSocket.Proto              := 'tcp';
     if FControlSocket.CurrentSocketFamily = sfIPv6 then
@@ -5747,16 +5790,27 @@ begin
         else
         if FControlSocket.sin.sin_addr.s_addr = WSocket_htonl($7F000001) then
             Msg := Format('PORT 127,0,0,1,%d,%d',
-                          [HiByte(DataPort),
-                           LoByte(DataPort)])
+                          [IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)])
         else
+          {$IFDEF MSWINDOWS}
             Msg := Format('PORT %d,%d,%d,%d,%d,%d',
-                          [ord(IPAddr.S_un_b.s_b1),
+                          [ord(IPAddr. S_un_b.s_b1),
                            ord(IPAddr.S_un_b.s_b2),
                            ord(IPAddr.S_un_b.s_b3),
                            ord(IPAddr.S_un_b.s_b4),
-                           HiByte(DataPort),
-                           LoByte(DataPort)]);
+                           IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)]);
+          {$ENDIF}
+          {$IFDEF POSIX}
+            Msg := Format('PORT %d,%d,%d,%d,%d,%d',
+                          [P4Bytes(@IPAddr.s_addr)^[0],
+                           P4Bytes(@IPAddr.s_addr)^[1],
+                           P4Bytes(@IPAddr.s_addr)^[2],
+                           P4Bytes(@IPAddr.s_addr)^[3],
+                           IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)]);
+          {$ENDIF}
     end;
 
     FByteCount := 0;
@@ -5836,7 +5890,11 @@ begin
     { Do not trigger the client SessionConnected from here. We must wait }
     { to have received the server banner.                                }
     if ErrCode <> 0 then begin
+      {$IFDEF POSIX}
+        if (ErrCode <= WSAELAST) then
+      {$ELSE}
         if (ErrCode >= WSABASEERR) and (ErrCode < ICS_SOCKS_BASEERR) then
+      {$ENDIF}
             FLastResponse  := '500 Connect error - ' + GetWinsockErr(ErrCode)
         else if WSocketIsProxyErrorCode(ErrCode) then
             FLastResponse  := '500 Connect error - ' + FLastResponse +
@@ -6066,7 +6124,7 @@ begin
                 end;
              { finished reading directory, tidy up }
                 if Assigned(FLocalStream) and (FStreamFlag = FALSE) then begin
-                    FLocalStream.Destroy;
+                    FLocalStream.Free;
                     FLocalStream := nil;
                 end;
             end;
@@ -6101,6 +6159,14 @@ var
     LClosedState : TFtpState;
 begin
     LClosedState := FState;
+  {$IFDEF POSIX}
+    if ((FRequestType = ftpQuitAsync) or (FFctPrv = ftpFctQuit)) and
+       (FState = ftpInternalReady) and (ErrCode <> 0) then
+        ErrCode := 0;
+    { Sometimes ErrCode ECONNRESET for unknown reason when TFtpServer and client
+      are running on the same host. Seen on MacOS, however when QUIT response
+      has been received we may safely ignore all possible errors. }
+  {$ENDIF}
     if FConnected then begin
         FConnected := FALSE;
         if FState <> ftpAbort then
@@ -6766,20 +6832,24 @@ begin
     Result := inherited Progress;
     { Evaluate the timeout period again }
     if FTimeout > 0 then
-        FTimeStop := LongInt(GetTickCount) + LongInt(FTimeout) * 1000;
+        FTimeStop := LongInt(IcsGetTickCount) + LongInt(FTimeout) * 1000;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TFtpClient.WaitUntilReady : Boolean;
+{$IFDEF MSWINDOWS}
 var
     DummyHandle     : THandle;
+{$ENDIF}
 begin
 {$IFNDEF WIN64}                  { V7.25 }
     Result    := TRUE;           { Make dcc32 happy }
 {$ENDIF}
-    FTimeStop := LongInt(GetTickCount) + LongInt(FTimeout) * 1000;
+    FTimeStop := LongInt(IcsGetTickCount) + LongInt(FTimeout) * 1000;
+  {$IFDEF MSWINDOWS}
     DummyHandle := INVALID_HANDLE_VALUE;
+  {$ENDIF}
     while TRUE do begin
         if FState in [ftpReady, ftpInternalReady] then begin
             { Back to ready state, the command is finished }
@@ -6788,7 +6858,7 @@ begin
         end;
 
         if Terminated or
-           ((FTimeout > 0) and (LongInt(GetTickCount) > FTimeStop)) then begin
+           ((FTimeout > 0) and (LongInt(IcsGetTickCount) > FTimeStop)) then begin
             { Timeout occured }
             AbortAsync;
             FErrorMessage := '426 Timeout';
@@ -6796,12 +6866,13 @@ begin
             Result        := FALSE; { Command failed }
             break;
         end;
-
+      {$IFDEF MSWINDOWS}
         { Do not use 100% CPU }
         if ftpWaitUsingSleep in FOptions then
             Sleep(0)
         else
             MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000, QS_ALLINPUT);
+      {$ENDIF}
         MessagePump;
     end;
 end;

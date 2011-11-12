@@ -66,7 +66,10 @@ interface
 {$ENDIF}
 
 uses
-  Windows, SysUtils, Classes, IniFiles,
+{$IFDEF MSWINDOWS}
+  Windows,
+{$ENDIF}
+  SysUtils, Classes, IniFiles,
   OverbyteIcsStreams,
   OverbyteIcsUtils;
 
@@ -107,7 +110,7 @@ type
   TIcsIniFile = TIcsUtf8IniFile;
 
   function GetIcsIniFileName: String;
-  
+
 implementation
 
 { TIcsUtf8IniFile }
@@ -342,31 +345,38 @@ var
     nItem   : Integer;
     I       : Integer;
     Buf     : String;
+    Temp    : TStrings;
 begin
     Result := TRUE;
     if (Section = '') or (Ident = '') or (not Assigned(Strings)) then
         Exit;
     Strings.Clear;
-    if ReadString(Section, Ident + 'EmptyFlag', '') <> '' then
-        Exit;
-    ReadSectionValues(Section, Strings);
-    nItem := Strings.Count - 1;
-    while nItem >= 0 do begin
-        Buf := Strings.Strings[nItem];
-        if CompareText(Ident, Copy(Buf, 1, Length(Ident))) <> 0 then
-            Strings.Delete(nItem)
-        else begin
-            if (Ord(Buf[Length(Ident) + 1]) < Ord('0')) or
-               (Ord(Buf[Length(Ident) + 1]) > Ord('9')) then
-                Strings.Delete(nItem)
+    Temp := TStringList.Create;
+    try
+        if ReadString(Section, Ident + 'EmptyFlag', '') <> '' then
+            Exit;
+        ReadSectionValues(Section, Temp);
+        nItem := Temp.Count - 1;
+        while nItem >= 0 do begin
+            Buf := Temp.Strings[nItem];
+            if CompareText(Ident, Copy(Buf, 1, Length(Ident))) <> 0 then
+                Temp.Delete(nItem)
             else begin
-                I := Pos('=', Buf);
-                Strings.Strings[nItem] := Copy(Buf, I + 1, Length(Buf));
+                if (Ord(Buf[Length(Ident) + 1]) < Ord('0')) or
+                   (Ord(Buf[Length(Ident) + 1]) > Ord('9')) then
+                    Temp.Delete(nItem)
+                else begin
+                    I := Pos('=', Buf);
+                    Temp.Strings[nItem] := Copy(Buf, I + 1, Length(Buf));
+                end;
             end;
+            Dec(nItem);
         end;
-        Dec(nItem);
+        Strings.Assign(Temp);
+        Result := (Temp.Count > 0);
+    finally
+        Temp.Free;
     end;
-    Result := (Strings.Count <> 0);
 end;
 
 procedure TIcsUtf8IniFile.Rename(const FileName: String; Reload: Boolean);
@@ -489,6 +499,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function GetCommonAppDataFolder(const SubPath: String): String;
 var
     hSHFolderDLL: HMODULE;
@@ -526,12 +537,18 @@ begin
         FreeLibrary(hSHFolderDLL);
     end;
 end;
-
+{$ENDIF MSWINDOWS}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function GetIcsIniFileName: String;
 begin
+  {$IFDEF MSWINDOWS}
     Result := GetCommonAppDataFolder('ICS');
+  {$ELSE}
+    Result := IncludeTrailingPathDelimiter(GetHomePath) + 'ICS';
+    if not ForceDirectories(Result) then
+        Result := '';
+  {$ENDIF}
     if Result = '' then
         Result := ChangeFileExt(ParamStr(0), '.ini')
     else

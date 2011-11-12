@@ -73,7 +73,16 @@ unit OverbyteIcsMultipartHttpDownloader;
 interface
 
 uses
-    Windows, Messages, SysUtils, Classes, ExtCtrls, IniFiles,
+{$IFDEF MSWINDOWS}
+    Messages,
+    Windows,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
+{$ENDIF}
+    SysUtils, Classes, IniFiles,
+    OverbyteIcsUtils,
     OverbyteIcsHttpProt, OverbyteIcsUrl, OverbyteIcsWndControl;
 
 const
@@ -276,7 +285,7 @@ begin
     FContentLength := 0;
     FTotalCount    := 0;
     FPrevCount     := 0;
-    FPrevTick      := GetTickCount;
+    FPrevTick      := IcsGetTickCount;
     FStartTime     := Now;
     FElapsedTime   := 0;
     TriggerShowStats;
@@ -517,7 +526,7 @@ begin
                     Inc(FTotalCount, MyHttp.FDataCount);
                 end;
                 FPrevCount    := FTotalCount;
-                FPrevTick     := GetTickCount;
+                FPrevTick     := IcsGetTickCount;
                 FStartTime    := Now;
                 FElapsedTime  := 0;
             finally
@@ -702,7 +711,7 @@ begin
         //MultipartDownloadForm.ListBox1.Items[HttpCli.FIndex] := IntToStr(HttpCli.FDataCount);
     end;
 
-    Tick         := GetTickCount;
+    Tick         := IcsGetTickCount;
     FCurSpeed    := 8 * (FTotalCount - FPrevCount) / (Tick - FPrevTick);
     FElapsedTime := Now - FStartTime;
     if FContentLength = 0 then

@@ -119,7 +119,8 @@ uses
 {$ENDIF}
     OverbyteIcsTypes, // size_t
 {$IFDEF POSIX}
-    PosixSysTypes,
+    Posix.SysTypes,
+    Ics.Posix.WinTypes,
 {$ENDIF}
     SysUtils, SyncObjs,
     OverbyteIcsSSLEAY;
@@ -136,7 +137,7 @@ type
     TCryptoThreadIDCallback = procedure (ID : PCRYPTO_THREADID) cdecl;
 
     TCRYPTO_dynlock_value_st = record
-        Mutex : TRTLCriticalSection;
+        Mutex : TCriticalSection;
     end;
     PCRYPTO_dynlock_value = ^TCRYPTO_dynlock_value_st;
     CRYPTO_dynlock_value  = TCRYPTO_dynlock_value_st;
@@ -1324,7 +1325,7 @@ function f_SSL_get_secure_renegotiation_support(S: PSSL): Longint; {$IFDEF USE_I
 
 const
     GLIBEAY_DLL_Handle   : THandle = 0;
-    GLIBEAY_DLL_Name     : String  = 'LIBEAY32.DLL';
+    GLIBEAY_DLL_Name     : String  = {$IFDEF MACOS} '/usr/lib/libcrypto.0.9.8.dylib'; {$ELSE} 'LIBEAY32.DLL'; {$ENDIF}
     GLIBEAY_DLL_FileName : String  = '*NOT LOADED*';
 
     { Version stuff added 07/12/05                                            }
@@ -1426,7 +1427,7 @@ begin
         Exit;                                 // Already loaded
     end;
     GLIBEAY_DLL_Handle := LoadLibrary(PChar(GLIBEAY_DLL_Name));
-    if GLIBEAY_DLL_Handle < HINSTANCE_ERROR then begin
+    if GLIBEAY_DLL_Handle {$IFDEF POSIX} = 0 {$ELSE} < HINSTANCE_ERROR {$ENDIF} then begin
         ErrCode            := GLIBEAY_DLL_Handle;
         GLIBEAY_DLL_Handle := 0;
         raise EIcsLIBEAYException.Create('Unable to load ' +
@@ -2769,12 +2770,10 @@ begin
 {$ELSE}
       V_ASN1_UTF8STRING :
       begin
-          Len := MultiByteToWideChar(CP_UTF8, 0, PAsn1^.data,  PAsn1^.length,
-                                     nil, 0);
+          Len := IcsMbToWc(CP_UTF8, 0, PAsn1^.data,  PAsn1^.length, nil, 0);
           SetLength(Result, Len);
           if Len > 0 then
-              MultiByteToWideChar(CP_UTF8, 0, PAsn1^.data, PAsn1^.length,
-                                  Pointer(Result), Len);
+              IcsMbToWc(CP_UTF8, 0, PAsn1^.data, PAsn1^.length, Pointer(Result), Len);
       end;
 
       V_ASN1_BMPSTRING :
@@ -2782,12 +2781,10 @@ begin
           Result := BMPStrToWideStr(PAsn1^.data, PAsn1^.length);
 
       else  { dump }
-          Len := MultiByteToWideChar(CP_ACP, 0, PAsn1^.data,
-                                     PAsn1^.length, nil, 0);
+          Len := IcsMbToWc(CP_ACP, 0, PAsn1^.data, PAsn1^.length, nil, 0);
           SetLength(Result, Len);
           if Len > 0 then
-              MultiByteToWideChar(CP_ACP, 0, PAsn1^.data, PAsn1^.length,
-                                  Pointer(Result), Len);
+              IcsMbToWc(CP_ACP, 0, PAsn1^.data, PAsn1^.length, Pointer(Result), Len);
 {$ENDIF}
       end;
 end;

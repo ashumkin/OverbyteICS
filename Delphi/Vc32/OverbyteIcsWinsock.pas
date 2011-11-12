@@ -49,15 +49,15 @@ interface
 uses
   Windows, SysUtils;
   {$I OverbyteIcsWinsockTypes.inc}
-{$ENDIF}
+{$ENDIF MSWINDOWS}
 
 {$IFDEF CLR}
 uses
     System.Runtime.InteropServices,
     System.Text,
     OverbyteIcsTypes;
-{$I OverbyteIcsDotNetSockTypes.inc}
-{$ENDIF}
+    {$I OverbyteIcsDotNetSockTypes.inc}
+{$ENDIF CLR}
 
 implementation
 {$IFDEF MSWINDOWS}
@@ -67,14 +67,14 @@ initialization
     InitializeCriticalSection(GWSockCritSect);
     in6addr_any := IN6ADDR_ANY_INIT;
     in6addr_loopback := IN6ADDR_LOOPBACK_INIT;
-{$IFDEF STILL_NEEDS_CHECK}
+  {$IFDEF STILL_NEEDS_CHECK}
     IN6ADDR_V4MAPPEDPREFIX_INIT(@in6addr_v4mappedprefix);
-{$ENDIF}
+  {$ENDIF STILL_NEEDS_CHECK}
 
 finalization
     DeleteCriticalSection(GWSockCritSect);
 
-{$ENDIF}
+{$ENDIF MSWINDOWS}
 
 {$IFDEF CLR}
     {$I OverbyteIcsDotNetSockImpl.inc}

@@ -95,7 +95,13 @@ interface
 {$IFDEF USE_SSL}
 
 uses
-    Windows, SysUtils, OverbyteIcsUtils;
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Posix.Errno,
+  {$ENDIF}
+    SysUtils, OverbyteIcsUtils;
 
 const
     IcsSSLEAYVersion   = 109;
@@ -1017,10 +1023,12 @@ const
 
 function Load : Boolean;
 function WhichFailedToLoad : String;
+{$IFDEF MSWINDOWS}
 function GetFileVerInfo(
     const AppName         : String;
     out   FileVersion     : String;
     out   FileDescription : String): Boolean;
+{$ENDIF}
 function  f_SSL_CTX_set_options(C: PSSL_CTX; Op: LongInt): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_CTX_get_options(C: PSSL_CTX): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
 function  f_SSL_get_options(S: PSSL): LongInt; {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -1055,7 +1063,7 @@ function f_SSL_set_tlsext_debug_arg(S: PSSL; arg: Pointer): Longint; {$IFDEF USE
 
 const
     GSSLEAY_DLL_Handle          : THandle = 0;
-    GSSLEAY_DLL_Name            : String  = 'SSLEAY32.DLL';
+    GSSLEAY_DLL_Name            : String  = {$IFDEF MACOS} '/usr/lib/libssl.0.9.8.dylib'; {$ELSE} 'SSLEAY32.DLL'; {$ENDIF}
     GSSLEAY_DLL_FileName        : String  = '*NOT_LOADED*';
     GSSLEAY_DLL_FileVersion     : String = '';
     GSSLEAY_DLL_FileDescription : String = '';
@@ -1067,6 +1075,7 @@ implementation
 {$IFDEF USE_SSL}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function GetFileVerInfo(
     const AppName         : String;
     out   FileVersion     : String;
@@ -1133,6 +1142,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF}
+
 function Load : Boolean;
 var
     ErrCode : Integer;
@@ -1141,14 +1152,16 @@ begin
         Result := TRUE;
         Exit;                                 // Already loaded
     end;
+  {$IFDEF MSWINDOWS}
     GetFileVerInfo(GSSLEAY_DLL_Name,
                    GSSLEAY_DLL_FileVersion,
                    GSSLEAY_DLL_FileDescription);
+  {$ENDIF}
     GSSLEAY_DLL_Handle := LoadLibrary(PChar(GSSLEAY_DLL_Name));
     if GSSLEAY_DLL_Handle = 0 then begin
         ErrCode            := GetLastError;
         GSSLEAY_DLL_Handle := 0;
-        if ErrCode = ERROR_MOD_NOT_FOUND then
+        if ErrCode = {$IFDEF POSIX} ENOENT {$ELSE} ERROR_MOD_NOT_FOUND {$ENDIF} then
             raise EIcsSsleayException.Create('File not found: ' +
                                              GSSLEAY_DLL_Name)
         else

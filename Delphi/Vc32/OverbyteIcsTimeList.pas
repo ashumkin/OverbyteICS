@@ -60,7 +60,13 @@ unit OverbyteIcsTimeList;
 interface
 
 uses
-  Windows, SysUtils, Classes, Controls;
+{$IFDEF MSWINDOWS}
+    Windows,    
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,    
+{$ENDIF}
+  SysUtils, Classes;
 
 type
   TTimeRecFreeFct = procedure (var P : Pointer);

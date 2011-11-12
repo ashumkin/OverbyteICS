@@ -68,7 +68,7 @@ unit OverbyteIcsMD4;
 interface
 
 uses
-  Windows, Classes,
+  Classes,
 {$IFDEF CLR}
   System.Text,
 {$ENDIF}
@@ -88,8 +88,8 @@ type
   TMD4Context  = record
     FInitialized : Boolean;  { Whether or not the algorithm has been initialized }
     LenHi, LenLo : LongWord;
-    Index        : DWord;
-    CurrentHash  : array [0..3]  of DWord;
+    Index        : LongWord;
+    CurrentHash  : array [0..3]  of LongWord;
     HashBuffer   : array [0..63] of Byte;
   end;
 
@@ -200,7 +200,7 @@ begin
 
     PBuf:= @Buffer;
     while Size > 0 do begin
-        if (Sizeof(MD4Context.HashBuffer) - MD4Context.Index) <= DWord(Size) then begin
+        if (Sizeof(MD4Context.HashBuffer) - MD4Context.Index) <= LongWord(Size) then begin
             Move(PBuf^, MD4Context.HashBuffer[MD4Context.Index], Sizeof(MD4Context.HashBuffer) - MD4Context.Index);
             Dec(Size, Sizeof(MD4Context.HashBuffer) - MD4Context.Index);
             Inc(PBuf, Sizeof(MD4Context.HashBuffer) - MD4Context.Index);
@@ -219,8 +219,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure MD4Compress(var MD4Context : TMD4Context);
 var
-    Data       : array [0..15] of DWord;
-    A, B, C, D : DWord;
+    Data       : array [0..15] of LongWord;
+    A, B, C, D : LongWord;
 {$IFDEF CLR}
     I          : Integer;
     Offset     : Integer;
@@ -332,8 +332,8 @@ begin
             Digest[(I shl 2) + J] := MD4Context.CurrentHash[I] shr (J shl 3);
     end;
 {$ELSE}
-    PDWord(@(MD4Context.HashBuffer[56]))^ := MD4Context.LenLo;
-    PDWord(@(MD4Context.HashBuffer[60]))^ := MD4Context.LenHi;
+    PLongWord(@(MD4Context.HashBuffer[56]))^ := MD4Context.LenLo;
+    PLongWord(@(MD4Context.HashBuffer[60]))^ := MD4Context.LenHi;
     MD4Compress(MD4Context);
     Move(MD4Context.CurrentHash, Digest, Sizeof(MD4Context.CurrentHash));
 {$ENDIF}

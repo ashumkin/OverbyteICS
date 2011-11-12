@@ -81,7 +81,14 @@ unit OverbyteIcsNtlmMsgs;
 interface
 
 uses
-    Windows, SysUtils,
+{$IFDEF MSWINDOWS}
+    Windows,
+{$ENDIF}
+{$IFDEF POSIX}
+    Posix.Time,
+    Ics.Posix.Wintypes,
+{$ENDIF}
+    SysUtils,
 {$IFDEF CLR}
     System.Text,
 {$ENDIF}
@@ -785,7 +792,7 @@ begin
     Msg.LM.Offset     := Msg.Host.Offset + Msg.Host.Length;
 
     Msg.NTLM.Length   := $18;
-    Msg.NTLM.Space    := Msg.LM.Length;
+    Msg.NTLM.Space    := Msg.NTLM.Length;
     Msg.NTLM.Offset   := Msg.LM.Offset + Msg.LM.Length;
 
     // no session key

@@ -81,19 +81,10 @@ unit OverbyteIcsLogger;
 interface
 
 uses
-{$IFDEF CLR}
-  {$IFDEF VCL}
-  Borland.Vcl.Windows,
-  Borland.Vcl.SysUtils,
-  Borland.Vcl.Classes,
+  {$IFDEF MSWINDOWS}
+    Windows,
   {$ENDIF}
-  OverbyteIcsLibrary,
-  System.ComponentModel,
-  System.IO;
-{$ENDIF}
-{$IFDEF MSWINDOWS}
-    Windows, SysUtils, Classes;
-{$ENDIF}
+    SysUtils, Classes, SyncObjs, OverbyteIcsUtils;
 
 const
     TIcsLoggerVersion   = 606;
@@ -121,12 +112,7 @@ type
                     etAuditSuccess, etAuditFailure);
     TIcsLogEvent = procedure (Sender: TObject; LogOption: TLogOption;
                               const Msg : String) of object;
-{$IFNDEF CLR} { Makes the OI looking a little bit nicer } {V6.03}
     TIcsLogger = class(TComponent)
-{$ELSE}
-    [DesignTimeVisibleAttribute(TRUE)]
-    TIcsLogger = class({$IFDEF VCL}TComponent{$ELSE}Component{$ENDIF})
-{$ENDIF}
     protected
         FLogOptions             : TLogOptions;
         FOnIcsLogEvent          : TIcsLogEvent;
@@ -140,7 +126,7 @@ type
         FLogFileInternalEnc     : TLogFileEncoding;
     {$ENDIF}
     {$IFNDEF NO_LOGGER_MT}
-        FLock                   : TRtlCriticalSection;
+        FLock                   : TCriticalSection;
         procedure   Lock;
         procedure   UnLock;
     {$ENDIF}
@@ -153,7 +139,7 @@ type
         procedure   InternalCloseLogFile;
         function    AddTimeStamp: String;  {V6.03}
     public
-        constructor Create{$IFDEF VCL}(AOwner: TComponent); override;{$ELSE}; virtual;{$ENDIF}
+        constructor Create(AOwner: TComponent); override;
         destructor  Destroy; override;
         procedure   OpenLogFile;
         procedure   CloseLogFile;
@@ -162,9 +148,6 @@ type
                                 const Msg : String);
         procedure   FreeNotification(AComponent: TComponent);
         procedure   RemoveFreeNotification(AComponent: TComponent);
-    {$IFNDEF VCL}
-        procedure FreeNotification(Obj : TObject);
-    {$ENDIF}
     published
         property    TimeStampFormatString : String       read  FTimeStampFormatString {V6.03}
                                                          write FTimeStampFormatString;
@@ -184,26 +167,22 @@ type
                                                          write SetOnIcsLogEvent;
     end;
 
-{$IFDEF CLR}
-  TOutputDebugStringType = type String;
-{$ENDIF}
-{$IFDEF MSWINDOWS}
-  TOutputDebugStringType = PChar;
-{$ENDIF}
-
-{$IFDEF CLR}
-procedure OutputDebugString(const Msg : TOutputDebugStringType);
-{$ENDIF}
 
 implementation
 
+{$IFDEF POSIX}
+procedure OutputDebugString(AMsg: PChar);
+begin
+  // ToDo
+end;
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsLogger.Create{$IFDEF VCL}(AOwner: TComponent){$ENDIF};
+constructor TIcsLogger.Create{$IFNDEF CLR}(AOwner: TComponent){$ENDIF};
 begin
-    inherited Create{$IFDEF VCL}(AOwner){$ENDIF};
+    inherited Create{$IFNDEF CLR}(AOwner){$ENDIF};
 {$IFNDEF NO_LOGGER_MT}
-    InitializeCriticalSection(FLock);
+    FLock := TCriticalSection.Create;
 {$ENDIF}
     FTimeStampFormatString := 'hh:nn:ss:zzz'; {V6.03}
     FTimeStampSeparator    := ' ';            {V6.03}
@@ -215,7 +194,7 @@ destructor TIcsLogger.Destroy;
 begin
     CloseLogFile;
 {$IFNDEF NO_LOGGER_MT}
-    DeleteCriticalSection(FLock);
+    FLock.Free;
 {$ENDIF}
     inherited Destroy;
 end;
@@ -330,25 +309,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsLogger.AddTimeStamp: String; {V6.03}
 begin
-{$IFDEF VCL}
     DateTimeToString(Result, FTimeStampFormatString, Now);
-{$ELSE}
-    Result := DateTime.Now.ToString('T');  // Format to be checked
-{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.WriteToLogFile(const S: String);
-{$IFDEF CLR}
-var
-    Ch : Char;
-begin
-    if not Assigned(FLogFile) then
-        InternalOpenLogFile;
-    for Ch in S do
-        FLogFile.Write(Ch);
-{$ELSE}
 {$IFDEF COMPILER12_UP}
 var
     UStr : Utf8String;
@@ -366,7 +332,6 @@ begin
 {$ELSE}
     FLogFile.Write(Pointer(S)^, Length(S));
 {$ENDIF}
-{$ENDIF}
 end;
 
 
@@ -380,17 +345,15 @@ begin
     Lock;
     try
 {$ENDIF}
-{$IFDEF VCL}
-        if csDestroying in Componentstate then             { V1.02 }
+        if csDestroying in ComponentState then             { V1.02 }
             Exit;
-{$ENDIF}
         if loAddStamp in FLogOptions then begin
             if loDestEvent in FLogOptions then
                 if Assigned(FOnIcsLogEvent) then
                     FOnIcsLogEvent(Sender, LogOption, AddTimeStamp +
                                    FTimeStampSeparator + Msg); {V6.03}
             if loDestOutDebug in FLogOptions then
-                OutputDebugString(TOutputDebugStringType(AddTimeStamp +
+                OutputDebugString(PChar(AddTimeStamp +
                                   FTimeStampSeparator + Msg)); {V6.03}
             if loDestFile in FLogOptions then
                 WriteToLogFile(AddTimeStamp + FTimeStampSeparator +
@@ -401,7 +364,7 @@ begin
                 if Assigned(FOnIcsLogEvent) then
                     FOnIcsLogEvent(Sender, LogOption, Msg);
             if loDestOutDebug in FLogOptions then
-                OutputDebugString(TOutputDebugStringType(Msg));
+                OutputDebugString(PChar(Msg));
             if loDestFile in FLogOptions then
                 WriteToLogFile(Msg + #13#10);
         end;
@@ -486,14 +449,14 @@ end;
 {$IFNDEF NO_LOGGER_MT}
 procedure TIcsLogger.Lock;
 begin
-    EnterCriticalSection(FLock)
+    FLock.Enter;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsLogger.UnLock;
 begin
-    LeaveCriticalSection(FLock)
+    FLock.Leave;
 end;
 {$ENDIF}
 
@@ -527,24 +490,6 @@ begin
     end;
 {$ENDIF}
 end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF CLR}
-procedure OutputDebugString(const Msg : TOutputDebugStringType);
-begin
-    // To be implemented
-end;
-{$ENDIF}
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF VCL}
-procedure TIcsLogger.FreeNotification(Obj : TObject);
-begin
-    // To be implemented
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

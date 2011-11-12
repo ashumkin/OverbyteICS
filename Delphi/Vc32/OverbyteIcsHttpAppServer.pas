@@ -101,11 +101,24 @@ unit OverbyteIcsHttpAppServer;
 interface
 
 uses
-    Windows, SysUtils, Messages,
+{$IFDEF MSWINDOWS}
+    Windows,
+    Messages,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
+{$ENDIF}
+    SysUtils,
 {$IFDEF DELPHI7_UP}
     StrUtils,
 {$ENDIF}
-    Classes, ExtCtrls,
+{$IFDEF FMX}
+    FMX.Types,
+{$ELSE}
+    ExtCtrls,
+{$ENDIF}
+    Classes,
     OverbyteIcsHttpSrv, OverbyteIcsWebSession, OverbyteIcsWSocket,
     OverbyteIcsUtils;
 

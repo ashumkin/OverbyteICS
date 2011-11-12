@@ -76,7 +76,7 @@ interface
 
 {$IFDEF USE_SSL}
 uses
-    Windows, Messages, SysUtils, Classes,
+    SysUtils, Classes, SyncObjs,
 {$IFDEF Compiler6_UP}
     DateUtils,
     Types,
@@ -87,10 +87,8 @@ uses
 {$IFNDEF COMPILER15_UP}
     OverbyteIcsTypes,
 {$ENDIF}
-    OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsWSocket, OverbyteIcsAvlTrees;
-
-const
-    WM_SET_INTERVAL        = WM_USER + 1;
+    OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsWSocket,
+    OverbyteIcsAvlTrees, OverbyteIcsUtils;
 
 type
     ESslSessionCacheException = class(Exception);
@@ -98,7 +96,7 @@ type
     TSslBaseSessionCache = class(TSslBaseComponent)
     private
         FFlushInterval      : Integer;
-        FLock               : TRTLCriticalSection;
+        FLock               : TCriticalSection;
         FStatLookupCount    : Int64;
         FStatHits           : Int64;
         FMaxCacheSize       : Integer;
@@ -150,18 +148,23 @@ type
     PSslStreamHdr = ^TSslStreamHdr;
 
     TSslAvlSessionCache = class; // forward
-
+    TCacheEventAction = (ceaSetFlush, ceaStop);
     TSslCacheWorkerThread = class(TThread)
     protected
+        FWakeEvent: TEvent;
+        FEventAction: TCacheEventAction;
         FSessionCache : TSslAvlSessionCache;
         procedure Execute; override;
+    public
+        constructor Create(CreateSuspended: Boolean);
+        destructor Destroy; override;
     end;
 
 
     TSslAvlSessionCache = class(TSslBaseSessionCache)
     private
         FCacheTree      : TCacheTree;
-        FThreadID       : TThreadID;
+        //FThreadID       : TThreadID;
         FWorkerThread   : TSslCacheWorkerThread;
         FStreamVersion  : Integer;
         FStream         : TStream;
@@ -171,8 +174,8 @@ type
         { Set IdleTimeout to zero if sessions shall be kept in cache        }
         { regardless how frequently a client resumes a session.             }
         FIdleTimeout    : Cardinal;
-        FStopEv         : THandle;
-        FSetFlushEv     : THandle;
+        //FStopEv         : THandle;
+        //FSetFlushEv     : THandle;
     protected
         procedure   SetFlushInterval(const Value: Integer); override;
         procedure   SetIdleTimeout(const Value: Cardinal);
@@ -248,17 +251,8 @@ resourcestring
 function GetCurrentBias : TDateTime;
 const
     MinsPerDay = 1440;
-var
-    TZInfo: TTimeZoneInformation;
 begin
-    case GetTimeZoneInformation(TZInfo) of
-        TIME_ZONE_ID_DAYLIGHT:
-            Result := (TZInfo.Bias + TZInfo.DaylightBias) / MinsPerDay;
-        TIME_ZONE_ID_STANDARD:
-            Result := (TZInfo.Bias + TZInfo.StandardBias) / MinsPerDay;
-        else
-            Result := TZInfo.Bias / MinsPerDay;
-    end;
+    Result := IcsGetLocalTimezoneBias / MinsPerDay;
 end;
 
 
@@ -268,7 +262,7 @@ end;
 constructor TSslBaseSessionCache.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
-    InitializeCriticalSection(FLock);
+    FLock := TCriticalSection.Create;
     FFlushInterval      := 0;
     FStatLookupCount    := 0;
     FStatHits           := 0;
@@ -278,7 +272,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TSslBaseSessionCache.Destroy;
 begin
-    DeleteCriticalSection(FLock);
+    FLock.Free;
     inherited Destroy;
 end;
 
@@ -286,7 +280,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslBaseSessionCache.Lock;
 begin
-    EnterCriticalSection(FLock)
+    FLock.Enter;
 end;
 
 
@@ -301,24 +295,52 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslBaseSessionCache.Unlock;
 begin
-    LeaveCriticalSection(FLock)
+    FLock.Leave;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TSslCacheWorkerThread }
 
+constructor TSslCacheWorkerThread.Create(CreateSuspended: Boolean);
+begin
+    FWakeEvent := TEvent.Create(nil, True, False, '');
+    inherited Create(CreateSuspended);
+end;
+
+destructor TSslCacheWorkerThread.Destroy;
+begin
+  FWakeEvent.Free;
+  inherited;
+end;
+
 procedure TSslCacheWorkerThread.Execute;
 var
-    dwRes        : Longword;
+    dwRes        : TWaitResult;
     Interval     : Integer;
-    fhArray      : array[0..1] of THandle;
+    //fhArray      : array[0..1] of THandle;
 begin
+    IcsNameThreadForDebugging(AnsiString(Classname));
     Interval   := MaxInt;
-    fhArray[0] := FSessionCache.FStopEv;
-    fhArray[1] := FSessionCache.FSetFlushEv;
-    while True do
+    //fhArray[0] := FSessionCache.FStopEv;
+    //fhArray[1] := FSessionCache.FSetFlushEv;
+    while FEventAction <> ceaStop do
     begin
+        dwRes := FWakeEvent.WaitFor(Interval);
+        if dwRes = wrTimeout then
+            FSessionCache.Flush
+        else if dwRes = wrSignaled then
+        begin
+            if FEventAction = ceaSetFlush then begin
+                Interval := FSessionCache.FFlushInterval;
+                FWakeEvent.ResetEvent;
+            end;
+        end
+        else if dwRes = wrAbandoned then
+            Break
+        else
+            RaiseLastOSError;
+       (*
         dwRes := WaitForMultipleObjects(2,
                                        @fhArray,
                                            False,
@@ -337,8 +359,9 @@ begin
         else if ((dwRes - WAIT_ABANDONED_0) = 0) or
                          ((dwRes - WAIT_ABANDONED_0) = 1) then
             Break //***
-                else
+        else
             RaiseLastOSError;
+        *)
     end; // True-loop
 end;
 
@@ -353,19 +376,20 @@ begin
     FCacheTree            := TCacheTree.Create;
     FCacheTree.OnList     := CacheTreeOnList;
     FCacheTree.OnFreeData := CacheTreeOnFreeData;
-    FStopEv  := 0;
-    FSetFlushEv := 0;
+    //FStopEv  := 0;
+    //FSetFlushEv := 0;
 
     if not (csDesigning in ComponentState) then
     begin
-        FStopEv     := CreateEvent(nil, True, False, nil);
+      {  FStopEv     := CreateEvent(nil, True, False, nil);
         FSetFlushEv := CreateEvent(nil, True, False, nil);
         if (FStopEv = 0) or (FSetFlushEv = 0) then
             raise Exception.Create('Cannot create Events: '
-                                   + SysErrorMessage(GetLastError));
+                                   + SysErrorMessage(GetLastError));}
         FWorkerThread := TSslCacheWorkerThread.Create(True);
         FWorkerThread.FSessionCache := Self;
-        FThreadID := FWorkerThread.ThreadID;
+        FWorkerThread.FreeOnTerminate := FALSE;
+        //FThreadID := FWorkerThread.ThreadID;
     {$IFDEF COMPILER14_UP}
         FWorkerThread.Start;
     {$ELSE}
@@ -383,19 +407,12 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TSslAvlSessionCache.Destroy;
 begin
-    if (FStopEv <> 0) then
-        SetEvent(FStopEv);
-
+    if Assigned(FWorkerThread) and Assigned(FWorkerThread.FWakeEvent) then begin
+        FWorkerThread.FEventAction := ceaStop;
+        FWorkerThread.FWakeEvent.SetEvent;
+        FWorkerThread.WaitFor;
+    end;
     FreeAndNil(FWorkerThread);
-
-    if (FStopEv <> 0) then begin
-        CloseHandle(FStopEv);
-        FStopEv := 0;
-    end;
-    if (FSetFlushEv <> 0) then begin
-        CloseHandle(FSetFlushEv);
-        FSetFlushEv := 0;
-    end;
     Lock;
     try
         FreeAndNil(FCacheTree);
@@ -421,8 +438,7 @@ begin
             FFlushInterval := 1000;
         if (csDesigning in ComponentState) then
             Exit;    
-        if FSetFlushEv <> 0 then
-            SetEvent(FSetFlushEv);
+        FWorkerThread.FWakeEvent.SetEvent;
     finally
         UnLock
     end;

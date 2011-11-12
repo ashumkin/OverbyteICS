@@ -71,12 +71,10 @@ interface
 {$ENDIF}
 
 uses
-{$IFDEF USEWINDOWS}
+{$IFDEF MSWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
 {$ENDIF}
-    {SysUtils,} OverbyteIcsUtils, OverbyteIcsLibrary;
+    OverbyteIcsUtils, OverbyteIcsLibrary;
 
 const
     IcsUrlVersion        = 604;

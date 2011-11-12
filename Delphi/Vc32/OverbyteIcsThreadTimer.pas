@@ -71,7 +71,14 @@ interface
 {$ENDIF}
 
 uses
-  Windows, Messages, SysUtils, Classes,
+{$IFDEF MSWINDOWS}
+  Windows, Messages,
+{$ELSE}
+  Posix.UniStd,
+  Ics.Posix.WinTypes,
+  Ics.Posix.Messages,
+{$ENDIF}
+  SysUtils, Classes, SyncObjs,
   OverbyteIcsWndControl;
 
 type
@@ -80,7 +87,7 @@ type
   TIcsClockThread = class(TThread)
   private
     FClock       : TIcsClock;
-    FWakeUpEvent : THandle;
+    FWakeUpEvent : TEvent;
     FInterval    : LongWord;
   protected
     procedure Execute; override;
@@ -115,8 +122,10 @@ type
     FThread       	 : TIcsClockThread;
     FClockPool    	 : TIcsClockPool;
     FTimerList    	 : TThreadList;
-    FCritSecClock 	 : TRtlCriticalSection;
+    FCritSecClock 	 : TCriticalSection;
     FKeepThreadAlive : Boolean;
+    procedure Lock; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    procedure Unlock; {$IFDEF USE_INLINE} inline; {$ENDIF}
   public
     constructor Create(AOwner: TIcsClockPool);
     destructor  Destroy; override;
@@ -135,7 +144,7 @@ type
   private
     FClockList         : TList;
     FMaxTimerPerClock  : Integer;
-    FMinTimerRes       : Longword;
+    FMinTimerRes       : LongWord;
     function InternalAcquire: TIcsClock;
     procedure InternalRelease(AClock: TIcsClock);
   public
@@ -146,27 +155,38 @@ type
   end;
 
 var
+{$IFDEF MSWINDOWS}  // otherwise a const in Ics.Posix.Messages
   WM_ICS_THREAD_TIMER     : Cardinal;
+{$ENDIF}
 
   { It's possible to fine tune timer behaviour by two global vars as long as }
   { no instance of  TIcsThreadTimer is allocated.                            }
   { GMaxIcsTimerPerThread  // Maximum timers per TIcsClock instance          }
   { GMinIcsTimerResolution // Ticks / Msec interval of TIcsClock             }
   GMaxIcsTimerPerThread   : Integer  = 1000;
-  GMinIcsTimerResolution  : Longword = 100;
+{$IFDEF MSWINDOWS}
+  GMinIcsTimerResolution  : LongWord = 100;
+{$ENDIF}
+{$IFDEF POSIX}
+  GMinIcsTimerResolution  : LongWord = 250;
+{$ENDIF}
 
 implementation
 
 uses
   OverbyteIcsUtils;
 
+{$IFDEF MSWINDOWS} // otherwise defined in Ics.Posix.WinTypes
 const
   ERROR_INVALID_WINDOW_HANDLE  = DWORD(1400);
+{$ENDIF}
 
 var
-  GIcsClockPool       : TIcsClockPool;
-  GCritSecClockPool   : TRtlCriticalSection;
-  GTimerID            : Integer;
+  GIcsClockPool       : TIcsClockPool = nil;
+  GCritSecClockPool   : TCriticalSection = nil;
+  GTimerID            : Integer = 0;
+
+{$I Ics.InterlockedApi.inc}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
@@ -178,9 +198,7 @@ begin
     inherited Create(FALSE);
     FClock := AClock;
     FInterval := FClock.FClockPool.FMinTimerRes;
-    FWakeUpEvent := CreateEvent(nil, False, False, nil);
-    if FWakeUpEvent = 0 then
-        raise EIcsTimerException.Create(SysErrorMessage(GetLastError));
+    FWakeUpEvent := TEvent.Create(nil, False, False, '');
 end;
 
 
@@ -188,72 +206,83 @@ end;
 destructor TIcsClockThread.Destroy;
 begin
     Terminate;
-    if FWakeUpEvent <> 0 then
-        SetEvent(FWakeUpEvent);
-
+    if Assigned(FWakeUpEvent) then
+      FWakeUpEvent.SetEvent;
     inherited Destroy;
-
-    if FWakeUpEvent <> 0 then begin
-        CloseHandle(FWakeUpEvent);
-        FWakeUpEvent := 0;
-    end;
+    FreeAndNil(FWakeUpEvent);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsClockThread.Execute;
 var
-    L        : TList;
-    I        : Integer;
-    CurTick  : Longword;
-    wRes     : Longword;
-    CurTimer : TIcsThreadTimer;
+    L         : TList;
+    I         : Integer;
+    CurTicks  : LongWord;
+    wRes      : TWaitResult;
+    CurTimer  : TIcsThreadTimer;
 begin
 {$IFDEF Debug}
     IcsNameThreadForDebugging('TIcsClockThread');
 {$ENDIF}
-    try
+    try //(wrSignaled, wrTimeout, wrAbandoned, wrError, wrIOCompletion)
         while not Terminated do begin
-            wRes := WaitForSingleObject(FWakeUpEvent, FInterval);
+            wRes := FWakeUpEvent.WaitFor(FInterval);
             case wRes of
 
-            WAIT_TIMEOUT :
-            begin
-                CurTick := GetTickCount;
-                L := FClock.FTimerList.LockList;
-                try
-                    for I := 0 to L.Count - 1 do begin
-                        if Terminated then Exit;
-                        CurTimer := TIcsThreadTimer(L[I]);
-                        if CurTimer.FCurHandle = INVALID_HANDLE_VALUE then
-                            Continue
-                        else if CurTimer.FMsgQueued then
-                            CurTimer.FQueuedTicks := CurTick
-                        else if (IcsCalcTickDiff(CurTimer.FQueuedTicks,
-                                      CurTick) >= CurTimer.Interval) then begin
-                            if PostMessage(CurTimer.FCurHandle,
-                                           WM_ICS_THREAD_TIMER,
-                                           WPARAM(CurTimer),
-                                           LPARAM(CurTimer.FUID)) then begin
-                                CurTimer.FQueuedTicks := CurTick;
-                                CurTimer.FMsgQueued   := TRUE;
-                            end
-                            else if GetLastError = ERROR_INVALID_WINDOW_HANDLE then
-                                CurTimer.FCurHandle := INVALID_HANDLE_VALUE;
+                wrTimeout:
+                begin
+                    CurTicks := IcsGetTickCount;
+                    L := FClock.FTimerList.LockList;
+                    try
+                        for I := 0 to L.Count - 1 do begin
+                            if Terminated then Exit;
+                            CurTimer := TIcsThreadTimer(L[I]);
+                            if CurTimer.FCurHandle = INVALID_HANDLE_VALUE then
+                                Continue
+                            else if CurTimer.FMsgQueued then
+                                CurTimer.FQueuedTicks := CurTicks
+                            else if (IcsCalcTickDiff(CurTimer.FQueuedTicks,
+                                     CurTicks) >= CurTimer.Interval) then begin
+                                if PostMessage(CurTimer.FCurHandle,
+                                               WM_ICS_THREAD_TIMER,
+                                               WPARAM(CurTimer),
+                                               LPARAM(CurTimer.FUID)) then begin
+                                    CurTimer.FQueuedTicks := CurTicks;
+                                    CurTimer.FMsgQueued   := TRUE;
+                                end
+                                else begin
+                                    case GetLastError of
+                                        ERROR_INVALID_WINDOW_HANDLE :
+                                            CurTimer.FCurHandle := INVALID_HANDLE_VALUE;
+                                        ERROR_NOT_ENOUGH_QUOTA :
+                                            Break;
+                                    end;
+                                end;
+                            end;
                         end;
+                    finally
+                        FClock.FTimerList.UnlockList;
                     end;
-                finally
-                    FClock.FTimerList.UnlockList;
+                    //raise EIcsTimerException.Create('Test');
                 end;
-                //raise EIcsTimerException.Create('Test');
-            end;
 
-            WAIT_FAILED   : raise EIcsTimerException.Create(
-                                  SysErrorMessage(GetLastError));
-            WAIT_OBJECT_0 : if Terminated then
-                               Break;
-                                      
-            end;
+                wrSignaled:
+                    if Terminated then
+                        Break;
+                wrAbandoned:
+                        Break;
+
+                else
+                    raise EIcsTimerException.Create(
+                                      SysErrorMessage(GetLastError));
+            end; //case;
+        {$IFDEF MSWINDOWS}
+            Sleep(0);
+        {$ENDIF}
+        {$IFDEF POSIX}
+            Sleep(1);
+        {$ENDIF}
         end;
     finally
        if not Terminated then
@@ -262,6 +291,7 @@ begin
     end;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsClockThread.SetInterval(const Value: LongWord);
 begin
@@ -269,8 +299,9 @@ begin
         FInterval := FClock.FClockPool.FMinTimerRes
     else
         FInterval := Value;
-    SetEvent(FWakeUpEvent);
+    FWakeUpEvent.SetEvent;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
@@ -282,7 +313,7 @@ begin
     inherited Create;
     FClockPool := AOwner;
     FTimerList := TThreadList.Create;
-    InitializeCriticalSection(FCritSecClock);
+    FCritSecClock := TCriticalSection.Create;
 end;
 
 
@@ -291,8 +322,22 @@ destructor TIcsClock.Destroy;
 begin
     FreeAndNil(FThread);
     FreeAndNil(FTimerList);
-    DeleteCriticalSection(FCritSecClock);
+    FCritSecClock.Free;
     inherited Destroy;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsClock.Lock;
+begin
+    FCritSecClock.Enter;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsClock.Unlock;
+begin
+    FCritSecClock.Leave;
 end;
 
 
@@ -302,7 +347,7 @@ var
     L    : TList;
     Flag : Boolean;
 begin
-    EnterCriticalSection(FCritSecClock);
+    Lock;
     try
         L := FTimerList.LockList;
         try
@@ -323,7 +368,7 @@ begin
                 FreeAndNil(FThread);
         end;
     finally
-        LeaveCriticalSection(FCritSecClock);
+        Unlock;
     end;
 end;
 
@@ -333,7 +378,7 @@ procedure TIcsClock.SetTimer(TimerObj: TIcsThreadTimer);
 var
     L : TList;
 begin
-    EnterCriticalSection(FCritSecClock);
+    Lock;
     try
         if Assigned(FThread) and FThread.Terminated then
         { Thread terminated due to an exception in Execute, should never happen }
@@ -345,7 +390,7 @@ begin
                 raise EIcsTimerException.Create('Timer already exists');
             if not Assigned(FThread) then
                 FThread := TIcsClockThread.Create(Self);
-            TimerObj.FQueuedTicks := GetTickCount;
+            TimerObj.FQueuedTicks := IcsGetTickCount;
             TimerObj.FMsgQueued   := FALSE;
             TimerObj.FCurHandle   := TimerObj.FIcsWndControl.Handle;
             L.Add(TimerObj);
@@ -355,7 +400,7 @@ begin
             FTimerList.UnlockList;
         end;
     finally
-        LeaveCriticalSection(FCritSecClock);
+        Unlock;
     end;
 end;
 
@@ -366,7 +411,7 @@ begin
     FTimerList.LockList;
     try
         TimerObj.FMsgQueued    := FALSE;
-        TimerObj.FQueuedTicks  := GetTickCount;
+        TimerObj.FQueuedTicks  := IcsGetTickCount;
     finally
         FTimerList.UnlockList;
     end;
@@ -378,15 +423,29 @@ end;
 { TIcsClockPool }
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CritSecClockPool_Lock; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+    GCritSecClockPool.Enter;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure CritSecClockPool_Unlock; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+    GCritSecClockPool.Leave;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 class function TIcsClockPool.Acquire: TIcsClock;
 begin
-    EnterCriticalSection(GCritSecClockPool);
+    CritSecClockPool_Lock;
     try
         if not Assigned(GIcsClockPool) then
             GIcsClockPool := Create;
         Result := GIcsClockPool.InternalAcquire;
     finally
-        LeaveCriticalSection(GCritSecClockPool);
+        CritSecClockPool_Unlock;
     end;
 end;
 
@@ -394,7 +453,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 class procedure TIcsClockPool.Release(AClock: TIcsClock);
 begin
-    EnterCriticalSection(GCritSecClockPool);
+    CritSecClockPool_Lock;
     try
         if Assigned(GIcsClockPool) then begin
             GIcsClockPool.InternalRelease(AClock);
@@ -402,7 +461,7 @@ begin
                 FreeAndNil(GIcsClockPool);
         end;
     finally
-        LeaveCriticalSection(GCritSecClockPool);
+        CritSecClockPool_Unlock;
     end;
 end;
 
@@ -422,7 +481,7 @@ destructor TIcsClockPool.Destroy;
 var
     I : Integer;
 begin
-    EnterCriticalSection(GCritSecClockPool);
+    CritSecClockPool_Lock;
     try
         for I := 0 to FClockList.Count -1 do begin
             FreeAndNil(PIcsClockRec(FClockList[I])^.Clock);
@@ -430,7 +489,7 @@ begin
         end;
         FreeAndNil(FClockList);
     finally
-        LeaveCriticalSection(GCritSecClockPool);
+        CritSecClockPool_Unlock;
     end;
     inherited Destroy;
 end;
@@ -552,13 +611,14 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 initialization
-    InitializeCriticalSection(GCritSecClockPool);
+    GCritSecClockPool := TCriticalSection.Create;
+  {$IFDEF MSWINDOWS} // Otherwise a const in Ics.Posix.Messages
     WM_ICS_THREAD_TIMER := RegisterWindowMessage('OVERBYTE_ICS_THREAD_TIMER');
     if WM_ICS_THREAD_TIMER = 0 then
         raise EIcsTimerException.Create(SysErrorMessage(GetLastError));
+  {$ENDIF}
   
 finalization
     FreeAndNil(GIcsClockPool);
-    DeleteCriticalSection(GCritSecClockPool);
-  
+    FreeAndNil(GCritSecClockPool);
 end.

@@ -374,13 +374,15 @@ unit OverbyteIcsHttpSrv;
 interface
 
 uses
+{$IFDEF MSWINDOWS}
     Messages,
-{$IFDEF USEWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
 {$ENDIF}
-    Classes{, SysUtils},
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
+{$ENDIF}
+    Classes, SysUtils,
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
 {$IFDEF USE_SSL}
@@ -1022,7 +1024,7 @@ type
         FAuthTypes                : TAuthenticationTypes;
         FAuthRealm                : String;
 {$IFNDEF NO_DIGEST_AUTH}
-        FAuthDigestServerSecret       : TULargeInteger;
+        FAuthDigestServerSecret       : Int64;
         FAuthDigestNonceLifeTimeMin   : Cardinal;
         FAuthDigestMethod             : TAuthDigestMethod;
 {$ENDIF}
@@ -1041,7 +1043,7 @@ type
 {$ENDIF}
         function  GetMultiListenSockets: TWSocketMultiListenCollection;
         procedure SetMultiListenSockets(const Value: TWSocketMultiListenCollection);
-        function  CreateServerSecret: TULargeInteger; virtual;
+        function  CreateServerSecret: Int64; virtual;
         procedure Notification(AComponent: TComponent; operation: TOperation); override;
         procedure CreateSocket; virtual;
         procedure WSocketServerClientConnect(Sender : TObject;
@@ -1633,9 +1635,9 @@ begin
     inherited Create(AOwner);
     CreateSocket;
 {$IFDEF NO_ADV_MT}
-    FWSocketServer.Name := ClassName + '_SrvSocket' + _IntToStr(WSocketGCount);
+    FWSocketServer.Name := ClassName + '_SrvSocket' + IntToStr(WSocketGCount);
 {$ELSE}
-    FWSocketServer.Name := ClassName + '_SrvSocket' + _IntToStr(SafeWSocketGCount);
+    FWSocketServer.Name := ClassName + '_SrvSocket' + IntToStr(SafeWSocketGCount);
 {$ENDIF}
     FClientClass    := THttpConnection;
     FOptions        := [];
@@ -1704,11 +1706,10 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function THttpServer.CreateServerSecret: TULargeInteger;
+function THttpServer.CreateServerSecret: Int64;
 begin
     { This is weak, however better than nothing }
-    Result.LowPart  := Random(MaxInt);
-    Result.HighPart := Random(MaxInt);
+    Result := Int64(Random(MaxInt)) or Random(MaxInt) shl 32;
 end;
 
 
@@ -1741,7 +1742,7 @@ begin
     FWSocketServer.BannerTooBusy      :=
         'HTTP/1.0 503 Service Unavailable' + #13#10 +
         'Content-type: text/plain' + #13#10 +
-        'Content-length: ' + _IntToStr(Length(BusyText)) + #13#10#13#10 +
+        'Content-length: ' + IntToStr(Length(BusyText)) + #13#10#13#10 +
         BusyText;
 {$IFDEF BUILTIN_THROTTLE}
     FWSocketServer.BandwidthLimit     := FBandwidthLimit;     { angus V7.34 slow down control connection }
@@ -2138,7 +2139,7 @@ begin
     if not FHeartBeatBusy then  { Avoid reentrance }
     try
         FHeartBeatBusy := TRUE;
-        CurTicks := GetTickCount;
+        CurTicks := IcsGetTickCount;
         for I := ClientCount - 1 downto 0 do begin
             Cli := Client[I];
             if (Cli.KeepAliveTimeSec > 0) and
@@ -2387,14 +2388,14 @@ begin
     if Length(FRequestAuth) < 5 then
         Result := atNone
 {$IFDEF USE_NTLM_AUTH}
-    else if _LowerCase(Copy(FRequestAuth, 1, 5)) = 'ntlm ' then
+    else if LowerCase(Copy(FRequestAuth, 1, 5)) = 'ntlm ' then
         Result := atNtlm
 {$ENDIF}
 {$IFNDEF NO_DIGEST_AUTH}
-    else if _LowerCase(Copy(FRequestAuth, 1, 7)) = 'digest ' then
+    else if LowerCase(Copy(FRequestAuth, 1, 7)) = 'digest ' then
         Result := atDigest
 {$ENDIF}
-    else if _LowerCase(Copy(FRequestAuth, 1, 6)) = 'basic ' then
+    else if LowerCase(Copy(FRequestAuth, 1, 6)) = 'basic ' then
         Result := atBasic
     else
         Result := atNone;
@@ -2627,31 +2628,31 @@ begin
             repeat
                 Inc(I);
             until (I > Length(FRcvdLine)) or (FRcvdLine[I] <> ' ');
-            if _StrLIComp(@FRcvdLine[1], 'content-type:', 13) = 0 then
+            if StrLIComp(@FRcvdLine[1], 'content-type:', 13) = 0 then
                 FRequestContentType := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'content-length:', 15) = 0 then begin            {Bjornar}
+            else if StrLIComp(@FRcvdLine[1], 'content-length:', 15) = 0 then begin            {Bjornar}
                 FRequestHasContentLength := TRUE; { V7.30 }
                 try                                                                           {Bjornar}
-                    FRequestContentLength := _StrToInt(Copy(FRcvdLine, I, Length(FRcvdLine))); {Bjornar}
+                    FRequestContentLength := StrToInt(Copy(FRcvdLine, I, Length(FRcvdLine))); {Bjornar}
                 except                                                                        {Bjornar}
                     FRequestContentLength := -1;  { V7.30 }                                            {Bjornar}
                 end;
             end                                                                               {Bjornar}
-            else if _StrLIComp(@FRcvdLine[1], 'Accept:', 7) = 0 then
+            else if StrLIComp(@FRcvdLine[1], 'Accept:', 7) = 0 then
                 FRequestAccept:= Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'Referer:', 8) = 0 then
+            else if StrLIComp(@FRcvdLine[1], 'Referer:', 8) = 0 then
                 FRequestReferer := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'Accept-Language:', 16) = 0 then
+            else if StrLIComp(@FRcvdLine[1], 'Accept-Language:', 16) = 0 then
                 FRequestAcceptLanguage := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'Accept-Encoding:', 16) = 0 then
+            else if StrLIComp(@FRcvdLine[1], 'Accept-Encoding:', 16) = 0 then
                 FRequestAcceptEncoding := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'User-Agent:', 11) = 0 then
+            else if StrLIComp(@FRcvdLine[1], 'User-Agent:', 11) = 0 then
                 FRequestUserAgent := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'Authorization:', 14) = 0 then {DAVID}
+            else if StrLIComp(@FRcvdLine[1], 'Authorization:', 14) = 0 then {DAVID}
                 FRequestAuth := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'Cookie:', 7) = 0 then {DAVID}
+            else if StrLIComp(@FRcvdLine[1], 'Cookie:', 7) = 0 then {DAVID}
                 FRequestCookies := Copy(FRcvdLine, I, Length(FRcvdLine))
-            else if _StrLIComp(@FRcvdLine[1], 'Host:', 5) = 0 then begin
+            else if StrLIComp(@FRcvdLine[1], 'Host:', 5) = 0 then begin
                 FRequestHost := Copy(FRcvdLine, I, Length(FRcvdLine));
                 J := Pos(':', FRequestHost); {DAVID}
                 if J > 0 then begin
@@ -2663,18 +2664,18 @@ begin
                     FRequestHostPort := FServer.Port; { by default server port }
                 end;
             end
-            else if _StrLIComp(@FRcvdLine[1], 'Connection:', 11) = 0 then begin
+            else if StrLIComp(@FRcvdLine[1], 'Connection:', 11) = 0 then begin
                 FRequestConnection := Copy(FRcvdLine, I, Length(FRcvdLine));
-                FKeepAliveRequested := _CompareText(FRequestConnection, 'keep-alive') = 0;
+                FKeepAliveRequested := CompareText(FRequestConnection, 'keep-alive') = 0;
                 if FHttpVerNum = 10 then
                     FKeepAlive := FKeepAliveRequested
-                else if _CompareText(FRequestConnection, 'close') = 0 then
+                else if CompareText(FRequestConnection, 'close') = 0 then
                     FKeepAlive := FALSE;
             end
             {ANDREAS}
-            else if _StrLIComp(@FRcvdLine[1], 'Range:', 6) = 0 then begin
+            else if StrLIComp(@FRcvdLine[1], 'Range:', 6) = 0 then begin
                 { Init the Byte-range object }
-                RequestRangeValues.InitFromString(_Trim(Copy(FRcvdLine, I,
+                RequestRangeValues.InitFromString(Trim(Copy(FRcvdLine, I,
                                                            Length(FRcvdLine))));
             end;
         except
@@ -2695,7 +2696,7 @@ begin
     I := 1;
     while (I <= Length(FRcvdLine)) and (FRcvdLine[I] <> ' ') do
         Inc(I);
-    FMethod := _UpperCase(Copy(FRcvdLine, 1, I - 1));
+    FMethod := UpperCase(Copy(FRcvdLine, 1, I - 1));
     Inc(I);
     while (I <= Length(FRcvdLine)) and (FRcvdLine[I] = ' ') do
         Inc(I);
@@ -2717,7 +2718,7 @@ begin
     J := I;
     while (I <= Length(FRcvdLine)) and (FRcvdLine[I] <> ' ') do
         Inc(I);
-    FVersion := _Trim(_UpperCase(Copy(FRcvdLine, J, I - J)));
+    FVersion := Trim(UpperCase(Copy(FRcvdLine, J, I - J)));
     if FVersion = '' then
         FVersion := 'HTTP/1.0';
     if FVersion = 'HTTP/1.0' then
@@ -2835,7 +2836,7 @@ begin
     else begin
         if CheckContentEncoding(ContType) then           { V7.21 are we allowed to compress content }
                ContEncoderHdr := DoContentEncoding;      { V7.21 do it, returning new header }
-        PutStringInSendBuffer('Content-Length: ' + _IntToStr(FDocStream.Size) + #13#10);
+        PutStringInSendBuffer('Content-Length: ' + IntToStr(FDocStream.Size) + #13#10);
     end;
     if Header <> '' then
         PutStringInSendBuffer(Header);
@@ -3052,7 +3053,7 @@ begin
             '<BODY><H1>416 Requested range not satisfiable</H1><P></BODY></HTML>' + #13#10;
             SendHeader(FVersion + ' 416 Requested range not satisfiable' + #13#10 +
             'Content-Type: text/html' + #13#10 +
-            'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
             GetKeepAliveHdrLines +
             #13#10);
      FAnswerStatus := 416;  { V7.19 }
@@ -3072,7 +3073,7 @@ begin
             ' was not found on this server.<P></BODY></HTML>' + #13#10;
             SendHeader(FVersion + ' 404 Not Found' + #13#10 +
             'Content-Type: text/html' + #13#10 +
-            'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
             GetKeepAliveHdrLines +
             #13#10);
     FAnswerStatus := 404;   { V7.19 }
@@ -3092,7 +3093,7 @@ begin
             'syntax.<P></BODY></HTML>' + #13#10;
             SendHeader(FVersion + ' 400 Bad Request' + #13#10 +
             'Content-Type: text/html' + #13#10 +
-            'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
             GetKeepAliveHdrLines +
             #13#10);
     FAnswerStatus := 400;
@@ -3116,8 +3117,8 @@ begin
 
     if FKeepAlive and FKeepAliveRequested and (FKeepAliveTimeSec > 0) then
         Result := Result +
-        'Keep-Alive: timeout=' + _IntToStr(FKeepAliveTimeSec) + ', max=' +
-         _IntToStr(FMaxRequestsKeepAlive) + #13#10;
+        'Keep-Alive: timeout=' + IntToStr(FKeepAliveTimeSec) + ', max=' +
+         IntToStr(FMaxRequestsKeepAlive) + #13#10;
 end;
 
 
@@ -3132,7 +3133,7 @@ begin
             ' is Forbidden on this server.<P></BODY></HTML>' + #13#10;
             SendHeader(FVersion + ' 403 Forbidden' + #13#10 +
             'Content-Type: text/html' + #13#10 +
-            'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+            'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
             GetKeepAliveHdrLines +
             #13#10);
     FAnswerStatus := 403;   { V7.19 }
@@ -3165,7 +3166,7 @@ begin
     if (atNtlm in FAuthTypes) then begin
         if Assigned(FAuthNtlmSession) and
             (FAuthNtlmSession.State = lsInAuth) then
-            Header := Header +  _Trim('WWW-Authenticate: NTLM ' +
+            Header := Header +  Trim('WWW-Authenticate: NTLM ' +
              FAuthNtlmSession.NtlmMessage) + #13#10
         else
             Header := Header +
@@ -3243,7 +3244,7 @@ begin
 {$ENDIF}
     Header := Header +
         'Content-Type: text/html' + #13#10 +
-        'Content-Length: '        + _IntToStr(Length(Body)) + #13#10;
+        'Content-Length: '        + IntToStr(Length(Body)) + #13#10;
     Header := Header + GetKeepAliveHdrLines;
 
     (*
@@ -3282,7 +3283,7 @@ begin
     Body := '501 Unimplemented';
     SendHeader(FVersion + ' 501 Unimplemented' + #13#10 +
                'Content-Type: text/plain' + #13#10 +
-               'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+               'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
                GetKeepAliveHdrLines + 
                #13#10);
     FAnswerStatus := 501;   { V7.19 }
@@ -3315,19 +3316,19 @@ begin
     if Length(FDocument) < Length(FDocDir) then
         Status := -1
     else if Length(FDocument) > Length(FDocDir) then
-        Status := _CompareText(Copy(FDocument, 1, Length(FDocDir) + 1),
+        Status := CompareText(Copy(FDocument, 1, Length(FDocDir) + 1),
                               FDocDir + '\')
     else
-        Status := _CompareText(FDocument + '\', FDocDir + '\');
+        Status := CompareText(FDocument + '\', FDocDir + '\');
     FOutsideFlag := (Status <> 0);
 
     { Check for default document }
     if (Length(FDocument) > 0) and
        (FDocument[Length(FDocument)] = '\') and
-       (_FileExists(FDocument + FDefaultDoc)) then
+       (FileExists(FDocument + FDefaultDoc)) then
             FDocument := FDocument + FDefaultDoc
     else if IsDirectory(FDocument) and
-       (_FileExists(FDocument + '\' + FDefaultDoc)) then
+       (FileExists(FDocument + '\' + FDefaultDoc)) then
             FDocument := FDocument + '\' + FDefaultDoc;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     AuthCheckAuthenticated;
@@ -3592,7 +3593,7 @@ begin
         end;
     hgSendDoc:
         begin
-            if _FileExists(FDocument) then
+            if FileExists(FDocument) then
                 SendDocument(httpSendHead)
             else begin
                 if FKeepAlive = FALSE then {Bjornar}
@@ -3662,7 +3663,7 @@ begin
         begin
             OK := FALSE;
             try
-                if not _FileExists(FDocument) then begin
+                if not FileExists(FDocument) then begin
                     { File not found }
                     if FKeepAlive = FALSE then {Bjornar}
                         PrepareGraceFullShutDown;
@@ -3700,7 +3701,7 @@ var
     Ext : String;
 begin
     { We probably should use the registry to find MIME type for file types }
-    Ext := _LowerCase(_ExtractFileExt(FileName));
+    Ext := LowerCase(ExtractFileExt(FileName));
     if Length(Ext) > 1 then
         Ext := Copy(Ext, 2, Length(Ext));
     if (Ext = 'htm') or (Ext = 'html') then
@@ -3758,11 +3759,11 @@ var
     Hour, Min,   Sec, MSec : Word;
     DayOfWeek              : Word;
 begin
-    _DecodeDate(aDate, Year, Month, Day);
-    _DecodeTime(aDate, Hour, Min,   Sec, MSec);
+    DecodeDate(aDate, Year, Month, Day);
+    DecodeTime(aDate, Hour, Min,   Sec, MSec);
     DayOfWeek := ((Trunc(aDate) - 2) mod 7);
     Result := Copy(StrWeekDay, 1 + DayOfWeek * 3, 3) + ', ' +
-              _Format('%2.2d %s %4.4d %2.2d:%2.2d:%2.2d',
+              Format('%2.2d %s %4.4d %2.2d:%2.2d:%2.2d',
                      [Day, Copy(StrMonth, 1 + 3 * (Month - 1), 3),
                       Year, Hour, Min, Sec]);
 end;
@@ -3776,14 +3777,14 @@ var
     SearchRec : TSearchRec;
     Status    : Integer;
 begin
-    Status := _FindFirst(FileName, faAnyFile, SearchRec);
+    Status := FindFirst(FileName, faAnyFile, SearchRec);
     try
         if Status <> 0 then
             Result := 0
         else
-            Result := _FileDateToDateTime(SearchRec.Time);
+            Result := FileDateToDateTime(SearchRec.Time);
     finally
-        _FindClose(SearchRec);
+        FindClose(SearchRec);
     end;
 end;
 
@@ -3807,7 +3808,7 @@ begin
     if ProtoNumber = 200 then
         Result := Version + ' 200 OK' + #13#10 +
                   'Content-Type: ' + AnswerContentType + #13#10 +
-                  'Content-Length: ' + _IntToStr(DocSize) + #13#10 +
+                  'Content-Length: ' + IntToStr(DocSize) + #13#10 +
                   'Accept-Ranges: bytes' + #13#10
     {else if ProtoNumber = 416 then
         Result := Version + ' 416 Request range not satisfiable' + #13#10}
@@ -3815,7 +3816,7 @@ begin
         if RangeList.Count = 1 then begin
             Result := Version + ' 206 Partial Content' + #13#10 +
                       'Content-Type: ' + AnswerContentType + #13#10 +
-                      'Content-Length: ' + _IntToStr(DocSize) + #13#10 +
+                      'Content-Length: ' + IntToStr(DocSize) + #13#10 +
                       'Content-Range: bytes ' +
                       RangeList.Items[0].GetContentRangeString(CompleteDocSize) +
                       #13#10;
@@ -3824,7 +3825,7 @@ begin
             Result := Version + ' 206 Partial Content' + #13#10 +
                       'Content-Type: multipart/byteranges; boundary=' +
                       ByteRangeSeparator + #13#10 +
-                      'Content-Length: ' + _IntToStr(DocSize) + #13#10;
+                      'Content-Length: ' + IntToStr(DocSize) + #13#10;
         end;
     end
     else
@@ -4005,7 +4006,7 @@ begin
         SizeString := '';
     end
     else
-        SizeString := _IntToStr(F.SizeLow);
+        SizeString := IntToStr(F.SizeLow);
 
     if F.ReadOnly then
         Attr[3] := '-';
@@ -4028,9 +4029,9 @@ begin
     Result := '<TD>' + Attr + '</TD>' +
               '<TD ALIGN="right">' + SizeString + '</TD>' +
               '<TD WIDTH="10"></TD>' +
-              '<TD>' + _Format('%s %2.2d, %4.4d', [StrMonth[F.Month], F.Day, F.Year]) + '</TD>' +
+              '<TD>' + Format('%s %2.2d, %4.4d', [StrMonth[F.Month], F.Day, F.Year]) + '</TD>' +
               '<TD WIDTH="10"></TD>' +
-              '<TD>' + _Format('%2.2d:%2.2d:%2.2d',  [F.Hour, F.Min, F.Sec])   + '</TD>' +
+              '<TD>' + Format('%2.2d:%2.2d:%2.2d',  [F.Hour, F.Min, F.Sec])   + '</TD>' +
               '<TD WIDTH="10"></TD>' +
               '<TD><A HREF="' + Link + '">' +
               TextToHtmlText(F.Name) + '</A></TD>' + #13#10;
@@ -4054,7 +4055,7 @@ var
 begin
     { Create a list of all directories }
     DirList := TStringList.Create;
-    Status  := _FindFirst(Document + '\*.*', faAnyFile, F);
+    Status  := FindFirst(Document + '\*.*', faAnyFile, F);
     while Status = 0 do begin
         if ((F.Attr and faDirectory) <> 0) and
            //((F.Attr and faVolumeID)  =  0) and
@@ -4065,9 +4066,9 @@ begin
             Data.Name      := F.Name;
             Data.SizeLow   := F.Size;
             Data.SizeHigh  := 0;
-            Data.Day       := (HIWORD(F.Time) and $1F);
-            Data.Month     := ((HIWORD(F.Time) shr 5) and $0F);
-            Data.Year      := ((HIWORD(F.Time) shr 9) and $3F) + 1980;
+            Data.Day       := (IcsHiWord(F.Time) and $1F);
+            Data.Month     := ((IcsHiWord(F.Time) shr 5) and $0F);
+            Data.Year      := ((IcsHiWord(F.Time) shr 9) and $3F) + 1980;
             Data.Sec       := ((F.Time and $1F) shl 1);
             Data.Min       := ((F.Time shr 5) and $3F);
             Data.Hour      := ((F.Time shr 11) and $1F);
@@ -4082,14 +4083,14 @@ begin
             else
                 Data.Free;
         end;
-        Status  := _FindNext(F);
+        Status  := FindNext(F);
     end;
-    _FindClose(F);
+    FindClose(F);
     DirList.Sort;
 
     { Create a list of all files }
     FileList := TStringList.Create;
-    Status  := _FindFirst(Document + '\*.*', faAnyFile, F);
+    Status  := FindFirst(Document + '\*.*', faAnyFile, F);
     while Status = 0 do begin
         if ((F.Attr and faDirectory) = 0) then begin
            //((F.Attr and faVolumeID)  = 0) then begin
@@ -4098,9 +4099,9 @@ begin
             Data.Name      := F.Name;
             Data.SizeLow   := F.Size;
             Data.SizeHigh  := 0;
-            Data.Day       := (HIWORD(F.Time) and $1F);
-            Data.Month     := ((HIWORD(F.Time) shr 5) and $0F);
-            Data.Year      := ((HIWORD(F.Time) shr 9) and $3F) + 1980;
+            Data.Day       := (IcsHiWord(F.Time) and $1F);
+            Data.Month     := ((IcsHiWord(F.Time) shr 5) and $0F);
+            Data.Year      := ((IcsHiWord(F.Time) shr 9) and $3F) + 1980;
             Data.Sec       := ((F.Time and $1F) shl 1);
             Data.Min       := ((F.Time shr 5) and $3F);
             Data.Hour      := ((F.Time shr 11) and $1F);
@@ -4115,9 +4116,9 @@ begin
             else
                 Data.Free;
         end;
-        Status  := _FindNext(F);
+        Status  := FindNext(F);
     end;
-    _FindClose(F);
+    FindClose(F);
     FileList.Sort;
 
     Result   := '<HTML>' + #13#10 +
@@ -4136,9 +4137,9 @@ begin
     if Path = '/' then
         ParentDir := ''
     else if Path[Length(Path)] = '/' then
-        ParentDir := DosPathToUnixPath(_ExtractFilePath(UnixPathToDosPath(Copy(Path, 1, Length(Path) - 1))))
+        ParentDir := DosPathToUnixPath(ExtractFilePath(UnixPathToDosPath(Copy(Path, 1, Length(Path) - 1))))
     else
-        ParentDir := DosPathToUnixPath(_ExtractFilePath(UnixPathToDosPath(Path)));
+        ParentDir := DosPathToUnixPath(ExtractFilePath(UnixPathToDosPath(Path)));
     if (ParentDir <> '') and (ParentDir <> '/') then
         SetLength(ParentDir, Length(ParentDir) - 1);
     if ParentDir <> '' then
@@ -4166,8 +4167,8 @@ begin
         end;
         FileList.Free;
         Result := Result + '<TR><TD COLSPAN="8">Total: ' +
-                           _IntToStr(Total)      + ' file(s), ' +
-                           _IntToStr(TotalBytes) + ' byte(s)</TD></TR>';
+                           IntToStr(Total)      + ' file(s), ' +
+                           IntToStr(TotalBytes) + ' byte(s)</TD></TR>';
     end;
 
     Result := Result + '</TABLE></BODY></HTML>' + #13#10;
@@ -4186,7 +4187,7 @@ begin
     Body   := BuildDirList;
     Header := Version +  ' 200 OK' + #13#10 +
               'Content-Type: text/html' + #13#10 +
-              'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+              'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
               'Pragma: no-cache' + #13#10 +
               FServer.PersistentHeader + { V7.29 }
               #13#10;
@@ -4289,7 +4290,7 @@ begin
         FoundLen := P - Q; {tps}
         if P^ = '=' then
             Inc(P);
-        if (_StrLIComp(Q, @Name[1], NameLen) = 0) and
+        if (StrLIComp(Q, @Name[1], NameLen) = 0) and
            (NameLen = FoundLen) then begin  {tps}
             while (P^ <> #0) and (P^ <> '&') do begin
                 Ch := AnsiChar(Ord(P^)); // should contain nothing but < ord 128
@@ -4414,7 +4415,7 @@ begin
             Inc(P);
         if P^ = '=' then
             Inc(P);
-        if _StrLIComp(Q, @Name[1], NameLen) = 0 then begin
+        if StrLIComp(Q, @Name[1], NameLen) = 0 then begin
             while (P^ <> #0) and (P^ <> ';') do begin
                 Ch := P^;
                 if Ch = '%' then begin
@@ -4594,7 +4595,7 @@ begin
             Exit;
         end;
         if Ord(Temp[I]) > 255 then
-            Result := Result + Copy(Temp, J, I - J) + '&#' + _IntToStr(Ord(Temp[I])) + ';'
+            Result := Result + Copy(Temp, J, I - J) + '&#' + IntToStr(Ord(Temp[I])) + ';'
         else
             Result := Result + Copy(Temp, J, I - J) + '&' +
                     String(HtmlSpecialChars[Ord(Temp[I])]) + ';';
@@ -4657,12 +4658,19 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IsDirectory(const Path : String) : Boolean;
+{$IFDEF MSWINDOWS}
 var
     Attr : DWORD;
 begin
-    Attr   := GetFileAttributes(PChar(_ExcludeTrailingPathdelimiter(Path)));
+    Attr   := GetFileAttributes(PChar(ExcludeTrailingPathdelimiter(Path)));
     Result := (Attr <> MaxDWord) and ((Attr and FILE_ATTRIBUTE_DIRECTORY) <> 0);
 end;
+{$ENDIF}
+{$IFDEF POSIX}
+begin
+    Result := DirectoryExists(ExcludeTrailingPathdelimiter(Path));
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -4726,7 +4734,7 @@ function MakeCookie(
 begin
     Result := 'Set-Cookie: ' + Name + '=' + UrlEncode(Value);
     if Length(Value) = 0 then
-        Result := Result + '_NONE_; EXPIRES=' + RFC1123_Date(_Date - 7) { Last week }
+        Result := Result + '_NONE_; EXPIRES=' + RFC1123_Date(Date - 7) { Last week }
     else if Expires <> 0 then
         Result := Result + '; EXPIRES=' + RFC1123_Date(Expires);
     Result := Result + '; PATH=' + Path + #13#10;
@@ -4848,7 +4856,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function THttpServer.GetSrcVersion: String;
 begin
-    Result := _Format('%d.%02.2d', [THttpServerVersion div 100,
+    Result := Format('%d.%02.2d', [THttpServerVersion div 100,
                                    THttpServerVersion mod 100]);
 
 end;
@@ -4955,7 +4963,7 @@ begin
     End2Tag  := '<'  + GTagPrefix + '/TABLE_ROWS'; { Old version still supported }
     I := 0;
     while I < (BufLen - 13) do begin
-        if (_StrLIcomp(Buf + I, @StartTag[1], Length(StartTag)) = 0) and
+        if (StrLIComp(Buf + I, @StartTag[1], Length(StartTag)) = 0) and
            DelimEnd((Buf + I + Length(StartTag))^) then begin
             { Embedded TABLE_ROWS ! }
             while (I < (BufLen - 1)) and (Buf[I] <> '>') do
@@ -4963,7 +4971,7 @@ begin
             Q := SearchTableRowsEnd(Buf + I + 1, BufLen - I - 1);
             I := Q - Buf;
         end
-        else if (_StrLIcomp(Buf + I, @End1Tag[1], Length(End1Tag)) = 0) and
+        else if (StrLIComp(Buf + I, @End1Tag[1], Length(End1Tag)) = 0) and
                 DelimEnd((Buf + I + Length(End1Tag))^) then begin
             I := I + Length(End1Tag);
             while (I < BufLen) and (Buf[I] <> '>') do
@@ -4971,7 +4979,7 @@ begin
             Result := Buf + I + 1;
             Exit;
         end
-        else if (_StrLIcomp(Buf + I, @End2Tag[1], Length(End2Tag)) = 0) and
+        else if (StrLIComp(Buf + I, @End2Tag[1], Length(End2Tag)) = 0) and
                 DelimEnd((Buf + I + Length(End2Tag))^) then begin
             I := I + Length(End2Tag);
             while (I < BufLen) and (Buf[I] <> '>') do
@@ -5108,7 +5116,7 @@ begin
                 Inc(I);
             Inc(I);
         until (I >= (Cnt - Length(GTagPrefix))) or
-              (_StrLIComp(P + I, @GTagPrefix[1], Length(GTagPrefix)) = 0);
+              (StrLIComp(P + I, @GTagPrefix[1], Length(GTagPrefix)) = 0);
 
         Dec(I);
         if P[I] <> '<' then begin
@@ -5134,7 +5142,7 @@ begin
         while (J < Cnt) and (P[J] <> '>') and (P[J] <> ' ') and (P[J] <> #9) do
             Inc(J);
 
-        TagName := _UpperCase(Copy(P, I + Length(GTagPrefix) + 2, J - I - Length(GTagPrefix) - 1));
+        TagName := UpperCase(Copy(P, I + Length(GTagPrefix) + 2, J - I - Length(GTagPrefix) - 1));
 //OutputDebugString(PChar('TagName = ' + TagName));
         if P[J] = '>' then
             TagParams := ''
@@ -5142,7 +5150,7 @@ begin
             I := J + 1;
             while (J < Cnt) and (P[J] <> '>') do
                 Inc(J);
-            TagParams := _Trim(_UpperCase(Copy(P, I, J - I + 1)));
+            TagParams := Trim(UpperCase(Copy(P, I, J - I + 1)));
         end;
 
         if TagName = 'TABLE_ROWS' then begin
@@ -5278,28 +5286,28 @@ const
     BooleanToString : array [Boolean] of String = ('FALSE', 'TRUE');
 begin
     case V.VType of
-    vtInteger:        Result := _IntToStr(V.VInteger);
+    vtInteger:        Result := IntToStr(V.VInteger);
     vtBoolean:        Result := BooleanToString[V.VBoolean];
     vtChar:           Result := String(V.VChar);
-    vtExtended:       Result := _FloatToStr(V.VExtended^);
+    vtExtended:       Result := FloatToStr(V.VExtended^);
     vtString:         Result := String(V.VString^);
     vtPointer:        Result := 'Unsupported TVarRec.VType = vtPointer';
-    vtPChar:          Result := String(_StrPas(V.VPChar));
+    vtPChar:          Result := String(StrPas(V.VPChar));
     vtObject:         Result := 'Unsupported TVarRec.VType = vtObject';
     vtClass:          Result := 'Unsupported TVarRec.VType = vtClass';
     vtWideChar:       Result := String(V.VWideChar);
     vtPWideChar:      Result := String(V.VPWideChar);
-    vtAnsiString:     Result := String(_StrPas(V.VPChar));
+    vtAnsiString:     Result := String(StrPas(V.VPChar));
     vtCurrency:       Result := 'Unsupported TVarRec.VType = vtCurrency';
     vtVariant:        Result := 'Unsupported TVarRec.VType = vtVariant';
     vtWideString:     Result := 'Unsupported TVarRec.VType = vtWideString';
     vtInterface:      Result := 'Unsupported TVarRec.VType = vtInterface';
-    vtInt64:          Result := _IntToStr(V.VInt64^);
+    vtInt64:          Result := IntToStr(V.VInt64^);
 {$IFDEF COMPILER12_UP}
     vtUnicodeString:  Result := PWideChar(V.VUnicodeString);
 {$ENDIF}
     else
-        Result := 'Unknown TVarRec.VType = "' + _IntToStr(Ord(V.VType)) + '" ';
+        Result := 'Unknown TVarRec.VType = "' + IntToStr(Ord(V.VType)) + '" ';
     end;
 
 //OutputDebugString(PChar('VarRecToString ' + Result));
@@ -5619,16 +5627,16 @@ function THttpRange.GetContentRangeString(
 begin
     if RangeFrom < 0 then
         { The Last Bytes }
-        Result := _IntToStr(CompleteDocSize - RangeFrom) + '-' +
-                  _IntToStr(CompleteDocSize - 1) + '/' + _IntToStr(CompleteDocSize)
+        Result := IntToStr(CompleteDocSize - RangeFrom) + '-' +
+                  IntToStr(CompleteDocSize - 1) + '/' + IntToStr(CompleteDocSize)
     else if RangeTo < 0 then
         { The First Bytes }
-        Result := _IntToStr(RangeFrom) + '-' + _IntToStr(CompleteDocSize - 1) +
-                  '/' + _IntToStr(CompleteDocSize)
+        Result := IntToStr(RangeFrom) + '-' + IntToStr(CompleteDocSize - 1) +
+                  '/' + IntToStr(CompleteDocSize)
     else
         { The First Bytes }
-        Result := _IntToStr(RangeFrom) + '-' + _IntToStr(RangeTo) +
-                  '/' + _IntToStr(CompleteDocSize);
+        Result := IntToStr(RangeFrom) + '-' + IntToStr(RangeTo) +
+                  '/' + IntToStr(CompleteDocSize);
 end;
 
 
@@ -5709,12 +5717,12 @@ begin
     if SeperatorPos <> 0 then begin
         FromStr := Copy(Value, 1, SeperatorPos - 1);
         ToStr   := Copy(Value, SeperatorPos + 1, Length(Value));
-        FromStr := _Trim(FromStr);
-        ToStr   := _Trim(ToStr);
+        FromStr := Trim(FromStr);
+        ToStr   := Trim(ToStr);
         { Numeric Testing }
         if FromStr <> '' then begin
             try
-                _StrToInt64(FromStr);
+                StrToInt64(FromStr);
             except
                 FromStr := '';
                 ToStr   := '';
@@ -5723,7 +5731,7 @@ begin
         end;
         if ToStr <> '' then begin
             try
-                _StrToInt64(ToStr);
+                StrToInt64(ToStr);
             except
                 FromStr := '';
                 ToStr   := '';
@@ -5750,7 +5758,7 @@ begin
 
     try
         System.Delete(AStr, 1, Length('bytes='));
-        _Trim(AStr);
+        Trim(AStr);
 
         { Parse the string valid values are:
          '-500'
@@ -5768,8 +5776,8 @@ begin
                 AStr       := '';
             end
             else begin
-                WorkString := _Trim(Copy(AStr, 1, CommaPos - 1));
-                AStr := _Trim(Copy(AStr, CommaPos + 1, Length(AStr)));
+                WorkString := Trim(Copy(AStr, 1, CommaPos - 1));
+                AStr := Trim(Copy(AStr, CommaPos + 1, Length(AStr)));
             end;
 
             ParseRangeString(FromStr, ToStr, WorkString);
@@ -5778,11 +5786,11 @@ begin
                 if FromStr = '' then
                     NewRange.RangeFrom := -1
                 else
-                    NewRange.RangeFrom := _StrToInt64(FromStr);
+                    NewRange.RangeFrom := StrToInt64(FromStr);
                 if ToStr = '' then
                     NewRange.RangeTo := -1
                 else
-                    NewRange.RangeTo := _StrToInt64(ToStr);
+                    NewRange.RangeTo := StrToInt64(ToStr);
                 Add(NewRange);
             end;
         end;
@@ -6096,7 +6104,7 @@ begin
     if atNtlm in Types then
         Result := Result + 'atNtlm ';
 {$ENDIF}
-    Result := _Trim(Result);
+    Result := Trim(Result);
 end;
 {$ENDIF}
 

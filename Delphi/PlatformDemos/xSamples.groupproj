@@ -1,0 +1,96 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{D083C8C0-ADC4-41D2-B66D-3F8A4ED728D9}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="IcsConSmtp.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsMailSnd.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsHttpsTst.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsFtpTst.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsFtpServ.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsThreadTimerDemo.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="IcsConSmtp">
+			<MSBuild Projects="IcsConSmtp.dproj"/>
+		</Target>
+		<Target Name="IcsConSmtp:Clean">
+			<MSBuild Projects="IcsConSmtp.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsConSmtp:Make">
+			<MSBuild Projects="IcsConSmtp.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsMailSnd">
+			<MSBuild Projects="IcsMailSnd.dproj"/>
+		</Target>
+		<Target Name="IcsMailSnd:Clean">
+			<MSBuild Projects="IcsMailSnd.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsMailSnd:Make">
+			<MSBuild Projects="IcsMailSnd.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsHttpsTst">
+			<MSBuild Projects="IcsHttpsTst.dproj"/>
+		</Target>
+		<Target Name="IcsHttpsTst:Clean">
+			<MSBuild Projects="IcsHttpsTst.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsHttpsTst:Make">
+			<MSBuild Projects="IcsHttpsTst.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsFtpTst">
+			<MSBuild Projects="IcsFtpTst.dproj"/>
+		</Target>
+		<Target Name="IcsFtpTst:Clean">
+			<MSBuild Projects="IcsFtpTst.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsFtpTst:Make">
+			<MSBuild Projects="IcsFtpTst.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsFtpServ">
+			<MSBuild Projects="IcsFtpServ.dproj"/>
+		</Target>
+		<Target Name="IcsFtpServ:Clean">
+			<MSBuild Projects="IcsFtpServ.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsFtpServ:Make">
+			<MSBuild Projects="IcsFtpServ.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsThreadTimerDemo">
+			<MSBuild Projects="IcsThreadTimerDemo.dproj"/>
+		</Target>
+		<Target Name="IcsThreadTimerDemo:Clean">
+			<MSBuild Projects="IcsThreadTimerDemo.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsThreadTimerDemo:Make">
+			<MSBuild Projects="IcsThreadTimerDemo.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsFtpTst;IcsFtpServ;IcsThreadTimerDemo"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsThreadTimerDemo:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsThreadTimerDemo:Make"/>
+		</Target>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
+	</Project>

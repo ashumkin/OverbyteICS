@@ -430,17 +430,31 @@ interface
 {$ENDIF}
 
 uses
-    Messages,
-{$IFDEF USEWINDOWS}
+{$IFDEF MSWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+    Messages,
+    OverbyteIcsWinsock,
 {$ENDIF}
     SysUtils, Classes,
 {$IFNDEF NOFORMS}
-    Forms, Controls,
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
+    Forms,
+  {$ENDIF}
 {$ENDIF}
-    OverbyteIcsWSocket, OverbyteIcsWndControl, OverbyteIcsWinsock,
+{$IFDEF POSIX}
+    //System.IOUtils,
+    Posix.Unistd,
+    Posix.SysSocket,
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
+  {$IFDEF MACOS}
+    System.Mac.CFUtils,
+    Macapi.Corefoundation,
+  {$ENDIF}
+{$ENDIF}
+    OverbyteIcsWSocket, OverbyteIcsWndControl,
     OverbyteIcsMD5,
     OverbyteIcsSha1,
     OverbyteIcsNtlmMsgs,
@@ -1335,6 +1349,9 @@ implementation
 const
     CRLF = AnsiString(#13#10);
 
+var
+    GL_En_US_FormatSettings : TFormatSettings;
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function SmtpRqTypeToStr(RqType: TSmtpRequest): ShortString;
 begin
@@ -1732,38 +1749,43 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SetShareMode(newValue: TSmtpShareMode);
 begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+{$WARNINGS OFF}
     case newValue of
-    smtpShareCompat    : FShareMode := fmShareCompat;
+    smtpShareCompat    : FShareMode := {$IFDEF MSWINDOWS} fmShareCompat {$ELSE} fmShareExclusive {$ENDIF};
     smtpShareExclusive : FShareMode := fmShareExclusive;
     smtpShareDenyWrite : FShareMode := fmShareDenyWrite;
-    smtpShareDenyRead  : FShareMode := fmShareDenyRead;
+    smtpShareDenyRead  : FShareMode := {$IFDEF MSWINDOWS} fmShareDenyRead {$ELSE} fmShareExclusive {$ENDIF};
     smtpShareDenyNone  : FShareMode := fmShareDenyNone;
     else
         FShareMode := fmShareDenyWrite;
     end;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
+{$WARNINGS ON}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomSmtpClient.GetShareMode: TSmtpShareMode;
 begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+{$WARNINGS OFF}
     case FShareMode of
+  {$IFDEF MSWINDOWS}
     fmShareCompat    : Result := smtpShareCompat;
+  {$ENDIF}
     fmShareExclusive : Result := smtpShareExclusive;
     fmShareDenyWrite : Result := smtpShareDenyWrite;
+  {$IFDEF MSWINDOWS}
     fmShareDenyRead  : Result := smtpShareDenyRead;
+  {$ENDIF}
     fmShareDenyNone  : Result := smtpShareDenyNone;
     else
-        Result := smtpShareDenyWrite;
+        Result := smtpShareExclusive;
     end;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
+{$WARNINGS ON}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 {$IFDEF NOFORMS}
 { This function is a callback function. It means that it is called by       }
 { windows. This is the very low level message handler procedure setup to    }
@@ -1795,7 +1817,7 @@ begin
     end;
 end;
 {$ENDIF}
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.ThreadAttach;
@@ -3593,6 +3615,17 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TimeZoneBiasDT : TDateTime;
+var
+    aBias: Integer;         { Minutes }
+begin
+    aBias := IcsGetLocalTimeZoneBias;
+    Result := EncodeTime(Abs(aBias) div 60, Abs(aBias) mod 60, 0, 0);
+    if aBias < 0 then
+         Result := -Result;
+end;
+
+(*
+function TimeZoneBiasDT : TDateTime;
 const
     Time_Zone_ID_DayLight = 2;
 var
@@ -3613,7 +3646,7 @@ begin
              Result := -Result;
     end;
 end;
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF NEVER}
@@ -3644,6 +3677,17 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TimeZoneBias : String;
+var
+    aBias:  Integer;
+begin
+    aBias := IcsGetLocalTimeZoneBias;
+    Result := Format('-%.2d%.2d', [Abs(aBias) div 60, Abs(aBias) mod 60]);
+    if aBias <= 0 then
+        Result[1] := '+';
+end;
+
+(*
+function TimeZoneBias : String;
 const
     Time_Zone_ID_DayLight = 2;
 var
@@ -3664,10 +3708,32 @@ begin
              Result[1] := '+';
     end;
 end;
+*)
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure PrepareGlobalSmtpFormatSettings;
+{$IFDEF POSIX}
+var
+    LocaleRef: CFLocaleRef;
+    CFStrRef : CFStringRef;
+begin
+    CFStrRef := TCFString('en_US').Value;
+    LocaleRef := CFLocaleCreate(kCFAllocatorDefault, CFStrRef);
+    GetLocaleFormatSettings(LocaleRef, GL_En_US_FormatSettings);
+    CFRelease(CFStrRef);
+    CFRelease(LocaleRef);
+end;
+{$ENDIF}
+{$IFDEF MSWINDOWS}
+begin
+    GetLocaleFormatSettings(1033, GL_En_US_FormatSettings);
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function Rfc822DateTime(t : TDateTime) : String;
+(*
 var
     I                   : Integer;
     SaveShortDayNames   : array[1..7] of string;
@@ -3679,7 +3745,9 @@ const
         ('Jan', 'Feb', 'Mar', 'Apr',
          'May', 'Jun', 'Jul', 'Aug',
          'Sep', 'Oct', 'Nov', 'Dec');
+*)
 begin
+    (*
     if ShortDayNames[1] = MyShortDayNames[1] then
         Result := FormatDateTime('ddd, d mmm yyyy hh":"mm":"ss', t) +
                   ' ' + TimeZoneBias
@@ -3695,15 +3763,16 @@ begin
             SaveShortMonthNames[I] := ShortMonthNames[I];
             ShortMonthNames[I]     := MyShortMonthNames[I];
         end;
-
-        Result := FormatDateTime('ddd, d mmm yyyy hh":"mm":"ss', t) +
-                  ' ' + TimeZoneBias;
-
+      *)
+        Result := FormatDateTime('ddd, d mmm yyyy hh":"mm":"ss', t,
+                    GL_En_US_FormatSettings) + ' ' + TimeZoneBias;
+      (*
         for I := Low(ShortDayNames) to High(ShortDayNames) do
             ShortDayNames[I] := SaveShortDayNames[I];
         for I := Low(ShortMonthNames) to High(ShortMonthNames) do
             ShortMonthNames[I] := SaveShortMonthNames[I];
-    end;
+
+    end; *)
 end;
 
 
@@ -4284,7 +4353,9 @@ end;
 { are pretty exact!                                                         }
 procedure TSmtpCli.CalcMsgSizeSync;
 var
+  {$IFNDEF POSIX}
     Dummy     : THandle;
+  {$ENDIF}
     OldState  : TSmtpState;
 begin
     FOldSendMode     := FSendMode;
@@ -4292,11 +4363,15 @@ begin
     OldState         := FState;
     try
         CalcMsgSize;
+      {$IFNDEF POSIX}
         Dummy := INVALID_HANDLE_VALUE;
+      {$ENDIF}
         while FState = smtpInternalBusy do
         begin
+          {$IFNDEF POSIX}
             if MsgWaitForMultipleObjects(0, Dummy, False, 250, QS_ALLINPUT) = WAIT_FAILED then
                 raise SmtpException.Create('Wait failed in CalcMsgSizeSync');
+          {$ENDIF}
             MessagePump;
         end;
     except
@@ -4319,14 +4394,18 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TSyncSmtpCli.WaitUntilReady : Boolean;
+{$IFNDEF POSIX}
 var
     DummyHandle     : THandle;
+{$ENDIF}
 begin
 {$IFNDEF WIN64}                  { V7.37 }
     Result    := TRUE;           { Make dcc32 happy }
 {$ENDIF}
-    FTimeStop := Integer(GetTickCount) + FTimeout * 1000;
+    FTimeStop := Integer(IcsGetTickCount) + FTimeout * 1000;
+  {$IFNDEF POSIX}
     DummyHandle := INVALID_HANDLE_VALUE;
+  {$ENDIF}
     while TRUE do begin
         if FState = smtpReady then begin
             { Back to ready state, the command is finiched }
@@ -4335,7 +4414,7 @@ begin
         end;
 
         if Terminated or
-            ((FTimeout > 0) and (Integer(GetTickCount) > FTimeStop)) then begin
+            ((FTimeout > 0) and (Integer(IcsGetTickCount) > FTimeStop)) then begin
             { Application is terminated or timeout occured }
             inherited Abort;
             FErrorMessage := '426 Timeout';
@@ -4343,10 +4422,10 @@ begin
             Result        := FALSE; { Command failed }
             break;
         end;
-
+      {$IFNDEF POSIX}
         { Do not use 100% CPU }
         MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000, QS_ALLINPUT);           //FP
-
+      {$ENDIF}
         MessagePump;
     end;
 end;
@@ -4508,7 +4587,7 @@ begin
     inherited TriggerGetData(LineNum, MsgLine, MaxLen, More);
     { Evaluate the timeout period again }
     if FTimeout > 0 then
-        FTimeStop := Integer(GetTickCount) + FTimeout * 1000;
+        FTimeStop := Integer(IcsGetTickCount) + FTimeout * 1000;
 end;
 
 
@@ -5123,7 +5202,7 @@ var
     TickPart : AnsiString;
     RandPart : AnsiString;
 begin
-    TickPart := '----=_NextPart_000_' + IcsIntToHexA(LongInt(GetTickCount), 8);
+    TickPart := '----=_NextPart_000_' + IcsIntToHexA(LongInt(IcsGetTickCount), 8);
     RandPart := IcsIntToHexA(Random(High(Integer)), 8);
     FOutsideBoundary := TickPart + '_0.' + RandPart;
     FInsideBoundary  := TickPart + '_1.' + RandPart;
@@ -5640,11 +5719,8 @@ end;
 {$ENDIF} // USE_SSL
 
 
-
-
-
-
-
+initialization
+  PrepareGlobalSmtpFormatSettings;
 
 
 end.

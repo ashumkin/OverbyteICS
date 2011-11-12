@@ -53,15 +53,10 @@ interface
 {$I OverbyteIcsDefs.inc}
 
 uses
-{$IFDEF CLR}
-  System.IO,
-  System.Threading,
-  System.Runtime.InteropServices;
-{$ENDIF}
 {$IFDEF MSWINDOWS}
   Windows, Messages,
 {$ENDIF}
- Classes, SysUtils;
+  Classes, SysUtils;
 
 const
   OverbyteIcsTypesVersion = 107;
@@ -74,107 +69,18 @@ type
   TBytes                    = array of Byte;
 {$ENDIF}
 
-{$IFDEF CLR}
-  Exception           = Borland.Delphi.System.Exception;
-  THandle             = Integer;
-  BOOL                = LongBool;
-  HWND                = type LongWord;
-  HINST               = type THandle;
-  HICON               = type LongWord;
-  HCURSOR             = HICON;
-  HMENU               = type LongWord;
-  UINT                = type LongWord;
-  DWORD               = type LongWord;
-  HBRUSH              = type LongWord;
-  ATOM                = Word;
-  WPARAM              = Longint;
-  LPARAM              = Longint;
-  LRESULT             = Longint;
-  TFNWndProc          = function (p1: HWND; p2: UINT; p3: WPARAM; p4: LPARAM): LRESULT;
-  TNotifyEvent        = procedure (sender: System.Object{; e: System.EventArgs}) of object;
-  TPoint = packed record
-    X : LongInt;
-    Y : LongInt;
-  end;
-  TMessage = packed record
-    Msg: Cardinal;
-    WParam: Longint;
-    LParam: Longint;
-    Result: Longint;
-  end;
-  TMsg = packed record
-    hwnd    : HWND;
-    message : UINT;
-    wParam  : WPARAM;
-    lParam  : LPARAM;
-    time    : DWORD;
-    pt      : TPoint;
-  end;
-
-  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
-  TWndClass = packed record
-    style          : UINT;
-    [MarshalAs(UnmanagedType.FunctionPtr)]
-    lpfnWndProc    : TFNWndProc;
-    cbClsExtra     : Integer;
-    cbWndExtra     : Integer;
-    hInstance      : HINST;
-    hIcon          : HICON;
-    hCursor        : HCURSOR;
-    hbrBackground  : HBRUSH;
-    [MarshalAs(UnmanagedType.LPTStr)]
-    lpszMenuName: string;
-    [MarshalAs(UnmanagedType.LPTStr)]
-    lpszClassName  : string;
-  end;
-
-  TWndClassInfo = packed record
-    style          : UINT;
-    lpfnWndProc    : IntPtr;
-    cbClsExtra     : Integer;
-    cbWndExtra     : Integer;
-    hInstance      : HINST;
-    hIcon          : HICON;
-    hCursor        : HCURSOR;
-    hbrBackground  : HBRUSH;
-    lpszMenuName   : IntPtr;
-    lpszClassName  : IntPtr;
-  end;
-
-  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
-  TCreateStruct = packed record
-    lpCreateParams : IntPtr;
-    hInstance      : HINST;
-    hMenu          : HMENU;
-    hwndParent     : HWND;
-    cy             : Integer;
-    cx             : Integer;
-    y              : Integer;
-    x              : Integer;
-    style          : Longint;
-    lpszName       : IntPtr;
-    lpszClass      : IntPtr;
-    dwExStyle      : DWORD;
-  end;
-{$ENDIF}
-
-{$IFDEF POSIX}
-    INT_PTR                   = NativeInt;
-{$ENDIF}
-
-{$EXTERNALSYM size_t}
-{$IFDEF CPUX64}
-    size_t                    = UInt64;
-{$ELSE}
-    size_t                    = LongWord;
-{$ENDIF}
-    Psize_t                   = ^size_t;
-
 {$IFNDEF COMPILER15_UP}
-    TThreadID                 = LongWord;
+  TThreadID                 = LongWord;
 {$ENDIF}
 
 {$IFDEF MSWINDOWS}
+  {$EXTERNALSYM size_t}
+  {$IFDEF CPUX64}
+    size_t                    = UInt64;
+  {$ELSE}
+    size_t                    = LongWord;
+  {$ENDIF}
+    Psize_t                   = ^size_t;
 
   {$IFDEF COMPILER14_UP} // D2010 and better
       {$EXTERNALSYM HANDLE_PTR}
@@ -208,11 +114,12 @@ type
       {$EXTERNALSYM DWORD_PTR}
       DWORD_PTR                 = ULONG_PTR;
   {$ENDIF}
-
   {$EXTERNALSYM PINT_PTR}
   PINT_PTR                  = ^INT_PTR;
   {$EXTERNALSYM PUINT_PTR}
   PUINT_PTR                 = ^UINT_PTR;
+{$ENDIF MSWINDOWS}
+
   {$EXTERNALSYM Exception}
   Exception                 = SysUtils.Exception;
   {$EXTERNALSYM ExceptClass}
@@ -223,8 +130,6 @@ type
   TSearchRec                = SysUtils.TSearchRec;
   {$EXTERNALSYM TReplaceFlags}
   TReplaceFlags             = SysUtils.TReplaceFlags;
-  {$EXTERNALSYM TMessage}
-  TMessage                  = Messages.TMessage;
   {$EXTERNALSYM TComponent}
   TComponent                = Classes.TComponent;
   {$EXTERNALSYM TPersistent}
@@ -243,6 +148,10 @@ type
   TOperation                = Classes.TOperation;
   {$EXTERNALSYM TListNotification}
   TListNotification         = Classes.TListNotification;
+
+{$IFDEF MSWINDOWS}
+  {$EXTERNALSYM TMessage}
+  TMessage                  = Messages.TMessage;
   {$EXTERNALSYM TTimeZoneInformation}
   TTimeZoneInformation      = Windows.TTimeZoneInformation;
   {$EXTERNALSYM HWND}

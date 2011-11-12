@@ -83,13 +83,12 @@ unit OverbyteIcsWinsock2;
 interface
 
 uses
-  SysUtils,
   Windows,
-  OverbyteIcsWinSock,  // Socket API headers 
+  OverbyteIcsWinSock,  // Socket API headers
+  SysUtils,
   OverbyteIcsLibrary,
   OverbyteIcsTypes,
-  OverbyteIcsWSocket; 
-
+  OverbyteIcsWSocket;
 const
     WSocket2Version             = 101;
 

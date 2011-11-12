@@ -134,16 +134,23 @@ interface
 {$ENDIF}
 
 uses
+{$IFDEF MSWINDOWS}
     Messages,
-{$IFDEF USEWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes,
 {$IFNDEF NOFORMS}
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
     Forms,
+  {$ENDIF}
 {$ENDIF}
+
 {$IFDEF COMPILER12_UP}
     AnsiStrings,
 {$ENDIF}
@@ -1733,36 +1740,38 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlNntpCli.SetShareMode(newValue: TNntpShareMode);
 begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+{$WARNINGS OFF}
     case newValue of
-    nntpShareCompat    : FShareMode := fmShareCompat;
+    nntpShareCompat    : FShareMode := {$IFDEF MSWINDOWS} fmShareCompat {$ELSE} fmShareExclusive {$ENDIF};
     nntpShareExclusive : FShareMode := fmShareExclusive;
     nntpShareDenyWrite : FShareMode := fmShareDenyWrite;
-    nntpShareDenyRead  : FShareMode := fmShareDenyRead;
+    nntpShareDenyRead  : FShareMode := {$IFDEF MSWINDOWS} fmShareDenyRead {$ELSE} fmShareExclusive {$ENDIF};
     nntpShareDenyNone  : FShareMode := fmShareDenyNone;
     else
         FShareMode := fmShareDenyWrite;
     end;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
+{$WARNINGS ON}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function THtmlNntpCli.GetShareMode: TNntpShareMode;
 begin
-   begin
-{$IFNDEF VER80}{$WARNINGS OFF}{$ENDIF}
+{$WARNINGS OFF}
     case FShareMode of
+  {$IFDEF MSWINDOWS}
     fmShareCompat    : Result := nntpShareCompat;
+  {$ENDIF}
     fmShareExclusive : Result := nntpShareExclusive;
     fmShareDenyWrite : Result := nntpShareDenyWrite;
+  {$IFDEF MSWINDOWS}
     fmShareDenyRead  : Result := nntpShareDenyRead;
+  {$ENDIF}
     fmShareDenyNone  : Result := nntpShareDenyNone;
     else
         Result := nntpShareDenyWrite;
     end;
-{$IFNDEF VER80}{$WARNINGS ON}{$ENDIF}
-end;
+{$WARNINGS ON}
 end;
 
 
@@ -1772,7 +1781,7 @@ var
     TickPart : String;
     RandPart : String;
 begin
-    TickPart := '----=_NextPart_000_' + IntToHex(LongInt(GetTickCount), 8);
+    TickPart := '----=_NextPart_000_' + IntToHex(LongInt(IcsGetTickCount), 8);
     RandPart := IntToHex(Random(High(Integer)), 8);
     FOutsideBoundary := TickPart + '_0.' + RandPart;
     FInsideBoundary  := TickPart + '_1.' + RandPart;

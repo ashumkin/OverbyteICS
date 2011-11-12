@@ -1,0 +1,429 @@
+object FtpServerForm: TFtpServerForm
+  Left = 205
+  Top = 121
+  Caption = 'FtpServerSForm'
+  ClientHeight = 256
+  ClientWidth = 376
+  Visible = False
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnClose = FormClose
+  StyleLookup = 'backgroundstyle'
+  Left = 205
+  Top = 121
+  object MainMenu1: TMainMenu
+    Left = 120
+    Top = 112
+    object File1: TMenuItem
+      Width = 50.000000000000000000
+      Height = 50.000000000000000000
+      TabOrder = 0
+      ShortCut = 0
+      Text = 'File'
+      object MnuStartServer: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = MnuStartServerClick
+        TabOrder = 0
+        ShortCut = 0
+        Text = 'Start server'
+      end
+      object MnuStopServer: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = MnuStopServerClick
+        TabOrder = 1
+        ShortCut = 0
+        Text = 'Stop server'
+      end
+      object N2: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        TabOrder = 2
+        ShortCut = 0
+        Text = '-'
+      end
+      object MnuListClients: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = MnuListClientsClick
+        TabOrder = 3
+        ShortCut = 0
+        Text = 'List clients'
+      end
+      object DisconnectAllMnu: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = DisconnectAllMnuClick
+        TabOrder = 4
+        ShortCut = 0
+        Text = 'Disconnect all'
+      end
+      object N1: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        TabOrder = 5
+        ShortCut = 0
+        Text = '-'
+      end
+      object MnuQuit: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = MnuQuitClick
+        TabOrder = 6
+        ShortCut = 0
+        Text = 'Quit'
+      end
+    end
+    object Tools1: TMenuItem
+      Width = 50.000000000000000000
+      Height = 50.000000000000000000
+      TabOrder = 1
+      ShortCut = 0
+      Text = 'Tools'
+      object Cleardisplay1: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = Cleardisplay1Click
+        TabOrder = 0
+        ShortCut = 0
+        Text = 'Clear display'
+      end
+      object DisplayDirectories1: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = DisplayDirectories1Click
+        TabOrder = 1
+        ShortCut = 0
+        Text = 'Display Directories'
+      end
+    end
+    object About1: TMenuItem
+      Width = 50.000000000000000000
+      Height = 50.000000000000000000
+      TabOrder = 2
+      ShortCut = 0
+      Text = 'About'
+    end
+    object Options1: TMenuItem
+      Width = 50.000000000000000000
+      Height = 50.000000000000000000
+      TabOrder = 3
+      ShortCut = 0
+      Text = 'Options'
+      object BindFtpData: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        TabOrder = 0
+        AutoCheck = True
+        ShortCut = 0
+        Text = 'Bind FTP data channel (usually port 20)'
+      end
+      object ForceHomeDir: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = ForceHomeDirClick
+        TabOrder = 1
+        AutoCheck = True
+        ShortCut = 0
+        Text = 'ForceHomeDir'
+      end
+      object HidePhysicalPath: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = HidePhysicalPathClick
+        TabOrder = 2
+        AutoCheck = True
+        ShortCut = 0
+        Text = 'HidePhysicalPath'
+      end
+      object Authenticateotpmd5: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = Authenticateotpmd5Click
+        TabOrder = 3
+        ShortCut = 0
+        Text = 'Authenticate otp-md5'
+      end
+      object Authenticateotpmd4: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = Authenticateotpmd4Click
+        TabOrder = 4
+        ShortCut = 0
+        Text = 'Authenticate otp-md4'
+      end
+      object Authenticateotpsha1: TMenuItem
+        Locked = True
+        Width = 50.000000000000000000
+        Height = 50.000000000000000000
+        OnClick = Authenticateotpsha1Click
+        TabOrder = 5
+        ShortCut = 0
+        Text = 'Authenticate otp-sha1'
+      end
+    end
+  end
+  object InfoMemo: TMemo
+    Align = alClient
+    Position.Point = '(0,89)'
+    Width = 376.000000000000000000
+    Height = 167.000000000000000000
+    TabOrder = 0
+    Text = 'InfoMemo'
+    KeyboardType = vktDefault
+    Top = 66
+  end
+  object Panel1: TPanel
+    Align = alTop
+    Width = 376.000000000000000000
+    Height = 89.000000000000000000
+    TabOrder = 1
+    object ClientCountLabel: TLabel
+      Position.Point = '(48,8)'
+      Width = 87.500000000000000000
+      Height = 15.500000000000000000
+      TabOrder = 0
+      AutoSize = True
+      Text = 'ClientCountLabel'
+      WordWrap = False
+      Left = 44
+      Top = 12
+    end
+    object Label1: TLabel
+      Position.Point = '(4,62)'
+      Width = 74.500000000000000000
+      Height = 15.500000000000000000
+      TabOrder = 1
+      AutoSize = True
+      Text = 'Root directory'
+      WordWrap = False
+      Left = 10
+      Top = 40
+    end
+    object Label13: TLabel
+      Position.Point = '(244,10)'
+      Width = 58.500000000000000000
+      Height = 15.500000000000000000
+      TabOrder = 2
+      AutoSize = True
+      Text = 'Max KBytes'
+      WordWrap = False
+      Left = 242
+      Top = 12
+    end
+    object StartMinimizedCheckBox: TCheckBox
+      Position.Point = '(136,8)'
+      Width = 105.000000000000000000
+      Height = 17.000000000000000000
+      TabOrder = 3
+      Text = 'Start Minimized'
+      Left = 136
+      Top = 12
+    end
+    object RootDirectory: TEdit
+      Position.Point = '(85,59)'
+      Width = 276.000000000000000000
+      Height = 21.000000000000000000
+      TabOrder = 4
+      KeyboardType = vktDefault
+      Password = False
+      Text = 'c:\temp'
+      Left = 85
+      Top = 35
+    end
+    object MaxKB: TEdit
+      Position.Point = '(304,8)'
+      Width = 57.000000000000000000
+      Height = 21.000000000000000000
+      TabOrder = 5
+      KeyboardType = vktDefault
+      Password = False
+      Text = 'MaxKB'
+      Left = 304
+      Top = 8
+    end
+    object RedImage: TImage
+      Position.Point = '(24,8)'
+      Width = 17.000000000000000000
+      Height = 17.000000000000000000
+      OnDblClick = ImagesDblClick
+      Bitmap.PNG = {
+        FFD8FFE000104A46494600010101006000600000FFDB00430001010101010101
+        0101010101010101010101010101010101010101010101010101010101010101
+        01010101010101010101010101010101010101010101010101FFDB0043010101
+        0101010101010101010101010101010101010101010101010101010101010101
+        010101010101010101010101010101010101010101010101010101010101FFC0
+        001108000F000903012200021101031101FFC4001F0000010501010101010100
+        000000000000000102030405060708090A0BFFC400B510000201030302040305
+        0504040000017D01020300041105122131410613516107227114328191A10823
+        42B1C11552D1F02433627282090A161718191A25262728292A3435363738393A
+        434445464748494A535455565758595A636465666768696A737475767778797A
+        838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7
+        B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1
+        F2F3F4F5F6F7F8F9FAFFC4001F01000301010101010101010100000000000001
+        02030405060708090A0BFFC400B5110002010204040304070504040001027700
+        0102031104052131061241510761711322328108144291A1B1C109233352F015
+        6272D10A162434E125F11718191A262728292A35363738393A43444546474849
+        4A535455565758595A636465666768696A737475767778797A82838485868788
+        898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4
+        C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE2E3E4E5E6E7E8E9EAF2F3F4F5F6F7F8F9
+        FAFFDA000C03010002110311003F00FC85F869FB3AF8C3E21F89FE0CFED653FC
+        2DD27C57E07F0878C7FE09DBE0DF881F18B53F8752EA3E1AD27C5BE3FF00859F
+        B265C5E786BC7DF02351F14C3F15FE37F8CFC777BF13AD6EAEBC57E18F09F89A
+        DFE2F6A3E3AB3F16F87FC63E1CD3EEA43E07FC38FF0086A5F8F1FF0045D7E2FF
+        00FE1CBF1AFF00F2EEBFA03F855FF0504FD91BE0ADC7C1BF83DF13FE24F8AF44
+        F8A7F0EF56FD8653C4BE23D3743F8A779FB38FC30B5FD997E1C7ECADE0AF8EFF
+        000FBE397C2AF0FEEF0BFC68FDA2AC3C45F027E3A68DF0ABE355A7ECF9FB41DD
+        6897DE26FD98F58F047ED1DF0FF4DF83DE18BFF829F855FF000EDFFDB43FE891
+        8FFC387F0BBFF9B4AF9AA792E1E0E579C9A6D38DFB7BBA2DF45AF45F869FADD5
+        F15731AAA9F250F855A4AFD7DC7E5D135F81FFD9}
+      Left = 32
+      Top = 12
+    end
+    object GreenImage: TImage
+      Position.Point = '(8,8)'
+      Width = 17.000000000000000000
+      Height = 17.000000000000000000
+      OnDblClick = ImagesDblClick
+      Bitmap.PNG = {
+        FFD8FFE000104A46494600010101006000600000FFDB00430001010101010101
+        0101010101010101010101010101010101010101010101010101010101010101
+        01010101010101010101010101010101010101010101010101FFDB0043010101
+        0101010101010101010101010101010101010101010101010101010101010101
+        010101010101010101010101010101010101010101010101010101010101FFC0
+        001108000F000903012200021101031101FFC4001F0000010501010101010100
+        000000000000000102030405060708090A0BFFC400B510000201030302040305
+        0504040000017D01020300041105122131410613516107227114328191A10823
+        42B1C11552D1F02433627282090A161718191A25262728292A3435363738393A
+        434445464748494A535455565758595A636465666768696A737475767778797A
+        838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7
+        B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1
+        F2F3F4F5F6F7F8F9FAFFC4001F01000301010101010101010100000000000001
+        02030405060708090A0BFFC400B5110002010204040304070504040001027700
+        0102031104052131061241510761711322328108144291A1B1C109233352F015
+        6272D10A162434E125F11718191A262728292A35363738393A43444546474849
+        4A535455565758595A636465666768696A737475767778797A82838485868788
+        898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4
+        C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE2E3E4E5E6E7E8E9EAF2F3F4F5F6F7F8F9
+        FAFFDA000C03010002110311003F00F89BE017ECA9F04FE207877E03FC6DF19F
+        ECDBF0EFC77E23875BFF00826F783BC55FB41EB7F0F7C21AB7C28F0C5D7C77F8
+        51FB0CEBBF107E167C7EF01EA9E23B3BDF8C1F1E3E3C5F7C59F8E37F69F16F52
+        FD98BF68899BC47FB4DFC15F11EB5FB4E7C2297E09F8B65F82FF00CB17FC3477
+        ED43FF0045FF00E367FE1D0F1DFF00F2EEBFA8BF873F1BFE19FC31F89FF003F6
+        60F17F88B55D1FE26CDAAFFC13E45D6916365E2D9BF67BD11BC35F0A3F65CB3F
+        10F873E30FC30D1B55FF00842FE297C62B8B9F06F88ADBC33F13A5F027C429EC
+        6FB51F8477FA5FC58F0343E05D165F84FF00879FF0C05FB4FF00FD128FFCBE3E
+        1CFF00F35D5F0B4F8AA9CEEDD04B55BB567A2D5733FBEC969DF43F3CA3C7352A
+        A6D61ED18B4A3AF4B45F5FBF456F5D9FFFD9}
+      Left = 16
+      Top = 12
+    end
+    object PortEdit: TEdit
+      Position.Point = '(85,32)'
+      Width = 36.000000000000000000
+      Height = 22.000000000000000000
+      TabOrder = 8
+      KeyboardType = vktDefault
+      Password = False
+      Text = 'ftp'
+    end
+    object Label2: TLabel
+      Position.Point = '(24,35)'
+      Width = 56.500000000000000000
+      Height = 15.500000000000000000
+      TabOrder = 9
+      AutoSize = True
+      Text = 'Listen port'
+      WordWrap = False
+    end
+    object Label3: TLabel
+      Position.Point = '(136,28)'
+      Width = 217.000000000000000000
+      Height = 33.000000000000000000
+      TabOrder = 10
+      Text = 'OS X port numbers < 1024 require the app being started as root  '
+    end
+  end
+  object FtpServer1: TFtpServer
+    Addr = '0.0.0.0'
+    SocketFamily = sfIPv4
+    Port = 'ftp'
+    ListenBackLog = 5
+    MultiListenSockets = <>
+    Banner = '220 ICS FTP Server ready'
+    UserData = 0
+    MaxClients = 0
+    PasvPortRangeStart = 20100
+    PasvPortRangeSize = 99
+    Options = [ftpsCwdCheck, ftpsCalcMD5OnTheFly, ftpsModeZCompress, ftpsSiteXmlsd, ftpsThreadRecurDirs, ftpsEnableUtf8, ftpsAutoDetectCodePage]
+    MD5UseThreadFileSize = 1000000
+    TimeoutSecsLogin = 60
+    TimeoutSecsIdle = 300
+    TimeoutSecsXfer = 900
+    ZlibMinLevel = 1
+    ZlibMaxLevel = 9
+    ZlibNoCompExt = '.zip;.rar;.7z;.cab;.lzh;.gz;.avi;.wmv;.mpg;.mp3;.jpg;.png;'
+    AlloExtraSpace = 1000000
+    ZlibMinSpace = 50000000
+    ZlibMaxSize = 500000000
+    CodePage = 0
+    Language = 'EN*'
+    MaxAttempts = 12
+    BandwidthLimit = 0
+    BandwidthSampling = 1000
+    OnStart = FtpServer1Start
+    OnStop = FtpServer1Stop
+    OnAuthenticate = FtpServer1Authenticate
+    OnOtpMethod = FtpServer1OtpMethodEvent
+    OnOtpGetPassword = FtpServer1OtpGetPasswordEvent
+    OnClientDisconnect = FtpServer1ClientDisconnect
+    OnClientConnect = FtpServer1ClientConnect
+    OnClientCommand = FtpServer1ClientCommand
+    OnAnswerToClient = FtpServer1AnswerToClient
+    OnChangeDirectory = FtpServer1ChangeDirectory
+    OnMakeDirectory = FtpServer1MakeDirectory
+    OnBuildDirectory = FtpServer1BuildDirectory
+    OnAlterDirectory = FtpServer1AlterDirectory
+    OnStorSessionConnected = FtpServer1StorSessionConnected
+    OnRetrSessionConnected = FtpServer1RetrSessionConnected
+    OnStorSessionClosed = FtpServer1StorSessionClosed
+    OnRetrSessionClosed = FtpServer1RetrSessionClosed
+    OnRetrDataSent = FtpServer1RetrDataSent
+    OnValidatePut = FtpServer1ValidatePut
+    OnValidateDele = FtpServer1ValidateDele
+    OnValidateRnFr = FtpServer1ValidateRnFr
+    OnGetProcessing = FtpServer1GetProcessing
+    OnValidateMfmt = FtpServer1ValidateMfmt
+    OnCalculateMd5 = FtpServer1CalculateMd5
+    OnMd5Calculated = FtpServer1Md5Calculated
+    OnCalculateCrc = FtpServer1CalculateCrc
+    OnValidateAllo = FtpServer1ValidateAllo
+    OnSiteMsg = FtpServer1SiteMsg
+    OnSiteExec = FtpServer1SiteExec
+    OnSitePaswd = FtpServer1SitePaswd
+    OnCombine = FtpServer1Combine
+    OnTimeout = FtpServer1Timeout
+    OnUpCompressFile = FtpServer1UpCompressFile
+    OnUpCompressedFile = FtpServer1UpCompressedFile
+    OnDisplay = FtpServer1Display
+    OnHost = FtpServer1Host
+    OnRein = FtpServer1Rein
+    Left = 40
+    Top = 112
+  end
+end

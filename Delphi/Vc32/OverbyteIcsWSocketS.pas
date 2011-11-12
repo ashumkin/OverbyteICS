@@ -133,30 +133,24 @@ interface
 {$ENDIF}
 
 uses
-{$IFDEF CLR}
-    System.Runtime.InteropServices,
-{$ENDIF}
 {$IFDEF MSWINDOWS}
     Messages,
-{$IFDEF USEWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+    OverbyteIcsWinsock,
+{$ENDIF}
+{$IFDEF POSIX}
+    Posix.NetinetIn,
+    Posix.SysSocket,
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
 {$ENDIF}
     Classes,
-{$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
-(*
-{$IFDEF MSWINDOWS}
-{$IFDEF BCB}
-    Winsock,
-{$ENDIF}
-{$ENDIF}
-*)
-    OverbyteIcsTypes,   OverbyteIcsLibrary,
-    OverbyteIcsWSocket, OverbyteIcsWinsock;
+
+    OverbyteIcsUtils, OverbyteIcsTypes, OverbyteIcsLibrary,
+    OverbyteIcsWSocket;
 
 const
     WSocketServerVersion     = 704;
@@ -289,9 +283,10 @@ type
     end;
 
     TWSocketServer = class;
+
     TCustomMultiListenWSocketServer = class;
 
-    TWSocketMultiListenItem = class(TCollectionItem)
+    TWSocketMultiListenItem = class(TCollectionItem {$IFDEF POSIX}, IIcsEventSource{$ENDIF})
     private
       FAddr: string;
       FHSocket: TSocket;
@@ -307,6 +302,26 @@ type
       procedure SetAddr(const Value: string);
       procedure SetSocketFamily(const Value: TSocketFamily);
       function GetAddrResolved: string;
+  {$IFDEF POSIX} { IIcsEventSource }
+    strict private
+      FPxEventMask        : LongWord;
+      FPxEventState       : TIcsAsyncEventState;
+      FPxEventMessageID   : UINT;
+      FPxEventWindow      : HWND;
+      function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
+      function _AddRef: Integer; stdcall;
+      function _Release: Integer; stdcall;
+      function  GetEventMask: LongWord;
+      procedure SetEventMask(const AValue: LongWord);
+      function  GetNotifyMessageID: UINT;
+      procedure SetNotifyMessageID(const AValue: UINT);
+      function  GetNotifyWindow: HWND;
+      function  GetEventState: TIcsAsyncEventState;
+      function  GetFileDescriptor: Integer;
+      function  GetObject: TObject;
+      procedure SetEventState(const AValue: TIcsAsyncEventState);
+      procedure SetNotifyWindow(const AValue: HWND);
+  {$ENDIF POSIX IIcsEventSource}
     protected
       procedure AssignDefaults; virtual;
       procedure SetCloseInvoked(const AValue: Boolean);
@@ -404,7 +419,6 @@ type
                                                       read  FMultiListenSockets
                                                       write FMultiListenSockets;
     end;
-
 
     TWSocketServer = class(TCustomMultiListenWSocketServer)
     public
@@ -796,7 +810,6 @@ end;
 {*                   TCustomMultiListenWSocketServer                         *}
 {*                                                                           *}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 function SizeOfAddr(const AAddr: TSockAddrIn6): Integer;
     {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
@@ -883,7 +896,7 @@ end;
 procedure TCustomMultiListenWSocketServer.Listen;
 begin
     FMultiListenIndex := -1;
-    inherited;
+    inherited Listen;
 end;
 
 
@@ -904,11 +917,14 @@ begin
         Exit;
 
     if AItem.HSocket <> INVALID_SOCKET then begin
+    {$IFDEF POSIX}
+        WSocketSynchronizedRemoveEvents(AItem);
+    {$ENDIF}
         repeat
             { Close the socket }
-            iStatus := OverbyteIcsWinsock.closesocket(AItem.HSocket);
+            iStatus := WSocket_closesocket(AItem.HSocket);
             if iStatus <> 0 then begin
-                AItem.LastError := OverbyteIcsWinsock.WSAGetLastError;
+                AItem.LastError := WSocket_WSAGetLastError;
                 if AItem.LastError <> WSAEWOULDBLOCK then begin
                     AItem.HSocket := INVALID_SOCKET;
                     { Ignore the error occuring when winsock DLL not      }
@@ -927,7 +943,7 @@ begin
     if (not (csDestroying in ComponentState)) and
        (not AItem.CloseInvoked) {and Assigned(FOnSessionClosed)} then begin
         AItem.CloseInvoked := TRUE;
-        TriggerSessionClosed(Error);
+        TriggerSessionClosed(0);
     end;
     { 29/09/98 Protect AssignDefaultValue because SessionClosed event handler }
     { may have destroyed the component.                                       }
@@ -950,7 +966,7 @@ begin
     FMultiListenIndex := AItem.Index;
     try
         if ALastError = 0 then
-            ErrCode := OverbyteIcsWinsock.WSAGetLastError
+            ErrCode := WSocket_WSAGetLastError
         else
             ErrCode := ALastError;
         Line  := 'Listening socket index #' + _IntToStr(FMultiListenIndex) + ' ' +
@@ -959,7 +975,7 @@ begin
 
         if (ErrCode = WSAECONNRESET) or
            (ErrCode = WSAENOTCONN) then begin
-            OverbyteIcsWinsock.closesocket(AItem.HSocket);
+            WSocket_closesocket(AItem.HSocket);
             AItem.HSocket := INVALID_SOCKET;
             if AItem.State <> wsClosed then
                TriggerSessionClosed(ErrCode);
@@ -983,7 +999,7 @@ begin
         if not AItem.CloseInvoked then
         begin
             AItem.CloseInvoked := TRUE;
-            TriggerSessionClosed(HiWord(AMsg.LParam));
+            TriggerSessionClosed(IcsHiWord(AMsg.LParam));
         end;
         if AItem.State <> wsClosed then
             MlClose(AItem);
@@ -1000,26 +1016,26 @@ begin
     FMultiListenIndex := AItem.Index;
     try
         if (AItem.State <> wsClosed) then begin
-            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            WSocket_WSASetLastError(WSAEINVAL);
             MlSocketError(AItem, 'listen: socket is already listening');
             Exit;
         end;
 
         if _LowerCase(FProtoStr) <> 'tcp' then begin
-            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            WSocket_WSASetLastError(WSAEINVAL);
             MlSocketError(AItem, 'listen: protocol unsupported');
             Exit;
         end;
 
         if AItem.Port = '' then begin
-            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            WSocket_WSASetLastError(WSAEINVAL);
             MlSocketError(AItem, 'listen: port not assigned');
             Exit;
         end;
 
         if AItem.Addr = '' then begin
             //WSocket_Synchronized_WSASetLastError(WSAEINVAL);
-            OverbyteIcsWinsock.WSASetLastError(WSAEINVAL);
+            WSocket_WSASetLastError(WSAEINVAL);
             MlSocketError(AItem, 'listen: address not assigned');
             Exit;
         end;
@@ -1028,7 +1044,7 @@ begin
             { The next line will trigger an exception in case of failure }
             AItem.PortNum := WSocketResolvePort(
                                   AnsiString(AItem.Port), AnsiString('tcp'));
-            AItem.Fsin.sin6_port := OverbyteIcsWinsock.htons(AItem.PortNum);
+            AItem.Fsin.sin6_port := WSocket_htons(AItem.PortNum);
 
             { The next line will trigger an exception in case of failure }
             if AItem.SocketFamily = sfIPv4 then
@@ -1051,14 +1067,13 @@ begin
         DeleteBufferedData;
 
         AItem.HSocket :=
-          OverbyteIcsWinsock.socket(AItem.Fsin.sin6_family, SOCK_STREAM, IPPROTO_TCP);
-
+          WSocket_socket(AItem.Fsin.sin6_family, SOCK_STREAM, IPPROTO_TCP);
         if AItem.HSocket = INVALID_SOCKET then begin
             MlSocketError(AItem, 'listen: socket');
             Exit;
         end;
 
-        iStatus := OverbyteIcsWinsock.bind(AItem.HSocket, PSockAddr(@AItem.Fsin)^,
+        iStatus := WSocket_bind(AItem.HSocket, PSockAddr(@AItem.Fsin)^,
                                            SizeOfAddr(AItem.Fsin));
         if iStatus = 0 then
             AItem.State := wsBound
@@ -1068,7 +1083,7 @@ begin
             Exit;
         end;
 
-        iStatus := OverbyteIcsWinsock.listen(AItem.HSocket, AItem.ListenBacklog);
+        iStatus := WSocket_listen(AItem.HSocket, AItem.ListenBacklog);
         if iStatus = 0 then
             AItem.State := wsListening
         else begin
@@ -1076,9 +1091,15 @@ begin
             Exit;
         end;
 
-        iStatus := OverbyteIcsWinsock.WSAASyncSelect(AItem.HSocket, Handle,
-                                                     FMsg_WM_ASYNCSELECT,
-                                                     FD_ACCEPT or FD_CLOSE);
+        iStatus := WSocket_WSAASyncSelect(
+                                        {$IFDEF POSIX}
+                                          AItem,
+                                        {$ELSE}
+                                          AItem.HSocket,
+                                        {$ENDIF}
+                                          Handle,
+                                          FMsg_WM_ASYNCSELECT,
+                                          FD_ACCEPT or FD_CLOSE);
         if iStatus <> 0 then begin
             MlSocketError(AItem, 'listen: WSAASyncSelect');
             Exit;
@@ -1094,8 +1115,13 @@ procedure TCustomMultiListenWSocketServer.MlPause(
     AItem: TWSocketMultiListenItem);
 begin
     if not AItem.Paused then
-        AItem.FPaused := OverbyteIcsWinsock.WSAASyncSelect(
-                                            AItem.HSocket, Handle, 0, 0) = 0;
+        AItem.FPaused := WSocket_WSAASyncSelect(
+                                            {$IFDEF POSIX}
+                                                AItem,
+                                            {$ELSE}
+                                                AItem.HSocket,
+                                            {$ENDIF}
+                                                Handle, 0, 0) = 0;
 
 end;
 
@@ -1105,10 +1131,15 @@ procedure TCustomMultiListenWSocketServer.MLResume(
     AItem: TWSocketMultiListenItem);
 begin
     if AItem.Paused then
-        AItem.FPaused := not (OverbyteIcsWinsock.WSAASyncSelect(
-                                         AItem.HSocket, Handle,
-                                         FMsg_WM_ASYNCSELECT,
-                                         FD_ACCEPT or FD_CLOSE) = 0);
+        AItem.FPaused := not (WSocket_WSAASyncSelect(
+                                                {$IFDEF POSIX}
+                                                  AItem,
+                                                {$ELSE}
+                                                  AItem.HSocket,
+                                                {$ENDIF}
+                                                  Handle,
+                                                  FMsg_WM_ASYNCSELECT,
+                                                  FD_ACCEPT or FD_CLOSE) = 0);
 
 end;
 
@@ -1218,9 +1249,14 @@ begin
     for I := 0 to FMultiListenSockets.Count -1 do begin
         LItem := FMultiListenSockets[I];
         if (LItem.HSocket <> INVALID_SOCKET) then
-            OverbyteIcsWinsock.WSAASyncSelect(LItem.HSocket, Handle,
-                                              FMsg_WM_ASYNCSELECT,
-                                              FD_ACCEPT or FD_CLOSE);
+            WSocket_WSAASyncSelect(
+                                  {$IFDEF POSIX}
+                                    LItem,
+                                  {$ELSE}
+                                    LItem.HSocket,
+                                  {$ENDIF}
+                                    Handle, FMsg_WM_ASYNCSELECT,
+                                    FD_ACCEPT or FD_CLOSE);
     end;
 end;
 
@@ -1236,7 +1272,13 @@ begin
     for I := 0 to FMultiListenSockets.Count -1 do begin
         LItem := FMultiListenSockets[I];
         if (LItem.HSocket <> INVALID_SOCKET) then
-            OverbyteIcsWinsock.WSAASyncSelect(LItem.HSocket, Handle, 0, 0);
+            WSocket_WSAASyncSelect(
+                                  {$IFDEF POSIX}
+                                    LItem,
+                                  {$ELSE}
+                                    LItem.HSocket,
+                                  {$ENDIF}
+                                    Handle, 0, 0);
     end;
 end;
 
@@ -1305,6 +1347,104 @@ end;
 { TWSocketMultiListenItem }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
+{$IFDEF POSIX}
+{ Impl. IIcsEventSource }
+function TWSocketMultiListenItem.QueryInterface(const IID: TGUID; out Obj): HResult;
+begin
+  if GetInterface(IID, Obj) then
+    Result := 0
+  else
+    Result := E_NOINTERFACE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem._AddRef: Integer;
+begin
+  Result := -1;  // no ref count
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem._Release: Integer;
+begin
+  Result := -1; // no ref count
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetEventMask: LongWord;
+begin
+    Result := FPxEventMask;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetEventMask(const AValue: LongWord);
+begin
+    FPxEventMask := AValue;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetNotifyMessageID: UINT;
+begin
+    Result := FPxEventMessageID;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetNotifyMessageID(const AValue: UINT);
+begin
+    FPxEventMessageID := AValue;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetNotifyWindow: HWND;
+begin
+    Result := FPxEventWindow;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetNotifyWindow(const AValue: HWND);
+begin
+    FPxEventWindow := AValue;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetEventState: TIcsAsyncEventState;
+begin
+    Result := FPxEventState;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetEventState(const AValue: TIcsAsyncEventState);
+begin
+    FPxEventState := AValue;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetFileDescriptor: Integer;
+begin
+    Result := FHSocket;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetObject: TObject;
+begin
+    Result := Self;
+end;
+{$ENDIF POSIX IIcsEventSource}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
 procedure TWSocketMultiListenItem.AssignDefaults;
 begin
     FHSocket            := INVALID_SOCKET;
@@ -1313,6 +1453,12 @@ begin
     FPaused             := FALSE;
     FCloseInvoked       := FALSE;
     FillChar(Fsin, SizeOf(Fsin), 0);
+  {$IFDEF POSIX}
+    FPxEventMask        := 0;
+    FPxEventState       := [];
+    FPxEventMessageID   := 0;
+    FPxEventWindow      := 0;
+  {$ENDIF}
 end;
 
 

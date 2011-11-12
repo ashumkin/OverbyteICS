@@ -330,10 +330,11 @@ unit OverbyteIcsMimeDec;
 interface
 
 uses
-{$IFDEF USEWINDOWS}
+{$IFDEF MSWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
+{$ENDIF}
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
 {$ENDIF}
     SysUtils,
     Classes,
@@ -1631,7 +1632,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMimeDecode.SetDefaultCodePage(const Value: LongWord);
 begin
-    if not IsValidCodePage(Value) then
+    if not IcsIsValidAnsiCodePage(Value) then
         raise Exception.Create('Code page "' + _IntToStr(Value) + '"' +
             'is not a valid ANSI code page or currently not installed');
     FDefaultCodePage := Value;
@@ -2428,7 +2429,8 @@ begin
                 //CP := MimeCharsetToCodePageDef(CsuString(CharSet));
                 CP := MimeCharsetToCodePageExDef(CsuString(CharSet));
                 EncType := Value[I + 1];
-                CharLowerA(@EncType);
+                //CharLowerA(@EncType);
+                IcsCharLowerA(EncType);
                 Inc(I, 2);
             end;
         end
@@ -2512,7 +2514,8 @@ begin
                 //CP := MimeCharsetToCodePageDef(CsuString(CharSet));
                 CP := MimeCharsetToCodePageExDef(CsuString(CharSet));
                 EncType := Value[I + 1];
-                CharLowerA(@EncType);
+                //CharLowerA(@EncType);
+                IcsCharLowerA(EncType);
                 Inc(I, 2);
             end;
         end

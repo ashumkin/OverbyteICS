@@ -32,9 +32,7 @@ uses
     , OverbyteIcsSslSessionCache
     , OverbyteIcsSslThrdLock
   {$ENDIF}
-  {$IFDEF VCL}
     , OverbyteIcsLogger
-  {$ENDIF}
   {$IFDEF WIN32}
     , OverbyteIcsWSocketE
     , OverbyteIcsWSocketS
@@ -61,10 +59,12 @@ uses
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure Register;
 begin
+
 {$IFDEF COMPILER16_UP}
     StartClassGroup(TControl);
     ActivateClassGroup(TControl);
 {$ENDIF}
+
     RegisterComponents('Overbyte ICS', [
       TWSocket, TWSocketServer,
       TDnsQuery, TEmulVT, TFingerCli, TPing,
@@ -82,44 +82,41 @@ begin
       TWSocketThrdServer,
   {$ENDIF}
       TIcsCharsetComboBox
-  {$IFDEF VCL}
       ,TIcsLogger
-  {$ENDIF}
     ]);
 
 {$IFDEF COMPILER16_UP}
     { For now disable everything for non VCL }
-    GroupDescendentsWith(TWSocket, TControl);
-    GroupDescendentsWith(TWSocketServer, TControl);
-    GroupDescendentsWith(TDnsQuery, TControl);
-    GroupDescendentsWith(TFingerCli, TControl);
+    //GroupDescendentsWith(TWSocket, TControl);
+    //GroupDescendentsWith(TWSocketServer, TControl);
+    //GroupDescendentsWith(TDnsQuery, TControl);
+    //GroupDescendentsWith(TFingerCli, TControl);
     GroupDescendentsWith(TPing, TControl);
-    GroupDescendentsWith(TMimeDecode, TControl);
-    GroupDescendentsWith(TMimeDecodeEx, TControl);
-    GroupDescendentsWith(TMimeDecodeW, TControl);
-    GroupDescendentsWith(TTimeList, TControl);
+    //GroupDescendentsWith(TMimeDecode, TControl);
+    //GroupDescendentsWith(TMimeDecodeEx, TControl);
+    //GroupDescendentsWith(TMimeDecodeW, TControl);
+    //GroupDescendentsWith(TTimeList, TControl);
     GroupDescendentsWith(THttpAppSrv, TControl);
     GroupDescendentsWith(TTnCnx, TControl);
-    GroupDescendentsWith(TFtpClient, TControl);
-    GroupDescendentsWith(TFtpServer, TControl);
-    GroupDescendentsWith(TMultipartFtpDownloader, TControl);
-    GroupDescendentsWith(THttpCli, TControl);
-    GroupDescendentsWith(THttpServer, TControl);
-    GroupDescendentsWith(TMultipartHttpDownloader, TControl);
-    GroupDescendentsWith(TPop3Cli, TControl);
-    GroupDescendentsWith(TSyncPop3Cli, TControl);
-    GroupDescendentsWith(TSmtpCli, TControl);
-    GroupDescendentsWith(TSyncSmtpCli, TControl);
-    GroupDescendentsWith(THtmlSmtpCli, TControl);
-    GroupDescendentsWith(TNntpCli, TControl);
-    GroupDescendentsWith(THtmlNntpCli, TControl);
+    //GroupDescendentsWith(TFtpClient, TControl);
+    //GroupDescendentsWith(TFtpServer, TControl);
+    //GroupDescendentsWith(TMultipartFtpDownloader, TControl);
+    //GroupDescendentsWith(THttpCli, TControl);
+    //GroupDescendentsWith(THttpServer, TControl);
+    //GroupDescendentsWith(TMultipartHttpDownloader, TControl);
+    //GroupDescendentsWith(TPop3Cli, TControl);
+    //GroupDescendentsWith(TSyncPop3Cli, TControl);
+    //GroupDescendentsWith(TSmtpCli, TControl);
+    //GroupDescendentsWith(TSyncSmtpCli, TControl);
+    //GroupDescendentsWith(THtmlSmtpCli, TControl);
+    //GroupDescendentsWith(TNntpCli, TControl);
+    //GroupDescendentsWith(THtmlNntpCli, TControl);
   {$IFNDEF BCB}
     GroupDescendentsWith(TWSocketThrdServer, TControl);
   {$ENDIF}
-  {$IFDEF VCL}
-    GroupDescendentsWith(TIcsLogger, TControl);
-  {$ENDIF}
+    //GroupDescendentsWith(TIcsLogger, TControl);
 {$ENDIF}
+
 
 {$IFDEF USE_SSL}
     RegisterComponents('Overbyte ICS SSL', [
@@ -142,9 +139,10 @@ begin
       ,TSslEngine
     {$ENDIF}
     ]);
+
   {$IFDEF COMPILER16_UP}
     { For now disable everything for non VCL }
-    GroupDescendentsWith(TSslWSocket, TControl);
+    {GroupDescendentsWith(TSslWSocket, TControl);
     GroupDescendentsWith(TSslWSocketServer, TControl);
     GroupDescendentsWith(TSslContext, TControl);
     GroupDescendentsWith(TSslFtpClient, TControl);
@@ -154,18 +152,19 @@ begin
     GroupDescendentsWith(TSslPop3Cli, TControl);
     GroupDescendentsWith(TSslSmtpCli, TControl);
     GroupDescendentsWith(TSslNntpCli, TControl);
-    GroupDescendentsWith(TSslAvlSessionCache, TControl);
+    GroupDescendentsWith(TSslAvlSessionCache, TControl);}
   {$IFNDEF BCB}
     GroupDescendentsWith(TSslWSocketThrdServer, TControl);
   {$ENDIF}
-    GroupDescendentsWith(TSslStaticLock, TControl);
+    //GroupDescendentsWith(TSslStaticLock, TControl);
   {$IFNDEF NO_DYNLOCK}
-    GroupDescendentsWith(TSslDynamicLock, TControl);
+    //GroupDescendentsWith(TSslDynamicLock, TControl);
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_ENGINE}
-    GroupDescendentsWith(TSslEngine, TControl);
+    //GroupDescendentsWith(TSslEngine, TControl);
   {$ENDIF}
   {$ENDIF}
+
 {$ENDIF}
 
     RegisterPropertyEditor(TypeInfo(AnsiString), TWSocket, 'LineEnd',

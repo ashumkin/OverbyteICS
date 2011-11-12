@@ -78,9 +78,6 @@ interface
 uses
 {$IFDEF MSWINDOWS}
     Windows,
-{$ENDIF}
-    SysUtils, Classes, Math,
-{$IFDEF MSWINDOWS}
   {$IFDEF USE_ICONV}
       OverbyteIcsIconv,
   {$ENDIF}
@@ -89,8 +86,10 @@ uses
   {$ENDIF}
 {$ENDIF}
 {$IFDEF POSIX}
-    PosixBase, PosixSysTypes, PosixErrno, PosixIconv,
+    Posix.Base, Posix.SysTypes, Posix.Errno, Posix.Iconv,
+    Ics.Posix.WinTypes,
 {$ENDIF}
+    SysUtils, Classes, Math,
     OverbyteIcsTypes,
     OverbyteIcsUtils;
 

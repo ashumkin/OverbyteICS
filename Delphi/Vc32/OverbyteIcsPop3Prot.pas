@@ -214,16 +214,22 @@ interface
 {$ENDIF}
 
 uses
+{$IFDEF MSWINDOWS}
     Messages,
-{$IFDEF USEWINDOWS}
     Windows,
-{$ELSE}
-    WinTypes, WinProcs,
 {$ENDIF}
-{$IFNDEF NOFORMS}
-    Forms,
+{$IFDEF POSIX}
+    Ics.Posix.WinTypes,
+    Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes,
+{$IFNDEF NOFORMS}
+  {$IFDEF FMX}
+    FMX.Forms,
+  {$ELSE}
+    Forms,
+  {$ENDIF}
+{$ENDIF}
 {$IFDEF COMPILER12_UP}
     AnsiStrings, // For Trim and LowerCase
 {$ENDIF}
@@ -2175,20 +2181,24 @@ begin
     inherited TriggerResponse(Msg);
     { Evaluate the timeout period again }
     if FTimeout > 0 then
-        FTimeStop := Integer(GetTickCount) + FTimeout * 1000;
+        FTimeStop := Integer(IcsGetTickCount) + FTimeout * 1000;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TSyncPop3Cli.WaitUntilReady : Boolean;
+{$IFDEF MSWINDOWS}
 var
     DummyHandle     : THandle;
+{$ENDIF}
 begin
 {$IFNDEF WIN64}               { V6.11 }
     Result := TRUE;           { Make dcc32 happy }
 {$ENDIF}
-    FTimeStop := Integer(GetTickCount) + FTimeout * 1000;
+    FTimeStop := Integer(IcsGetTickCount) + FTimeout * 1000;
+  {$IFDEF MSWINDOWS}
     DummyHandle := INVALID_HANDLE_VALUE;
+  {$ENDIF}
     while TRUE do begin
         if FState = pop3Ready then begin
             { Back to ready state, the command is finiched }
@@ -2197,7 +2207,7 @@ begin
         end;
 
         if Terminated or
-            ((FTimeout > 0) and (Integer(GetTickCount) > FTimeStop)) then begin
+            ((FTimeout > 0) and (Integer(IcsGetTickCount) > FTimeStop)) then begin
             { Application is terminated or timeout occured }
             inherited Abort;
             FErrorMessage := '426 Timeout';
@@ -2206,9 +2216,10 @@ begin
             Result        := FALSE; { Command failed }
             break;
         end;
-
+      {$IFDEF MSWINDOWS}
         { Do not use 100% CPU }
         MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000, QS_ALLINPUT);
+      {$ENDIF}
         MessagePump;
     end;
 end;

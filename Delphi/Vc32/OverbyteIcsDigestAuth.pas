@@ -66,8 +66,7 @@ interface
 {$J+}             { Allow typed constant to be modified }
 
 uses
-    Windows,
-    Classes, OverbyteIcsMD5, OverbyteIcsMimeUtils,
+    SysUtils, Classes, OverbyteIcsMD5, OverbyteIcsMimeUtils,
     OverbyteIcsLibrary, OverbyteIcsTypes;
 
 type
@@ -124,7 +123,7 @@ function AuthDigestGenerateRequest(
     var Cnonce: String; var Nc: Integer): String; overload;
 
 function AuthDigestGenerateChallenge(
-    DigestMethod: TAuthDigestMethod; Secret: TULargeInteger; const Realm,
+    DigestMethod: TAuthDigestMethod; Secret: Int64; const Realm,
     Domain : String; Stale: Boolean; var Nonce, Opaque: String): String;
 
 function AuthDigestValidateResponse(var Info: TAuthDigestResponseInfo): Boolean;
@@ -156,7 +155,7 @@ function AuthDigestGetRequest(
     var   Response    : String): Boolean;
 
 
-function AuthDigestGenerateIcsNonce(TimeStamp: TDateTime; Secret: TULargeInteger;
+function AuthDigestGenerateIcsNonce(TimeStamp: TDateTime; Secret: Int64;
     const Opaque, Realm: AnsiString): TIcsNonceString;
 
 procedure AuthDigestCalcResponse(
@@ -202,7 +201,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function AuthDigestGenerateIcsNonce(TimeStamp: TDateTime; Secret: TULargeInteger;
+function AuthDigestGenerateIcsNonce(TimeStamp: TDateTime; Secret: Int64;
     const Opaque, Realm: AnsiString): TIcsNonceString;
 var
     Nonce    : TAuthDigestNonceRec;
@@ -691,7 +690,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function AuthDigestGenerateChallenge(
-    DigestMethod: TAuthDigestMethod; Secret: TULargeInteger; const Realm,
+    DigestMethod: TAuthDigestMethod; Secret: Int64; const Realm,
     Domain : String; Stale: Boolean; var Nonce, Opaque: String): String;
 var
     I     : Integer;

@@ -161,10 +161,13 @@ uses
 {$ENDIF}
 {$IFDEF POSIX}
     Posix.SysTypes, Posix.Iconv, Posix.Errno,
-    Posix.Unistd, Posix.Stdio,
+    Posix.Unistd, Posix.Stdio, Posix.SysStatvfs,
+    Posix.PThread,
+    Ics.Posix.WinTypes,
 {$ENDIF}
 {$IFDEF MACOS}
     Macapi.CoreFoundation,
+    MacApi.CoreServices,
 {$ENDIF}
     Classes,
     SysUtils,
@@ -212,18 +215,7 @@ const
     ICS_LEAD_BYTES_51949 : TIcsDbcsLeadBytes = [#$A1..#$AC, #$B0..#$C8, #$CA..#$FD];  // (EUC-Korean) DBCS Lead Bytes: A1..AC B0..C8 CA..FD
 
 const
-{$IFNDEF MSWINDOWS}
-    CP_ACP                          = 0;
-    CP_UTF7                         = 65000;
-    CP_UTF8                         = 65001;
-
-    ERROR_INVALID_FLAGS             = 1004;
-    ERROR_NO_UNICODE_TRANSLATION    = 1113;
-    ERROR_INVALID_PARAMETER         = 87;
-    ERROR_INSUFFICIENT_BUFFER       = 122;
-    MB_ERR_INVALID_CHARS            = $00000008;
-    WC_ERR_INVALID_CHARS            = $80;
-{$ELSE}
+{$IFDEF MSWINDOWS}
   {$IFNDEF COMPILER12_UP}
     {$EXTERNALSYM MB_ERR_INVALID_CHARS}
     MB_ERR_INVALID_CHARS            = $00000008;  // Missing in Windows.pas
@@ -293,6 +285,12 @@ const
     ICONV_UNICODE     = 'UTF-16LE';
     function IcsIconvNameFromCodePage(CodePage: LongWord): AnsiString;
 {$ENDIF}
+    function  IcsIsValidAnsiCodePage(const CP: LongWord): Boolean;
+    procedure IcsCharLowerA(var ACh: AnsiChar); {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsGetCurrentThreadID: TThreadID;
+    function  IcsGetFreeDiskSpace(const APath: String): Int64;
+    function  IcsGetLocalTimeZoneBias: LongInt;
+    function  IcsGetTickCount: LongWord;
     function  IcsWcToMb(CodePage: LongWord; Flags: Cardinal;
                         WStr: PWideChar; WStrLen: Integer; MbStr: PAnsiChar;
                         MbStrLen: Integer; DefaultChar: PAnsiChar;
@@ -307,6 +305,7 @@ const
     function  IcsIsDBCSLeadByte(Ch: AnsiChar; CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsIsMBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  IcsIsSBCSCodePage(CodePage: LongWord): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function  IcsGetLeadBytes(CodePage: LongWord): TIcsDbcsLeadBytes; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function  UnicodeToUsAscii(const Str: UnicodeString; FailCh: AnsiChar): AnsiString; overload;
     function  UnicodeToUsAscii(const Str: UnicodeString): AnsiString; overload;
     function  UsAsciiToUnicode(const Str: RawByteString; FailCh: AnsiChar): UnicodeString; overload;
@@ -463,6 +462,12 @@ const
     function IcsFileExistsW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
+    function IcsMakeWord(L, H: Byte): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsMakeLong(L, H: Word): Longint; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsHiWord(LW: LongWord): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsHiByte(W: Word): Byte; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsLoByte(W: Word): Byte; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsLoWord(LW: LongWord): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$IFDEF MSWINDOWS}
     // NT4 and better
     function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
@@ -656,6 +661,141 @@ begin
         Result := #$3F;
     end;
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIsValidAnsiCodePage(const CP: LongWord): Boolean;
+{$IFDEF MSWINDOWS}
+begin
+    Result := IsValidCodePage(CP);
+end;
+{$ENDIF}
+{$IFDEF POSIX}
+var
+    Ctx: iconv_t;
+begin
+    Result := (CP <> 1200) and (CP <> 1201) and (CP <> 12000) and (CP <> 12001);
+    if Result then
+    begin
+        Ctx := iconv_open(PAnsiChar(IcsIconvNameFromCodePage(CP)), ICONV_UNICODE);
+        if Ctx = iconv_t(-1) then
+            Result := False
+        else begin
+            iconv_close(Ctx);
+            Result := True;
+        end;
+    end;
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsCharLowerA(var ACh: AnsiChar);
+begin
+    if ACh in [#$41..#$5A] then
+        ACh := AnsiChar(Ord(ACh) + 32);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function  IcsGetCurrentThreadID: TThreadID;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := Windows.GetCurrentThreadID;
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Result := Posix.PThread.GetCurrentThreadID;
+  {$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetTickCount: LongWord;
+{$IFDEF MSWINDOWS}
+begin
+    Result := Windows.GetTickCount;
+end;
+{$ENDIF}
+{$IFDEF POSIX}
+{$IFDEF LINUX}
+var
+    t: tms;
+begin
+    Result := Cardinal(Int64(Cardinal(times(t)) * 1000) div sysconf(_SC_CLK_TCK));
+end;
+{$ENDIF}
+{$IFDEF MACOS}
+begin
+    Result := AbsoluteToNanoseconds(UpTime) div 1000000;
+end;
+{$ENDIF MACOS}
+{$ENDIF POSIX}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetFreeDiskSpace(const APath: String): Int64;
+{$IFDEF MSWINDOWS}
+var
+    TotalSpace, FreeSpace : Int64;
+begin
+    if GetDiskFreeSpaceEx (PChar(APath), FreeSpace, TotalSpace, nil) then
+        Result := FreeSpace
+    else
+        Result := -1;
+{$ENDIF}
+{$IFDEF POSIX}
+var
+    FN  : RawByteString; // Path or file name
+    Buf : _statvfs;
+begin
+    FN := UnicodeToAnsi(APath, CP_UTF8);
+    if statvfs(PAnsiChar(FN), Buf) = 0 then
+        Result := Int64(Buf.f_bfree) * Buf.f_frsize
+    else
+        Result := -1;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetLocalTimeZoneBias: LongInt;
+{$IFDEF MSWINDOWS}
+var
+    tzInfo : TTimeZoneInformation;
+begin
+    case GetTimeZoneInformation(tzInfo) of
+    TIME_ZONE_ID_STANDARD: Result := tzInfo.Bias + tzInfo.StandardBias;
+    TIME_ZONE_ID_DAYLIGHT: Result := tzInfo.Bias + tzInfo.DaylightBias;
+    else
+        Result := tzInfo.Bias;
+    end;
+end;
+{$ENDIF}
+{$IFDEF MACOS}
+var
+    LTZ: CFTimeZoneRef;
+    LNow: CFAbsoluteTime;
+    LSecFromUTC: CFTimeInterval;
+    LSecInt: Integer;
+    // DLSOffs: CFTimeInterval;
+begin
+    LTZ := CFTimeZoneCopyDefault;
+    try
+        LNow := CFAbsoluteTimeGetCurrent;
+        LSecFromUTC := CFTimeZoneGetSecondsFromGMT(LTZ, LNow); // Includes DaylightSavingTime for me
+        {if CFTimeZoneIsDaylightSavingTime(LTZ, LNow) then
+        begin
+            DLSOffs := CFTimeZoneGetDaylightSavingTimeOffset(LTZ, LNow);
+        end;}
+        LSecInt := Trunc(LSecFromUTC);
+        if LSecInt <> 0 then
+            Result := -(LSecInt div 60) // Minutes bias as windows, works for me, ToBeChecked
+        else
+            Result := 0;
+    finally
+        CFRelease(LTZ);
+    end;
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1023,6 +1163,35 @@ begin
         51949 : Result := Ch in ICS_LEAD_BYTES_51949;
     else
         Result := FALSE;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetLeadBytes(CodePage: LongWord): TIcsDbcsLeadBytes;
+begin
+    case CodePage of
+        932   : Result := ICS_LEAD_BYTES_932;
+        936,
+        949,
+        950   : Result := ICS_LEAD_BYTES_936_949_950;
+        1361  : Result := ICS_LEAD_BYTES_1361;
+        10001 : Result := ICS_LEAD_BYTES_10001;
+        10002 : Result := ICS_LEAD_BYTES_10002;
+        10003 : Result := ICS_LEAD_BYTES_10003;
+        10008 : Result := ICS_LEAD_BYTES_10008;
+        20000 : Result := ICS_LEAD_BYTES_20000;
+        20001 : Result := ICS_LEAD_BYTES_20001;
+        20002 : Result := ICS_LEAD_BYTES_20002;
+        20003 : Result := ICS_LEAD_BYTES_20003;
+        20004 : Result := ICS_LEAD_BYTES_20004;
+        20005 : Result := ICS_LEAD_BYTES_20005;
+        20261 : Result := ICS_LEAD_BYTES_20261;
+        20932 : Result := ICS_LEAD_BYTES_20932;
+        20936 : Result := ICS_LEAD_BYTES_20936;
+        51949 : Result := ICS_LEAD_BYTES_51949;
+    else
+        Result := [];
     end;
 end;
 
@@ -3365,6 +3534,42 @@ begin
     end;
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsMakeLong(L, H: Word): Longint;
+begin
+    Result := L or H shl 16;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsMakeWord(L, H: Byte): Word;
+begin
+    Result := L or H shl 8;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsHiWord(LW: LongWord): Word;
+begin
+    Result := LW shr 16;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsLoWord(LW: LongWord): Word;
+begin
+    Result := Word(LW);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsHiByte(W: Word): Byte;
+begin
+    Result := W shr 8;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsLoByte(W: Word): Byte;
+begin
+    Result := Byte(W);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;

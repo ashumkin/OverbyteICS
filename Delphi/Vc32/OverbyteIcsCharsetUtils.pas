@@ -278,7 +278,7 @@ uses
   {$ENDIF}
 {$ENDIF}
 {$IFDEF POSIX}
-    PosixSysTypes, PosixIconv, PosixErrno,
+    Posix.SysTypes, Posix.Iconv, Posix.Errno,
 {$ENDIF}
     Sysutils, Classes, Contnrs,
     OverbyteIcsUtils;

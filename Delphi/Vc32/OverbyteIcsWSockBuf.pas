@@ -102,7 +102,7 @@ uses
 {$IFDEF MSWINDOWS}
   Windows,
 {$ENDIF}
-  SysUtils, OverbyteIcsTypes, OverbyteIcsLibrary;
+  SysUtils, Classes, SyncObjs, OverbyteIcsTypes, OverbyteIcsLibrary;
 
 const
   WSockBufVersion    = 602;
@@ -160,13 +160,13 @@ type
     FInUseList : TIcsBufferLinkedList;
     FFreeList  : TIcsBufferLinkedList;
     FBufSize   : Integer;
-    FCritSect  : TRTLCriticalSection;
+    FCritSect  : TCriticalSection;
     function    GetBuffer: TIcsBuffer;
   public
     constructor Create(AOwner : TComponent); override;
     destructor  Destroy; override;
-    procedure   Lock;
-    procedure   UnLock;
+    procedure   Lock; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    procedure   UnLock; {$IFDEF USE_INLINE} inline; {$ENDIF}
     procedure   Write(const Data : TWSocketData; Len : Integer); overload;
     procedure   Write(const Data : TWSocketData; Offset : Integer; Len : Integer); overload;
     function    Peek(var Len : Integer) : TWSocketData; overload;
@@ -437,7 +437,7 @@ begin
     FInUseList := TIcsBufferLinkedList.Create;
     FFreeList  := TIcsBufferLinkedList.Create;
     FBufSize   := 1460;
-    InitializeCriticalSection(FCritSect);
+    FCritSect  := TCriticalSection.Create;
 end;
 
 
@@ -446,7 +446,7 @@ destructor TIcsBufferHandler.Destroy;
 begin
     FreeAndNil(FInUseList);
     FreeAndNil(FFreeList);
-    DeleteCriticalSection(FCritSect);
+    FCritSect.Free;
     inherited Destroy;
 end;
 
@@ -554,14 +554,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsBufferHandler.Lock;
 begin
-    EnterCriticalSection(FCritSect);
+    FCritSect.Enter;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsBufferHandler.UnLock;
 begin
-    LeaveCriticalSection(FCritSect);
+    FCritSect.Leave;
 end;
 
 
