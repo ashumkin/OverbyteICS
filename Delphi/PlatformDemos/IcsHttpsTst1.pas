@@ -977,13 +977,7 @@ begin
         { last request.                                                        }
         HttpCli.SslAcceptableHosts.Add(HttpCli.Hostname + Hash);
         { Repeat last request asynchronously }
-        PostMessage(
-                {$IFDEF POSIX}
-                    FNotifyWindow,
-                {$ELSE}
-                    Handle,
-                {$ENDIF}
-                    WM_SSL_NOT_TRUSTED, 0, 0);
+        PostMessage(FNotifyWindow, WM_SSL_NOT_TRUSTED, 0, 0);
     end;
 end;
 
