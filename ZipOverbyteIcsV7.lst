@@ -1605,5 +1605,13 @@ Delphi\PlatformDemos\IcsThreadTimerDemo.dproj
 Delphi\PlatformDemos\IcsThreadTimerDemo1.fmx
 Delphi\PlatformDemos\IcsThreadTimerDemo1.pas
 
+Delphi\PlatformDemos\IcsCliDemo.dpr
+Delphi\PlatformDemos\IcsCliDemo.dproj
+Delphi\PlatformDemos\IcsCliDemo1.fmx
+Delphi\PlatformDemos\IcsCliDemo1.pas
 
+Delphi\PlatformDemos\IcsTcpSrvIPv6.dpr
+Delphi\PlatformDemos\IcsTcpSrvIPv6.dproj
+Delphi\PlatformDemos\IcsTcpSrv1IPv6.fmx
+Delphi\PlatformDemos\IcsTcpSrv1IPv6.pas
 
