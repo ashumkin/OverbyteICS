@@ -1147,6 +1147,7 @@ const
     IPV6_ADD_MEMBERSHIP   = IPV6_JOIN_GROUP;
 
     IsIPv6APIAvailable    = True;
+    IsIPv6Available       = True;
 
 type
     TSocket               = Integer;

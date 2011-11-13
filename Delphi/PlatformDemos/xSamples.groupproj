@@ -3,6 +3,12 @@
 			<ProjectGuid>{D083C8C0-ADC4-41D2-B66D-3F8A4ED728D9}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
+			<Projects Include="IcsCliDemo.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsTcpSrvIPv6.dproj">
+				<Dependencies/>
+			</Projects>
 			<Projects Include="IcsConSmtp.dproj">
 				<Dependencies/>
 			</Projects>
@@ -29,6 +35,24 @@
 				<Default.Personality/>
 			</BorlandProject>
 		</ProjectExtensions>
+		<Target Name="IcsCliDemo">
+			<MSBuild Projects="IcsCliDemo.dproj"/>
+		</Target>
+		<Target Name="IcsCliDemo:Clean">
+			<MSBuild Projects="IcsCliDemo.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsCliDemo:Make">
+			<MSBuild Projects="IcsCliDemo.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsTcpSrvIPv6">
+			<MSBuild Projects="IcsTcpSrvIPv6.dproj"/>
+		</Target>
+		<Target Name="IcsTcpSrvIPv6:Clean">
+			<MSBuild Projects="IcsTcpSrvIPv6.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsTcpSrvIPv6:Make">
+			<MSBuild Projects="IcsTcpSrvIPv6.dproj" Targets="Make"/>
+		</Target>
 		<Target Name="IcsConSmtp">
 			<MSBuild Projects="IcsConSmtp.dproj"/>
 		</Target>
@@ -84,13 +108,13 @@
 			<MSBuild Projects="IcsThreadTimerDemo.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsFtpTst;IcsFtpServ;IcsThreadTimerDemo"/>
+			<CallTarget Targets="IcsCliDemo;IcsTcpSrvIPv6;IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsFtpTst;IcsFtpServ;IcsThreadTimerDemo"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsThreadTimerDemo:Clean"/>
+			<CallTarget Targets="IcsCliDemo:Clean;IcsTcpSrvIPv6:Clean;IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsThreadTimerDemo:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsThreadTimerDemo:Make"/>
+			<CallTarget Targets="IcsCliDemo:Make;IcsTcpSrvIPv6:Make;IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsThreadTimerDemo:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
