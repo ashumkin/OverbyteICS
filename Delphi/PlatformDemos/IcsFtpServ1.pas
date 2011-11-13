@@ -347,6 +347,7 @@ type
     procedure StopServer;
     procedure UpdateClientCount;
     procedure WorkerThreadTerminated(Sender : TObject);
+    procedure CheckCreateDefaultAccountFile;
   end;
 
 var
@@ -589,11 +590,80 @@ end;
 {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpServerForm.CheckCreateDefaultAccountFile;
+var
+    DefaultAccountsFN: String;
+    HomeDirFn: String;
+begin
+    DefaultAccountsFN := FIniRoot + 'ftpaccounts-default.ini';
+    if not FileExists(DefaultAccountsFN) then
+    begin
+      HomeDirFn := FIniRoot;
+      with TStringList.Create do
+      try
+          Text :=
+          '* ICS FTP server user accounts - default if no HOST specified'#13#10+
+          '* this file is manually maintained, add more logons if needed'#13#10+
+          '* OtpMethods: none, otp-md5, otp-md4, otp-sha1'#13#10#13#10+
+
+          '[ics]'#13#10+
+          'Password=ics'#13#10+
+          'ForceSsl=false'#13#10+
+          'HomeDir=' + HomeDirFn + #13#10+
+          'OtpMethod=none'#13#10+
+          'ForceHomeDir=true'#13#10+
+          'HidePhysicalPath=true'#13#10+
+          'ReadOnly=false'#13#10#13#10+
+
+          '[anonymous]'#13#10+
+          'Password=*'#13#10+
+          'ForceSsl=false'#13#10+
+          'HomeDir=' + HomeDirFn + #13#10+
+          'OtpMethod=none'#13#10+
+          'ForceHomeDir=true'#13#10+
+          'HidePhysicalPath=true'#13#10+
+          'ReadOnly=true'#13#10#13#10+
+
+          '[icsotp]'#13#10+
+          'Password=ics'#13#10+
+          'ForceSsl=false'#13#10+
+          'HomeDir=' + HomeDirFn + #13#10+
+          'OtpMethod=otp-md5'#13#10+
+          'ForceHomeDir=true'#13#10+
+          'HidePhysicalPath=true'#13#10+
+          'ReadOnly=false'#13#10#13#10+
+
+          '[icsssl]'#13#10+
+          'Password=ics'#13#10+
+          'ForceSsl=true'#13#10+
+          'HomeDir=' + HomeDirFn + #13#10+
+          'OtpMethod=none'#13#10+
+          'ForceHomeDir=true'#13#10+
+          'HidePhysicalPath=true'#13#10+
+          'ReadOnly=false'#13#10#13#10+
+
+          '[administrator]'#13#10+
+          'Password=windows'#13#10+
+          'ForceSsl=false'#13#10+
+          'HomeDir=' + HomeDirFn + #13#10+
+          'OtpMethod=none'#13#10+
+          'ForceHomeDir=true'#13#10+
+          'HidePhysicalPath=true'#13#10+
+          'ReadOnly=false';
+          SaveToFile(DefaultAccountsFN);
+      finally
+          Free;
+      end;
+    end;
+end;
+
 procedure TFtpServerForm.FormCreate(Sender: TObject);
+
 begin
     { Build Ini file name }
     FIniFileName := GetIcsIniFileName;
-    FIniRoot := LowerCase(ExtractFilePath(ParamStr(0)));
+    FIniRoot := ExtractFilePath(FIniFileName);
+    CheckCreateDefaultAccountFile;
     { Create the Log object }
     Log                  := TLogMsg.Create(Self);
     FMD5Cache            := TCacheTree.Create(FALSE);
