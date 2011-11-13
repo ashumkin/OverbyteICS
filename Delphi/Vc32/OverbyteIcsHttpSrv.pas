@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.39
+Version:      7.41
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -326,6 +326,13 @@ Jun 18, 2011 V7.37 aguser removed one compiler hint.
 Jul 01, 2011 V7.38 Lars Gehre found that HEAD could cause an infinite loop.
 Jul 09, 2011 V7.39 Lars Gehre fixed an issue with conditional define
                    "NO_AUTHENTICATION_SUPPORT".
+Oct 18, 2011 V7.40 Angus GET performance improvements, use TBufferedFileStream,
+                   SndBlkSize default is 8192 and dynamically increased to new
+                   property MaxBlkSize if stream is larger than SndBlkSize.
+                   SocketSndBufSize also increased to SndBlkSize.
+Oct 22, 2011 V7.41 Angus added OnHttpMimeContentType to allow custom ContentTypes
+                   to be supported for unusual file extensions
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsHttpSrv;
@@ -398,6 +405,7 @@ uses
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
+    OverbyteIcsStreams,   { V7.40 }
     OverbyteIcsMD5, OverbyteIcsMimeUtils,
     OverbyteIcsTypes, OverbyteIcsLibrary,
     OverbyteIcsUtils,
@@ -412,10 +420,11 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-    THttpServerVersion = 739;
-    CopyRight : String = ' THttpServer (c) 1999-2011 F. Piette V7.39 ';
+    THttpServerVersion = 741;
+    CopyRight : String = ' THttpServer (c) 1999-2011 F. Piette V7.41 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
+    MinSndBlkSize = 8192 ;  { V7.40 }
 
 type
     THttpServer          = class;
@@ -472,6 +481,13 @@ type
                                                var Handled : Boolean) of object;
     TUnknownRequestMethodEvent= procedure (Sender : TObject;       { V7.29 }
                                            var Handled : Boolean) of object;
+    THttpMimeContentTypeEvent= procedure (Sender    : TObject;     { V7.41 }
+                                          Client    : TObject;
+                                          const FileName: string;
+                                          var ContentType: string) of object;
+    TMimeContentTypeEvent= procedure (Sender    : TObject;         { V7.41 }
+                                      const FileName: string;
+                                      var ContentType: string) of object;
 
     THttpConnectionState = (hcRequest, hcHeader, hcPostedData);
     THttpOption          = (hoAllowDirList, hoAllowOutsideRoot, hoContentEncoding);   { V7.20 }
@@ -677,6 +693,7 @@ type
         FOnContentEncode       : TContentEncodeEvent;  { V7.20 }
         FOnContEncoded         : TNotifyEvent;         { V7.20 }
         FOnUnknownRequestMethod: TUnknownRequestMethodEvent; { V2.29 }
+        FOnMimeContentType     : TMimeContentTypeEvent;  { V7.41 }
         procedure SetSndBlkSize(const Value: Integer);
         procedure ConnectionDataAvailable(Sender: TObject; Error : Word); virtual;
         procedure ConnectionDataSent(Sender : TObject; Error : WORD); virtual;
@@ -705,6 +722,7 @@ type
                                         var Handled: Boolean); virtual;  { V7.20 }
         procedure TriggerContEncoded; virtual;    { V7.20 }
         procedure TriggerUnknownRequestMethod(var Handled : Boolean); virtual; { V7.29 }
+        procedure TriggerMimeContentType(const FileName: string; var ContentType: string); virtual; { V7.41 }
         function  CheckContentEncoding(const ContType : String): Boolean; virtual; { V7.21 are we allowed to compress content }
         function  DoContentEncoding: String; virtual; { V7.21 compress content returning Content-Encoding header }
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
@@ -947,6 +965,10 @@ type
         property OnUnknownRequestMethod   : TUnknownRequestMethodEvent
                                                     read  FOnUnknownRequestMethod
                                                     write FOnUnknownRequestMethod;
+        { Triggered from SendDocument to allow MIME content type to be changed    V7.41 }
+        property OnMimeContentType  : TMimeContentTypeEvent
+                                                    read FOnMimeContentType
+                                                    write FOnMimeContentType;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         { AuthType contains the actual authentication method selected by client }
         property AuthType          : TAuthenticationType
@@ -1016,6 +1038,8 @@ type
         FSizeCompressMin          : Integer;  { V7.20 }
         FSizeCompressMax          : Integer;  { V7.20 }
         FPersistentHeader         : String;   { V7.29 }
+        FMaxBlkSize               : Integer;  { V7.40 }
+        FOnHttpMimeContentType    : THttpMimeContentTypeEvent;  { V7.41 }
 {$IFDEF BUILTIN_THROTTLE}
         FBandwidthLimit           : LongWord;   { angus V7.34 Bytes per second, null = disabled }
         FBandwidthSampling        : LongWord;   { angus V7.34 Msec sampling interval }
@@ -1083,6 +1107,7 @@ type
                                        var Handled: Boolean);
         procedure TriggerContEncoded(Client : TObject);   { V7.20 }
         procedure TriggerUnknownRequestMethod(Client : TObject; var Handled : Boolean); { V7.29 }
+        procedure TriggerMimeContentType(Client : TObject; const FileName: string; var ContentType: string); virtual; { V7.41 }
         procedure SetPortValue(const newValue : String);
         procedure SetAddr(const newValue : String);
         procedure SetDocDir(const Value: String);
@@ -1163,6 +1188,9 @@ type
         {Header items to always included in any response header} { V7.29 }
         property PersistentHeader:string         read  FPersistentHeader
                                                  write FPersistentHeader;
+        { maximum buffer block size to read/sent for large files }
+        property MaxBlkSize : Integer            read FMaxBlkSize   { V7.40 }
+                                                 write FMaxBlkSize ;
 {$IFDEF BUILTIN_THROTTLE}
         { BandwidthLimit slows down speeds, bytes per second, null = disabled }
         property BandwidthLimit : LongWord       read  FBandwidthLimit
@@ -1241,6 +1269,9 @@ type
         property OnUnknownRequestMethod : THttpUnknownRequestMethodEvent { V2.29 }
                                                  read FOnHttpUnknownReqMethod
                                                  write FOnHttpUnknownReqMethod;
+        property OnHttpMimeContentType : THttpMimeContentTypeEvent         { V7.41 }
+                                                 read FOnHttpMimeContentType
+                                                 write FOnHttpMimeContentType;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
         property OnAuthGetPassword  : TAuthGetPasswordEvent
                                                  read  FOnAuthGetPassword
@@ -1459,7 +1490,7 @@ function UrlDecode(const Url   : RawByteString;
 {$ENDIF}
 function FileDate(FileName : String) : TDateTime;
 function RFC1123_Date(aDate : TDateTime) : String;
-function DocumentToContentType(FileName : String) : String;
+function DocumentToContentType(const FileName : String) : String;
 function TextToHtmlText(const Src : String) : String;
 function TranslateChar(const Str: String; FromChar, ToChar: Char): String;
 function UnixPathToDosPath(const Path: String): String;
@@ -1666,6 +1697,7 @@ begin
     FHeartBeat.Enabled    := TRUE;
     SizeCompressMin       := CompressMinSize;  { V7.20 only compress responses within a size range }
     SizeCompressMax       := CompressMaxSize;
+    FMaxBlkSize           := MinSndBlkSize;    { V7.40 }
 {$IFDEF BUILTIN_THROTTLE}
     FBandwidthLimit       := 0;       { angus V7.34 no bandwidth limit, yet, bytes per second }
     FBandwidthSampling    := 1000;    { angus V7.34 Msec sampling interval, less is not possible }
@@ -1963,6 +1995,7 @@ begin
     THttpConnection(Client).OnContentEncode   := TriggerContentEncode; { V7.20 }
     THttpConnection(Client).OnContEncoded     := TriggerContEncoded;   { V7.20 }
     THttpConnection(Client).OnUnknownRequestMethod  := TriggerUnknownRequestMethod; { V2.29 }
+    THttpConnection(Client).OnMimeContentType := TriggerMimeContentType; { V7.41 }
     TriggerClientConnect(Client, Error);
 end;
 
@@ -2128,6 +2161,15 @@ begin
         FOnHttpUnknownReqMethod(Self, Client, Handled);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.TriggerMimeContentType
+    (Client : TObject;
+     const FileName: string;
+     var ContentType: string);                                     { V7.41 }
+begin
+    if Assigned(FOnHttpMimeContentType) then
+        FOnHttpMimeContentType(Self, Client, FileName, ContentType);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpServer.HeartBeatOnTimer(Sender: TObject);
@@ -2215,7 +2257,7 @@ begin
     OnDataAvailable       := ConnectionDataAvailable;
     FRequestRangeValues   := THttpRangeList.Create; {ANDREAS}
     ComponentOptions      := [wsoNoReceiveLoop];    { FP 15/05/2005 }
-    FSndBlkSize           :=  BufSize; // default value = 1460
+    FSndBlkSize           := MinSndBlkSize;  { V7.40 was  BufSize; // default value = 1460  }
 end;
 
 
@@ -3445,6 +3487,12 @@ begin
         FOnUnknownRequestMethod(Self, Handled);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpConnection.TriggerMimeContentType(const FileName: string; var ContentType: string); { V7.41 }
+begin
+    if Assigned(FOnMimeContentType) then
+        FOnMimeContentType(Self, FileName, ContentType);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpConnection.TriggerContEncoded;  { V7.20 }
@@ -3670,6 +3718,7 @@ begin
                     Answer404;
                 end
                 else begin
+                    { see if we have access to file, but don't read it yet }
                     TempStream := TFileStream.Create(FDocument, fmOpenRead + fmShareDenyWrite);
                     TempStream.Destroy;
                     OK := TRUE;
@@ -3696,7 +3745,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function DocumentToContentType(FileName : String) : String;
+function DocumentToContentType(const FileName : String) : String;
 var
     Ext : String;
 begin
@@ -3859,9 +3908,10 @@ begin
     ProtoNumber        := 200;
     FLastModified      := FileDate(FDocument);
     FAnswerContentType := DocumentToContentType(FDocument);
+    TriggerMimeContentType(FDocument, FAnswerContentType);  { V7.41 allow content type to be changed }
 
     FDocStream.Free;
-    FDocStream := TFileStream.Create(FDocument, fmOpenRead + fmShareDenyWrite);
+    FDocStream := TBufferedFileStream.Create(FDocument, fmOpenRead + fmShareDenyWrite, MAX_BUFSIZE); { V7.40 faster }
 
     CompleteDocSize := FDocStream.Size;
     {ANDREAS Create the virtual 'byte-range-doc-stream', if we are ask for ranges}
@@ -3963,11 +4013,23 @@ begin
 BufSize := 8192; { Only for testing }
 {$ENDIF}
 *)
-    if not Assigned(FDocBuf) then
-        GetMem(FDocBuf, FSndBlkSize);
     FDocSize   := FDocStream.Size;    { Should it take care of ranges ? }
     FDataSent  := 0;
     OnDataSent := ConnectionDataSent;
+
+{ V7.40 speed up larger files by increasing buffer sizes }
+    if (FDocSize > FSndBlkSize) and (FServer.MaxBlkSize > FSndBlkSize) then begin
+        if (FDocSize >= FServer.MaxBlkSize) then
+            SetSndBlkSize (FServer.MaxBlkSize)
+        else
+            SetSndBlkSize (FDocSize);  { don't need a max buffer }
+    end;
+    if SocketSndBufSize < FSndBlkSize then
+        SocketSndBufSize := FSndBlkSize; { socket TCP buffer }
+    if not Assigned(FDocBuf) then
+        GetMem(FDocBuf, FSndBlkSize);
+
+{ event is called repeatedly until stream is all sent }
     ConnectionDataSent(Self, 0);
 end;
 
