@@ -1497,7 +1497,7 @@ begin
     if Fsin.sin6_family = AF_INET6 then
         Result := WSocketIPv6ToStr(@Fsin)
     else
-        Result := WSocketIPv4ToStr(PInteger(@Fsin.sin6_addr)^);
+        Result := WSocketIPv4ToStr(PInteger(@PSockAddr(@Fsin)^.sin_addr)^);
 end;
 
 
