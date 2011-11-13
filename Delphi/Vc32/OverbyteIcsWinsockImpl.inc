@@ -255,6 +255,8 @@ begin
       Result := 'Non-recoverable error';
     WSANO_DATA:
       Result := 'No Data';
+    WSASERVICE_NOT_FOUND:
+      Result := 'Service not found';
     else
       Result := 'Not a WinSock error';
     end;

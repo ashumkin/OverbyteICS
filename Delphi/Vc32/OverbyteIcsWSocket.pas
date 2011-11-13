@@ -1085,60 +1085,63 @@ const
     FD_ADDRESS_LIST_CHANGE      = $200;}
     FD_MAX_EVENTS               = 10;
 
-    { errors }
-    WSABASEERR          = 0;//10000;
-    WSAEINTR            = EINTR;
-    WSAEBADF            = EBADF;
-    WSAEACCES           = EACCES;
-    WSAEFAULT           = EFAULT;
-    WSAEINVAL           = EINVAL;
-    WSAEMFILE           = EMFILE;
-    WSAEWOULDBLOCK      = EWOULDBLOCK;
-    WSAEINPROGRESS      = EINPROGRESS;
-    WSAEALREADY         = EALREADY;
-    WSAENOTSOCK         = ENOTSOCK;
-    WSAEDESTADDRREQ     = EDESTADDRREQ;
-    WSAEMSGSIZE         = EMSGSIZE;
-    WSAEPROTOTYPE       = EPROTOTYPE;
-    WSAENOPROTOOPT      = ENOPROTOOPT;
-    WSAEPROTONOSUPPORT  = EPROTONOSUPPORT;
-    WSAESOCKTNOSUPPORT  = ESOCKTNOSUPPORT;
-    WSAEOPNOTSUPP       = EOPNOTSUPP;
-    WSAEPFNOSUPPORT     = EPFNOSUPPORT;
-    WSAEAFNOSUPPORT     = EAFNOSUPPORT;
-    WSAEADDRINUSE       = EADDRINUSE;
-    WSAEADDRNOTAVAIL    = EADDRNOTAVAIL;
-    WSAENETDOWN         = ENETDOWN;
-    WSAENETUNREACH      = ENETUNREACH;
-    WSAENETRESET        = ENETRESET;
-    WSAECONNABORTED     = ECONNABORTED;
-    WSAECONNRESET       = ECONNRESET;
-    WSAENOBUFS          = ENOBUFS;
-    WSAEISCONN          = EISCONN;
-    WSAENOTCONN         = ENOTCONN;
-    WSAESHUTDOWN        = ESHUTDOWN;
-    WSAETOOMANYREFS     = ETOOMANYREFS;
-    WSAETIMEDOUT        = ETIMEDOUT;
-    WSAECONNREFUSED     = ECONNREFUSED;
-    WSAELOOP            = ELOOP;
-    WSAENAMETOOLONG     = ENAMETOOLONG;
-    WSAEHOSTDOWN        = EHOSTDOWN;
-    WSAEHOSTUNREACH     = EHOSTUNREACH;
-    WSAENOTEMPTY        = ENOTEMPTY;
-    WSAEPROCLIM         = EPROCLIM;
-    WSAEUSERS           = EUSERS;
-    WSAEDQUOT           = EDQUOT;
-    WSAESTALE           = ESTALE;
-    WSAEREMOTE          = EREMOTE;
-    WSANO_DATA          = ENODATA;
-    WSASYSNOTREADY      = ELAST + 1;  //?
-    WSAVERNOTSUPPORTED  = ELAST + 2;  //?
-    WSANOTINITIALISED   = ELAST + 3;  //?
-    WSAHOST_NOT_FOUND   = ELAST + 4;  //?
-    WSATRY_AGAIN        = ELAST + 5;  //?
-    WSANO_RECOVERY      = ELAST + 6;  //?
+    { Socket error codes mapped }
+    WSABASEERR                  = 0;//10000;
+    WSAHOST_NOT_FOUND           = EPERM;                   // EAI_NONAME
+    WSATRY_AGAIN                = ENOENT;                  // EAI_AGAIN
+    WSANO_RECOVERY              = ESRCH;                   // EAI_FAIL
+    WSAEINTR                    = EINTR;
+    WSASERVICE_NOT_FOUND        = ENOEXEC;                 // EAI_SERVICE
+    WSAEBADF                    = EBADF;
+    WSAEACCES                   = EACCES;
+    WSAEFAULT                   = EFAULT;
+    WSAEINVAL                   = EINVAL;                  // EAI_BADFLAGS
+    WSAEMFILE                   = EMFILE;
+    WSAEWOULDBLOCK              = EWOULDBLOCK;
+    WSAEINPROGRESS              = EINPROGRESS;
+    WSAEALREADY                 = EALREADY;
+    WSAENOTSOCK                 = ENOTSOCK;
+    WSAEDESTADDRREQ             = EDESTADDRREQ;
+    WSAEMSGSIZE                 = EMSGSIZE;
+    WSAEPROTOTYPE               = EPROTOTYPE;
+    WSAENOPROTOOPT              = ENOPROTOOPT;
+    WSAEPROTONOSUPPORT          = EPROTONOSUPPORT;
+    WSAESOCKTNOSUPPORT          = ESOCKTNOSUPPORT;
+    WSAEOPNOTSUPP               = EOPNOTSUPP;
+    WSAEPFNOSUPPORT             = EPFNOSUPPORT;
+    WSAEAFNOSUPPORT             = EAFNOSUPPORT;            // EAI_FAMILY
+    WSAEADDRINUSE               = EADDRINUSE;
+    WSAEADDRNOTAVAIL            = EADDRNOTAVAIL;
+    WSAENETDOWN                 = ENETDOWN;
+    WSAENETUNREACH              = ENETUNREACH;
+    WSAENETRESET                = ENETRESET;
+    WSAECONNABORTED             = ECONNABORTED;
+    WSAECONNRESET               = ECONNRESET;
+    WSAENOBUFS                  = ENOBUFS;
+    WSAEISCONN                  = EISCONN;
+    WSAENOTCONN                 = ENOTCONN;
+    WSAESHUTDOWN                = ESHUTDOWN;
+    WSAETOOMANYREFS             = ETOOMANYREFS;
+    WSAETIMEDOUT                = ETIMEDOUT;
+    WSAECONNREFUSED             = ECONNREFUSED;
+    WSAELOOP                    = ELOOP;
+    WSAENAMETOOLONG             = ENAMETOOLONG;
+    WSAEHOSTDOWN                = EHOSTDOWN;
+    WSAEHOSTUNREACH             = EHOSTUNREACH;
+    WSAENOTEMPTY                = ENOTEMPTY;
+    WSAEPROCLIM                 = EPROCLIM;
+    WSAEUSERS                   = EUSERS;
+    WSAEDQUOT                   = EDQUOT;
+    WSAESTALE                   = ESTALE;
+    WSAEREMOTE                  = EREMOTE;
+    WSANO_DATA                  = ENODATA;
 
-    WSAELAST            = WSANO_RECOVERY;
+   { WSA startup etc
+    WSASYSNOTREADY              = ELAST + 1;
+    WSAVERNOTSUPPORTED          = ELAST + 2;
+    WSANOTINITIALISED           = ELAST + 3; }
+
+    WSAELAST                    = WSANO_DATA;
 
     MAXGETHOSTSTRUCT      = 1024;
     IPV6_ADD_MEMBERSHIP   = IPV6_JOIN_GROUP;
@@ -8734,10 +8737,12 @@ begin
                 FLastError := WSocket_Synchronized_WSAGetLastError;
                 if FLastError <> WSAEWOULDBLOCK then begin
                     FHSocket := INVALID_SOCKET;
+                  {$IFDEF MSWINDOWS}
                     { Ignore the error occuring when winsock DLL not      }
                     { initialized (occurs when using TWSocket from a DLL) }
                     if FLastError = WSANOTINITIALISED then
                         break;
+                  {$ENDIF}
                     SocketError('Disconnect (closesocket)');
                     Exit;
                 end;
@@ -9507,7 +9512,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF POSIX}
 function SocketErrorDesc(ErrCode : Integer) : String;
 begin
     case ErrCode of
@@ -9599,12 +9603,14 @@ begin
       Result := 'Stale NFS file handle';
     WSAEREMOTE:
       Result := 'Too many levels of remote in path';
+  {$IFDEF MSWINDOWS}
     WSASYSNOTREADY:
       Result := 'Network sub-system is unusable';
     WSAVERNOTSUPPORTED:
       Result := 'WinSock DLL cannot support this application';
     WSANOTINITIALISED:
       Result := 'WinSock not initialized';
+  {$ENDIF}
     WSAHOST_NOT_FOUND:
       Result := 'Host not found';
     WSATRY_AGAIN:
@@ -9613,11 +9619,17 @@ begin
       Result := 'Non-recoverable error';
     WSANO_DATA:
       Result := 'No Data';
+    WSASERVICE_NOT_FOUND:
+      Result := 'Service not found'; // Name resolution
     else
-      Result := 'Not a WinSock error';
+  {$IFDEF MSWINDOWS}
+      Result := 'Not a Winsocket error';
+  {$ELSE}
+      Result := 'Not a socket error';
+  {$ENDIF}
     end;
 end;
-{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocketErrorDesc(ErrCode : Integer) : String;
@@ -19446,10 +19458,12 @@ begin
     Result := 0; // unused variable hint in OS X
     LockQueue;
     try
+      {$IFDEF MSWINDOWS}
         if not IsIPv6APIAvailable then begin
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
         end;
+      {$ENDIF}
         Req := TIcsAsyncDnsLookupRequest.Create;
         Req.FWndHandle    := AWnd;
         Req.FMsgID        := AMsgID;
@@ -19529,11 +19543,13 @@ var
 begin
     LockQueue;
     try
+      {$IFDEF MSWINDOWS}
         if not IsIPv6APIAvailable then begin
             Result := -1;
             SetLastError(WSAVERNOTSUPPORTED);
             Exit;
         end;
+      {$ENDIF}
         I := FQueue.IndexOf(Pointer(AReq));
         if (I > -1) then
             Req := TIcsAsyncDnsLookupRequest(FQueue[I])

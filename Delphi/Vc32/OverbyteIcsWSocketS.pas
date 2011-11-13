@@ -927,10 +927,12 @@ begin
                 AItem.LastError := WSocket_WSAGetLastError;
                 if AItem.LastError <> WSAEWOULDBLOCK then begin
                     AItem.HSocket := INVALID_SOCKET;
+                  {$IFDEF MSWINDOWS}
                     { Ignore the error occuring when winsock DLL not      }
                     { initialized (occurs when using TWSocket from a DLL) }
                     if AItem.LastError = WSANOTINITIALISED then
                         Break;
+                  {$ENDIF}
                     MlSocketError(AItem, 'Disconnect (closesocket)');
                     Exit;
                 end;

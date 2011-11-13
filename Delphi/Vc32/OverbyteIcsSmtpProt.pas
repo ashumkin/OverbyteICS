@@ -2234,7 +2234,12 @@ procedure TCustomSmtpClient.WSocketDnsLookupDone(
 begin
     if ErrorCode <> 0 then begin
         FLastResponse := '500 ' + WSocketErrorDesc(ErrorCode) +
-                         ' (Winsock error #' + IntToStr(ErrorCode) + ')';
+                       {$IFDEF MSWINDOWS}
+                         ' (Winsock error #' +
+                       {$ELSE}
+                         ' (Socket error #' +
+                       {$ENDIF}
+                         IntToStr(ErrorCode) + ')';
         FStatusCode   := 500;
         SetErrorMessage;
         FRequestResult := ErrorCode;
