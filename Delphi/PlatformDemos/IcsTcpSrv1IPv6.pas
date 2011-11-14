@@ -131,6 +131,7 @@ type
       var CanClose: Boolean);
     procedure WSocketServer1SessionClosed(Sender: TObject; ErrCode: Word);
     procedure WSocketServer1SessionAvailable(Sender: TObject; ErrCode: Word);
+    procedure FormDestroy(Sender: TObject);
   private
     FIniFileName : String;
     FInitialized : Boolean;
@@ -197,6 +198,17 @@ begin
     FNotifyWindow := AllocateHWND(WndProc);
     IcsNameThreadForDebugging('Main');
     FormShow(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TTcpSrvForm.FormDestroy(Sender: TObject);
+begin
+    if FNotifyWindow <> 0 then
+        DeallocateHWND(FNotifyWindow);
+{$IFDEF POSIX}
+    FMessagePump.Free;
+{$ENDIF}
 end;
 
 
