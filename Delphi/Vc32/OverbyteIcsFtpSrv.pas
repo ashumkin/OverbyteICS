@@ -575,9 +575,9 @@ const
 {$ENDIF}
 
   {$IFDEF POSIX}
-    PathSep       = '/';
+    PathDelim       = '/';
   {$ELSE}
-    PathSep       = '\';
+    PathDelim       = '\';
   {$ENDIF}
 
 type
@@ -2121,9 +2121,9 @@ var
     I : Integer;
     Ticks: String;
 begin
-    Result := Lowercase (S);
+    Result := AnsiLowercase (S);
     for I := 1 to Length(Result) do begin
-        if (Result [I] = '\') or (Result [I] = '.') or
+        if (Result [I] = PathDelim) or (Result [I] = '.') or
                            (Result [I] = ':') then Result[I] := '_';
     end;
     Ticks := IntToStr(IcsGetTickCountX);  { now make it unique by adding some ms }
@@ -4073,7 +4073,7 @@ begin
         NewPath := '';
         TriggerBuildFilePath(Client, InPath, '?', NewPath);  { ? used as flag for reverse translation }
         if NewPath = '' then NewPath := InPath ;         { no virtual dir, use original path }
-		    Home := ExcludeTrailingPathDelimiter(Client.HomeDir);
+        Home := ExcludeTrailingPathDelimiter(Client.HomeDir);
       {$IFDEF MSWINDOWS}
         if Pos(AnsiLowerCase(Home), AnsiLowerCase(InPath)) = 1 then
       {$ELSE}
@@ -4081,7 +4081,7 @@ begin
       {$ENDIF}
             Result := Copy(InPath, Length(Home) + 1, Length(InPath));
     end;
-    while (Length(Result) > 0) and (Result[Length(Result)] = PathSep) do
+    while (Length(Result) > 0) and (Result[Length(Result)] = PathDelim) do
         SetLength(Result, Length(Result) - 1);
     if (Length(Result) = 0) then
         Result := Slash
@@ -4120,7 +4120,7 @@ begin
     if IsUNC(FileName) then
         Result := FileName
     else if IsUNC(Directory) then begin
-        if (Length(FileName) > 0) and (FileName[1] = PathSep) then begin
+        if (Length(FileName) > 0) and (FileName[1] = PathDelim) then begin
             if (ftpCdUpHome in Client.Options) then              { AG V1.52 }
                 { absolute path, HomeDir }
                 Result := Client.HomeDir + Copy(FileName, 2, Length(FileName))
@@ -4136,7 +4136,7 @@ begin
             Path  := Copy(FileName, 3, Length(FileName));
         end
         else if (ftpCdUpHome in Client.Options) and              { AG V1.52 }
-                (Length(FileName) > 0) and (FileName[1] = PathSep) then begin
+                (Length(FileName) > 0) and (FileName[1] = PathDelim) then begin
                 { absolute path, HomeDir }
                 Drive := ExtractFileDrive(Client.HomeDir);
                 Path  := Copy(Client.HomeDir, Length(Drive) + 1, Length(Client.HomeDir)) +
@@ -4146,7 +4146,7 @@ begin
             Drive := Copy(Directory, 1, 2);
             Path  := FileName;
         end;
-        if (Length(Path) > 0) and (Path[1] = PathSep) then
+        if (Length(Path) > 0) and (Path[1] = PathDelim) then
             Result := Drive + Path
         else begin
             if Drive <> Copy(Directory, 1, 2) then
@@ -4838,12 +4838,12 @@ begin
                params is now only path or file name }
 
  { angus 1.54 remove leading / to keep BuildFilePath happy, probably not backward compatible!! }
-    if (Length (Path) >= 1) and (Path [1] = PathSep) then Path := Copy (Path, 2, 999);
+    if (Length (Path) >= 1) and (Path [1] = PathDelim) then Path := Copy (Path, 2, 999);
     if Path = '' then
 {        Client.DirListPath := Client.Directory + '*.*'   V7.08 }
         Client.DirListPath := BuildFilePath(Client, Client.Directory, '*.*')  { angus V7.08 must not skip buildpath }
     else begin
-        if Path[Length(Path)] = PathSep then Path := Path + '*.*';
+        if Path[Length(Path)] = PathDelim then Path := Path + '*.*';
         Client.DirListPath := BuildFilePath(Client, Client.Directory, Path);
     end;
 
@@ -7636,7 +7636,7 @@ begin
     end;
 
     if (ftpCdUpHome in Options) then begin
-        if (Length(newValue) > 0) and (newValue[1] = PathSep) then begin
+        if (Length(newValue) > 0) and (newValue[1] = PathDelim) then begin
             { absolute path, HomeDir }
             newPath  := FHomeDir + Copy(newValue, 2, MaxInt)
         end
@@ -7654,12 +7654,12 @@ begin
     if newPath = '..' then begin
         newPath := FDirectory;
         I := Length(newPath) - 1;
-        while (I > 0) and (newPath[I] <> PathSep) do
+        while (I > 0) and (newPath[I] <> PathDelim) do
             Dec(I);
         SetLength(newPath, I);
     end;
 
-    if (Length(newPath) > 0) and (newPath[1] <> PathSep) then begin
+    if (Length(newPath) > 0) and (newPath[1] <> PathDelim) then begin
         { Relative path }
         if Pos('.\', newPath) <> 0 then
             raise Exception.Create('Cannot accept relative path using dot notation');
@@ -7679,8 +7679,8 @@ begin
     end;
 
     { Always terminate with a backslash }
-    if (Length(newPath) > 0) and (newPath[Length(newPath)] <> PathSep) then
-        newPath := newPath + PathSep;
+    if (Length(newPath) > 0) and (newPath[Length(newPath)] <> PathDelim) then
+        newPath := newPath + PathDelim;
 
     FDirectory := newPath;
 end;
@@ -7691,8 +7691,8 @@ procedure TFtpCtrlSocket.SetHomeDir(const newValue: String);
 begin
     if FHomeDir = newValue then
         Exit;
-    if (Length(newValue) > 0) and (newValue[Length(newValue)] <> PathSep) then
-        FHomeDir := newValue + PathSep
+    if (Length(newValue) > 0) and (newValue[Length(newValue)] <> PathDelim) then
+        FHomeDir := newValue + PathDelim
     else
         FHomeDir := newValue;
 end;
