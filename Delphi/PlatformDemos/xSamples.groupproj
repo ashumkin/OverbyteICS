@@ -18,6 +18,9 @@
 			<Projects Include="IcsHttpsTst.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="IcsWebServ.dproj">
+				<Dependencies/>
+			</Projects>
 			<Projects Include="IcsFtpTst.dproj">
 				<Dependencies/>
 			</Projects>
@@ -80,6 +83,15 @@
 		<Target Name="IcsHttpsTst:Make">
 			<MSBuild Projects="IcsHttpsTst.dproj" Targets="Make"/>
 		</Target>
+		<Target Name="IcsWebServ">
+			<MSBuild Projects="IcsWebServ.dproj"/>
+		</Target>
+		<Target Name="IcsWebServ:Clean">
+			<MSBuild Projects="IcsWebServ.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsWebServ:Make">
+			<MSBuild Projects="IcsWebServ.dproj" Targets="Make"/>
+		</Target>
 		<Target Name="IcsFtpTst">
 			<MSBuild Projects="IcsFtpTst.dproj"/>
 		</Target>
@@ -108,13 +120,13 @@
 			<MSBuild Projects="IcsThreadTimerDemo.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="IcsCliDemo;IcsTcpSrvIPv6;IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsFtpTst;IcsFtpServ;IcsThreadTimerDemo"/>
+			<CallTarget Targets="IcsCliDemo;IcsTcpSrvIPv6;IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsWebServ;IcsFtpTst;IcsFtpServ;IcsThreadTimerDemo"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="IcsCliDemo:Clean;IcsTcpSrvIPv6:Clean;IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsThreadTimerDemo:Clean"/>
+			<CallTarget Targets="IcsCliDemo:Clean;IcsTcpSrvIPv6:Clean;IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsWebServ:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsThreadTimerDemo:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="IcsCliDemo:Make;IcsTcpSrvIPv6:Make;IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsThreadTimerDemo:Make"/>
+			<CallTarget Targets="IcsCliDemo:Make;IcsTcpSrvIPv6:Make;IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsWebServ:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsThreadTimerDemo:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>

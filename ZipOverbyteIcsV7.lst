@@ -1588,6 +1588,11 @@ Delphi\PlatformDemos\IcsCliCertDlg.fmx
 Delphi\PlatformDemos\IcsHttpsTst.dproj
 Delphi\PlatformDemos\IcsHttpsTst.dpr
 
+Delphi\PlatformDemos\IcsWebServ.dpr
+Delphi\PlatformDemos\IcsWebServ.dproj
+Delphi\PlatformDemos\IcsWebServ1.pas
+Delphi\PlatformDemos\IcsWebServ1.fmx
+
 Delphi\PlatformDemos\IcsFtpTst2.pas
 Delphi\PlatformDemos\IcsFtpTst2.fmx
 Delphi\PlatformDemos\IcsFtpTst1.pas

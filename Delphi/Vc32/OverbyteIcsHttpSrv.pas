@@ -369,12 +369,9 @@ unit OverbyteIcsHttpSrv;
     {$UNDEF USE_NTLM_AUTH}
     {$DEFINE NO_DIGEST_AUTH}
 {$ENDIF}
-{$IFNDEF MSWINDOWS}
+{$IFDEF POSIX}
     {$IFDEF USE_NTLM_AUTH}
         {$UNDEF USE_NTLM_AUTH}  {SSPI is Windows only}
-    {$ENDIF}
-    {$IFNDEF NO_DIGEST_AUTH}
-        {$DEFINE NO_DIGEST_AUTH}
     {$ENDIF}
 {$ENDIF}
 
@@ -386,6 +383,7 @@ uses
     Windows,
 {$ENDIF}
 {$IFDEF POSIX}
+    Posix.Time,
     Ics.Posix.WinTypes,
     Ics.Posix.Messages,
 {$ENDIF}
@@ -1495,6 +1493,7 @@ function TextToHtmlText(const Src : String) : String;
 function TranslateChar(const Str: String; FromChar, ToChar: Char): String;
 function UnixPathToDosPath(const Path: String): String;
 function DosPathToUnixPath(const Path: String): String;
+function AdjustOSPathDelimiters(const Path: String): String;
 function IsDirectory(const Path : String) : Boolean;
 function AbsolutisePath(const Path : String) : String;
 function MakeCookie(const Name, Value : String;
@@ -1571,7 +1570,7 @@ implementation
 
 const
     GTagPrefix : String = '#';
-
+    PathDelim = {$IFDEF MSWINDOWS} '\'; {$ELSE} '/'; {$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function StreamWriteStrA(AStrm : TStream; const AStr: String
@@ -1841,7 +1840,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpServer.SetDocDir(const Value: String);
 begin
-    if (Value > '') and (Value[Length(Value)] = '\') then
+    if (Value > '') and (Value[Length(Value)] = PathDelim) then
         FDocDir := AbsolutisePath(Copy(Value, 1, Length(Value) - 1))
     else
         FDocDir := AbsolutisePath(Value);
@@ -2955,7 +2954,7 @@ begin
                          {$ENDIF}
                              )
         else
-            HtmlPageProducer(FTemplateDir + '\' + HtmlFile, Tags,
+            HtmlPageProducer(IncludeTrailingPathDelimiter(FTemplateDir) + HtmlFile, Tags,
                              @RowDataGetterProc, UD, DestStream
                          {$IFDEF COMPILER12_UP},
                              FileCodepage, DstCodepage
@@ -3338,7 +3337,6 @@ end;
 { As its name implies...                                                    }
 procedure THttpConnection.ProcessRequest;
 var
-    Status : Integer;
     Handled : Boolean;
 begin
     if FKeepAlive and (FKeepAliveTimeSec > 0) then
@@ -3350,28 +3348,27 @@ begin
         FDocument := FDocDir
     else if (FPath <> '') and (FPath[1] = '/') then
         FDocument := AbsolutisePath(FDocDir +
-                                    URLDecode(UnixPathToDosPath(FPath)))
+                                    URLDecode(AdjustOSPathDelimiters(FPath)))
     else
-        FDocument := AbsolutisePath(FDocDir + '\' +
-                                    URLDecode(UnixPathToDosPath(FPath)));
+        FDocument := AbsolutisePath(FDocDir + PathDelim +
+                                    URLDecode(AdjustOSPathDelimiters(FPath)));
 
     if Length(FDocument) < Length(FDocDir) then
-        Status := -1
+        FOutsideFlag := True
     else if Length(FDocument) > Length(FDocDir) then
-        Status := CompareText(Copy(FDocument, 1, Length(FDocDir) + 1),
-                              FDocDir + '\')
+        FOutsideFlag := not SameFileName(Copy(FDocument, 1, Length(FDocDir) + 1),
+                              FDocDir + PathDelim)
     else
-        Status := CompareText(FDocument + '\', FDocDir + '\');
-    FOutsideFlag := (Status <> 0);
+        FOutsideFlag := not SameFileName(FDocument + PathDelim, FDocDir + PathDelim);
 
     { Check for default document }
     if (Length(FDocument) > 0) and
-       (FDocument[Length(FDocument)] = '\') and
+       (FDocument[Length(FDocument)] = PathDelim) and
        (FileExists(FDocument + FDefaultDoc)) then
             FDocument := FDocument + FDefaultDoc
     else if IsDirectory(FDocument) and
-       (FileExists(FDocument + '\' + FDefaultDoc)) then
-            FDocument := FDocument + '\' + FDefaultDoc;
+       (FileExists(FDocument + PathDelim + FDefaultDoc)) then
+            FDocument := FDocument + PathDelim + FDefaultDoc;
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     AuthCheckAuthenticated;
 {$ENDIF}
@@ -4114,10 +4111,13 @@ var
     I          : Integer;
     Total      : Cardinal;
     TotalBytes : Int64;
+  {$IFDEF POSIX}
+    UT: tm;
+  {$ENDIF}
 begin
     { Create a list of all directories }
     DirList := TStringList.Create;
-    Status  := FindFirst(Document + '\*.*', faAnyFile, F);
+    Status  := FindFirst(Document + PathDelim + '*.*', faAnyFile, F);
     while Status = 0 do begin
         if ((F.Attr and faDirectory) <> 0) and
            //((F.Attr and faVolumeID)  =  0) and
@@ -4126,14 +4126,29 @@ begin
             Data           := THttpDirEntry.Create;
             Data.Visible   := TRUE;
             Data.Name      := F.Name;
-            Data.SizeLow   := F.Size;
+            Data.SizeLow   := LongWord(F.Size);
+          {$IFDEF HAS_SEARCHREC_SIZE64}
+            Data.SizeHigh  := F.Size shr 32;
+          {$ELSE}
             Data.SizeHigh  := 0;
+          {$ENDIF}
+          {$IFDEF MSWINDOWS}
             Data.Day       := (IcsHiWord(F.Time) and $1F);
             Data.Month     := ((IcsHiWord(F.Time) shr 5) and $0F);
             Data.Year      := ((IcsHiWord(F.Time) shr 9) and $3F) + 1980;
             Data.Sec       := ((F.Time and $1F) shl 1);
             Data.Min       := ((F.Time shr 5) and $3F);
             Data.Hour      := ((F.Time shr 11) and $1F);
+          {$ENDIF}
+          {$IFDEF POSIX}
+            localtime_r(F.Time, UT);
+            Data.Year  := UT.tm_year + 1900;
+            Data.Month := UT.tm_mon + 1;
+            Data.Day   := UT.tm_mday;
+            Data.Hour  := UT.tm_hour;
+            Data.Min   := UT.tm_min;
+            Data.Sec   := UT.tm_sec;
+          {$ENDIF}
             Data.VolumeID  := FALSE; //((F.Attr and faVolumeID)  <> 0);
             Data.Directory := ((F.Attr and faDirectory) <> 0);
             Data.ReadOnly  := ((F.Attr and faReadOnly)  <> 0);
@@ -4152,21 +4167,36 @@ begin
 
     { Create a list of all files }
     FileList := TStringList.Create;
-    Status  := FindFirst(Document + '\*.*', faAnyFile, F);
+    Status  := FindFirst(Document + PathDelim + '*.*', faAnyFile, F);
     while Status = 0 do begin
         if ((F.Attr and faDirectory) = 0) then begin
            //((F.Attr and faVolumeID)  = 0) then begin
             Data           := THttpDirEntry.Create;
             Data.Visible   := TRUE;
             Data.Name      := F.Name;
-            Data.SizeLow   := F.Size;
+            Data.SizeLow   := LongWord(F.Size);
+          {$IFDEF HAS_SEARCHREC_SIZE64}
+            Data.SizeHigh  := F.Size shr 32;
+          {$ELSE}
             Data.SizeHigh  := 0;
+          {$ENDIF}
+          {$IFDEF MSWINDOWS}
             Data.Day       := (IcsHiWord(F.Time) and $1F);
             Data.Month     := ((IcsHiWord(F.Time) shr 5) and $0F);
             Data.Year      := ((IcsHiWord(F.Time) shr 9) and $3F) + 1980;
             Data.Sec       := ((F.Time and $1F) shl 1);
             Data.Min       := ((F.Time shr 5) and $3F);
             Data.Hour      := ((F.Time shr 11) and $1F);
+          {$ENDIF}
+          {$IFDEF POSIX}
+            localtime_r(F.Time, UT);
+            Data.Year  := UT.tm_year + 1900;
+            Data.Month := UT.tm_mon + 1;
+            Data.Day   := UT.tm_mday;
+            Data.Hour  := UT.tm_hour;
+            Data.Min   := UT.tm_min;
+            Data.Sec   := UT.tm_sec;
+          {$ENDIF}
             Data.VolumeID  := FALSE; //((F.Attr and faVolumeID)  <> 0);
             Data.Directory := ((F.Attr and faDirectory) <> 0);
             Data.ReadOnly  := ((F.Attr and faReadOnly)  <> 0);
@@ -4193,15 +4223,15 @@ begin
                   //'<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' + #13#10 +
                 '</HEAD>' + #13#10 +
               '<BODY><P>Directory of ' +
-    TextToHtmlText(DosPathToUnixPath(AbsolutisePath(UnixPathToDosPath(UrlDecode(Path))))) +
+    TextToHtmlText(DosPathToUnixPath(AbsolutisePath(AdjustOSPathDelimiters(UrlDecode(Path))))) +
                        ':</P>' + #13#10 +
               '<TABLE CLASS="dirline">' + #13#10;
     if Path = '/' then
         ParentDir := ''
     else if Path[Length(Path)] = '/' then
-        ParentDir := DosPathToUnixPath(ExtractFilePath(UnixPathToDosPath(Copy(Path, 1, Length(Path) - 1))))
+        ParentDir := DosPathToUnixPath(ExtractFilePath(AdjustOSPathDelimiters(Copy(Path, 1, Length(Path) - 1))))
     else
-        ParentDir := DosPathToUnixPath(ExtractFilePath(UnixPathToDosPath(Path)));
+        ParentDir := DosPathToUnixPath(ExtractFilePath(AdjustOSPathDelimiters(Path)));
     if (ParentDir <> '') and (ParentDir <> '/') then
         SetLength(ParentDir, Length(ParentDir) - 1);
     if ParentDir <> '' then
@@ -4224,7 +4254,7 @@ begin
             Data       := THttpDirEntry(FileList.Objects[I]);
             Result     := Result + '<TR>' + FormatDirEntry(Data) +
                                    '</TR>' + #13#10;
-            TotalBytes := TotalBytes + Cardinal(Data.SizeLow);
+            TotalBytes := TotalBytes + (Data.SizeLow or Int64(Data.SizeHigh) shl 32);
             FileList.Objects[I].Free;
         end;
         FileList.Free;
@@ -4693,6 +4723,17 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function AdjustOSPathDelimiters(const Path: String): String;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := TranslateChar(Path, '/', '\');
+  {$ELSE}
+    Result := TranslateChar(Path, '\', '/');
+  {$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function RemoveHtmlSpecialChars(const S : String) : String;
 const
     SpecialChars : array [1..5] of char   = ('<',  '>',  '&',   '''',  '"');
@@ -4748,37 +4789,37 @@ begin
     Result := Path;
     N      := 0;
     if (Length(Result) > 2) and
-       (Copy(Result, Length(Result) - 1, 2) = '\.') then
+       (Copy(Result, Length(Result) - 1, 2) = {$IFDEF MSWINDOWS} '\.' {$ELSE} '/.' {$ENDIF}) then
        Result := Copy(Result, 1, Length(Result) - 2);
 
     if Length(Result) > 1 then begin
-       if (Result[1] = '\') and (Result[2] = '\') then begin
+       if (Result[1] = PathDelim) and (Result[2] = PathDelim) then begin
             N := 2;
-            while (N < Length(Result)) and (Result[N + 1] <> '\') do
+            while (N < Length(Result)) and (Result[N + 1] <> PathDelim) do
                 Inc(N);
        end
        else if Result[2] = ':' then
            N := 2;
     end;
 
-    if (Copy(Result, N + 1, 5) = '\') or
-       (Copy(Result, N + 1, 5) = '\.') then begin
+    if (Copy(Result, N + 1, 5) = PathDelim) or
+       (Copy(Result, N + 1, 5) = {$IFDEF MSWINDOWS} '\.' {$ELSE} '/.' {$ENDIF}) then begin
        Result := Copy(Result, 1, N + 1);
        Exit;
     end;
 
     while TRUE do begin
-        I := Pos('\.\', Result);
+        I := Pos({$IFDEF MSWINDOWS} '\.\' {$ELSE} '/./' {$ENDIF}, Result);
         if I <= N then
             break;
         Delete(Result, I, 2);
     end;
     while TRUE do begin
-        I := Pos('\..', Result);
+        I := Pos({$IFDEF MSWINDOWS} '\..' {$ELSE} '/..' {$ENDIF}, Result);
         if I <= N then
             break;
         J := I - 1;
-        while (J > N) and (Result[J] <> '\') do
+        while (J > N) and (Result[J] <> PathDelim) do
             Dec(J);
         if J <= N then
             Delete(Result, J + 2, I - J + 2)

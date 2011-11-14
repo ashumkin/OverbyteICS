@@ -862,6 +862,7 @@ Feb 4,  2011 V1.13 BUILTIN_TIMEOUT and BUILTIN_THROTTLE now enabled by default
   {.$IFNDEF DEBUG}
     {$DEFINE USE_INLINE}
   {.$ENDIF}
+  {$DEFINE HAS_SEARCHREC_SIZE64}  // Not for sure might be already D2005
 {$ENDIF}
 
 {$IFDEF DELPHI12}
