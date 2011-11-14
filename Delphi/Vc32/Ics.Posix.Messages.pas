@@ -1245,7 +1245,7 @@ var
 begin
   LMsgPump := TIcsMessagePump.Instance;
   if LMsgPump = nil then
-    raise Exception.Create('Cannot create a window without a message pump');
+    raise EIcsMessagePump.Create('Cannot create a window without a message pump');
   New(LWnd);
   LWnd^.FThreadID := LMsgPump.ThreadID;
   LWnd^.FMessagePump := LMsgPump;
