@@ -14,7 +14,7 @@ object WebServForm: TWebServForm
   object ToolsPanel: TPanel
     Align = alTop
     Width = 503.000000000000000000
-    Height = 125.000000000000000000
+    Height = 130.000000000000000000
     TabOrder = 0
     object Label1: TLabel
       Position.Point = '(40,8)'
@@ -39,7 +39,7 @@ object WebServForm: TWebServForm
       Top = 32
     end
     object Label3: TLabel
-      Position.Point = '(259,7)'
+      Position.Point = '(256,5)'
       Width = 25.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 2
@@ -50,8 +50,8 @@ object WebServForm: TWebServForm
       Top = 7
     end
     object ClientCountLabel: TLabel
-      Position.Point = '(294,34)'
-      Width = 89.000000000000000000
+      Position.Point = '(297,34)'
+      Width = 67.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 3
       AutoSize = True
@@ -61,7 +61,7 @@ object WebServForm: TWebServForm
       Top = 34
     end
     object Label5: TLabel
-      Position.Point = '(258,34)'
+      Position.Point = '(255,34)'
       Width = 40.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 4
@@ -94,7 +94,7 @@ object WebServForm: TWebServForm
       Top = 57
     end
     object Label7: TLabel
-      Position.Point = '(355,77)'
+      Position.Point = '(355,81)'
       Width = 95.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 7
@@ -105,7 +105,7 @@ object WebServForm: TWebServForm
       Top = 77
     end
     object Label8: TLabel
-      Position.Point = '(330,101)'
+      Position.Point = '(330,105)'
       Width = 120.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 8
@@ -116,7 +116,7 @@ object WebServForm: TWebServForm
       Top = 101
     end
     object Label9: TLabel
-      Position.Point = '(9,101)'
+      Position.Point = '(9,105)'
       Width = 166.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 9
@@ -149,7 +149,7 @@ object WebServForm: TWebServForm
       Top = 29
     end
     object StartButton: TButton
-      Position.Point = '(251,52)'
+      Position.Point = '(251,54)'
       Width = 53.000000000000000000
       Height = 21.000000000000000000
       OnClick = StartButtonClick
@@ -180,7 +180,7 @@ object WebServForm: TWebServForm
       Top = 3
     end
     object ClearButton: TButton
-      Position.Point = '(311,52)'
+      Position.Point = '(311,54)'
       Width = 53.000000000000000000
       Height = 21.000000000000000000
       OnClick = ClearButtonClick
@@ -249,7 +249,7 @@ object WebServForm: TWebServForm
       Top = 54
     end
     object KeepAliveTimeSecEdit: TEdit
-      Position.Point = '(453,74)'
+      Position.Point = '(453,79)'
       Width = 33.000000000000000000
       Height = 21.000000000000000000
       TabOrder = 22
@@ -260,7 +260,7 @@ object WebServForm: TWebServForm
       Top = 74
     end
     object MaxRequestsKeepAliveEdit: TEdit
-      Position.Point = '(453,98)'
+      Position.Point = '(453,104)'
       Width = 33.000000000000000000
       Height = 21.000000000000000000
       TabOrder = 23
@@ -271,7 +271,7 @@ object WebServForm: TWebServForm
       Top = 98
     end
     object BandwidthLimitEdit: TEdit
-      Position.Point = '(178,101)'
+      Position.Point = '(178,104)'
       Width = 67.000000000000000000
       Height = 21.000000000000000000
       TabOrder = 24
@@ -284,9 +284,9 @@ object WebServForm: TWebServForm
   end
   object DisplayMemo: TMemo
     Align = alClient
-    Position.Point = '(0,125)'
+    Position.Point = '(0,130)'
     Width = 503.000000000000000000
-    Height = 210.000000000000000000
+    Height = 205.000000000000000000
     TabOrder = 1
     Text = 'DisplayMemo'
     KeyboardType = vktDefault

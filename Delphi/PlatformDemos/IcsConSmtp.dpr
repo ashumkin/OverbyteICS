@@ -13,7 +13,7 @@ EMail:        http://www.overbyte.be        http://www.rtfm.be/fpiette
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2001-2010 by Franois PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
