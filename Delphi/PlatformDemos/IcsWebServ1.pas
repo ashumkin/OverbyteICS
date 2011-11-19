@@ -206,6 +206,7 @@ type
     MaxRequestsKeepAliveEdit: TEdit;
     Label9: TLabel;
     BandwidthLimitEdit: TEdit;
+    DisableDisplayCheckBox: TCheckBox;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -532,7 +533,7 @@ procedure TWebServForm.Display(const Msg : String);
 var
     I : Integer;
 begin
-    if csDestroying in ComponentState then Exit;
+    if DisableDisplayCheckBox.IsChecked or (csDestroying in ComponentState) then Exit;
     DisplayMemo.Lines.BeginUpdate;
     try
         if DisplayMemo.Lines.Count > 200 then begin

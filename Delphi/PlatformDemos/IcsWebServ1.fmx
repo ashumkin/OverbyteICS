@@ -51,7 +51,7 @@ object WebServForm: TWebServForm
     end
     object ClientCountLabel: TLabel
       Position.Point = '(297,34)'
-      Width = 67.000000000000000000
+      Width = 89.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 3
       AutoSize = True
@@ -105,7 +105,7 @@ object WebServForm: TWebServForm
       Top = 77
     end
     object Label8: TLabel
-      Position.Point = '(330,105)'
+      Position.Point = '(330,106)'
       Width = 120.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 8
@@ -116,7 +116,7 @@ object WebServForm: TWebServForm
       Top = 101
     end
     object Label9: TLabel
-      Position.Point = '(9,105)'
+      Position.Point = '(9,106)'
       Width = 166.000000000000000000
       Height = 19.000000000000000000
       TabOrder = 9
@@ -281,6 +281,13 @@ object WebServForm: TWebServForm
       Left = 168
       Top = 97
     end
+    object DisableDisplayCheckBox: TCheckBox
+      Position.Point = '(249,105)'
+      Width = 88.000000000000000000
+      Height = 19.000000000000000000
+      TabOrder = 25
+      Text = 'No Display'
+    end
   end
   object DisplayMemo: TMemo
     Align = alClient
@@ -295,7 +302,7 @@ object WebServForm: TWebServForm
   object HttpServer1: THttpServer
     ListenBacklog = 5
     MultiListenSockets = <>
-    Port = '80'
+    Port = 'http'
     Addr = '0.0.0.0'
     SocketFamily = sfIPv4
     MaxClients = 0
