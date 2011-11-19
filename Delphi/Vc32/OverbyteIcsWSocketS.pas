@@ -139,6 +139,7 @@ uses
     OverbyteIcsWinsock,
 {$ENDIF}
 {$IFDEF POSIX}
+    Posix.Errno,
     Posix.NetinetIn,
     Posix.SysSocket,
     Ics.Posix.WinTypes,
@@ -308,6 +309,7 @@ type
       FPxEventState       : TIcsAsyncEventState;
       FPxEventMessageID   : UINT;
       FPxEventWindow      : HWND;
+      FPxObjectID         : NativeInt;
       function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
       function _AddRef: Integer; stdcall;
       function _Release: Integer; stdcall;
@@ -321,6 +323,7 @@ type
       function  GetObject: TObject;
       procedure SetEventState(const AValue: TIcsAsyncEventState);
       procedure SetNotifyWindow(const AValue: HWND);
+      function  GetObjectID: NativeInt;
   {$ENDIF POSIX IIcsEventSource}
     protected
       procedure AssignDefaults; virtual;
@@ -628,12 +631,8 @@ begin
     Inc(FClientNum);
     Client := nil;
     try                                                 { FPiette V7.01 }
-        Client                 := FClientClass.Create{$IFNDEF CLR}(Self){$ENDIF};
+        Client                 := FClientClass.Create(Self);
         Client.FCliId          := FClientNum;           { angus V7.00 }
-{$IFDEF CLR}
-        FClientList.Add(Client);
-        Client.HandleGc := GcHandle.Alloc(Client);
-{$ENDIF}
 {$IFDEF BUILTIN_THROTTLE}
         Client.BandwidthLimit    := Self.BandwidthLimit;     { angus V7.02 may be changed in event for different limit }
         Client.BandwidthSampling := Self.BandwidthSampling;  { angus V7.02 }
@@ -658,7 +657,15 @@ begin
 {$IFNDEF NO_DEBUG_LOG}
     Client.IcsLogger       := IcsLogger;                           { V5.04 }
 {$ENDIF}
+{$IFDEF MSWINDOWS}
     Client.HSocket         := Accept;
+{$ENDIF}
+{$IFDEF POSIX}
+    TempHandle := Accept;
+    if (TempHandle = INVALID_SOCKET) and (LastError = WSAEWOULDBLOCK) then
+        Exit;
+    Client.HSocket         := TempHandle;
+{$ENDIF}
     TriggerClientConnect(Client, Error);
     { The event handler may have destroyed the client ! }
     if FClientList.IndexOf(Client) < 0 then
@@ -823,45 +830,46 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomMultiListenWSocketServer.Accept: TSocket;
 var
-    Len   : Integer;
-    AItem : TWSocketMultiListenItem;
+    Len     : Integer;
+    AItem   : TWSocketMultiListenItem;
+  {$IFDEF POSIX}
+    LastErr : Integer;
+  {$ENDIF}
 begin
     if FMultiListenIndex = -1 then
     begin
-        if FState <> wsListening then begin
-            WSocket_WSASetLastError(WSAEINVAL);
-            SocketError('not a listening socket');
-            Result := INVALID_SOCKET;
-            Exit;
-        end;
-        Len := SizeOfAddr(sin6);
-        FASocket := WSocket_Accept(FHSocket, @sin6, @Len);
-
-        if FASocket = INVALID_SOCKET then begin
-            SocketError('Accept');
-            Result := INVALID_SOCKET;
-            Exit;
-        end
-        else
-            Result := FASocket;
+        Result := inherited Accept;
     end
     else begin
-        AItem := FMultiListenSockets[FMultiListenIndex];
-        if AItem.State <> wsListening then begin
-            WSocket_WSASetLastError(WSAEINVAL);
-            MlSocketError(AItem, 'not a listening socket');
-            Result := INVALID_SOCKET;
-            Exit;
-        end;
-        Len := SizeOfAddr(AItem.Fsin);
-        FASocket := WSocket_Accept(AItem.HSocket, @AItem.Fsin, @Len);
-        if FASocket = INVALID_SOCKET then begin
-            MlSocketError(AItem, 'Accept');
-            Result := INVALID_SOCKET;
-            Exit;
-        end
-        else
+      {$IFDEF POSIX}
+        try
+      {$ENDIF}
+            AItem := FMultiListenSockets[FMultiListenIndex];
+            if AItem.State <> wsListening then begin
+                WSocket_WSASetLastError(WSAEINVAL);
+                MlSocketError(AItem, 'not a listening socket');
+                Result := INVALID_SOCKET;
+                Exit;
+            end;
+            Len := SizeOf(AItem.Fsin);
+            FASocket := WSocket_Accept(AItem.HSocket, @AItem.Fsin, @Len);
             Result := FASocket;
+            if FASocket = INVALID_SOCKET then begin
+              {$IFDEF MSWINDOWS}
+                MlSocketError(AItem, 'Accept');
+              {$ENDIF}
+              {$IFDEF POSIX}
+                LastErr := WSocket_WSAGetLastError;
+                if LastErr <> WSAEWOULDBLOCK then
+                    MlSocketError(AItem, 'Accept', LastErr);
+              {$ENDIF}
+                Exit;
+            end;
+      {$IFDEF POSIX}
+        finally
+            WSocketSynchronizedEnableAcceptEvent(Self);
+        end;
+      {$ENDIF}
     end;
 end;
 
@@ -985,6 +993,7 @@ begin
         end;
 
         AItem.LastError := ErrCode;
+        LastError := ErrCode;
         RaiseException(Line);
     finally
         FMultiListenIndex := -1;
@@ -1442,6 +1451,15 @@ function TWSocketMultiListenItem.GetObject: TObject;
 begin
     Result := Self;
 end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.GetObjectID: NativeInt;
+begin
+    Result := FPxObjectID;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$ENDIF POSIX IIcsEventSource}
 
 
@@ -1479,6 +1497,9 @@ begin
     FSocketFamily := DefaultSocketFamily;
     FOldSocketFamily := FSocketFamily;
     AssignDefaults;
+{$IFDEF POSIX}
+    FPxObjectID := WSocketGenerateObjectID;
+{$ENDIF}
 end;
 
 
