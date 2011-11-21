@@ -1852,6 +1852,9 @@ begin
     FState                   := smtpReady;
     FRcptName                := TStringList.Create;
     FMailMessage             := TStringList.Create;
+  {$IFDEF POSIX}
+    FMailMessage.LineBreak   := #13#10;
+  {$ENDIF}
     FAuthTypesSupported      := TStringList.Create;
     FPort                    := 'smtp';
     FCodePage                := IcsSystemCodePage;
