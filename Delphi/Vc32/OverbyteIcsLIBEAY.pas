@@ -122,7 +122,8 @@ uses
     Posix.SysTypes,
     Ics.Posix.WinTypes,
 {$ENDIF}
-    SysUtils, SyncObjs,
+    SysUtils,
+    OverbyteIcsUtils,
     OverbyteIcsSSLEAY;
 
 const
@@ -137,7 +138,7 @@ type
     TCryptoThreadIDCallback = procedure (ID : PCRYPTO_THREADID) cdecl;
 
     TCRYPTO_dynlock_value_st = record
-        Mutex : TCriticalSection;
+        Mutex : TIcsCriticalSection;
     end;
     PCRYPTO_dynlock_value = ^TCRYPTO_dynlock_value_st;
     CRYPTO_dynlock_value  = TCRYPTO_dynlock_value_st;
@@ -1389,9 +1390,6 @@ const
 implementation
 
 {$IFDEF USE_SSL}
-
-uses
-    OverbyteIcsUtils;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsMalloc(Size: size_t): Pointer cdecl;

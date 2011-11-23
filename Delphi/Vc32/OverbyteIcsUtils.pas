@@ -468,6 +468,7 @@ const
     function IcsHiByte(W: Word): Byte; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function IcsLoByte(W: Word): Byte; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function IcsLoWord(LW: LongWord): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
+    procedure IcsCheckOSError(ALastError: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$IFDEF MSWINDOWS}
     // NT4 and better
     function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
@@ -501,6 +502,17 @@ type
         property    Last : Integer read GetLast;
         property    Items[Index: Integer] : Integer read  GetItem
                                                     write SetItem; default;
+    end;
+
+    TIcsCriticalSection = class
+    protected
+        FSection: {$IFDEF MSWINDOWS} TRTLCriticalSection; {$ELSE} pthread_mutex_t; {$ENDIF}
+    public
+        constructor Create;
+        destructor Destroy; override;
+        procedure Enter; {$IFDEF USE_INLINE} inline; {$ENDIF}
+        procedure Leave; {$IFDEF USE_INLINE} inline; {$ENDIF}
+        function TryEnter: Boolean;
     end;
 
 implementation
@@ -3541,11 +3553,13 @@ begin
     Result := L or H shl 16;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsMakeWord(L, H: Byte): Word;
 begin
     Result := L or H shl 8;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsHiWord(LW: LongWord): Word;
@@ -3553,11 +3567,13 @@ begin
     Result := LW shr 16;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsLoWord(LW: LongWord): Word;
 begin
     Result := Word(LW);
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsHiByte(W: Word): Byte;
@@ -3565,11 +3581,21 @@ begin
     Result := W shr 8;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsLoByte(W: Word): Byte;
 begin
     Result := Byte(W);
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsCheckOSError(ALastError: Integer);
+begin
+    if ALastError <> 0 then
+        RaiseLastOSError(ALastError);
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;
@@ -4296,6 +4322,76 @@ begin
     if Assigned(Source) then
         for I := 0 to Source.Count -1 do
             Add(Source[I]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TIcsCriticalSection }
+
+constructor TIcsCriticalSection.Create;
+{$IFDEF POSIX}
+var
+    LAttr: pthread_mutexattr_t;
+{$ENDIF}
+begin
+    inherited;
+  {$IFDEF MSWINDOWS}
+    InitializeCriticalSection(FSection);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    IcsCheckOSError(pthread_mutexattr_init(LAttr));
+    IcsCheckOSError(pthread_mutexattr_settype(LAttr, PTHREAD_MUTEX_RECURSIVE));
+    IcsCheckOSError(pthread_mutex_init(FSection, LAttr));
+  {$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TIcsCriticalSection.Destroy;
+begin
+  {$IFDEF MSWINDOWS}
+    DeleteCriticalSection(FSection);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    pthread_mutex_destroy(FSection);
+  {$ENDIF}
+    inherited;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsCriticalSection.Enter;
+begin
+  {$IFDEF MSWINDOWS}
+    EnterCriticalSection(FSection);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    IcsCheckOSError(pthread_mutex_lock(FSection));
+  {$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsCriticalSection.Leave;
+begin
+  {$IFDEF MSWINDOWS}
+    LeaveCriticalSection(FSection);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    IcsCheckOSError(pthread_mutex_unlock(FSection));
+  {$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsCriticalSection.TryEnter: Boolean;
+begin
+  {$IFDEF MSWINDOWS}
+    Result := TryEnterCriticalSection(FSection);
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Result := pthread_mutex_trylock(FSection) = 0;
+  {$ENDIF}
 end;
 
 

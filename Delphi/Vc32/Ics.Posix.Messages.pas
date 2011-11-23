@@ -43,6 +43,7 @@ interface
 
 uses
   System.SysUtils,  System.Classes,  System.SyncObjs,
+  Posix.SysTypes,
   Posix.PThread,
   Posix.Errno,
 {$IFDEF MACOS}
@@ -58,22 +59,23 @@ uses
   {$ENDIF}
 {$ENDIF}
   Ics.Posix.WinTypes,
+  OverbyteIcsUtils,
   OverbyteIcsAvlTrees;
 
 const
   MESSAGE_QUEUE_SIZE  = 10000;
 
 { Message IDs }
-  { 0 through WM_USER –1	Messages reserved for use by the system. }
+  { 0 through WM_USER –1 Messages reserved for use by the system. }
   WM_NULL             = $00000000;
   WM_QUIT             = $00000002;
   WM_TIMER            = $00000003;
   { ------------------------- }
-  WM_USER             = $00000400; // through 0x7FFF	Integer messages for use by private window classes.
+  WM_USER             = $00000400; // through 0x7FFF Integer messages for use by private window classes.
   WM_APP              = $00008000; // through 0xBFFF Messages available for use by applications.
-  { 0xC000 through 0xFFFF	String messages for use by applications. }
+  { 0xC000 through 0xFFFF String messages for use by applications. }
   { ------------------------- }
-  { Greater than 0xFFFF	Reserved by the system.                    }
+  { Greater than 0xFFFF Reserved by the system.                    }
   WM_SYSHIGH          = $00010000;
   WM_ICS_THREAD_TIMER = WM_SYSHIGH + 1;
 
@@ -125,40 +127,47 @@ type
       aLParam     : LPARAM;
       aResult     : LRESULT;
     end;
-  private type
+
     PSynchronizeRecord = ^TSynchronizeRecord;
     TSynchronizeRecord = record
       FSyncMessageParams: TIcsSyncMessageRec;
       FSynchronizeException: TObject;
     end;
-  private type
+
+    PQueueMessage = ^TQueueMessage;
     TQueueMessage = record
     private
       FWnd      : HWND;
       FMsg      : UINT;
       FWParam   : WPARAM;
       FLParam   : LPARAM;
+      Next      : PQueueMessage;
     end;
-    PQueueMessage = ^TQueueMessage;
 
     TMessageQueue = class
+    private type
+      TMsgCache = record
+        First : PQueueMessage;
+        Count : Integer;
+        function Pop: PQueueMessage;
+        procedure Push(P: PQueueMessage);
+      end;
     private
-      FList : TList;
-      FLock : TObject;
+      FFirst : PQueueMessage;
+      FLast  : PQueueMessage;
+      FCache : TMsgCache;
+      FCount : Integer;
+      FLock  : TIcsCriticalSection;
       FMessagePump: TIcsMessagePump;
-      function GetCount: Integer;
-      procedure Lock; inline;
-      procedure Unlock; inline;
     public
       constructor Create;
       destructor Destroy; override;
       function Push(AWnd: HWND; AMsg: UINT; AWParam: WPARAM; ALParam: LPARAM): Boolean;
-      function PushUnique(AWnd: HWND; AMsg: UINT; AWParam: WPARAM; ALParam: LPARAM): Boolean;
       procedure Clear;
-      function Pop: PQueueMessage; {$IFDEF USE_INLINE} inline; {$ENDIF}
+      function Pop(out AWnd: HWND; out AMsg: UINT; out AWParam: WPARAM;
+        out ALParam: LPARAM): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
       { Removes all messages to AHwnd from the queue }
       procedure RemoveHwnd(AHwnd: HWND);
-      property Count: Integer read GetCount;
     end;
 
     TCFRefType = (rfCFRunLoopTimer, rfCFRunLoopSocket);
@@ -190,12 +199,14 @@ type
 
   strict private class threadvar
     FCurrentMessagePump: TIcsMessagePump;
+
+  protected // <= Makes Structure Pane happy, otherwise privates below are shown as published
   private
     FOnException          : TIcsExceptionEvent;
     FHookedWakeMainThread : Boolean;
     FTerminated           : Boolean;
     FSynchronize          : TSynchronizeRecord;
-    FSyncLock             : TCriticalSection;
+    FSyncLock             : TIcsCriticalSection;
     FSyncList             : TList;
     FHandles              : TMessagePumpHandleList;
     FRefCnt               : Integer;
@@ -279,9 +290,7 @@ type
   function SendMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
     lParam: LPARAM): LRESULT;
   function PostMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
-    lParam: LPARAM): Boolean;
-  function PostUniqueMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
-    lParam: LPARAM): Boolean;
+    lParam: LPARAM): Boolean; 
   function PostThreadMessage(AThreadID: TThreadID; Msg: UINT; wParam: WPARAM;
     lParam: LPARAM): Boolean;
   function AllocateHWND(AMethod: TWndMethod): HWND;
@@ -577,26 +586,27 @@ procedure RunWorkSource(info: Pointer); cdecl;
 begin
   if (info = nil) or (not (TObject(info) is TIcsMessagePump)) then
     raise EIcsMessagePump.Create('RunWorkSource invalid info pointer');
-	TIcsMessagePump(info).RunWork;
+  TIcsMessagePump(info).RunWork;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsMessagePump.RunWork;
-var
-  P: PQueueMessage;
-begin
-  P := FMessageQueue.Pop;
-  if P <> nil then
+var  
+  LWnd: HWND;
+  LMsg: UINT;
+  LWParam: WPARAM;
+  LLParam: LPARAM;
+begin  
+  if FMessageQueue.Pop(LWnd, LMsg, LWParam, LLParam) then
   begin
     try
-      try
-        TriggerMessage(P^.FWnd, P^.FMsg, P^.FWParam, P^.FLParam);
+      try        
+        TriggerMessage(LWnd, LMsg, LWParam, LLParam);
       except
         HandleException(Self);
       end;
-    finally
-      Dispose(P);
+    finally      
       CFRunLoopSourceSignal(FWorkSourceRef);
     end;
   end;
@@ -708,7 +718,7 @@ begin
   if FRefCnt > 1 then
     Exit;
   FHandles := TMessagePumpHandleList.Create(Self);
-  FSyncLock := TCriticalSection.Create;
+  FSyncLock := TIcsCriticalSection.Create;
   FMessageQueue := TMessageQueue.Create;
   FMessageQueue.FMessagePump := Self;
   FThreadID := GetCurrentThreadID;
@@ -940,7 +950,7 @@ begin
         begin
           SyncProc := LocalSyncList[0];
           LocalSyncList.Delete(0);
-          FSyncLock.Release;
+          FSyncLock.Leave;
           try
             try
               if FTerminated then
@@ -966,7 +976,7 @@ begin
       LocalSyncList.Free;
     end;
   finally
-    FSyncLock.Release;
+    FSyncLock.Leave;
   end;
 end;
 
@@ -994,7 +1004,7 @@ begin
         SyncProcPtr.SyncRec := ASyncRec;
         ADestination.FSyncList.Add(SyncProcPtr);
         ADestination.Wakeup(nil); // Requires that messages are already processed in destination thread
-        ADestination.FSyncLock.Release;
+        ADestination.FSyncLock.Leave;
         LReleaseFlag := False;
         //try
           SyncProcPtr.Signal.WaitFor(INFINITE);
@@ -1004,7 +1014,7 @@ begin
         //end;
       finally
         if LReleaseFlag then // ADestination might be freed already
-          ADestination.FSyncLock.Release;
+          ADestination.FSyncLock.Leave;
       end;
     finally
       SyncProcPtr.Signal.Free;
@@ -1027,6 +1037,33 @@ begin
   MsgSynchronize(@FSynchronize, ADestination);
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TMsgCache }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsMessagePump.TMessageQueue.TMsgCache.Pop: PQueueMessage;
+begin
+  Result := First;
+  if First <> nil then
+  begin
+    First := First.Next;
+    Dec(Count);
+  end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsMessagePump.TMessageQueue.TMsgCache.Push(P: PQueueMessage);
+begin
+  if Count < MESSAGE_QUEUE_SIZE then
+  begin
+    P.Next := First;
+    First := P;
+    Inc(Count);
+  end
+  else
+    Dispose(P);
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TMessageQueue }
@@ -1035,94 +1072,90 @@ end;
 constructor TIcsMessagePump.TMessageQueue.Create;
 begin
   inherited Create;
-  FLock := TObject.Create;
-  FList := TList.Create;
+  FLock := TIcsCriticalSection.Create;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TIcsMessagePump.TMessageQueue.Destroy;
 begin
-  Lock;
+  FLock.Enter;
   try
     Clear;
-    FList.Free;
     inherited Destroy;
   finally
-    Unlock;
+    FLock.Leave;
     FLock.Free;
   end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsMessagePump.TMessageQueue.Lock;
-begin
-  TMonitor.Enter(FLock);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsMessagePump.TMessageQueue.Unlock;
-begin
-  TMonitor.Exit(FLock);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsMessagePump.TMessageQueue.Clear;
 var
-  I : Integer;
+  P, PT : PQueueMessage;
 begin
-  Lock;
+  FLock.Enter;
   try
-    for I := 0 to FList.Count -1 do
+    P := FCache.Pop;
+    while P <> nil do
     begin
-      Dispose(PQueueMessage(FList[I]));
+      Dispose(P);
+      P := FCache.Pop;
     end;
-    FList.Clear;
+    P := FFirst;
+    while P <> nil do
+    begin
+      PT := P;
+      P := P^.Next;
+      Dispose(PT);
+    end;
+    FCount := 0;
   finally
-    Unlock;
+    FLock.Leave;
   end;
 end;
 
-
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsMessagePump.TMessageQueue.GetCount: Integer;
+function TIcsMessagePump.TMessageQueue.Pop(out AWnd: HWND; out AMsg: UINT;
+  out AWParam: WPARAM; out ALParam: LPARAM): Boolean;
+var
+  P: PQueueMessage;
 begin
-  Result := FList.Count;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsMessagePump.TMessageQueue.Pop: PQueueMessage;
-begin
-  Lock;
+  FLock.Enter;
   try
-    if (FList.Count > 0) then
+    if FFirst <> nil then
     begin
-      Result := FList[0];
-      FList.Delete(0);
+      P       := FFirst;
+      AWnd    := P^.FWnd;
+      AMsg    := P^.FMsg;
+      AWParam := P^.FWParam;
+      ALParam := P^.FLParam;
+
+      FFirst := FFirst^.Next;
+      if FFirst = nil then
+        FLast := nil;
+
+      FCache.Push(P);
+      Dec(FCount);
+      Result := True;
     end
     else
-      Result := nil;
+      Result := False;
   finally
-    Unlock;
+    FLock.Leave;
   end;
 end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsMessagePump.TMessageQueue.Push(AWnd: HWND; AMsg: UINT;
   AWParam: WPARAM; ALParam: LPARAM): Boolean;
 var
   P: PQueueMessage;
-  LCnt: Integer;
 begin
-  Lock;
+  FLock.Enter;
   try
-    LCnt := FList.Count;
-    if LCnt >= MESSAGE_QUEUE_SIZE then
+    if FCount >= MESSAGE_QUEUE_SIZE then
     begin
       SetLastError(ERROR_NOT_ENOUGH_QUOTA);
       Exit(False);
@@ -1132,93 +1165,80 @@ begin
       SetLastError(ERROR_ACCESS_DENIED);
       Exit(False);
     end;
-    New(P);
+
+    P := FCache.Pop;
+    if P = nil then
+      New(P);
+
     P^.FWnd     := AWnd;
     P^.FMsg     := AMsg;
     P^.FWParam  := AWParam;
     P^.FLParam  := ALParam;
-    FList.Add(P);
+    P^.Next     := nil;
+
+    if FLast = nil then
+    begin
+      FLast  := P;
+      FFirst := P;
+    end
+    else begin
+      FLast.Next := P;
+      FLast      := P;
+    end;
+    Inc(FCount);
     Result := True;
-    if LCnt = 0 then
+    if FCount = 1 then
     begin
       CFRunLoopSourceSignal(FMessagePump.FWorkSourceRef);
       CFRunLoopWakeUp(FMessagePump.FRunLoopRef);
     end;
   finally
-    Unlock;
-  end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsMessagePump.TMessageQueue.PushUnique(AWnd: HWND; AMsg: UINT;
-  AWParam: WPARAM; ALParam: LPARAM): Boolean;
-{ Currently not used, faster with a tree, ToDo }
-var
-  I     : Integer;
-  P     : PQueueMessage;
-  LCnt  : Integer;
-begin
-  Lock;
-  try
-    LCnt := FList.Count;
-    if LCnt >= MESSAGE_QUEUE_SIZE then
-    begin
-      SetLastError(ERROR_NOT_ENOUGH_QUOTA);
-      Exit(False);
-    end;
-    for I := 0 to FList.Count -1 do // It's slow !
-    begin
-      P := PQueueMessage(FList[I]);
-      if (P^.FWnd = AWnd) and (P^.FMsg = AMsg) and (P^.FWParam = AWParam) and
-         (P^.FLParam = ALParam) then
-        Exit(True);
-    end;
-    New(P);
-    P^.FWnd     := AWnd;
-    P^.FMsg     := AMsg;
-    P^.FWParam  := AWParam;
-    P^.FLParam  := ALParam;
-    FList.Add(P);
-    Result := True;
-    if LCnt = 0 then
-    begin
-      CFRunLoopSourceSignal(FMessagePump.FWorkSourceRef);
-      CFRunLoopWakeUp(FMessagePump.FRunLoopRef);
-    end;
-  finally
-    Unlock;
+    FLock.Leave;
   end;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsMessagePump.TMessageQueue.RemoveHwnd(AHwnd: HWND);
-{ Perhaps faster with a tree, ToDo }
 var
-  I : Integer;
-  P : PQueueMessage;
-  PackFlag : Boolean;
+  PCur, PPrev, PT : PQueueMessage;
 begin
-  Lock;
+  FLock.Enter;
   try
-    if AHwnd = 0 then
+    if (AHwnd = 0) or (FFirst = nil) then
       Exit;
-    PackFlag := False;
-    for I := 0 to FList.Count -1 do
+    PCur  := FFirst;
+    PPrev := nil;
+    while PCur <> nil do
     begin
-      P := PQueueMessage(FList[I]);
-      if P^.FWnd = AHwnd then
+      if PCur.FWnd = AHwnd then
       begin
-        Dispose(P);
-        FList[I] := nil;
-        PackFlag := True;
+        if PPrev = nil then        // current is first
+        begin
+          FFirst := PCur.Next;     // set first
+        end
+        else begin
+          PPrev.Next := PCur.Next;
+          PPrev      := PCur;
+        end;
+        if PCur.Next = nil then    // current is last
+        begin
+          FLast := PPrev;
+          if FLast <> nil then
+            FLast.Next := nil;
+        end;
+        PT := PCur;
+        PCur := PCur.Next;
+        FCache.Push(PT);
+        Dec(FCount);
+      end
+      else begin
+        PPrev := PCur;
+        PCur := PCur.Next;
       end;
     end;
-    if PackFlag then
-      FList.Pack;
   finally
-    Unlock;
+    FLock.Leave;
   end;
 end;
 
@@ -1365,28 +1385,6 @@ begin
     { Get message pump from HWND }
     LDstPump := PIcsWindow(hWnd)^.FMessagePump;
     Result := LDstPump.FMessageQueue.Push(hWnd, Msg, wParam, lParam);
-  finally
-    GlobalSync.EndRead;
-  end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function PostUniqueMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
-  lParam: LPARAM): Boolean;
-var
-  LDstPump: TIcsMessagePump;
-begin
-  { Slow ! not used currently }
-  GlobalSync.BeginRead;
-  try
-    if not GLWindowTree.Contains(hWnd) then
-    begin
-      SetLastError(ERROR_INVALID_WINDOW_HANDLE);
-      Exit(False);
-    end;
-    LDstPump := PIcsWindow(hWnd)^.FMessagePump;
-    Result := LDstPump.FMessageQueue.PushUnique(hWnd, Msg, wParam, lParam);
   finally
     GlobalSync.EndRead;
   end;

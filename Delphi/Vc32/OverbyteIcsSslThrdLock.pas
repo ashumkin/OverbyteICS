@@ -86,14 +86,14 @@ uses
 {$ENDIF}
     Classes,
     SysUtils,
-    SyncObjs,
+    OverbyteIcsUtils,
     OverbyteIcsLIBEAY,
     OverbyteIcsSSLEAY,
     OverbyteIcsWSocket;
 
 type
     ESslLockException = class(Exception);
-    TMutexBuf  = array of TCriticalSection;
+    TMutexBuf  = array of TIcsCriticalSection;
     TSslStaticLock = class(TComponent)
     protected
         FSslInitialized : Boolean;
@@ -154,15 +154,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexSetup(var Mutex : TCriticalSection);
+procedure MutexSetup(var Mutex : TIcsCriticalSection);
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Mutex := TCriticalSection.Create;
+    Mutex := TIcsCriticalSection.Create;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexCleanup(var Mutex : TCriticalSection);
+procedure MutexCleanup(var Mutex : TIcsCriticalSection);
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     FreeAndNil(Mutex);
@@ -170,7 +170,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexLock(Mutex: TCriticalSection);
+procedure MutexLock(Mutex: TIcsCriticalSection);
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Mutex.Enter;
@@ -178,7 +178,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure MutexUnlock(Mutex : TCriticalSection);
+procedure MutexUnlock(Mutex : TIcsCriticalSection);
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Mutex.Leave;

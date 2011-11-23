@@ -74,11 +74,14 @@ uses
 {$IFDEF MSWINDOWS}
   Windows, Messages,
 {$ELSE}
+  Posix.Pthread,
+  Posix.SysTypes,
   Posix.UniStd,
   Ics.Posix.WinTypes,
   Ics.Posix.Messages,
 {$ENDIF}
   SysUtils, Classes, SyncObjs,
+  OverbyteIcsUtils,
   OverbyteIcsWndControl;
 
 type
@@ -119,10 +122,10 @@ type
 
   TIcsClock = class(TObject)
   private
-    FThread       	 : TIcsClockThread;
-    FClockPool    	 : TIcsClockPool;
-    FTimerList    	 : TThreadList;
-    FCritSecClock 	 : TCriticalSection;
+    FThread          : TIcsClockThread;
+    FClockPool       : TIcsClockPool;
+    FTimerList       : TThreadList;
+    FCritSecClock    : TIcsCriticalSection;
     FKeepThreadAlive : Boolean;
     procedure Lock; {$IFDEF USE_INLINE} inline; {$ENDIF}
     procedure Unlock; {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -173,9 +176,6 @@ var
 
 implementation
 
-uses
-  OverbyteIcsUtils;
-
 {$IFDEF MSWINDOWS} // otherwise defined in Ics.Posix.WinTypes
 const
   ERROR_INVALID_WINDOW_HANDLE  = DWORD(1400);
@@ -183,7 +183,7 @@ const
 
 var
   GIcsClockPool       : TIcsClockPool = nil;
-  GCritSecClockPool   : TCriticalSection = nil;
+  GCritSecClockPool   : TIcsCriticalSection = nil;
   GTimerID            : Integer = 0;
 
 {$I Ics.InterlockedApi.inc}
@@ -313,7 +313,7 @@ begin
     inherited Create;
     FClockPool := AOwner;
     FTimerList := TThreadList.Create;
-    FCritSecClock := TCriticalSection.Create;
+    FCritSecClock := TIcsCriticalSection.Create;
 end;
 
 
@@ -611,7 +611,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 initialization
-    GCritSecClockPool := TCriticalSection.Create;
+    GCritSecClockPool := TIcsCriticalSection.Create;
   {$IFDEF MSWINDOWS} // Otherwise a const in Ics.Posix.Messages
     WM_ICS_THREAD_TIMER := RegisterWindowMessage('OVERBYTE_ICS_THREAD_TIMER');
     if WM_ICS_THREAD_TIMER = 0 then

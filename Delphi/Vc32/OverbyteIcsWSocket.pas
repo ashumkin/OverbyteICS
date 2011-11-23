@@ -1024,6 +1024,8 @@ uses
 {$ENDIF}
 {$IFDEF POSIX}
   System.Generics.Collections,
+  Posix.Pthread,
+  Posix.SysTypes,
   Posix.Base, Posix.Errno,
   Posix.SysSocket,
   Posix.NetinetIn,
@@ -2013,15 +2015,15 @@ const
 
 {$IFNDEF NO_SSL_MT}
 var
-     LockPwdCB          : TCriticalSection;
-     LockVerifyCB       : TCriticalSection;
-     LockInfoCB         : TCriticalSection;
-     LockRemSessCB      : TCriticalSection;
-     LockNewSessCB      : TCriticalSection;
-     LockGetSessCB      : TCriticalSection;
-     LockClientCertCB   : TCriticalSection;
+     LockPwdCB          : TIcsCriticalSection;
+     LockVerifyCB       : TIcsCriticalSection;
+     LockInfoCB         : TIcsCriticalSection;
+     LockRemSessCB      : TIcsCriticalSection;
+     LockNewSessCB      : TIcsCriticalSection;
+     LockGetSessCB      : TIcsCriticalSection;
+     LockClientCertCB   : TIcsCriticalSection;
    {$IFNDEF OPENSSL_NO_TLSEXT}
-     LockServerNameCB   : TCriticalSection;
+     LockServerNameCB   : TIcsCriticalSection;
    {$ENDIF}
 {$ENDIF}
      procedure UnloadSsl;
@@ -2389,7 +2391,7 @@ type
         FCtxEngine                  : TSslEngine;
     {$ENDIF}
 {$IFNDEF NO_SSL_MT}
-        FLock                       : TCriticalSection;
+        FLock                       : TIcsCriticalSection;
         procedure Lock; {$IFDEF USE_INLINE} inline; {$ENDIF}
         procedure Unlock; {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ENDIF}
@@ -2798,7 +2800,7 @@ type
 //procedure OutputDebugString(const Msg: String);
 
 var
-    SslCritSect : TCriticalSection;
+    SslCritSect : TIcsCriticalSection;
 
 type
 
@@ -3336,7 +3338,7 @@ const
 
 var
 {$IFNDEF NO_ADV_MT}
-    CritSecIpList : TCriticalSection;
+    CritSecIpList : TIcsCriticalSection;
 {$ENDIF}
     IPList        : TStrings;
 
@@ -3367,10 +3369,10 @@ type
     FFreeIndex          : Integer;
     FCapacity           : Integer;
     FAsyncThread        : TIcsAsyncSocketThread;
-    FInitialized        : Boolean;
-    FQueueSection       : TCriticalSection;
-    FInLoop             : Boolean;
+    FQueueSection       : TIcsCriticalSection;
     FObjIdentList       : TDictionary<NativeInt, TObject>;
+    FInLoop             : Boolean;
+    FInitialized        : Boolean;
  //strict private class threadvar
     //FCurrentEventQueue: TIcsEventQueue;
     procedure Grow;
@@ -3434,13 +3436,6 @@ type
     property ResultList: TStrings read FResultList;
   end;
 
-  TIcsCriticalSection = class(TCriticalSection)
-  {$IFNDEF COMPILER10_UP} // Can't check D2005
-  public
-    function TryEnter: Boolean;
-  {$ENDIF}
-  end;
-
   TIcsAsyncDnsLookupThread = class;
   { TIcsAsyncDnsLookup provides async name resolution with new API, IPv6 and IPv4 }
   TIcsAsyncDnsLookup = class(TObject)
@@ -3449,7 +3444,7 @@ type
     FQueue        : TList;
     FMaxThreads   : Integer;
     FMinThreads   : Integer;
-    FQueueLock    : TCriticalSection;
+    FQueueLock    : TIcsCriticalSection;
     FThreadsLock  : TIcsCriticalSection;
     FDestroying   : Boolean;
     FThreadIdleTimeoutMsec : LongWord;
@@ -3502,7 +3497,7 @@ type
   private
     FTree : TThreadStoreTree;
     FTemp : TThreadStoreItem;
-    FLock : TCriticalSection;
+    FLock : TIcsCriticalSection;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -5841,7 +5836,7 @@ end;
 {$IFDEF POSIX}
 var
     GlObjectID: NativeInt = 1;
-    GLObjectIDSection: TCriticalSection = nil;
+    GLObjectIDSection: TIcsCriticalSection = nil;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -12253,7 +12248,7 @@ constructor TSslContext.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
 {$IFNDEF NO_SSL_MT}
-    FLock := TCriticalSection.Create;
+    FLock := TIcsCriticalSection.Create;
 {$ENDIF}
     FSslCtx := nil;
     SetSslVerifyPeerModes([SslVerifyMode_PEER]);
@@ -19134,7 +19129,7 @@ begin
       { Error on add or delete events }
       if (CurEvt.Flags and EV_ERROR <> 0) and (CurEvt.Data <> 0) then
       begin
-        { Error descriptions and handling from LibEvent }
+        { Error descriptions from LibEvent }
         case CurEvt.Data of
           { Can occur on delete if we are not currently
             watching any events on this fd.  That can
@@ -19156,7 +19151,7 @@ begin
             begin
               if IntPtr(CurEvt.uData) = -1 then  // pipe error
               begin
-                SetLastError(Word(CurEvt.Data));
+                SetLastError(Integer(CurEvt.Data));
                 Exit(False);
               end
               else begin
@@ -19305,7 +19300,7 @@ begin
               //SetLastError(LLastErr);
               //Exit(False);
               Result := False; // removes compiler hint
-              raise EIcsEventQueue.Create(ClassName + ': Unknown error #' +
+              raise EIcsEventQueue.Create(ClassName + ': Unknown error on PostMessage #' +
                 _IntToStr(LLastErr));
           end;
         end;
@@ -19328,7 +19323,7 @@ begin
             else
                InternalRemoveEvents(IEventSrc);
           end;
-        end;
+      end;
 
     end; // For Loop
 
@@ -19393,7 +19388,7 @@ end;
 constructor TIcsEventQueue.Create;
 begin
   inherited Create;
-  FQueueSection := TCriticalSection.Create;
+  FQueueSection := TIcsCriticalSection.Create;
   FObjIdentList := TDictionary<NativeInt, TObject>.Create;
   Init;
   FAsyncThread := TIcsAsyncSocketThread.Create(True);
@@ -19595,15 +19590,6 @@ begin
     end;
 {$ENDIF}
 end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF COMPILER10_UP}
-function TIcsCriticalSection.TryEnter: Boolean;
-begin
-  Result := _TryEnterCriticalSection(FSection);
-end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -19889,7 +19875,7 @@ constructor TIcsAsyncDnsLookup.Create(
     const AThreadIdleTimeoutSec : LongWord = 60);
 begin
     inherited Create;
-    FQueueLock := TCriticalSection.Create;
+    FQueueLock := TIcsCriticalSection.Create;
     FThreadsLock := TIcsCriticalSection.Create;
     //FMaxThreads := AMaxThreads;
     //FMinThreads := AMinThreads;
@@ -20003,7 +19989,7 @@ end;
 constructor TThreadLocalStore.Create;
 begin
     inherited Create;
-    FLock := TCriticalSection.Create;
+    FLock := TIcsCriticalSection.Create;
     FTree:= TThreadStoreTree.Create(FALSE);
 end;
 
@@ -20105,7 +20091,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 initialization
 {$IFNDEF NO_ADV_MT}
-    CritSecIpList := TCriticalSection.Create;
+    CritSecIpList := TIcsCriticalSection.Create;
 {$ENDIF}
     IPList     := TStringList.Create;
     //GAsyncDnsLookup := TIcsAsyncDnsLookup.Create(TIcsAsyncDnsLookup.CpuCount); // more or less max. threads ?
@@ -20114,23 +20100,23 @@ initialization
     CPUCount := GetCPUCount;
 {$ENDIF}
 {$IFDEF USE_SSL}
-    SslCritSect := TCriticalSection.Create;
+    SslCritSect := TIcsCriticalSection.Create;
     {$IFNDEF NO_SSL_MT}
-        LockPwdCB         := TCriticalSection.Create;
-        LockVerifyCB      := TCriticalSection.Create;
-        LockInfoCB        := TCriticalSection.Create;
-        LockRemSessCB     := TCriticalSection.Create;
-        LockNewSessCB     := TCriticalSection.Create;
-        LockGetSessCB     := TCriticalSection.Create;
-        LockClientCertCB  := TCriticalSection.Create;
+        LockPwdCB         := TIcsCriticalSection.Create;
+        LockVerifyCB      := TIcsCriticalSection.Create;
+        LockInfoCB        := TIcsCriticalSection.Create;
+        LockRemSessCB     := TIcsCriticalSection.Create;
+        LockNewSessCB     := TIcsCriticalSection.Create;
+        LockGetSessCB     := TIcsCriticalSection.Create;
+        LockClientCertCB  := TIcsCriticalSection.Create;
       {$IFNDEF OPENSSL_NO_TLSEXT}
-        LockServerNameCB  := TCriticalSection.Create;
+        LockServerNameCB  := TIcsCriticalSection.Create;
       {$ENDIF}
     {$ENDIF}
 {$ENDIF}
 {$IFDEF POSIX}
     GAsyncSocketQueue := TIcsEventQueue.Create;
-    GLObjectIDSection := TCriticalSection.Create;
+    GLObjectIDSection := TIcsCriticalSection.Create;
 {$ENDIF}
 
 finalization
