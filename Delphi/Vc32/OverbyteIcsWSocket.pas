@@ -8642,7 +8642,8 @@ begin
         end;
   {$IFDEF POSIX}
     finally
-      WSocketSynchronizedEnableAcceptEvent(Self);
+        if FState = wsListening then
+            WSocketSynchronizedEnableAcceptEvent(Self);
     end;
   {$ENDIF}
 

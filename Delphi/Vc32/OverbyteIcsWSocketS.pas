@@ -842,6 +842,7 @@ begin
     end
     else begin
       {$IFDEF POSIX}
+        AItem := nil;
         try
       {$ENDIF}
             AItem := FMultiListenSockets[FMultiListenIndex];
@@ -867,7 +868,8 @@ begin
             end;
       {$IFDEF POSIX}
         finally
-            WSocketSynchronizedEnableAcceptEvent(Self);
+            if (AItem <> nil) and (AItem.State = wsListening) then
+                WSocketSynchronizedEnableAcceptEvent(AItem);
         end;
       {$ENDIF}
     end;
