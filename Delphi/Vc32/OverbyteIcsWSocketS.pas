@@ -662,14 +662,26 @@ begin
 {$ENDIF}
 {$IFDEF POSIX}
     TempHandle := Accept;
+    { Accept() doesn't raise a socket error for WSAEWOULDBLOCK in POSIX. }
+    { IMO Accept() should never raise a socket error here but we should  }
+    { call Dup() only if Accept() returned a valid socket handle,        }
+    { otherwise pass the error code to TriggerClientConnect() and free   }
+    { the client object afterwards, so this is just a workaround.  AG    }
     if (TempHandle = INVALID_SOCKET) and (LastError = WSAEWOULDBLOCK) then
-        Exit;
-    Client.HSocket         := TempHandle;
+        Error := LastError
+    else
+        Client.HSocket := TempHandle;
 {$ENDIF}
     TriggerClientConnect(Client, Error);
     { The event handler may have destroyed the client ! }
     if FClientList.IndexOf(Client) < 0 then
         Exit;
+{$IFDEF POSIX}
+    if Error <> 0 then begin
+        Client.Free;
+        Exit;
+    end;
+{$ENDIF}
     { The event handler may have closed the connection }
     if Client.State <> wsConnected then
         Exit;
