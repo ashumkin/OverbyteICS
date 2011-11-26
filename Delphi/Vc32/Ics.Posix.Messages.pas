@@ -41,6 +41,8 @@ interface
 
 {$I OverbyteIcsDefs.inc}
 
+{.$DEFINE MSGQ_DEBUG}
+
 uses
   System.SysUtils,  System.Classes,  System.SyncObjs,
   Posix.SysTypes,
@@ -221,6 +223,9 @@ type
     FThreadID             : TThreadID;
     FMessageQueue         : TMessageQueue;
     FSyncMessageRec       : TIcsSyncMessageRec;
+  {$IFDEF MSGQ_DEBUG}
+    FMaxMsgCount          : Integer;
+  {$ENDIF}
     function CheckForSyncMessages(Timeout: Integer = 0): Boolean;
     procedure MsgSynchronize(ASyncRec: PSynchronizeRecord;
       ADestination: TIcsMessagePump); overload;
@@ -251,6 +256,9 @@ type
     property OnMessage: TIcsMessageEvent read FOnMessage write FOnMessage;
     property OnIdle: TIcsMessagePumpIdleEvent read FOnIdle write FOnIdle;
     property OnException: TIcsExceptionEvent read FOnException write FOnException;
+  {$IFDEF MSGQ_DEBUG}
+    property MaxMsgCount : Integer read FMaxMsgCount;
+  {$ENDIF}
   end;
 
 { This is the Delphi class except that Windows events are replaced by TEvent   }
@@ -606,7 +614,7 @@ begin
       except
         HandleException(Self);
       end;
-    finally      
+    finally
       CFRunLoopSourceSignal(FWorkSourceRef);
     end;
   end;
@@ -1037,6 +1045,7 @@ begin
   MsgSynchronize(@FSynchronize, ADestination);
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TMsgCache }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1116,6 +1125,7 @@ begin
   end;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsMessagePump.TMessageQueue.Pop(out AWnd: HWND; out AMsg: UINT;
   out AWParam: WPARAM; out ALParam: LPARAM): Boolean;
@@ -1147,6 +1157,7 @@ begin
   end;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsMessagePump.TMessageQueue.Push(AWnd: HWND; AMsg: UINT;
   AWParam: WPARAM; ALParam: LPARAM): Boolean;
@@ -1174,8 +1185,8 @@ begin
     P^.FMsg     := AMsg;
     P^.FWParam  := AWParam;
     P^.FLParam  := ALParam;
-    P^.Next     := nil;
 
+    P^.Next  := nil;
     if FLast = nil then
     begin
       FLast  := P;
@@ -1186,6 +1197,10 @@ begin
       FLast      := P;
     end;
     Inc(FCount);
+  {$IFDEF MSGQ_DEBUG}
+    if FCount > FMessagePump.FMaxMsgCount then
+      FMessagePump.FMaxMsgCount := FCount;
+  {$ENDIF}
     Result := True;
     if FCount = 1 then
     begin

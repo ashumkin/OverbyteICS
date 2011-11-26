@@ -18942,7 +18942,7 @@ begin
   try
     Result := FD_READ and IEventSrc.EventMask = FD_READ;
     if Result then
-      EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID, True);
+      EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID, False); // edge trigger makes trouble, don't use
   finally
     FQueueSection.Leave;
   end;
@@ -18997,7 +18997,7 @@ begin
   else begin
     if (FD_READ and NewMask = FD_READ) or (FD_ACCEPT and NewMask = FD_ACCEPT) then
     begin
-      AddReadEvent(FD, UData, (FD_READ and NewMask = FD_READ)); //edge trigger FD_READ only
+      AddReadEvent(FD, UData, False); // edge trigger makes trouble, don't use
       Result := True;
     end;
   end;
