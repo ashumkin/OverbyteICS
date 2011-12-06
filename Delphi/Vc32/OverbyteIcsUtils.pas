@@ -775,10 +775,11 @@ var
     tzInfo : TTimeZoneInformation;
 begin
     case GetTimeZoneInformation(tzInfo) of
-    TIME_ZONE_ID_STANDARD: Result := tzInfo.Bias + tzInfo.StandardBias;
-    TIME_ZONE_ID_DAYLIGHT: Result := tzInfo.Bias + tzInfo.DaylightBias;
+        TIME_ZONE_ID_STANDARD: Result := tzInfo.Bias + tzInfo.StandardBias;
+        TIME_ZONE_ID_DAYLIGHT: Result := tzInfo.Bias + tzInfo.DaylightBias;
+        TIME_ZONE_ID_UNKNOWN : Result := tzInfo.Bias;
     else
-        Result := tzInfo.Bias;
+        Result := 0; // Error
     end;
 end;
 {$ENDIF}
