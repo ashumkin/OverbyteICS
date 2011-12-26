@@ -16,7 +16,7 @@ May 07 2010  1.01 Made it compatible with C++Builder, removed declaration of
 unit OverbyteIcsIconv;
 
 interface
-
+{$IFDEF MSWINDOWS}
 uses
     Windows,
     SysUtils,
@@ -42,9 +42,9 @@ type
     function iconv_open(ToCode: PAnsiChar; FromCode: PAnsiChar): iconv_t;
     function iconv_close(cd: iconv_t): Integer;
     function Load_Iconv: Boolean;
-
+{$ENDIF}
 implementation
-
+{$IFDEF MSWINDOWS}
 const
     libiconv        = 'iconv.dll';
     libmsvcrt       = 'msvcrt.dll';
@@ -137,7 +137,7 @@ begin
         end;
     end;
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 end.
