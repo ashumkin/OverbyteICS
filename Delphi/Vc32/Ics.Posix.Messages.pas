@@ -44,7 +44,7 @@ interface
 {.$DEFINE MSGQ_DEBUG}
 
 uses
-  System.SysUtils,  System.Classes,  System.SyncObjs,
+  System.SysUtils,  System.Classes,  System.SyncObjs, System.Generics.Collections,
   Posix.SysTypes,
   Posix.PThread,
   Posix.Errno,
@@ -326,20 +326,9 @@ type
   end;
   PIcsWindow = ^TIcsWindow;
 
-type
-  { It's a singleton containing one message pump ref per thread }
-  TMessagePumpList = class
-  private
-    FList : TList;
-    function FindMessagePump(AMsgPump: TIcsMessagePump): Integer;
-    procedure Clear;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Add(AMsgPump: TIcsMessagePump);
-    function MessagePumpFromThreadID(AThreadID: TThreadID): TIcsMessagePump;
-    procedure Remove(AMsgPump: TIcsMessagePump);
-  end;
+
+  { Singleton containing one message pump ref per thread }
+  TGlobalMessagePumpList = class(TDictionary<TThreadID, TIcsMessagePump>);
 
 { TGlobalWindowTree }
 
@@ -353,6 +342,7 @@ type
     procedure Add(AWnd: HWND);
     function Contains(AWnd: HWND): Boolean;
     function Remove(AWnd: HWND): Boolean;
+    { Slow, ToDo: Secondary index on ThreadID with dups }
     procedure RemoveAndFreeAll(AThreadID: TThreadID);
   end;
 
@@ -411,92 +401,9 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 var
-  GLMessagePumps: TMessagePumpList = nil;
+  GLMessagePumps: TGlobalMessagePumpList = nil;
   GLWindowTree: TGlobalWindowTree = nil;
   GlobalSync: TMREWSync = nil;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ TMessagePumpList }
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
-constructor TMessagePumpList.Create;
-begin
-  inherited;
-  FList := TList.Create;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-destructor TMessagePumpList.Destroy;
-begin
-    Clear;
-    FList.Free;
-    inherited Destroy;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMessagePumpList.Clear;
-begin
-  FList.Clear;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMessagePumpList.Add(AMsgPump: TIcsMessagePump);
-begin
-  if Assigned(AMsgPump) and (FindMessagePump(AMsgPump) = -1) then
-    FList.Add(AMsgPump);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TMessagePumpList.Remove(AMsgPump: TIcsMessagePump);
-var
-  I: Integer;
-begin
-  I := FindMessagePump(AMsgPump);
-  if I > -1 then
-    FList.Delete(I);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TMessagePumpList.MessagePumpFromThreadID(
-  AThreadID: TThreadID): TIcsMessagePump;
-var
-  I: Integer;
-begin  
-  for I := 0 to FList.Count -1 do
-  begin
-    if TIcsMessagePump(FList[I]).FThreadID = AThreadID then
-    begin
-      Result := TIcsMessagePump(FList[I]);
-      Exit;
-    end;
-  end;
-  Result := nil;  
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TMessagePumpList.FindMessagePump(
-  AMsgPump: TIcsMessagePump): Integer;
-var
-  I: Integer;
-begin
-  for I := 0 to FList.Count -1 do
-  begin
-    if FList[I] = Pointer(AMsgPump) then
-    begin
-      Result := I;
-      Exit;
-    end;
-  end;
-  Result := -1;
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TIcsMessagePump }
@@ -636,7 +543,7 @@ procedure RunIdleWorkSource(info: Pointer); cdecl;
 begin
   if (info = nil) or (not (TObject(info) is TIcsMessagePump)) then
     raise EIcsMessagePump.Create('RunIdleWorkSource invalid info pointer');
-	TIcsMessagePump(info).RunIdleWork;
+  TIcsMessagePump(info).RunIdleWork;
 end;
 
 
@@ -786,7 +693,7 @@ begin
 
   GlobalSync.BeginWrite;
   try
-    GLMessagePumps.Add(Self);
+    GLMessagePumps.Add(FThreadID, Self);
   finally
     GlobalSync.EndWrite
   end;  
@@ -810,7 +717,7 @@ begin
   GlobalSync.BeginWrite;
   try  
     GLWindowTree.RemoveAndFreeAll(FThreadID); // no new Send/PostMessage
-    GLMessagePumps.Remove(Self); { Remove ourself from the pump list }
+    GLMessagePumps.Remove(FThreadID); { Remove ourself from the pump list }
   finally
     GlobalSync.EndWrite;
   end;
@@ -1417,7 +1324,7 @@ begin
     if (AThreadID = 0) or (AThreadID = GetCurrentThreadID) then
       LDstPump := TIcsMessagePump.Instance
     else
-      LDstPump := GLMessagePumps.MessagePumpFromThreadID(AThreadID);
+      GLMessagePumps.TryGetValue(AThreadID, LDstPump);
     Result := LDstPump <> nil;
     if not Result then
     begin
@@ -1964,7 +1871,7 @@ end;
 {$ENDIF POSIX TMultiReadExclusiveWriteSynchronizer}
 
 initialization
-  GLMessagePumps := TMessagePumpList.Create;
+  GLMessagePumps := TGlobalMessagePumpList.Create;
   GLWindowTree := TGlobalWindowTree.Create;
   GlobalSync := TMREWSync.Create;
   
