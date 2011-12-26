@@ -7423,6 +7423,7 @@ begin
 
             AddrInfo := nil;
           {$IFDEF POSIX}
+            Hints.ai_protocol := IPPROTO_TCP; // Prevents duplicated entries (one for TCP and one for UDP)
             RetVal   := WSocket_Synchronized_GetAddrInfo(PAnsiChar(UnicodeToAnsi(AHostName, CP_UTF8)),
                                                          nil, @Hints, AddrInfo);
           {$ELSE}
@@ -8994,6 +8995,7 @@ begin
           {$IFDEF MSWINDOWS}
             RetVal := WSocket_GetAddrInfo(PChar(LHostName), nil, @Hints, AddrInfo);
           {$ELSE}
+            Hints.ai_protocol := IPPROTO_TCP; // Prevents duplicated entries (one for TCP and one for UDP)
             RetVal := WSocket_GetAddrInfo(PAnsiChar(UnicodeToAnsi(LHostName, CP_UTF8)), nil, @Hints, AddrInfo);
           {$ENDIF}
             if RetVal <> 0 then
@@ -19497,6 +19499,7 @@ begin
 
     AddrInfo := nil;
   {$IFNDEF POSIX}
+    Hints.ai_protocol := IPPROTO_TCP; // Prevents duplicated entries (one for TCP and one for UDP)
     Result   := GetAddrInfo(PChar(AName), nil, @Hints, AddrInfo);
   {$ELSE}
     Result   := GetAddrInfo(PAnsiChar(AnsiString(AName)), nil, Hints, AddrInfo);
