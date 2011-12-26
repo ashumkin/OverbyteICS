@@ -38,8 +38,8 @@ object SmtpTestForm: TSmtpTestForm
     TabOrder = 2
     object Label5: TLabel
       Position.Point = '(12,219)'
-      Width = 71.500000000000000000
-      Height = 15.500000000000000000
+      Width = 73.000000000000000000
+      Height = 19.000000000000000000
       TabOrder = 0
       AutoSize = True
       Text = 'Message text:'
@@ -211,7 +211,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 385.000000000000000000
       Height = 211.000000000000000000
       TabOrder = 17
-      TabIndex = 0
+      TabIndex = 2
       TabHeight = 20.000000000000000000
       Left = 4
       Top = 4
@@ -777,8 +777,8 @@ object SmtpTestForm: TSmtpTestForm
         WordWrap = False
         object Label18: TLabel
           Position.Point = '(43,73)'
-          Width = 56.500000000000000000
-          Height = 15.500000000000000000
+          Width = 58.000000000000000000
+          Height = 19.000000000000000000
           TabOrder = 0
           AutoSize = True
           Text = 'Proxy host:'
@@ -788,8 +788,8 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label19: TLabel
           Position.Point = '(44,99)'
-          Width = 56.500000000000000000
-          Height = 15.500000000000000000
+          Width = 58.000000000000000000
+          Height = 19.000000000000000000
           TabOrder = 1
           AutoSize = True
           Text = 'Proxy port:'
@@ -799,8 +799,8 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label20: TLabel
           Position.Point = '(43,125)'
-          Width = 55.500000000000000000
-          Height = 15.500000000000000000
+          Width = 57.000000000000000000
+          Height = 19.000000000000000000
           TabOrder = 2
           AutoSize = True
           Text = 'Proxy user:'
@@ -810,8 +810,8 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label21: TLabel
           Position.Point = '(18,153)'
-          Width = 83.500000000000000000
-          Height = 15.500000000000000000
+          Width = 85.000000000000000000
+          Height = 19.000000000000000000
           TabOrder = 3
           AutoSize = True
           Text = 'Proxy password:'
@@ -821,8 +821,8 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label22: TLabel
           Position.Point = '(42,16)'
-          Width = 56.500000000000000000
-          Height = 15.500000000000000000
+          Width = 58.000000000000000000
+          Height = 19.000000000000000000
           TabOrder = 4
           AutoSize = True
           Text = 'Proxy type:'
@@ -832,8 +832,8 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label23: TLabel
           Position.Point = '(10,43)'
-          Width = 88.500000000000000000
-          Height = 15.500000000000000000
+          Width = 90.000000000000000000
+          Height = 19.000000000000000000
           TabOrder = 5
           AutoSize = True
           Text = 'HTTP proxy auth.:'
@@ -891,6 +891,7 @@ object SmtpTestForm: TSmtpTestForm
           Height = 21.000000000000000000
           TabOrder = 10
           ItemIndex = -1
+          OnChange = ProxyTypeComboBoxCloseUp
           Left = 97
           Top = 13
         end
@@ -900,6 +901,7 @@ object SmtpTestForm: TSmtpTestForm
           Height = 21.000000000000000000
           TabOrder = 11
           ItemIndex = -1
+          OnChange = ProxyHttpAuthTypeComboBoxCloseUp
           Left = 97
           Top = 40
         end
@@ -915,8 +917,8 @@ object SmtpTestForm: TSmtpTestForm
     Top = 355
     object Label6: TLabel
       Position.Point = '(12,2)'
-      Width = 72.500000000000000000
-      Height = 15.500000000000000000
+      Width = 74.000000000000000000
+      Height = 19.000000000000000000
       TabOrder = 0
       AutoSize = True
       Text = 'Attached files:'
@@ -944,8 +946,8 @@ object SmtpTestForm: TSmtpTestForm
     Top = 421
     object Label7: TLabel
       Position.Point = '(16,2)'
-      Width = 76.500000000000000000
-      Height = 15.500000000000000000
+      Width = 78.000000000000000000
+      Height = 19.000000000000000000
       TabOrder = 0
       AutoSize = True
       Text = 'Info messages:'
