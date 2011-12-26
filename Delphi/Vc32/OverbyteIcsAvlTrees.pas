@@ -54,11 +54,12 @@ uses
     System.SyncObjs,
   {$ENDIF}
   {$IFDEF POSIX}
+    Posix.Pthread,
+    Posix.SysTypes,
     Ics.Posix.WinTypes,
   {$ENDIF}
-	  SysUtils,
-    Classes,
-    OverbyteIcsTypes;
+    SysUtils, Classes,
+    OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
     MinDT = -657434.0;      { 01/01/0100 12:00:00.000 AM }
@@ -321,11 +322,7 @@ type
     TIcsThreadAvlPointerTree = class
     private
         FTree: TIcsAvlPointerTree;
-      {$IFDEF MSWINDOWS}
-        FLock: TRTLCriticalSection;
-      {$ELSE}
-        FLock: TCriticalSection;
-      {$ENDIF}
+        FLock: TIcsCriticalSection;
     public
         constructor Create;
         destructor Destroy; override;
@@ -2058,6 +2055,7 @@ begin
     Result := TIcsAvlObjectTreeEnumerator.Create(Self);
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsAvlObjectTree.Last: TObject;
 begin
@@ -2095,11 +2093,7 @@ end;
 constructor TIcsThreadAvlPointerTree.Create;
 begin
     inherited Create;
-  {$IFDEF MSWINDOWS}
-    InitializeCriticalSection(FLock);
-  {$ELSE}
-    FLock := TCriticalSection.Create;
-  {$ENDIF}
+    FLock := TIcsCriticalSection.Create;
     FTree := TIcsAvlPointerTree.Create;
 end;
 
@@ -2113,11 +2107,7 @@ begin
         inherited Destroy;
     finally
         UnlockTree;
-      {$IFDEF MSWINDOWS}
-        DeleteCriticalSection(FLock);
-      {$ELSE}
         FLock.Free;
-      {$ENDIF}
     end;
 end;
 
@@ -2125,11 +2115,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsThreadAvlPointerTree.LockTree: TIcsAvlPointerTree;
 begin
-  {$IFDEF MSWINDOWS}
-    EnterCriticalSection(FLock);
-  {$ELSE}
     FLock.Enter;
-  {$ENDIF}
     Result := FTree;
 end;
 
@@ -2149,11 +2135,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsThreadAvlPointerTree.UnlockTree;
 begin
-  {$IFDEF MSWINDOWS}
-    LeaveCriticalSection(FLock);
-  {$ELSE}
     FLock.Leave;
-  {$ENDIF}
 end;
 
 
