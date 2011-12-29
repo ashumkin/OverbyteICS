@@ -49,7 +49,7 @@
 
   Sep 10, 2010 Angus and Arno updated ZLIB to 1.2.5
                Always use zlib1.dll if found in precedence to zlib.dll which is not 1.2.5
-
+  Dec 29, 2010 Arno - Small change to support MacOS
 
   My own work was to wrap access to dll functions in zlib.dll
   So, no copyright for this code, but don't copyright it !
@@ -76,14 +76,21 @@ unit OverbyteIcsZLibDll;
 
 interface
 
+{$IFDEF MSWINDOWS}
 uses
     Windows;
+{$ENDIF}
 
 {$I OverbyteIcsZlib.inc}
 const
+{$IFDEF MACOS}
+   ZLibDllName = '/usr/lib/libz.dylib'; // version 1.2.3 in OSX 10.6.8
+{$ENDIF}
+{$IFDEF MSWINDOWS}
    ZLibDllName    = 'ZLIB1.DLL';       // for official dll version 1.2.5 with cdecl
    ZLibDllNameBis = 'ZLIBXLB.DLL';
    ZLibDllNameTer = 'ZLIB.DLL';        // unofficial dll but maybe faster, with stdcall
+{$ENDIF}
 
 {xlb constants and variables}
 const
@@ -943,9 +950,11 @@ begin
      if (ZLibDLLHandle > 0) then ZLibUnLoadDll;
 
      ZLibDllActualName := AZLibDllName;
+   {$IFDEF MSWINDOWS}
      SetErrorMode($8000 {SEM_NoOpenFileErrorBox});
-
+   {$ENDIF}
      ZLibDLLHandle := LoadLibrary(pChar(ZLibDllActualName));
+   {$IFDEF MSWINDOWS}
      if (ZLibDLLHandle = 0) then
      begin
           ZLibDLLHandle := LoadLibrary(pChar(ZLibDllNameBis));
@@ -956,7 +965,7 @@ begin
           ZLibDLLHandle := LoadLibrary(pChar(ZLibDllNameTer));
           if (ZLibDLLHandle > 0) then ZLibDllActualName := ZLibDllNameTer;
      end;
-
+   {$ENDIF}
      if (ZLibDLLHandle > 0) then
      begin
           @zlibVersionDll_stdcall          := GetProcAddress(ZLibDLLHandle,'zlibVersion');

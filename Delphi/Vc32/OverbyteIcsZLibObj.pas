@@ -359,7 +359,8 @@ type
     {$L zobj125/win64/trees.obj}
     {$L zobj125/win64/uncompr.obj}
     {$L zobj125/win64/zutil.obj}
-{$ELSE}
+{$ENDIF WIN64}
+{$IFDEF WIN32}
     {$L zobj125/adler32.obj}
     {$L zobj125/compress.obj}
     {$L zobj125/crc32.obj}
@@ -376,7 +377,7 @@ type
     {$L zobj125/trees.obj}
     {$L zobj125/uncompr.obj}
     {$L zobj125/zutil.obj}
-{$ENDIF}
+{$ENDIF WIN32}
 
 function adler32; external;
 function compress; external;
@@ -621,8 +622,9 @@ procedure memcpy(dest, source: Pointer; count: Integer);
 begin
   Move(source^, dest^, count);
 end;
-{$ENDIF}
+{$ENDIF WIN64}
 
+{$IFDEF WIN32}
 function _malloc(Size: Integer): Pointer; cdecl;
 begin
   GetMem(Result, Size);
@@ -642,6 +644,7 @@ procedure _memcpy(dest, source: Pointer; count: Integer); cdecl;
 begin
   Move(source^, dest^, count);
 end;
+{$ENDIF WIN32}
 
 function zlibAllocMem(AppData: Pointer; Items, Size: Integer): Pointer; cdecl;
 begin
