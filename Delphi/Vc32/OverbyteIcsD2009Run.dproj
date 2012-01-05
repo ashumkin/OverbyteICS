@@ -133,7 +133,7 @@
 			<DCCReference Include="OverbyteIcsHttpSrv.pas"/>
 			<DCCReference Include="OverbyteIcsSspi.pas"/>
 			<DCCReference Include="OverbyteIcsNtlmSsp.pas"/>
-			<DCCReference Include="OverbyteIcsWinsock2.pas"/>
+			<DCCReference Include="OverbyteIcsSocketUtils.pas"/>
 			<DCCReference Include="OverbyteIcsMimeDec.pas"/>
 			<DCCReference Include="OverbyteIcsMultipartFtpDownloader.pas"/>
 			<DCCReference Include="OverbyteIcsMultipartHttpDownloader.pas"/>

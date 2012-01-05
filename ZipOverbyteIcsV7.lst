@@ -161,6 +161,7 @@ Delphi\Vc32\OverbyteIcsTnScript.pas
 Delphi\Vc32\OverbyteIcsTypes.pas
 Delphi\Vc32\OverbyteIcsWinSock.pas
 Delphi\Vc32\OverbyteIcsWinSock2.pas
+Delphi\Vc32\OverbyteIcsSocketUtils.pas
 Delphi\Vc32\OverbyteIcsWndControl.pas
 Delphi\Vc32\OverbyteIcsWSockBuf.pas
 Delphi\Vc32\OverbyteIcsWSocket.dcr

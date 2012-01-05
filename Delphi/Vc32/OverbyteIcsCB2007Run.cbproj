@@ -252,7 +252,7 @@
     <DelphiCompile Include="OverbyteIcsWinsock.pas">
       <BuildOrder>80</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsWinsock2.pas">
+    <DelphiCompile Include="OverbyteIcsSocketUtils.pas">
       <BuildOrder>81</BuildOrder>
     </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsWndControl.pas">

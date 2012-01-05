@@ -276,7 +276,7 @@
         <FILE FILENAME="OverbyteIcsZLibObj.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsZLibObj" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsNtlmSsp.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsNtlmSsp" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSspi.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSspi" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="OverbyteIcsWinsock2.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsWinsock2" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsSocketUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSocketUtils" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsMimeDec.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsMimeDec" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsMimeDec.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsMultipartFtpDownloader.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsMultipartFtpDownloader" FORMNAME="" DESIGNCLASS=""/>

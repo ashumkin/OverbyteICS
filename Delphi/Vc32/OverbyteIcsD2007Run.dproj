@@ -149,7 +149,7 @@
     <DCCReference Include="OverbyteIcsWebSession.pas" />
     <DCCReference Include="OverbyteIcsWinnls.pas" />
     <DCCReference Include="OverbyteIcsWinsock.pas" />
-    <DCCReference Include="OverbyteIcsWinsock2.pas" />
+    <DCCReference Include="OverbyteIcsSocketUtils.pas" />
     <DCCReference Include="OverbyteIcsWndControl.pas" />
     <DCCReference Include="OverbyteIcsWSockBuf.pas" />
     <DCCReference Include="OverbyteIcsWSocket.dcr" />

@@ -448,7 +448,6 @@ uses
     Windows,
     Messages,
     OverbyteIcsWinSock,
-    OverbyteIcsWinsock2,
 {$ENDIF}
 {$IFDEF POSIX}
     Posix.Errno,
@@ -489,6 +488,7 @@ uses
     OverbyteIcsWndControl,
     { AG V1.51 }
     OverbyteIcsWSocket,
+    OverbyteIcsSocketUtils,
     OverbyteIcsWSocketS, { angus V7.00 }
     OverbyteIcsFtpSrvT,
     OverbyteIcsOneTimePw,  { angus V1.54 }
@@ -2493,7 +2493,7 @@ end;
 procedure TFtpServer.Stop;
 begin
     FEventTimer.Enabled := false;                  { angus V1.54 }
-    FSocketServer.Close;                           { angus V7.00 } 
+    FSocketServer.Close;                           { angus V7.00 }
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loProtSpecInfo) then                            { V1.46 }
         DebugLog(loProtSpecInfo, Name + ' stopped');                   { V1.46 }
@@ -5409,15 +5409,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IsIpPrivate(saddr : TIcsInAddr): Boolean;                    { AG V1.51 }
-begin
-    Result := (Byte(saddr.S_un_b.s_b1) = 10) or   // private class A
-              (saddr.S_un_w.s_w1       = 4268) or // private class B
-              (saddr.S_un_w.s_w1       = 43200);  // private class C
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpServer.CommandPASV(
     Client      : TFtpCtrlSocket;
     var Keyword : TFtpString;
@@ -5479,11 +5470,11 @@ begin
                            IcsLoByte(DataPort)])
         else begin
             APasvIp := FPasvIpAddr;
-            SetPasvIp := (APasvIp <> '') {$IFDEF MSWINDOWS} and (not
+            SetPasvIp := (APasvIp <> '') and (not
                          (((ftpsNoPasvIpAddrInLan in FOptions) and
-                           IsIpPrivate(Client.PeerSAddr.sin_addr)) or
+                           IcsIsIpPrivate(Client.PeerSAddr.sin_addr)) or
                           ((ftpsNoPasvIpAddrSameSubnet in FOptions) and
-                           WSocket2IsAddrInSubNet(Client.PeerSAddr.sin_addr)))) {$ENDIF};
+                           IcsAddrSameSubNet(saddr.sin_addr, Client.PeerSAddr.sin_addr))));
 
             if Assigned(FOnPasvIpAddr) then begin
                 FOnPasvIpAddr(Self, Client, APasvIp, SetPasvIp);

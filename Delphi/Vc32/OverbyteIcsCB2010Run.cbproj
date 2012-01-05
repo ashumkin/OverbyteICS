@@ -220,7 +220,7 @@
 				<BuildOrder>72</BuildOrder>
 				<BuildOrder>22</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="OverbyteIcsWinsock2.pas">
+			<DelphiCompile Include="OverbyteIcsSocketUtils.pas">
 				<BuildOrder>67</BuildOrder>
 				<BuildOrder>37</BuildOrder>
 			</DelphiCompile>

@@ -105,7 +105,7 @@ contains
   OverbyteIcsHttpSrv in 'OverbyteIcsHttpSrv.pas',
   OverbyteIcsSspi in 'OverbyteIcsSspi.pas',
   OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas',
-  OverbyteIcsWinsock2 in 'OverbyteIcsWinsock2.pas',
+  OverbyteIcsSocketUtils in 'OverbyteIcsSocketUtils.pas',
   OverbyteIcsMimeDec in 'OverbyteIcsMimeDec.pas',
   OverbyteIcsMultipartFtpDownloader in 'OverbyteIcsMultipartFtpDownloader.pas',
   OverbyteIcsMultipartHttpDownloader in 'OverbyteIcsMultipartHttpDownloader.pas',

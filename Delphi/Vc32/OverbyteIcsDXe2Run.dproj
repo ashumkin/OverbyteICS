@@ -101,7 +101,7 @@
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="OverbyteIcsDXe2Run.dpk">
+			<DelphiCompile Include="$(MainSource)">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
 			<DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
@@ -176,7 +176,7 @@
 			<DCCReference Include="OverbyteIcsHttpSrv.pas"/>
 			<DCCReference Include="OverbyteIcsSspi.pas"/>
 			<DCCReference Include="OverbyteIcsNtlmSsp.pas"/>
-			<DCCReference Include="OverbyteIcsWinsock2.pas"/>
+			<DCCReference Include="OverbyteIcsSocketUtils.pas"/>
 			<DCCReference Include="OverbyteIcsMimeDec.pas"/>
 			<DCCReference Include="OverbyteIcsMultipartFtpDownloader.pas"/>
 			<DCCReference Include="OverbyteIcsMultipartHttpDownloader.pas"/>
