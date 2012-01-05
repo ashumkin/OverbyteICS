@@ -1326,7 +1326,7 @@ function f_SSL_get_secure_renegotiation_support(S: PSSL): Longint; {$IFDEF USE_I
 
 const
     GLIBEAY_DLL_Handle   : THandle = 0;
-    GLIBEAY_DLL_Name     : String  = {$IFDEF MACOS} '/usr/lib/libcrypto.0.9.8.dylib'; {$ELSE} 'LIBEAY32.DLL'; {$ENDIF}
+    GLIBEAY_DLL_Name     : String  = {$IFDEF MACOS} '/usr/lib/libcrypto.dylib'; {$ELSE} 'LIBEAY32.DLL'; {$ENDIF}
     GLIBEAY_DLL_FileName : String  = '*NOT LOADED*';
 
     { Version stuff added 07/12/05                                            }

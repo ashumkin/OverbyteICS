@@ -1063,7 +1063,7 @@ function f_SSL_set_tlsext_debug_arg(S: PSSL; arg: Pointer): Longint; {$IFDEF USE
 
 const
     GSSLEAY_DLL_Handle          : THandle = 0;
-    GSSLEAY_DLL_Name            : String  = {$IFDEF MACOS} '/usr/lib/libssl.0.9.8.dylib'; {$ELSE} 'SSLEAY32.DLL'; {$ENDIF}
+    GSSLEAY_DLL_Name            : String  = {$IFDEF MACOS} '/usr/lib/libssl.dylib'; {$ELSE} 'SSLEAY32.DLL'; {$ENDIF}
     GSSLEAY_DLL_FileName        : String  = '*NOT_LOADED*';
     GSSLEAY_DLL_FileVersion     : String = '';
     GSSLEAY_DLL_FileDescription : String = '';
