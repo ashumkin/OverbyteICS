@@ -3592,9 +3592,15 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure IcsCheckOSError(ALastError: Integer);
+var
+    Error: EOSError;
 begin
-    if ALastError <> 0 then
-        RaiseLastOSError(ALastError);
+    if ALastError <> 0 then begin
+        Error := EOSError.CreateResFmt(@SOSError, [ALastError,
+                                       SysErrorMessage(ALastError)]);
+        Error.ErrorCode := ALastError;
+        raise Error;
+    end;
 end;
 
 
