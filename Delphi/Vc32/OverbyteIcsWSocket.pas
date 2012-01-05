@@ -1004,7 +1004,7 @@ uses
 {$IFDEF USE_SSL}
   OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, Masks, { Masks added AG 06/20/07 }
 {$ENDIF}
-  Contnrs, SyncObjs,
+  Contnrs, SyncObjs, SysConst,
 {$IFNDEF NO_DEBUG_LOG}
   OverbyteIcsLogger,
 {$ENDIF}

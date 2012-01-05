@@ -80,7 +80,7 @@ uses
   Ics.Posix.WinTypes,
   Ics.Posix.Messages,
 {$ENDIF}
-  SysUtils, Classes, SyncObjs,
+  SysUtils, Classes, SyncObjs, SysConst,
   OverbyteIcsUtils,
   OverbyteIcsWndControl;
 

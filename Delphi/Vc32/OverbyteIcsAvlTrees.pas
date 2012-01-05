@@ -58,7 +58,7 @@ uses
     Posix.SysTypes,
     Ics.Posix.WinTypes,
   {$ENDIF}
-    SysUtils, Classes,
+    SysUtils, Classes, SysConst,
     OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
