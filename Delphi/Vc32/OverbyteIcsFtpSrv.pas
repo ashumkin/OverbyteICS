@@ -5474,7 +5474,7 @@ begin
                          (((ftpsNoPasvIpAddrInLan in FOptions) and
                            IcsIsIpPrivate(Client.PeerSAddr.sin_addr)) or
                           ((ftpsNoPasvIpAddrSameSubnet in FOptions) and
-                           IcsAddrSameSubNet(saddr.sin_addr, Client.PeerSAddr.sin_addr))));
+                           IcsAddrSameSubNet(PInAddr(@IPAddr.S_addr)^, Client.PeerSAddr.sin_addr))));
 
             if Assigned(FOnPasvIpAddr) then begin
                 FOnPasvIpAddr(Self, Client, APasvIp, SetPasvIp);
