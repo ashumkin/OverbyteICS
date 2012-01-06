@@ -37,7 +37,6 @@ History:
 Jan 04, 2012 Moved code from unit OverbyteIcsWinsock2 here and made some
              breaking changes to support OSX and IPv6.
 
-
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSocketUtils;
 
@@ -339,7 +338,7 @@ begin
         s := WSocket_Socket(AF_INET, SOCK_DGRAM, IPPROTO_IP{IPPROTO_UDP});
         if (s = INVALID_SOCKET) then
             raise ESocketException.Create(
-                           'WSocket2 GetInterfaceList: Socket creation failed');
+                           'IcsGetInterfaceList: Socket creation failed');
         try
             while True do
             begin
@@ -356,14 +355,14 @@ begin
                             // How many interfaces make sense ??
                             if BufSize >= 1000 * SizeOf(TXInterfaceInfo) then
                                 raise ESocketException.Create(
-                               'WSocket2 GetInterfaceList: Too many interfaces');
+                               'IcsGetInterfaceList: Too many interfaces');
                             // No chance to get correct buffer size w/o probing
                             Inc(BufSize, 20 * SizeOf(TXInterfaceInfo));
                             FreeMem(PBuf);
                             GetMem(PBuf, BufSize);
                         end;
                     else
-                        raise ESocketException.Create('WSocket2 GetInterfaceList: ' +
+                        raise ESocketException.Create('IcsGetInterfaceList: ' +
                            GetWinsockErr(Err) + ' Error #' + IntToStr(Err));
                 end;
             end;
@@ -441,9 +440,9 @@ var
   ifap, Next: pifaddrs;
   PInfo: PIcsInterfaceInfo;
 begin
-  try
     if getifaddrs(ifap) <> 0 then
-        raise ESocketException.Create(SysErrorMessage(GetLastError));
+        raise ESocketException.Create('IcsGetInterfaceList getifaddrs(), Error: ' +
+                                      SysErrorMessage(GetLastError));
     try
       Next := ifap;
       while Next <> nil do begin
@@ -469,10 +468,6 @@ begin
     finally
       freeifaddrs(ifap);
     end;
-  except
-    on E: Exception do
-      Writeln(E.ClassName, ': ', E.Message);
-  end;
 end;
 {$ENDIF}
 
