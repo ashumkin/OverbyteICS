@@ -172,7 +172,7 @@ uses
     Classes,
     SysUtils,
     RtlConsts,
-    SysConst,
+    SysConst, SyncObjs,
     OverbyteIcsTypes; // for TBytes and TThreadID
 
 type
@@ -504,6 +504,14 @@ type
                                                     write SetItem; default;
     end;
 
+    TIcsCriticalSection = class(TCriticalSection)
+  {$IFNDEF COMPILER10_UP} // Can't check D2005
+    public
+        function TryEnter: Boolean;
+  {$ENDIF}
+    end;
+
+    (*
     TIcsCriticalSection = class
     protected
         FSection: {$IFDEF MSWINDOWS} TRTLCriticalSection; {$ELSE} pthread_mutex_t; {$ENDIF}
@@ -514,6 +522,7 @@ type
         procedure Leave; {$IFDEF USE_INLINE} inline; {$ENDIF}
         function TryEnter: Boolean;
     end;
+    *)
 
 implementation
 
@@ -4334,7 +4343,16 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TIcsCriticalSection }
+{$IFNDEF COMPILER10_UP}
+function TIcsCriticalSection.TryEnter: Boolean;
+begin
+  Result := _TryEnterCriticalSection(FSection);
+end;
+{$ENDIF}
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*
 constructor TIcsCriticalSection.Create;
 {$IFDEF POSIX}
 var
@@ -4349,6 +4367,7 @@ begin
     IcsCheckOSError(pthread_mutexattr_init(LAttr));
     IcsCheckOSError(pthread_mutexattr_settype(LAttr, PTHREAD_MUTEX_RECURSIVE));
     IcsCheckOSError(pthread_mutex_init(FSection, LAttr));
+    pthread_mutexattr_destroy(LAttr);
   {$ENDIF}
 end;
 
@@ -4400,7 +4419,7 @@ begin
     Result := pthread_mutex_trylock(FSection) = 0;
   {$ENDIF}
 end;
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 end.
