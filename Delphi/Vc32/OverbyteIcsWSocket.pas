@@ -18821,7 +18821,7 @@ procedure TIcsEventQueue.AddReadEvent(FD: Integer; UData: NativeInt;
 var
   LFlags: Word;
 begin
-  if FFreeIndex > FCapacity then
+  if FFreeIndex >= FCapacity then
     Grow;
 
   if Edge then
@@ -18839,7 +18839,7 @@ end;
 procedure TIcsEventQueue.AddWriteEvent(FD: Integer; UData: NativeInt);
 begin
   { Write filter is always edge triggered }
-  if FFreeIndex > FCapacity then
+  if FFreeIndex >= FCapacity then
     Grow;
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_WRITE,
          EV_ADD or EV_CLEAR, 0, 0, Pointer(UData));
@@ -18850,7 +18850,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsEventQueue.RemoveReadEvent(FD: Integer);
 begin
-  if FFreeIndex > FCapacity then
+  if FFreeIndex >= FCapacity then
     Grow;
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_READ,
          EV_DELETE, 0, 0, nil);
@@ -18861,7 +18861,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsEventQueue.RemoveWriteEvent(FD: Integer);
 begin
-  if FFreeIndex > FCapacity then
+  if FFreeIndex >= FCapacity then
     Grow;
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_WRITE,
          EV_DELETE, 0, 0, nil);
@@ -18872,7 +18872,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsEventQueue.DisableReadEvent(FD: Integer; UData: NativeInt);
 begin
-  if FFreeIndex > FCapacity then
+  if FFreeIndex >= FCapacity then
     Grow;
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_READ,
          EV_DISABLE, 0, 0, Pointer(UData));
@@ -18887,7 +18887,7 @@ var
   LFlags : Word;
 begin
   { Only FD_READ edge triggered }
-  if FFreeIndex > FCapacity then
+  if FFreeIndex >= FCapacity then
     Grow;
 
   if Edge then // is it required?
