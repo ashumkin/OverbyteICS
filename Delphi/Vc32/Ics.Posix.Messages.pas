@@ -107,6 +107,7 @@ type
   end;
 
   EIcsMessagePump = class(Exception);
+  EIcsMessageQueueFull = class(EIcsMessagePump);
 
   TWndMethod = procedure (var Msg: TMessage) of object;
 
@@ -166,11 +167,13 @@ type
       constructor Create;
       destructor Destroy; override;
       function Push(AWnd: HWND; AMsg: UINT; AWParam: WPARAM; ALParam: LPARAM): Boolean;
+      function PushUnique(AWnd: HWND; AMsg: UINT; AWParam: WPARAM; ALParam: LPARAM): Boolean;
       procedure Clear;
       function Pop(out AWnd: HWND; out AMsg: UINT; out AWParam: WPARAM;
         out ALParam: LPARAM): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
-      { Removes all messages to AHwnd from the queue }
-      procedure RemoveHwnd(AHwnd: HWND);
+      { Remove messages from the queue }
+      procedure ClearMessages(AHwnd: HWND); overload;
+      procedure ClearMessages(AHwnd: HWND; AMsg: UINT; AWParam: WParam); overload;
     end;
 
     TCFRefType = (rfCFRunLoopTimer, rfCFRunLoopSocket);
@@ -299,7 +302,10 @@ type
   function SendMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
     lParam: LPARAM): LRESULT;
   function PostMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
-    lParam: LPARAM): Boolean; 
+    lParam: LPARAM): Boolean;
+  { Posts the message only if the same message doesn't already exists }
+  function PostUniqueMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
+    lParam: LPARAM): Boolean;
   function PostThreadMessage(AThreadID: TThreadID; Msg: UINT; wParam: WPARAM;
     lParam: LPARAM): Boolean;
   function AllocateHWND(AMethod: TWndMethod): HWND;
@@ -309,6 +315,7 @@ type
   function IsWindow(AHwnd: HWND): Boolean;
   function SetTimer(AHwnd: HWND; nIDEvent: NativeUInt; uElapse: UINT; lpTimerFunc: Pointer): NativeUInt;
   function KillTimer(AHwnd: HWND; nIDEvent: NativeUInt): Boolean;
+  function IcsClearMessages(AHWnd: HWND; AMsg: UINT; AWParam: WParam): Boolean;
 
 implementation
 
@@ -1122,7 +1129,75 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsMessagePump.TMessageQueue.RemoveHwnd(AHwnd: HWND);
+function TIcsMessagePump.TMessageQueue.PushUnique(AWnd: HWND; AMsg: UINT;
+  AWParam: WPARAM; ALParam: LPARAM): Boolean;
+var
+  P: PQueueMessage;
+begin
+  FLock.Enter;
+  try
+    if FMessagePump.FTerminated then
+    begin
+      SetLastError(ERROR_ACCESS_DENIED);
+      Exit(False);
+    end;
+
+    { Find existing unfortunately 0 = n }
+    P := FFirst;
+    while P <> nil do
+    begin
+      if (P^.FWnd     = AWnd) and
+         (P^.FMsg     = AMsg) and
+         (P^.FWParam  = AWParam) and
+         (P^.FLParam  = ALParam) then
+        Exit(True);
+      P := P^.Next;
+    end;
+
+    if FCount >= MESSAGE_QUEUE_SIZE then
+    begin
+      SetLastError(ERROR_NOT_ENOUGH_QUOTA);
+      Exit(False);
+    end;
+
+    P := FCache.Pop;
+    if P = nil then
+      New(P);
+
+    P^.FWnd     := AWnd;
+    P^.FMsg     := AMsg;
+    P^.FWParam  := AWParam;
+    P^.FLParam  := ALParam;
+
+    P^.Next  := nil;
+    if FLast = nil then
+    begin
+      FLast  := P;
+      FFirst := P;
+    end
+    else begin
+      FLast.Next := P;
+      FLast      := P;
+    end;
+    Inc(FCount);
+  {$IFDEF MSGQ_DEBUG}
+    if FCount > FMessagePump.FMaxMsgCount then
+      FMessagePump.FMaxMsgCount := FCount;
+  {$ENDIF}
+    Result := True;
+    if FCount = 1 then
+    begin
+      CFRunLoopSourceSignal(FMessagePump.FWorkSourceRef);
+      CFRunLoopWakeUp(FMessagePump.FRunLoopRef);
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsMessagePump.TMessageQueue.ClearMessages(AHwnd: HWND);
 var
   PCur, PPrev, PT : PQueueMessage;
 begin
@@ -1137,13 +1212,53 @@ begin
       if PCur.FWnd = AHwnd then
       begin
         if PPrev = nil then        // current is first
-        begin
-          FFirst := PCur.Next;     // set first
-        end
-        else begin
+          FFirst := PCur.Next
+        else
           PPrev.Next := PCur.Next;
-          PPrev      := PCur;
+        if PCur.Next = nil then    // current is last
+        begin
+          FLast := PPrev;
+          if FLast <> nil then
+            FLast.Next := nil;
         end;
+        PT := PCur;
+        PCur := PCur.Next;
+        FCache.Push(PT);
+        Dec(FCount);
+      end
+      else begin
+        PPrev := PCur;
+        PCur := PCur.Next;
+      end;
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsMessagePump.TMessageQueue.ClearMessages(
+  AHwnd: HWND; AMsg: UINT; AWParam: WParam);
+var
+  PCur, PPrev, PT : PQueueMessage;
+begin
+  FLock.Enter;
+  try
+    if (AHwnd = 0) or (FFirst = nil) then
+      Exit;
+    PCur  := FFirst;
+    PPrev := nil;
+    while PCur <> nil do
+    begin
+      { Unfortunately 0 = n }
+      if (PCur.FWnd = AHwnd) and (PCur^.FMsg = AMsg) and
+         (PCur^.FWParam = AWParam) then
+      begin
+        if PPrev = nil then        // current is first
+          FFirst := PCur.Next
+        else
+          PPrev.Next := PCur.Next;
         if PCur.Next = nil then    // current is last
         begin
           FLast := PPrev;
@@ -1230,12 +1345,38 @@ begin
     end;
     LMsgPump := PIcsWindow(AHWnd)^.FMessagePump;  
     { Remove all messages to this window from the queue }
-    LMsgPump.FMessageQueue.RemoveHwnd(AHWnd);
+    LMsgPump.FMessageQueue.ClearMessages(AHWnd);
     LMsgPump.FHandles.DeallocateAll(AHWnd);
     Dispose(PIcsWindow(AHWnd)); // finally release mem
     Result := True;
   finally
     GlobalSync.EndWrite;
+  end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsClearMessages(AHWnd: HWND; AMsg: UINT; AWParam: WParam): Boolean;
+var
+  LMsgPump: TIcsMessagePump;
+begin
+  GlobalSync.BeginRead;
+  try
+    if not GLWindowTree.Contains(AHWnd) then
+    begin
+      SetLastError(ERROR_INVALID_WINDOW_HANDLE);
+      Exit(False);
+    end;
+    if (PIcsWindow(AHWnd)^.FThreadID <> GetCurrentThreadID) then
+    begin
+      SetLastError(ERROR_ACCESS_DENIED);
+      Exit(False);
+    end;
+    LMsgPump := PIcsWindow(AHWnd)^.FMessagePump;
+    LMsgPump.FMessageQueue.ClearMessages(AHWnd, AMsg, AWParam);
+    Result := True;
+  finally
+    GlobalSync.EndRead;
   end;
 end;
 
@@ -1295,8 +1436,10 @@ var
   LDstPump: TIcsMessagePump;
 begin
   if hWnd = 0 then
-    Exit(PostThreadMessage(0, Msg, wParam, lParam));
-
+  begin
+    SetLastError(ERROR_INVALID_WINDOW_HANDLE);
+    Exit(False);
+  end;
   GlobalSync.BeginRead;
   try
     { Check for valid HWND }
@@ -1308,6 +1451,34 @@ begin
     { Get message pump from HWND }
     LDstPump := PIcsWindow(hWnd)^.FMessagePump;
     Result := LDstPump.FMessageQueue.Push(hWnd, Msg, wParam, lParam);
+  finally
+    GlobalSync.EndRead;
+  end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function PostUniqueMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
+  lParam: LPARAM): Boolean;
+var
+  LDstPump: TIcsMessagePump;
+begin
+  if hWnd = 0 then
+  begin
+    SetLastError(ERROR_INVALID_WINDOW_HANDLE);
+    Exit(False);
+  end;
+  GlobalSync.BeginRead;
+  try
+    { Check for valid HWND }
+    if not GLWindowTree.Contains(hWnd) then
+    begin
+      SetLastError(ERROR_INVALID_WINDOW_HANDLE);
+      Exit(False);
+    end;
+    { Get message pump from HWND }
+    LDstPump := PIcsWindow(hWnd)^.FMessagePump;
+    Result := LDstPump.FMessageQueue.PushUnique(hWnd, Msg, wParam, lParam);
   finally
     GlobalSync.EndRead;
   end;

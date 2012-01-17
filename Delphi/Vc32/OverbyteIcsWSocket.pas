@@ -1212,7 +1212,7 @@ type
     Words : array [0..7] of Word;
   end;
   PIcsIPv6Address    = ^TIcsIPv6Address;
-  TIcsIPv4Address    = Integer;
+  TIcsIPv4Address    = {$IFDEF POSIX} LongWord {$ELSE} Integer {$ENDIF};
   PIcsIPv4Address    = ^TIcsIPv4Address;
   TWndMethod         = procedure(var Message: TMessage) of object;
   ESocketException   = class(Exception);
@@ -1283,6 +1283,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function  GetNotifyWindow: HWND;
     function  GetEventState: TIcsAsyncEventState;
     function  GetFileDescriptor: Integer;
+    procedure SetFileDescriptor(const AValue: Integer);
     function  GetObject: TObject;
     procedure SetEventState(const AValue: TIcsAsyncEventState);
     procedure SetNotifyWindow(const AValue: HWND);
@@ -1293,7 +1294,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property  NotifyMessageID: UINT read GetNotifyMessageID write SetNotifyMessageID;
     property  NotifyWindow: HWND read GetNotifyWindow write SetNotifyWindow;
     property  EventState: TIcsAsyncEventState read GetEventState write SetEventState;
-    property  FileDescriptor: Integer read GetFileDescriptor;
+    property  FileDescriptor: Integer read GetFileDescriptor write SetFileDescriptor;
     property  ObjectID: NativeInt read GetObjectID; // Must be > 0 and unique!!
   end;
 {$ENDIF POSIX}
@@ -1325,6 +1326,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
 {$IFDEF POSIX} { IIcsEventSource }
   strict private
     FPxEventMask        : LongWord;
+    FPxFileDescriptor   : Integer;
     FPxEventState       : TIcsAsyncEventState;
     FPxEventMessageID   : UINT;
     FPxEventWindow      : HWND;
@@ -1336,6 +1338,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function  GetNotifyWindow: HWND;
     function  GetEventState: TIcsAsyncEventState;
     function  GetFileDescriptor: Integer;
+    procedure SetFileDescriptor(const AValue: Integer);
     function  GetObject: TObject;
     procedure SetEventState(const AValue: TIcsAsyncEventState);
     procedure SetNotifyWindow(const AValue: HWND);
@@ -3163,10 +3166,10 @@ function WSocket_WSAAsyncGetHostByAddr(HWindow: HWND;
 function WSocket_WSAAsyncSelect(s: TSocket; HWindow: HWND; wMsg: u_int; lEvent: Longint): Integer;
 {$ENDIF MSWINDOWS}
 {$IFDEF POSIX}
-function WSocket_WSAAsyncSelect(IEventSrc: IIcsEventSource; HWindow: HWND; wMsg: u_int; lEvent: Longint): Integer;
-procedure WSocketSynchronizedRemoveEvents(AIEventSrcSource: IIcsEventSource);
-procedure WSocketSynchronizedEnableReadEvent(AIEventSrcSource: IIcsEventSource);
-procedure WSocketSynchronizedEnableAcceptEvent(AIEventSrcSource: IIcsEventSource);
+function WSocket_WSAAsyncSelect(IEventSrc: IIcsEventSource; s: TSocket; HWindow: HWND; wMsg: u_int; lEvent: Longint): Integer;
+procedure WSocketSynchronizedRemoveEvents(AEventSource: IIcsEventSource);
+procedure WSocketSynchronizedEnableReadEvent(AEventSource: IIcsEventSource);
+procedure WSocketSynchronizedEnableAcceptEvent(AEventSource: IIcsEventSource);
 function WSocketGenerateObjectID: NativeInt;
 {$ENDIF}
 
@@ -3364,6 +3367,8 @@ type
     FChangeList         : TIcsKEventList;
     FThreadChangeList   : TIcsKEventList;
     FEventList          : TIcsKEventList;
+    FThrdChangeListLen  : Integer;
+    FEventListLen       : Integer;
     FPipeFd             : TPipeFd;
     FQueue              : Integer;
     FFreeIndex          : Integer;
@@ -3372,16 +3377,17 @@ type
     FQueueSection       : TIcsCriticalSection;
     FObjIdentList       : TDictionary<NativeInt, TObject>;
     FInLoop             : Boolean;
+    FRequireWakeup      : Boolean;
     FInitialized        : Boolean;
  //strict private class threadvar
     //FCurrentEventQueue: TIcsEventQueue;
     procedure Grow;
     procedure AddReadEvent(FD: Integer; UData: NativeInt; Edge: Boolean);
     procedure AddWriteEvent(FD: Integer; UData: NativeInt);
-    procedure RemoveReadEvent(FD: Integer);
-    procedure RemoveWriteEvent(FD: Integer);
+    procedure RemoveReadEvent(FD: Integer; UData: NativeInt);
+    procedure RemoveWriteEvent(FD: Integer; UData: NativeInt);
     procedure DisableReadEvent(FD: Integer; UData: NativeInt);
-    procedure EnableReadEvent(FD: Integer; UData: NativeInt; Edge: Boolean);
+    function EnableReadEvent(FD: Integer; UData: NativeInt): Boolean;
     function Init: Boolean;
     function DeInit: Boolean;
     function CheckChangeEvent(FD: Integer; UData: NativeInt;
@@ -3408,7 +3414,7 @@ type
     //procedure AfterConstruction; override;
     //procedure BeforeDestruction; override;
     function SynchronizedAsyncSelect(IEventSrc: IIcsEventSource;
-      AWndHandle: HWND; AMsgID: UINT; AEvents: LongWord): Integer;
+      FD: Integer; AWndHandle: HWND; AMsgID: UINT; AEvents: LongWord): Integer;
     function HandleEvents: Boolean;
     function SynchronizedEnableReadEvent(IEventSrc: IIcsEventSource): Boolean;
     function SynchronizedEnableAcceptEvent(IEventSrc: IIcsEventSource): Boolean;
@@ -3513,23 +3519,23 @@ var
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF POSIX}
-procedure WSocketSynchronizedRemoveEvents(AIEventSrcSource: IIcsEventSource);
+procedure WSocketSynchronizedRemoveEvents(AEventSource: IIcsEventSource);
 begin
-    GAsyncSocketQueue.SynchronizedRemoveEvents(AIEventSrcSource);
+    GAsyncSocketQueue.SynchronizedRemoveEvents(AEventSource);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure WSocketSynchronizedEnableReadEvent(AIEventSrcSource: IIcsEventSource);
+procedure WSocketSynchronizedEnableReadEvent(AEventSource: IIcsEventSource);
 begin
-    GAsyncSocketQueue.SynchronizedEnableReadEvent(AIEventSrcSource);
+    GAsyncSocketQueue.SynchronizedEnableReadEvent(AEventSource);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure WSocketSynchronizedEnableAcceptEvent(AIEventSrcSource: IIcsEventSource);
+procedure WSocketSynchronizedEnableAcceptEvent(AEventSource: IIcsEventSource);
 begin
-    GAsyncSocketQueue.SynchronizedEnableAcceptEvent(AIEventSrcSource);
+    GAsyncSocketQueue.SynchronizedEnableAcceptEvent(AEventSource);
 end;
 {$ENDIF}
 
@@ -5070,22 +5076,24 @@ end;
 {$IFDEF POSIX}
 function WSocket_WSAAsyncSelect(
     IEventSrc: IIcsEventSource;
+    s: TSocket;
     HWindow: HWND;
     wMsg: u_int;
     lEvent: Longint): Integer;
 begin
-    Result := GAsyncSocketQueue.SynchronizedAsyncSelect(IEventSrc, HWindow, wMsg, LEvent);
+    Result := GAsyncSocketQueue.SynchronizedAsyncSelect(IEventSrc, s, HWindow, wMsg, LEvent);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_WSAAsyncSelect(
     IEventSrc: IIcsEventSource;
+    s: TSocket;
     HWindow: HWND;
     wMsg: u_int;
     lEvent: Longint): Integer;
 begin
-    Result := GAsyncSocketQueue.SynchronizedAsyncSelect(IEventSrc, HWindow, wMsg, LEvent);
+    Result := GAsyncSocketQueue.SynchronizedAsyncSelect(IEventSrc, s, HWindow, wMsg, LEvent);
 end;
 {$ENDIF POSIX}
 
@@ -5823,12 +5831,6 @@ begin
 {   FReadCount          := 0;  V7.24 only reset when connection opened, not closed }
     FCloseInvoked       := FALSE;
     FFlushTimeout       := 60;
-  {$IFDEF POSIX}
-    FPxEventMask        := 0;
-    FPxEventState       := [];
-    FPxEventMessageID   := 0;
-    FPxEventWindow      := 0;
-  {$ENDIF}
 end;
 
 
@@ -5916,7 +5918,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomWSocket.GetFileDescriptor: Integer;
 begin
-    Result := FHSocket;
+    Result := FPxFileDescriptor;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetFileDescriptor(const AValue: Integer);
+begin
+    FPxFileDescriptor := AValue;
 end;
 
 
@@ -6040,11 +6049,11 @@ procedure TCustomWSocket.ThreadAttach;
 begin
     inherited ThreadAttach;
     if FHSocket <> INVALID_SOCKET then
-        WSocket_Synchronized_WSAASyncSelect({$IFDEF POSIX}
+        WSocket_Synchronized_WSAASyncSelect(
+                                          {$IFDEF POSIX}
                                             Self,
-                                            {$ELSE}
+                                          {$ENDIF}
                                             FHSocket,
-                                            {$ENDIF}
                                             Handle,
                                             FMsg_WM_ASYNCSELECT, FSelectEvent);
 end;
@@ -6054,11 +6063,11 @@ end;
 procedure TCustomWSocket.ThreadDetach;
 begin
     if (_GetCurrentThreadID = FThreadID) and (FHSocket <> INVALID_SOCKET) then
-        WSocket_Synchronized_WSAASyncSelect({$IFDEF POSIX}
+        WSocket_Synchronized_WSAASyncSelect(
+                                          {$IFDEF POSIX}
                                             Self,
-                                            {$ELSE}
+                                          {$ENDIF}
                                             FHSocket,
-                                            {$ENDIF}
                                             Handle, 0, 0);
     inherited ThreadDetach;
 end;
@@ -6304,11 +6313,11 @@ begin
 
     { FD_CONNECT is not needed for dup(): The socket is already connected }
     FSelectEvent := FD_READ or FD_WRITE or FD_CLOSE { or FD_CONNECT };
-    iStatus      := WSocket_Synchronized_WSAASyncSelect({$IFDEF POSIX}
+    iStatus      := WSocket_Synchronized_WSAASyncSelect(
+                                                      {$IFDEF POSIX}
                                                         Self,
-                                                        {$ELSE}
+                                                      {$ENDIF}
                                                         FHSocket,
-                                                        {$ENDIF}
                                                         Handle,
                                                         FMsg_WM_ASYNCSELECT,
                                                         FSelectEvent);
@@ -8314,9 +8323,8 @@ begin
     iStatus       := WSocket_Synchronized_WSAASyncSelect(
                                                        {$IFDEF POSIX}
                                                          Self,
-                                                       {$ELSE}
-                                                         FHSocket,
                                                        {$ENDIF}
+                                                         FHSocket,
                                                          Handle,
                                                          FMsg_WM_ASYNCSELECT,
                                                          FSelectEvent);
@@ -8594,11 +8602,11 @@ begin
     FSelectEvent := FD_ACCEPT or FD_CLOSE;
     if FType <> SOCK_STREAM then
         FSelectEvent := FSelectEvent or FD_READ or FD_WRITE;
-    iStatus      := WSocket_Synchronized_WSAASyncSelect({$IFDEF POSIX}
+    iStatus      := WSocket_Synchronized_WSAASyncSelect(
+                                                      {$IFDEF POSIX}
                                                         Self,
-                                                        {$ELSE}
+                                                      {$ENDIF}
                                                         FHSocket,
-                                                        {$ENDIF}
                                                         Handle,
                                                         FMsg_WM_ASYNCSELECT,
                                                         FSelectEvent);
@@ -8662,11 +8670,11 @@ end;
 procedure TCustomWSocket.Pause;
 begin
     FPaused := TRUE;
-    WSocket_Synchronized_WSAASyncSelect({$IFDEF POSIX}
+    WSocket_Synchronized_WSAASyncSelect(
+                                      {$IFDEF POSIX}
                                         Self,
-                                        {$ELSE}
+                                      {$ENDIF}
                                         FHSocket,
-                                        {$ENDIF}
                                         Handle, 0, 0);
 end;
 
@@ -8675,11 +8683,11 @@ end;
 procedure TCustomWSocket.Resume;
 begin
     FPaused := FALSE;
-    WSocket_Synchronized_WSAASyncSelect({$IFDEF POSIX}
+    WSocket_Synchronized_WSAASyncSelect(
+                                      {$IFDEF POSIX}
                                         Self,
-                                        {$ELSE}
+                                      {$ENDIF}
                                         FHSocket,
-                                        {$ENDIF}
                                         Handle,
                                         FMsg_WM_ASYNCSELECT, FSelectEvent);
 end;
@@ -8800,6 +8808,7 @@ begin
 
 {$IFDEF POSIX}
     WSocketSynchronizedRemoveEvents(Self);
+    IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(FHSocket));
 {$ENDIF}
 
 { 11/10/98 called shutdown(1) instead of shutdown(2). This disables only    }
@@ -15256,9 +15265,8 @@ begin
     WSocket_Synchronized_WSAASyncSelect(
                                       {$IFDEF POSIX}
                                         Self,
-                                      {$ELSE}
-                                        FHSocket,
                                       {$ENDIF}
+                                        FHSocket,
                                         Handle,
                                         FMsg_WM_ASYNCSELECT,
                                         FD_WRITE or FD_CLOSE or FD_CONNECT);
@@ -15268,9 +15276,8 @@ begin
         WSocket_Synchronized_WSAASyncSelect(
                                           {$IFDEF POSIX}
                                             Self,
-                                          {$ELSE}
-                                            FHSocket,
                                           {$ENDIF}
+                                            FHSocket,
                                             Handle,
                                             FMsg_WM_ASYNCSELECT,
                                             FD_READ or FD_WRITE or FD_CLOSE or
@@ -18712,6 +18719,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TIcsEventQueue } { Arno Garrels 8.11.2011 }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+const
+  IcsEventQueueIgnoreFlag = 1;
+
 {$IFDEF NEVER}
 function TIcsEventQueue.KQueueEnableReadEvent(FD: Integer; UData: NativeInt;
   Edge: Boolean): Boolean;
@@ -18848,8 +18858,19 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsEventQueue.RemoveReadEvent(FD: Integer);
+procedure TIcsEventQueue.RemoveReadEvent(FD: Integer; UData: NativeInt);
+var
+  I: Integer;
 begin
+  { Keeps the true change list short }
+  for I := 0 to FFreeIndex -1 do
+  begin
+    if (FChangeList[I].Ident = NativeUInt(FD)) and
+       (FChangeList[I].Filter = EVFILT_READ) and
+       (FChangeList[I].UData = Pointer(UData)) then
+      FChangeList[I].FFlags := IcsEventQueueIgnoreFlag;
+  end;
+
   if FFreeIndex >= FCapacity then
     Grow;
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_READ,
@@ -18859,7 +18880,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsEventQueue.RemoveWriteEvent(FD: Integer);
+procedure TIcsEventQueue.RemoveWriteEvent(FD: Integer; UData: NativeInt);
 begin
   if FFreeIndex >= FCapacity then
     Grow;
@@ -18871,7 +18892,27 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsEventQueue.DisableReadEvent(FD: Integer; UData: NativeInt);
+var
+  I: Integer;
 begin
+  { Keeps the true change list short }
+  for I := 0 to FFreeIndex -1 do
+  begin
+    if (FChangeList[I].Ident = NativeUInt(FD)) and
+       (FChangeList[I].Filter = EVFILT_READ) and
+       (FChangeList[I].uData = Pointer(UData)) then
+    begin
+      if FChangeList[I].Flags = EV_ENABLE then  // socket wanted to enable
+      begin
+        FChangeList[I].Flags  := EV_DISABLE;
+        FChangeList[I].FFlags := IcsEventQueueIgnoreFlag;
+        Exit;
+      end
+      else if FChangeList[I].Flags = EV_DISABLE then
+        Exit;
+    end;
+  end;
+
   if FFreeIndex >= FCapacity then
     Grow;
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_READ,
@@ -18881,23 +18922,34 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsEventQueue.EnableReadEvent(FD: Integer; UData: NativeInt;
-  Edge: Boolean);
+function TIcsEventQueue.EnableReadEvent(FD: Integer; UData: NativeInt): Boolean;
 var
-  LFlags : Word;
+  I: Integer;
 begin
-  { Only FD_READ edge triggered }
+  { Keeps the true change list short }
+  for I := 0 to FFreeIndex -1 do
+  begin
+    if (FChangeList[I].Ident = NativeUInt(FD)) and
+       (FChangeList[I].Filter = EVFILT_READ) and
+       (FChangeList[I].uData = Pointer(UData)) then
+    begin
+      if FChangeList[I].Flags = EV_DISABLE then // thread wanted to disable
+      begin
+        FChangeList[I].Flags  := EV_ENABLE;
+        FChangeList[I].FFlags := IcsEventQueueIgnoreFlag;
+        Exit(False);
+      end
+      else if (FChangeList[I].Flags = EV_ENABLE) then
+        Exit(False);
+    end;
+  end;
+
   if FFreeIndex >= FCapacity then
     Grow;
-
-  if Edge then // is it required?
-    LFlags := EV_ENABLE or EV_CLEAR
-  else
-    LFlags := EV_ENABLE;
-
   EV_SET(@FChangeList[FFreeIndex], FD, EVFILT_READ,
-         LFlags, 0, 0, Pointer(UData));
+         EV_ENABLE, 0, 0, Pointer(UData));
   Inc(FFreeIndex);
+  Result := True;
 end;
 
 
@@ -18906,16 +18958,18 @@ procedure TIcsEventQueue.InternalRemoveEvents(IEventSrc: IIcsEventSource);
 begin
   if (FD_ACCEPT and IEventSrc.EventMask = FD_ACCEPT) or
      (FD_READ and IEventSrc.EventMask = FD_READ) then
-    RemoveReadEvent(IEventSrc.FileDescriptor);
+    RemoveReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID);
   if (FD_WRITE and IEventSrc.EventMask = FD_WRITE) or
      (FD_CONNECT and IEventSrc.EventMask = FD_CONNECT) then
-    RemoveWriteEvent(IEventSrc.FileDescriptor);
-
-  IEventSrc.EventMask     := 0;
-  IEventSrc.NotifyWindow  := 0;
-  IEventSrc.EventState    := [];
+    RemoveWriteEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID);
 
   RemoveFromObjIdentList(IEventSrc);
+
+  IEventSrc.EventMask       := 0;
+  IEventSrc.NotifyWindow    := 0;
+  IEventSrc.EventState      := [];
+  IEventSrc.FileDescriptor  := INVALID_SOCKET;
+  IEventSrc.NotifyMessageID := 0;
 end;
 
 
@@ -18927,10 +18981,13 @@ begin
     FQueueSection.Enter;
     try
       InternalRemoveEvents(IEventSrc);
+      if FRequireWakeup then
+        Result := Notify(0)
+      else
+        Result := True;
     finally
       FQueueSection.Leave;
     end;
-    Result := Notify(0);
   end
   else
     Result := True;
@@ -18944,11 +19001,14 @@ begin
   try
     Result := FD_READ and IEventSrc.EventMask = FD_READ;
     if Result then
-      EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID, False); // edge trigger makes trouble, don't use
+    begin
+      if EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID) and
+         FRequireWakeup then
+        Result := Notify(0);
+    end;
   finally
     FQueueSection.Leave;
   end;
-  Result := Result and Notify(0);
 end;
 
 
@@ -18959,11 +19019,14 @@ begin
   try
     Result := IEventSrc.EventMask and FD_ACCEPT = FD_ACCEPT;
     if Result then
-      EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID, False);
+    begin
+      if EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID) and
+         FRequireWakeup then
+        Result := Notify(0);
+    end;
   finally
     FQueueSection.Leave;
   end;
-  Result := Result and Notify(0);
 end;
 
 
@@ -18976,7 +19039,7 @@ begin
   begin
     if not ((FD_WRITE and NewMask = FD_WRITE) or (FD_CONNECT and NewMask = FD_CONNECT)) then
     begin
-      RemoveWriteEvent(FD);
+      RemoveWriteEvent(FD, UData);
       Result := True;
     end;
   end
@@ -18992,7 +19055,7 @@ begin
   begin
     if not ((FD_READ and NewMask = FD_READ) or (FD_ACCEPT and NewMask = FD_ACCEPT)) then
     begin
-      RemoveReadEvent(FD);
+      RemoveReadEvent(FD, UData);
       Result := True;
     end;
   end
@@ -19012,8 +19075,8 @@ function TIcsEventQueue.InternalAsyncSelect(IEventSrc: IIcsEventSource;
 var
   LDirty: Boolean;
 begin
-  if IEventSrc.FileDescriptor = INVALID_SOCKET then
-    Exit(INVALID_SOCKET);
+  {if IEventSrc.FileDescriptor = INVALID_SOCKET then // Check done in SynchronizedAsyncSelect
+    Exit(SOCKET_ERROR); }
   LDirty := CheckChangeEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID,
                              IEventSrc.EventMask, AEvents);
   IEventSrc.EventMask := AEvents;
@@ -19026,40 +19089,42 @@ begin
       RemoveFromObjIdentList(IEventSrc)
     else
       AddToObjIdentList(IEventSrc);
+    if AWakeupThread and FRequireWakeup then
+      Wakeup;
   end;
-
-  if AWakeupThread and LDirty then
-    Wakeup;
   Result := 0;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsEventQueue.SynchronizedAsyncSelect(IEventSrc: IIcsEventSource;
-  AWndHandle: HWND; AMsgID: UINT; AEvents: LongWord): Integer;
+  FD: Integer; AWndHandle: HWND; AMsgID: UINT; AEvents: LongWord): Integer;
 
-  function SetNonBlocking(FD: Integer): Boolean;
+  function SetNonBlocking: Boolean;
   var
     LFlags : Integer;
   begin
-    Result := FD <> INVALID_SOCKET;
-    if Result then
-    begin
-      LFlags := Posix.Fcntl.fcntl(FD, F_GETFL);
-      if LFlags < 0 then
-        Exit(False);
-      if (LFlags and O_NONBLOCK <> 0) then
-        Exit;
-      LFlags := (LFlags or O_NONBLOCK);
-      Result := Posix.Fcntl.fcntl(FD, F_SETFL, LFlags) <> -1;
-    end;
+    Result := True;
+    LFlags := Posix.Fcntl.fcntl(FD, F_GETFL);
+    if LFlags < 0 then
+      Exit(False);
+    if (LFlags and O_NONBLOCK <> 0) then
+      Exit;
+    LFlags := (LFlags or O_NONBLOCK);
+    Result := Posix.Fcntl.fcntl(FD, F_SETFL, LFlags) <> -1;
   end;
 
 begin
-  if not SetNonBlocking(IEventSrc.FileDescriptor) then
-    Exit(-1);
+  if not SetNonBlocking then
+    Exit(SOCKET_ERROR);
+  if not IsWindow(AWndHandle) then
+  begin
+    SetLastError(ERROR_INVALID_WINDOW_HANDLE);
+    Exit(SOCKET_ERROR);
+  end;
   FQueueSection.Enter;
   try
+    IEventSrc.FileDescriptor := FD;
     Result := InternalAsyncSelect(IEventSrc, AWndHandle, AMsgID, AEvents, True);
   finally
     FQueueSection.Leave;
@@ -19084,37 +19149,58 @@ var
   LEvtMask  : LongWord;
   LDelFlag  : TEvtDelAction;
   LEof      : Boolean;
-  B         : Byte;
-
+  Buf       : Byte;
+  LMsgID    : UINT;
+  LHwnd     : HWND;
+  LPostMsgFunc : function(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): Boolean;
 begin
   FQueueSection.Enter;
   try
     if FInLoop then
       Exit(True);
     FInLoop := True;
+    FRequireWakeup := True;
     nChanges := FFreeIndex;
     if nChanges > 0 then
     begin
       FFreeIndex := 0;//**
-      if Length(FThreadChangeList) < nChanges then
-        SetLength(FThreadChangeList, nChanges * 2);
+      if FThrdChangeListLen < nChanges then
+      begin
+        FThrdChangeListLen := nChanges * 2;
+        SetLength(FThreadChangeList, FThrdChangeListLen);
+      end;
+      nEvents := 0;
       for I := 0 to nChanges -1 do
       begin
-        FThreadChangeList[I] := FChangeList[I];
+        if (FChangeList[I].FFlags <> IcsEventQueueIgnoreFlag) then
+        begin
+          FThreadChangeList[nEvents] := FChangeList[I];
+          Inc(nEvents);
+        end; // else skip this one
       end;
+      nChanges := nEvents;
+      if nEvents = 0 then
+        nEvents := 1;
+    end
+    else
+      nEvents := 1;
+    { FEventList length at least nEvents }
+    if FEventListLen < nEvents then
+    begin
+      FEventListLen := nEvents;
+      SetLength(FEventList, FEventListLen);
     end;
-    { FEventList length at least nChanges }
-    if Length(FEventList) < nChanges then
-      SetLength(FEventList, nChanges);
   finally
     FQueueSection.Leave;
   end;
 
+  { Set changes and wait for events }
   nEvents := KEvent(FQueue, @FThreadChangeList[0], nChanges,
-                    @FEventList[0], Length(FEventList), nil);
+                    @FEventList[0], nEvents, nil);
 
   FQueueSection.Enter;
   try
+    FRequireWakeup := False;
     if (nEvents < 0) then
       Exit(errno = EINTR);
     for I := 0 to nEvents -1 do
@@ -19127,7 +19213,6 @@ begin
       HiParam       := CurEvt.FFlags; // IO error code
       LEof          := CurEvt.Flags and EV_EOF = EV_EOF;
       IEventSrc     := nil;
-      LEvtMask      := 0;
 
       { Error on add or delete events }
       if (CurEvt.Flags and EV_ERROR <> 0) and (CurEvt.Data <> 0) then
@@ -19174,7 +19259,7 @@ begin
       else if CurEvt.Ident = LongWord(FPipeFd.Read) then
       begin
         { It's our pipe just read and continue }
-        __read(FPipeFd.Read, @B, 1);
+        __read(FPipeFd.Read, @Buf, SizeOf(Buf));
         Continue;
       end
 
@@ -19231,18 +19316,19 @@ begin
         { Trigger Read, Accept or Close }
         else if CurEvt.Filter = EVFILT_READ then
         begin
-          if LEof and (not (aesCloseNotified in IEventSrc.EventState)) then
+          if LEof then
           begin
-            { Peer closed the connection, there's likely still data to read }
-            { in the socket buffer.                                         }
-            if (FD_CLOSE and LEvtMask = FD_CLOSE) then
-              LoParam := FD_CLOSE;
-
-            IEventSrc.EventState := IEventSrc.EventState + [aesCloseNotified];
-
+            { Peer closed the connection, there's likely still data to be }
+            { read in the socket buffer.                                  }
+            if (not (aesCloseNotified in IEventSrc.EventState)) then
+            begin
+              if (FD_CLOSE and LEvtMask = FD_CLOSE) then
+                LoParam := FD_CLOSE;
+              IEventSrc.EventState := IEventSrc.EventState + [aesCloseNotified];
+            end;
             if (FD_READ and LEvtMask = FD_READ) and (CurEvt.Data > 0) then
             begin
-              { CurEvt.Data contains to number of bytes ready to be read.     }
+              { CurEvt.Data contains the number of bytes ready to be read.    }
               { If > 0 bitwise or FD_READ, the message handler executes       }
               { FD_READ before FD_CLOSE.                                      }
               LoParam := LoParam or FD_READ;
@@ -19273,65 +19359,83 @@ begin
               LDelFlag := edaAll; // Delete all
           end;
         end;
-      end;
-      { Check for WND <> 0 otherwise the message may be sent to current thread }
-      if (LoParam > 0) and (IEventSrc.NotifyWindow <> 0) then
-      begin
-        if (not PostMessage(IEventSrc.NotifyWindow, IEventSrc.NotifyMessageID,
-                            WPARAM(CurEvt.Ident),
-                            LPARAM(IcsMakeLong(LoParam, HiParam)))) then
+
+        { Copy these since they may be cleared when LDelFlag is handled below }
+        LMsgID := IEventSrc.NotifyMessageID;
+        LHwnd  := IEventSrc.NotifyWindow;
+
+        { Process LDelFlag here since we might have to leave the critical     }
+        { section when PostMessage() below failed due to a full queue         }
+        case LDelFlag of
+          edaAll :
+            InternalRemoveEvents(IEventSrc);
+          edaWrite :
+            begin
+              if (LEvtMask and FD_READ = FD_READ) or
+                 (LEvtMask and FD_ACCEPT = FD_ACCEPT) then
+              begin
+                 RemoveWriteEvent(CurEvt.Ident, IEventSrc.ObjectID);
+                 IEventSrc.EventMask := LEvtMask xor FD_WRITE xor FD_CONNECT;
+              end
+              else
+                 InternalRemoveEvents(IEventSrc);
+            end;
+        end;
+
+        if LoParam > 0 then // finally post the socket event
         begin
-          LLastErr := GetLastError;
-          case LLastErr of
-            ERROR_NOT_ENOUGH_QUOTA : // Houston, we've had a problem
-              begin
-                //SetLastError(LLastErr);
-                //Exit(False);
-                Result := False; // removes compiler hint
-                raise EIcsEventQueue.Create(ClassName + ': Message queue full');
-              end;
+          if (LoParam = FD_ACCEPT) then // all events have to be queued/posted
+            LPostMsgFunc := PostMessage
+          else
+            { PostUniqueMessage() posts the message only if it doesn't already }
+            { exist in the destination queue. This is especially important     }
+            { with FD_READ messages if wsoNoReceiveLoop isn't in the options   }
+            { in order to not fill the queue with useless messages.            }
+            LPostMsgFunc := PostUniqueMessage;
 
-            ERROR_INVALID_WINDOW_HANDLE,
-            EINVAL :
-              begin
-                //raise Exception.Create(ClassName + ': Invalid ICS window handle');
-                { Should never ever happen, if so, doesn't hurt to ignore }
-                LDelFlag := edaAll
-              end;
+          while not LPostMsgFunc(LHwnd, LMsgID, WPARAM(CurEvt.Ident),
+                                 LPARAM(IcsMakeLong(LoParam, HiParam))) do
+          begin
+            LLastErr := GetLastError;
+            case LLastErr of
+              ERROR_NOT_ENOUGH_QUOTA :
+                begin
+                  Result := True; // removes compiler warning
+                  if FAsyncThread.Terminated then
+                    Break;
+                  try
+                    { Raise a debug exception. Actually this should not happen }
+                    { at least not caused by this thread.                      }
+                    raise EIcsMessageQueueFull.Create(ClassName + ': Message queue full');
+                  except
+                    // silent
+                  end;
+                  { All we can do is wait for destination thread dequeues some  }
+                  { messages, we have to leave and reenter the critical section }
+                  FQueueSection.Leave;
+                  FAsyncThread.Sleep(100);
+                  FQueueSection.Enter;
+                end;
 
-            else
-              //SetLastError(LLastErr);
-              //Exit(False);
-              Result := False; // removes compiler hint
-              raise EIcsEventQueue.Create(ClassName + ': Unknown error on PostMessage #' +
-                _IntToStr(LLastErr));
+              ERROR_INVALID_WINDOW_HANDLE,
+              ERROR_ACCESS_DENIED, // destination message queue is going down and locked
+              EINVAL :
+                begin
+                  { Should never ever happen, if so, doesn't hurt to ignore }
+                  InternalRemoveEvents(IEventSrc);
+                  Break;
+                end;
+
+              else
+                Result := False; // removes compiler warning
+                raise EIcsEventQueue.Create(ClassName + ': Unknown error on PostMessage #' +
+                  _IntToStr(LLastErr));
+            end; // case
           end;
         end;
-      end;
-
-      { We are still in the critical section so no race condition can happen, }
-      { that's why it's safe to delete filters after the message has been     }
-      { posted.                                                               }
-      case LDelFlag of
-        edaAll :
-          InternalRemoveEvents(IEventSrc);
-        edaWrite :
-          begin
-            if (LEvtMask and FD_READ = FD_READ) or
-               (LEvtMask and FD_ACCEPT = FD_ACCEPT) then
-            begin
-               RemoveWriteEvent(CurEvt.Ident);
-               IEventSrc.EventMask := LEvtMask xor FD_WRITE xor FD_CONNECT;
-            end
-            else
-               InternalRemoveEvents(IEventSrc);
-          end;
-      end;
-
+      end; // if FObjIdentList.ContainsKey(NativeInt(CurEvt.uData)) means IEventSrc is assigned
     end; // For Loop
 
-    if nEvents = Length(FEventList) then
-      SetLength(FEventList, nEvents * 2);
     Result := True;
 
   finally
@@ -19438,9 +19542,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsEventQueue.Notify(AMsg: Byte): Boolean;
 begin
-  Result := __write(FPipeFd.Write, @AMsg, 1) = 1; // Wakeup thread
+  Result := __write(FPipeFd.Write, @AMsg, SizeOf(AMsg)) = SizeOf(AMsg);
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsEventQueue.Wakeup: Boolean;
 begin
   Result := Notify(0);

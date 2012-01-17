@@ -306,6 +306,7 @@ type
   {$IFDEF POSIX} { IIcsEventSource }
     strict private
       FPxEventMask        : LongWord;
+      FPxFileDescriptor   : Integer;
       FPxEventState       : TIcsAsyncEventState;
       FPxEventMessageID   : UINT;
       FPxEventWindow      : HWND;
@@ -320,6 +321,7 @@ type
       function  GetNotifyWindow: HWND;
       function  GetEventState: TIcsAsyncEventState;
       function  GetFileDescriptor: Integer;
+      procedure SetFileDescriptor(const AValue: Integer);
       function  GetObject: TObject;
       procedure SetEventState(const AValue: TIcsAsyncEventState);
       procedure SetNotifyWindow(const AValue: HWND);
@@ -941,6 +943,7 @@ begin
     if AItem.HSocket <> INVALID_SOCKET then begin
     {$IFDEF POSIX}
         WSocketSynchronizedRemoveEvents(AItem);
+        IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(AItem.HSocket));
     {$ENDIF}
         repeat
             { Close the socket }
@@ -1119,9 +1122,8 @@ begin
         iStatus := WSocket_WSAASyncSelect(
                                         {$IFDEF POSIX}
                                           AItem,
-                                        {$ELSE}
-                                          AItem.HSocket,
                                         {$ENDIF}
+                                          AItem.HSocket,
                                           Handle,
                                           FMsg_WM_ASYNCSELECT,
                                           FD_ACCEPT or FD_CLOSE);
@@ -1141,11 +1143,10 @@ procedure TCustomMultiListenWSocketServer.MlPause(
 begin
     if not AItem.Paused then
         AItem.FPaused := WSocket_WSAASyncSelect(
-                                            {$IFDEF POSIX}
+                                              {$IFDEF POSIX}
                                                 AItem,
-                                            {$ELSE}
+                                              {$ENDIF}
                                                 AItem.HSocket,
-                                            {$ENDIF}
                                                 Handle, 0, 0) = 0;
 
 end;
@@ -1159,9 +1160,8 @@ begin
         AItem.FPaused := not (WSocket_WSAASyncSelect(
                                                 {$IFDEF POSIX}
                                                   AItem,
-                                                {$ELSE}
-                                                  AItem.HSocket,
                                                 {$ENDIF}
+                                                  AItem.HSocket,
                                                   Handle,
                                                   FMsg_WM_ASYNCSELECT,
                                                   FD_ACCEPT or FD_CLOSE) = 0);
@@ -1277,9 +1277,8 @@ begin
             WSocket_WSAASyncSelect(
                                   {$IFDEF POSIX}
                                     LItem,
-                                  {$ELSE}
-                                    LItem.HSocket,
                                   {$ENDIF}
+                                    LItem.HSocket,
                                     Handle, FMsg_WM_ASYNCSELECT,
                                     FD_ACCEPT or FD_CLOSE);
     end;
@@ -1300,9 +1299,8 @@ begin
             WSocket_WSAASyncSelect(
                                   {$IFDEF POSIX}
                                     LItem,
-                                  {$ELSE}
-                                    LItem.HSocket,
                                   {$ENDIF}
+                                    LItem.HSocket,
                                     Handle, 0, 0);
     end;
 end;
@@ -1456,11 +1454,18 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TWSocketMultiListenItem.GetFileDescriptor: Integer;
 begin
-    Result := FHSocket;
+    Result := FPxFileDescriptor;
 end;
 
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWSocketMultiListenItem.SetFileDescriptor(const AValue: Integer);
+begin
+    FPxFileDescriptor := AValue;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TWSocketMultiListenItem.GetObject: TObject;
 begin
     Result := Self;
@@ -1487,12 +1492,6 @@ begin
     FPaused             := FALSE;
     FCloseInvoked       := FALSE;
     FillChar(Fsin, SizeOf(Fsin), 0);
-  {$IFDEF POSIX}
-    FPxEventMask        := 0;
-    FPxEventState       := [];
-    FPxEventMessageID   := 0;
-    FPxEventWindow      := 0;
-  {$ENDIF}
 end;
 
 
