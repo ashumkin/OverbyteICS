@@ -941,16 +941,16 @@ begin
         Exit;
 
     if AItem.HSocket <> INVALID_SOCKET then begin
-    {$IFDEF POSIX}
-        WSocketSynchronizedRemoveEvents(AItem);
-        IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(AItem.HSocket));
-    {$ENDIF}
         repeat
             { Close the socket }
             iStatus := WSocket_closesocket(AItem.HSocket);
             if iStatus <> 0 then begin
                 AItem.LastError := WSocket_WSAGetLastError;
                 if AItem.LastError <> WSAEWOULDBLOCK then begin
+                  {$IFDEF POSIX}
+                    WSocketSynchronizedRemoveEvents(AItem, False);
+                    IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(AItem.HSocket));
+                  {$ENDIF}
                     AItem.HSocket := INVALID_SOCKET;
                   {$IFDEF MSWINDOWS}
                     { Ignore the error occuring when winsock DLL not      }
@@ -964,6 +964,10 @@ begin
                 MessagePump;
             end;
         until iStatus = 0;
+      {$IFDEF POSIX}
+        WSocketSynchronizedRemoveEvents(AItem, True);
+        IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(AItem.HSocket));
+      {$ENDIF}
         AItem.HSocket := INVALID_SOCKET;
     end;
     AItem.State := wsClosed;

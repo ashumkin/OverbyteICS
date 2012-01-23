@@ -1274,7 +1274,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
   TWSocketCounterClass = class of TWSocketCounter;
 
 {$IFDEF POSIX}
-  TIcsAsyncEventState = set of (aesCloseNotified, aesConnectNotified);
+  TIcsAsyncEventState = set of (aesCloseNotified, aesConnectNotified, aesShutDown0Called, aesShutDown1Called);
   IIcsEventSource = interface(IInterface) { AG 8.11.2011 }
   ['{EDA1AB33-D3F0-4C14-AA99-67E6D28A38F3}']
     function  GetEventMask: LongWord;
@@ -3167,9 +3167,12 @@ function WSocket_WSAAsyncSelect(s: TSocket; HWindow: HWND; wMsg: u_int; lEvent: 
 {$ENDIF MSWINDOWS}
 {$IFDEF POSIX}
 function WSocket_WSAAsyncSelect(IEventSrc: IIcsEventSource; s: TSocket; HWindow: HWND; wMsg: u_int; lEvent: Longint): Integer;
-procedure WSocketSynchronizedRemoveEvents(AEventSource: IIcsEventSource);
+{ Must be called whenever the socket handle was closed }
+procedure WSocketSynchronizedRemoveEvents(AEventSource: IIcsEventSource; FdClosed: Boolean = False);
 procedure WSocketSynchronizedEnableReadEvent(AEventSource: IIcsEventSource);
 procedure WSocketSynchronizedEnableAcceptEvent(AEventSource: IIcsEventSource);
+{ Must be called before any call to shutdown() }
+procedure WSocketSynchronizedSetShutdownCalled(IEventSrc: IIcsEventSource; How: Integer);
 function WSocketGenerateObjectID: NativeInt;
 {$ENDIF}
 
@@ -3393,7 +3396,7 @@ type
     function CheckChangeEvent(FD: Integer; UData: NativeInt;
       const OldMask: LongWord; var NewMask: LongWord): Boolean;
     function Notify(AMsg: Byte): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
-    procedure InternalRemoveEvents(IEventSrc: IIcsEventSource);
+    procedure InternalRemoveEvents(IEventSrc: IIcsEventSource; FdClosed: Boolean = False);
     function InternalAsyncSelect(IEventSrc: IIcsEventSource; AWndHandle: HWND;
       AMsgID: UINT; AEvents: LongWord; AWakeupThread: Boolean): Integer;
     procedure RemoveFromObjIdentList(IEventSrc: IIcsEventSource);
@@ -3418,7 +3421,8 @@ type
     function HandleEvents: Boolean;
     function SynchronizedEnableReadEvent(IEventSrc: IIcsEventSource): Boolean;
     function SynchronizedEnableAcceptEvent(IEventSrc: IIcsEventSource): Boolean;
-    function SynchronizedRemoveEvents(IEventSrc: IIcsEventSource): Boolean;
+    function SynchronizedRemoveEvents(IEventSrc: IIcsEventSource; FdClosed: Boolean): Boolean;
+    procedure SynchronizedSetShutdownCalled(IEventSrc: IIcsEventSource; How: Integer);
     function Wakeup: Boolean;
   end;
 
@@ -3519,9 +3523,10 @@ var
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF POSIX}
-procedure WSocketSynchronizedRemoveEvents(AEventSource: IIcsEventSource);
+procedure WSocketSynchronizedRemoveEvents(AEventSource: IIcsEventSource;
+  FdClosed: Boolean = False);
 begin
-    GAsyncSocketQueue.SynchronizedRemoveEvents(AEventSource);
+    GAsyncSocketQueue.SynchronizedRemoveEvents(AEventSource, FdClosed);
 end;
 
 
@@ -3536,6 +3541,14 @@ end;
 procedure WSocketSynchronizedEnableAcceptEvent(AEventSource: IIcsEventSource);
 begin
     GAsyncSocketQueue.SynchronizedEnableAcceptEvent(AEventSource);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure WSocketSynchronizedSetShutdownCalled(IEventSrc: IIcsEventSource;
+  How: Integer);
+begin
+  GAsyncSocketQueue.SynchronizedSetShutdownCalled(IEventSrc, How);
 end;
 {$ENDIF}
 
@@ -8701,8 +8714,12 @@ begin
       DebugLog(loWsockInfo, _IntToHex(INT_PTR(Self), SizeOf(Pointer) * 2) + ' ' +
                'TCustomWSocket.Shutdown ' + _IntToStr(How) + ' ' + _IntToStr(FHSocket));
 {$ENDIF}
-    if FHSocket <> INVALID_SOCKET then
+    if FHSocket <> INVALID_SOCKET then begin
+      {$IFDEF POSIX}
+        WSocketSynchronizedSetShutdownCalled(Self, How);
+      {$ENDIF}
         WSocket_Synchronized_Shutdown(FHSocket, How);
+    end;
 end;
 
 
@@ -8806,11 +8823,6 @@ begin
     if FState = wsClosed then
         Exit;
 
-{$IFDEF POSIX}
-    WSocketSynchronizedRemoveEvents(Self);
-    IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(FHSocket));
-{$ENDIF}
-
 { 11/10/98 called shutdown(1) instead of shutdown(2). This disables only    }
 { sends. Disabling receives as well produced data lost is some cases.       }
 { Manifest constants for Shutdown                                           }
@@ -8828,6 +8840,10 @@ begin
             if iStatus <> 0 then begin
                 FLastError := WSocket_Synchronized_WSAGetLastError;
                 if FLastError <> WSAEWOULDBLOCK then begin
+                  {$IFDEF POSIX}
+                    WSocketSynchronizedRemoveEvents(Self, False);
+                    IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(FHSocket));
+                  {$ENDIF}
                     FHSocket := INVALID_SOCKET;
                   {$IFDEF MSWINDOWS}
                     { Ignore the error occuring when winsock DLL not      }
@@ -8841,6 +8857,10 @@ begin
                 MessagePump;
             end;
         until iStatus = 0;
+      {$IFDEF POSIX}
+        WSocketSynchronizedRemoveEvents(Self, True);
+        IcsClearMessages(Handle, FMsg_WM_ASYNCSELECT, WPARAM(FHSocket));
+      {$ENDIF}
         FHSocket := INVALID_SOCKET;
     end;
 
@@ -18954,14 +18974,18 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsEventQueue.InternalRemoveEvents(IEventSrc: IIcsEventSource);
+procedure TIcsEventQueue.InternalRemoveEvents(IEventSrc: IIcsEventSource;
+  FdClosed: Boolean = False);
 begin
-  if (FD_ACCEPT and IEventSrc.EventMask = FD_ACCEPT) or
-     (FD_READ and IEventSrc.EventMask = FD_READ) then
-    RemoveReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID);
-  if (FD_WRITE and IEventSrc.EventMask = FD_WRITE) or
-     (FD_CONNECT and IEventSrc.EventMask = FD_CONNECT) then
-    RemoveWriteEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID);
+  if not FdClosed then
+  begin
+    if (FD_ACCEPT and IEventSrc.EventMask = FD_ACCEPT) or
+       (FD_READ and IEventSrc.EventMask = FD_READ) then
+      RemoveReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID);
+    if (FD_WRITE and IEventSrc.EventMask = FD_WRITE) or
+       (FD_CONNECT and IEventSrc.EventMask = FD_CONNECT) then
+      RemoveWriteEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID);
+  end;
 
   RemoveFromObjIdentList(IEventSrc);
 
@@ -18974,14 +18998,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TIcsEventQueue.SynchronizedRemoveEvents(IEventSrc: IIcsEventSource): Boolean;
+function TIcsEventQueue.SynchronizedRemoveEvents(IEventSrc: IIcsEventSource;
+  FdClosed: Boolean): Boolean;
 begin
   if (IEventSrc.EventMask <> 0) and (IEventSrc.FileDescriptor <> INVALID_SOCKET) then
   begin
     FQueueSection.Enter;
     try
-      InternalRemoveEvents(IEventSrc);
-      if FRequireWakeup then
+      InternalRemoveEvents(IEventSrc, FdClosed);
+      if (not FdClosed) and FRequireWakeup then
         Result := Notify(0)
       else
         Result := True;
@@ -19023,6 +19048,23 @@ begin
       if EnableReadEvent(IEventSrc.FileDescriptor, IEventSrc.ObjectID) and
          FRequireWakeup then
         Result := Notify(0);
+    end;
+  finally
+    FQueueSection.Leave;
+  end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TIcsEventQueue.SynchronizedSetShutdownCalled(
+  IEventSrc: IIcsEventSource; How: Integer);
+begin
+  FQueueSection.Enter;
+  try
+    case How of
+      0 : IEventSrc.EventState := IEventSrc.EventState  + [aesShutDown0Called];
+      1 : IEventSrc.EventState := IEventSrc.EventState  + [aesShutDown1Called];
+      2 : IEventSrc.EventState := IEventSrc.EventState  + [aesShutDown0Called, aesShutDown1Called];
     end;
   finally
     FQueueSection.Leave;
@@ -19133,10 +19175,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TIcsEventQueue.HandleEvents: Boolean;
 type
   TEvtDelAction = (edaNone, edaAll, edaWrite);
-
-function TIcsEventQueue.HandleEvents: Boolean;
 var
   nEvents   : Integer;
   I         : Integer;
@@ -19273,19 +19314,17 @@ begin
 
         LEvtMask := IEventSrc.EventMask;
 
-        { Remind: On Connect FFLags error #60 (ETIMEDOUT) with non-existing IP,
-          #61 on connection refused has EV_EOF in Flags and
-          afterwards read is also fired with EV_EOF in Flags }
-
         { Trigger Write, Connect or Close }
         if CurEvt.Filter = EVFILT_WRITE then
         begin
           { Trigger Connect }
-          if (FD_CONNECT and LEvtMask = FD_CONNECT) and
-             (not (aesConnectNotified in IEventSrc.EventState)) then
+          if not (aesConnectNotified in IEventSrc.EventState) then
           begin
             IEventSrc.EventState := IEventSrc.EventState + [aesConnectNotified];
-            LoParam := FD_CONNECT;
+            if FD_CONNECT and LEvtMask = FD_CONNECT then
+              LoParam := FD_CONNECT
+            else if FD_WRITE and LEvtMask = FD_WRITE then
+              LoParam := FD_WRITE;
             if LEof then
               LDelFlag := edaAll; // Delete both read and write events
           end
@@ -19293,20 +19332,30 @@ begin
           else begin
             if LEof then
             begin
-              { Our application _called shutdown() on a socket           }
-              { If a read filter is still active we'll get another close }
-              { event when the peer acked the FIN request.               }
-
-              if (FD_READ and LEvtMask = 0) and (FD_ACCEPT and LEvtMask = 0) and
-                 (FD_CLOSE and LEvtMask = FD_CLOSE) and
-                 (not (aesCloseNotified in IEventSrc.EventState)) then
+              { Application called shutdown(1) (disabled writes) and a    }
+              { FIN ACK was sent to the peer or the peer sent us a RST.   }
+              { If a read filter is still active we'll get another close  }
+              { event when the peer acked the FIN request.                }
+              if (aesShutDown1Called in IEventSrc.EventState) then
               begin
-                { Post a close message only when no read filter is active }
-                LoParam := FD_CLOSE;
-                LDelFlag := edaAll;  // Delete all
-              end
-              else
+                if (not (aesCloseNotified in IEventSrc.EventState)) and
+                   ((FD_READ and LEvtMask = FD_READ) or
+                    (FD_ACCEPT and LEvtMask = FD_ACCEPT)) then
+                  { So we will be notified when the peer send us FIN ACK }
+                  EnableReadEvent(CurEvt.Ident, IEventSrc.ObjectID);
                 LDelFlag := edaWrite; // Delete write event
+              end
+              else if (not (aesCloseNotified in IEventSrc.EventState)) then
+              begin
+                { Post a close or write message, it's likely we got a RST }
+                { and an error code in HiParam.                           }
+                if (FD_CLOSE and LEvtMask = FD_CLOSE) then
+                  LoParam := FD_CLOSE
+                else if FD_WRITE and LEvtMask = FD_WRITE then
+                  LoParam := FD_WRITE; // on socket write -> socket error
+                IEventSrc.EventState := IEventSrc.EventState + [aesCloseNotified];
+                LDelFlag := edaAll    // Delete all
+              end;
             end
             else if FD_WRITE and LEvtMask = FD_WRITE then
               LoParam := FD_WRITE;
@@ -19318,46 +19367,38 @@ begin
         begin
           if LEof then
           begin
-            { Peer closed the connection, there's likely still data to be }
-            { read in the socket buffer.                                  }
-            if (not (aesCloseNotified in IEventSrc.EventState)) then
+            { Peer closed the connection or application called shutdown(0) }
+            { (disabled reads). If the application called shutdown(0) we   }
+            { should not trigger FD_CLOSE but disable read events. If the  }
+            { peer closed the connection it is likely still data to be     }
+            { read.                                                        }
+            if aesShutDown0Called in IEventSrc.EventState then
+              IEventSrc.EventState := IEventSrc.EventState - [aesShutDown0Called]
+            else if not (aesCloseNotified in IEventSrc.EventState) then
             begin
-              if (FD_CLOSE and LEvtMask = FD_CLOSE) then
-                LoParam := FD_CLOSE;
               IEventSrc.EventState := IEventSrc.EventState + [aesCloseNotified];
+              if (FD_CLOSE and LEvtMask = FD_CLOSE) then
+                LoParam := FD_CLOSE
+              else if FD_READ and LEvtMask = FD_READ then
+                LoParam := FD_READ; // on socket read -> socket error
+              if CurEvt.Data = 0 then
+                LDelFlag := edaAll;
             end;
             if (FD_READ and LEvtMask = FD_READ) and (CurEvt.Data > 0) then
-            begin
-              { CurEvt.Data contains the number of bytes ready to be read.    }
-              { If > 0 bitwise or FD_READ, the message handler executes       }
-              { FD_READ before FD_CLOSE.                                      }
+              { CurEvt.Data contains the number of bytes ready to be read. }
+              { If > 0 bitwise or FD_READ, the message handler executes    }
+              { FD_READ before FD_CLOSE.                                   }
               LoParam := LoParam or FD_READ;
-              { We disable the read filter, any call to Recv() MUST reenable  }
-              { this filter by a call to SynchronizedEnableReadEvent.         }
-              DisableReadEvent(CurEvt.Ident, IEventSrc.ObjectID);
-            end
-            else
-              LDelFlag := edaAll; // Delete all
-          end
+          end // LEof
           { Trigger Accept }
           else if FD_ACCEPT and LEvtMask = FD_ACCEPT then
-          begin
-            LoParam := FD_ACCEPT;
-            { We disable the read filter, any call to accept() MUST reenable }
-            { this filter by a call to SynchronizedEnableAcceptEvent.        }
-            DisableReadEvent(CurEvt.Ident, IEventSrc.ObjectID);
-          end
+            LoParam := FD_ACCEPT
           { Trigger Read }
           else if FD_READ and LEvtMask = FD_READ then
-          begin
             LoParam := FD_READ;
-            if CurEvt.Data > 0 then
-              { We disable the read filter, any call to Recv() MUST reenable }
-              { this filter by a call to SynchronizedEnableReadEvent.        }
-              DisableReadEvent(CurEvt.Ident, IEventSrc.ObjectID)
-            else
-              LDelFlag := edaAll; // Delete all
-          end;
+
+          if LDelFlag <> edaAll then
+            DisableReadEvent(CurEvt.Ident, IEventSrc.ObjectID);
         end;
 
         { Copy these since they may be cleared when LDelFlag is handled below }
@@ -19366,6 +19407,7 @@ begin
 
         { Process LDelFlag here since we might have to leave the critical     }
         { section when PostMessage() below failed due to a full queue         }
+
         case LDelFlag of
           edaAll :
             InternalRemoveEvents(IEventSrc);
@@ -19374,15 +19416,15 @@ begin
               if (LEvtMask and FD_READ = FD_READ) or
                  (LEvtMask and FD_ACCEPT = FD_ACCEPT) then
               begin
-                 RemoveWriteEvent(CurEvt.Ident, IEventSrc.ObjectID);
-                 IEventSrc.EventMask := LEvtMask xor FD_WRITE xor FD_CONNECT;
+                RemoveWriteEvent(CurEvt.Ident, IEventSrc.ObjectID);
+                IEventSrc.EventMask := (LEvtMask and not FD_WRITE) and not FD_CONNECT;
               end
               else
-                 InternalRemoveEvents(IEventSrc);
+                InternalRemoveEvents(IEventSrc);
             end;
         end;
 
-        if LoParam > 0 then // finally post the socket event
+        if LoParam > 0 then // finally post the socket event if any
         begin
           if (LoParam = FD_ACCEPT) then // all events have to be queued/posted
             LPostMsgFunc := PostMessage
@@ -19390,7 +19432,8 @@ begin
             { PostUniqueMessage() posts the message only if it doesn't already }
             { exist in the destination queue. This is especially important     }
             { with FD_READ messages if wsoNoReceiveLoop isn't in the options   }
-            { in order to not fill the queue with useless messages.            }
+            { in order to not overflow the queue with useless and performance  }
+            { killing messages.                                                }
             LPostMsgFunc := PostUniqueMessage;
 
           while not LPostMsgFunc(LHwnd, LMsgID, WPARAM(CurEvt.Ident),
