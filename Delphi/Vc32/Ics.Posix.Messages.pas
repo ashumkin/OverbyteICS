@@ -67,6 +67,7 @@ uses
 
 const
   MESSAGE_QUEUE_SIZE  = 10000;
+  MESSAGE_CACHE_SIZE  = MESSAGE_QUEUE_SIZE; // smaller ?
 
 { Message IDs }
   { 0 through WM_USER –1 Messages reserved for use by the system. }
@@ -226,15 +227,13 @@ type
     FEnterExitObserverRef : CFRunLoopObserverRef;
     FThreadID             : TThreadID;
     FMessageQueue         : TMessageQueue;
-    FSyncMessageRec       : TIcsSyncMessageRec;
   {$IFDEF MSGQ_DEBUG}
     FMaxMsgCount          : Integer;
   {$ENDIF}
     function CheckForSyncMessages(Timeout: Integer = 0): Boolean;
-    procedure MsgSynchronize(ASyncRec: PSynchronizeRecord;
-      ADestination: TIcsMessagePump); overload;
-    procedure MsgSynchronize(hWnd: HWND; Msg: UINT; wParam: WPARAM;
-      lParam: LPARAM; ADestination: TIcsMessagePump); overload;
+    function MsgSynchronize(hWnd: HWND; Msg: UINT; wParam: WPARAM;
+      lParam: LPARAM; ADestination: TIcsMessagePump;
+      out GlobalReadUnlocked: Boolean): LRESULT;
     function TriggerMessage(ahWnd: HWND; auMsg: UINT;
       awParam: WPARAM; alParam: LPARAM): LRESULT;
     class function GetInstance: TIcsMessagePump; static;
@@ -876,7 +875,9 @@ begin
           FSyncLock.Leave;
           try
             try
-              if FTerminated then
+              if FTerminated or
+                 { We may have destroyed the HWND of the waiting sync message }
+                 (not IsWindow(SyncProc.SyncRec.FSyncMessageParams.aHwnd)) then
                 SyncProc.SyncRec.FSyncMessageParams.aResult := -1
               else begin
                 SyncProc.SyncRec.FSyncMessageParams.aResult :=
@@ -886,7 +887,6 @@ begin
                                    SyncProc.SyncRec.FSyncMessageParams.aLParam);
               end;
             except
-              //raise;
               SyncProc.SyncRec.FSynchronizeException := AcquireExceptionObject;
             end;
           finally
@@ -905,59 +905,56 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsMessagePump.MsgSynchronize(ASyncRec: PSynchronizeRecord;
-  ADestination: TIcsMessagePump);
+function TIcsMessagePump.MsgSynchronize(hWnd: HWND; Msg: UINT; wParam: WPARAM;
+  lParam: LPARAM; ADestination: TIcsMessagePump;
+  out GlobalReadUnlocked: Boolean): LRESULT;
 var
   SyncProc: TSyncProc;
   SyncProcPtr: PSyncProc;
   LReleaseFlag: Boolean;
 begin
-    SyncProcPtr := @SyncProc;
-    if ADestination.FTerminated then begin
-      SyncProcPtr.SyncRec.FSyncMessageParams.aResult := -1;
-      Exit;
-    end;
-    SyncProcPtr.Signal := TEvent.Create(nil, True, False, '');
-    try
-      LReleaseFlag := True;
-      ADestination.FSyncLock.Enter;
-      try
-        if ADestination.FSyncList = nil then
-          ADestination.FSyncList := TList.Create;
-        SyncProcPtr.SyncRec := ASyncRec;
-        ADestination.FSyncList.Add(SyncProcPtr);
-        ADestination.Wakeup(nil); // Requires that messages are already processed in destination thread
-        ADestination.FSyncLock.Leave;
-        LReleaseFlag := False;
-        //try
-          SyncProcPtr.Signal.WaitFor(INFINITE);
-          //TMonitor.Wait(SyncProcPtr.Signal, ADestination.FLock, INFINITE);
-        //finally
-        //  ADestination.FLock.Enter;
-        //end;
-      finally
-        if LReleaseFlag then // ADestination might be freed already
-          ADestination.FSyncLock.Leave;
-      end;
-    finally
-      SyncProcPtr.Signal.Free;
-    end;
-    if Assigned(ASyncRec.FSynchronizeException) then
-      raise ASyncRec.FSynchronizeException;
-end;
+  Result := -1;
+  GlobalReadUnlocked := False;
 
+  if ADestination.FTerminated then
+    Exit;
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TIcsMessagePump.MsgSynchronize(hWnd: HWND; Msg: UINT; wParam: WPARAM;
-  lParam: LPARAM; ADestination: TIcsMessagePump);
-begin
   FSynchronize.FSynchronizeException      := nil;
   FSynchronize.FSyncMessageParams.aHwnd   := hWnd;
   FSynchronize.FSyncMessageParams.aMsg    := Msg;
   FSynchronize.FSyncMessageParams.aWParam := wParam;
   FSynchronize.FSyncMessageParams.aLParam := lParam;
   FSynchronize.FSyncMessageParams.aResult := 0;
-  MsgSynchronize(@FSynchronize, ADestination);
+
+  SyncProcPtr := @SyncProc;
+
+  SyncProcPtr.Signal := TEvent.Create(nil, True, False, '');
+  try
+    LReleaseFlag := True;
+    ADestination.FSyncLock.Enter;
+    try
+      if ADestination.FSyncList = nil then
+        ADestination.FSyncList := TList.Create;
+      SyncProcPtr.SyncRec := @FSynchronize;
+      ADestination.FSyncList.Add(SyncProcPtr);
+      ADestination.Wakeup(nil); // Requires that messages are already processed in destination thread
+      ADestination.FSyncLock.Leave;
+      LReleaseFlag := False;
+      GlobalSync.EndRead;
+      GlobalReadUnlocked := True;
+
+      SyncProcPtr.Signal.WaitFor(INFINITE);
+
+      Result := FSynchronize.FSyncMessageParams.aResult;
+    finally
+      if LReleaseFlag then // ADestination might be freed already
+        ADestination.FSyncLock.Leave;
+    end;
+  finally
+    SyncProcPtr.Signal.Free;
+  end;
+  if Assigned(FSynchronize.FSynchronizeException) then
+    raise FSynchronize.FSynchronizeException;
 end;
 
 
@@ -978,7 +975,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsMessagePump.TMessageQueue.TMsgCache.Push(P: PQueueMessage);
 begin
-  if Count < MESSAGE_QUEUE_SIZE then
+  if Count < MESSAGE_CACHE_SIZE then
   begin
     P.Next := First;
     First := P;
@@ -1393,9 +1390,9 @@ function SendMessage(hWnd: HWND; Msg: UINT; wParam: WPARAM;
   lParam: LPARAM): LRESULT;
 var
   LDstPump, LSrcPump: TIcsMessagePump;
-  LUnLockFlag: Boolean;
+  LGlobalReadUnlocked: Boolean;
 begin
-  LUnLockFlag := TRUE;
+  LGlobalReadUnlocked := False;
   GlobalSync.BeginRead;
   try
     if not GLWindowTree.Contains(hWnd) then
@@ -1407,7 +1404,7 @@ begin
     if LDstPump.FThreadID = GetCurrentThreadID then
     begin
       GlobalSync.EndRead;
-      LUnLockFlag := False;
+      LGlobalReadUnlocked := True;
       Result := LDstPump.TriggerMessage(hWnd, Msg, wParam, lParam);
     end
     else begin
@@ -1416,14 +1413,18 @@ begin
         otherwise SendMessage would be too slow }
       LSrcPump := TIcsMessagePump.Create;
       try
-        LSrcPump.MsgSynchronize(hWnd, Msg, wParam, lParam, LDstPump);
-        Result := LSrcPump.FSyncMessageRec.aResult;
+        { Next method call will call GlobalSync.EndRead when it should be  }
+        { safe to do so, otherwise if we do not leave the read lock before }
+        { waiting for the destination thread to pick up the job we may end }
+        { in a deadlock                                                    }
+        Result := LSrcPump.MsgSynchronize(hWnd, Msg, wParam, lParam, LDstPump,
+                                          LGlobalReadUnlocked);
       finally
         LSrcPump.Free;
       end;
     end;
   finally
-    if LUnLockFlag then
+    if not LGlobalReadUnlocked then
       GlobalSync.EndRead;
   end;
 end;
