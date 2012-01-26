@@ -10,7 +10,7 @@ Version:      1.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2011 by François PIETTE
+Legal issues: Copyright (C) 2003-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -55,7 +55,6 @@ Jul 18, 2008  V1.06 A. Garrels fixed an AV in SslHttpCli1SslCliCertRequest
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsHttpsTst1;
-{$I OverbyteIcsDefs.inc}
 {$B-}                                 { Enable partial boolean evaluation   }
 {$T-}                                 { Untyped pointers                    }
 {$X+}                                 { Enable extended syntax              }
@@ -68,9 +67,9 @@ unit IcsHttpsTst1;
 
 interface
 
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF FMX}
   {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
 {$ENDIF}
@@ -551,7 +550,7 @@ begin
         FCurrentRequest := httpGet;
         SslHttpCli1.GetAsync;
     except
-        on E:Exception do begin
+        on E: Exception do begin
             Display('Connect error. ' + E.Classname + ': ' + E.Message);
             Exit;
         end;
@@ -731,6 +730,7 @@ begin
 
     for I := 0 to SslHttpCli1.RcvdHeader.Count - 1 do
         Display('hdr>' + SslHttpCli1.RcvdHeader.Strings[I]);
+    SslHttpCli1.RcvdHeader.Clear;
 
     if SslHttpCli1.DocName = '' then
         DocumentMemo.Lines.Add('*** NO DOCUMENT FILE NAME ***')
@@ -760,7 +760,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpsTstForm.SslHttpCli1HeaderData(Sender: TObject);
 begin
-     Display(SslHttpCli1.LastResponse);
+    Display('hdr>' + SslHttpCli1.LastResponse);
 end;
 
 
@@ -1082,6 +1082,7 @@ begin
 
         for I := 0 to SslHttpCli1.RcvdHeader.Count - 1 do
             Display('hdr>' + SslHttpCli1.RcvdHeader.Strings[I]);
+        SslHttpCli1.RcvdHeader.Clear;
     finally
         SetButtonState(TRUE);
     end;

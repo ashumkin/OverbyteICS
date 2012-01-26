@@ -51,6 +51,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_UnitSearchPath>..\Vc32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<VerInfo_Locale>1031</VerInfo_Locale>
 			<Manifest_File>None</Manifest_File>
@@ -173,6 +174,11 @@
 					</DeployFile>
 					<DeployFile Class="DependencyModule" LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib">
 						<Platform Name="OSX32"/>
+					</DeployFile>
+					<DeployFile Class="ProjectOSXEntitlements" Configuration="Debug" LocalName="OSX32\Debug\IcsFtpServ.entitlements">
+						<Platform Name="OSX32">
+							<Enabled>false</Enabled>
+						</Platform>
 					</DeployFile>
 					<DeployFile Class="DebugSymbols" Configuration="Debug" LocalName="OSX32\Debug\IcsFtpServ.rsm">
 						<Platform Name="OSX32">

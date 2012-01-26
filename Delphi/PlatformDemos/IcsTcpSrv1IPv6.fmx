@@ -14,17 +14,16 @@ object TcpSrvForm: TTcpSrvForm
     Align = alTop
     Width = 397.000000000000000000
     Height = 41.000000000000000000
-    TabOrder = 0
   end
   object DisplayMemo: TMemo
     Align = alClient
     Position.Point = '(0,41)'
     Width = 397.000000000000000000
     Height = 236.000000000000000000
-    TabOrder = 1
-    Text = 'DisplayMemo'
+    TabOrder = 0
+    Lines.Strings = (
+      'DisplayMemo')
     KeyboardType = vktDefault
-    Top = 41
   end
   object WSocketServer1: TWSocketServer
     LineMode = False

@@ -51,6 +51,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_UnitSearchPath>..\Vc32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_Define>FMX;USE_SSL;$(DCC_Define)</DCC_Define>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<Manifest_File>None</Manifest_File>
@@ -87,6 +88,8 @@
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
@@ -95,6 +98,9 @@
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1_OSX32)'!=''">
+			<DCC_DebugDCUs>false</DCC_DebugDCUs>
+			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<VerInfo_Keys>CFBundleName=$(MSBuildProjectName);CFBundleDisplayName=$(MSBuildProjectName);CFBundleIdentifier=$(MSBuildProjectName);CFBundleVersion=1.0.0.0;CFBundlePackageType=APPL;CFBundleSignature=????;CFBundleAllowMixedLocalizations=YES;CFBundleExecutable=$(MSBuildProjectName)</VerInfo_Keys>
 			<Debugger_Launcher>/usr/X11/bin/xterm -e &quot;%debuggee%&quot;</Debugger_Launcher>
@@ -181,13 +187,18 @@
 							<RemoteName>IcsHttpsTst.rsm</RemoteName>
 						</Platform>
 					</DeployFile>
-					<DeployFile Class="ProjectOutput" Configuration="Debug" LocalName="OSX32\Debug\IcsHttpsTst">
+					<DeployFile Class="ProjectOSXResource" Configuration="Debug" LocalName="OSX32\Debug\IcsHttpsTst.icns">
 						<Platform Name="OSX32"/>
 					</DeployFile>
 					<DeployFile Class="DependencyModule" LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib">
 						<Platform Name="OSX32"/>
 					</DeployFile>
-					<DeployFile Class="ProjectOSXResource" Configuration="Debug" LocalName="OSX32\Debug\IcsHttpsTst.icns">
+					<DeployFile Class="ProjectOSXEntitlements" Configuration="Debug" LocalName="OSX32\Debug\IcsHttpsTst.entitlements">
+						<Platform Name="OSX32">
+							<Enabled>false</Enabled>
+						</Platform>
+					</DeployFile>
+					<DeployFile Class="ProjectOutput" Configuration="Debug" LocalName="OSX32\Debug\IcsHttpsTst">
 						<Platform Name="OSX32"/>
 					</DeployFile>
 					<DeployClass Name="ProjectOutput" Required="true">
@@ -253,6 +264,12 @@
 						</Platform>
 						<Platform Name="Win32">
 							<Operation>0</Operation>
+						</Platform>
+					</DeployClass>
+					<DeployClass Name="ProjectOSXEntitlements">
+						<Platform Name="OSX32">
+							<RemoteDir>Contents</RemoteDir>
+							<Operation>1</Operation>
 						</Platform>
 					</DeployClass>
 					<DeployClass Name="AdditionalDebugSymbols">

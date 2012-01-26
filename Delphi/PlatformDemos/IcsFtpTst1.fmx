@@ -16,21 +16,19 @@ object FtpReceiveForm: TFtpReceiveForm
     Width = 634.000000000000000000
     Height = 195.000000000000000000
     TabOrder = 0
-    Text = 'DisplayMemo'
+    Lines.Strings = (
+      'DisplayMemo')
     KeyboardType = vktDefault
-    Top = 401
   end
   object Panel1: TPanel
     Align = alTop
     Position.Point = '(0,173)'
     Width = 634.000000000000000000
     Height = 228.000000000000000000
-    TabOrder = 1
     object InfoLabel: TLabel
       Position.Point = '(512,6)'
-      Width = 50.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 0
+      Width = 50.035640716552730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'InfoLabel'
       WordWrap = False
@@ -39,51 +37,45 @@ object FtpReceiveForm: TFtpReceiveForm
       Position.Point = '(512,25)'
       Width = 105.000000000000000000
       Height = 13.000000000000000000
-      TabOrder = 1
       Text = 'StateLabel'
       WordWrap = False
     end
     object Label7: TLabel
       Position.Point = '(504,122)'
-      Width = 57.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 2
+      Width = 56.314449310302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Resume at'
       WordWrap = False
     end
     object Label11: TLabel
       Position.Point = '(504,142)'
-      Width = 49.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 3
+      Width = 48.295406341552730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Start Pos'
       WordWrap = False
     end
     object Label12: TLabel
       Position.Point = '(504,162)'
-      Width = 44.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 4
+      Width = 43.708492279052730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'End Pos'
       WordWrap = False
     end
     object Label13: TLabel
       Position.Point = '(504,182)'
-      Width = 60.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 5
+      Width = 61.363277435302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Max KBytes'
       WordWrap = False
     end
     object Label15: TLabel
       Position.Point = '(504,202)'
-      Width = 53.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 6
+      Width = 52.952144622802730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Language'
       WordWrap = False
@@ -93,7 +85,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 105.000000000000000000
       Height = 17.000000000000000000
       OnClick = ExitButtonClick
-      TabOrder = 7
+      TabOrder = 0
       Text = '&Exit Program'
     end
     object OpenAsyncButton: TButton
@@ -101,7 +93,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = OpenAsyncButtonClick
-      TabOrder = 8
+      TabOrder = 1
       Text = 'Open'
     end
     object QuitAsyncButton: TButton
@@ -109,7 +101,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = QuitAsyncButtonClick
-      TabOrder = 9
+      TabOrder = 2
       Text = 'Quit'
     end
     object CwdAsyncButton: TButton
@@ -117,7 +109,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = CwdAsyncButtonClick
-      TabOrder = 10
+      TabOrder = 3
       Text = 'Cwd'
     end
     object UserAsyncButton: TButton
@@ -125,7 +117,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = UserAsyncButtonClick
-      TabOrder = 11
+      TabOrder = 4
       Text = 'User'
     end
     object PassAsyncButton: TButton
@@ -133,7 +125,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = PassAsyncButtonClick
-      TabOrder = 12
+      TabOrder = 5
       Text = 'Pass'
     end
     object ConnectAsyncButton: TButton
@@ -141,7 +133,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ConnectAsyncButtonClick
-      TabOrder = 13
+      TabOrder = 6
       Text = 'Connect'
     end
     object GetAsyncButton: TButton
@@ -149,7 +141,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = GetAsyncButtonClick
-      TabOrder = 14
+      TabOrder = 7
       Text = 'Get'
     end
     object ReceiveAsyncButton: TButton
@@ -157,7 +149,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ReceiveAsyncButtonClick
-      TabOrder = 15
+      TabOrder = 8
       Text = 'Receive'
     end
     object AbortAsyncButton: TButton
@@ -165,7 +157,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = AbortAsyncButtonClick
-      TabOrder = 16
+      TabOrder = 9
       Text = 'Abort'
     end
     object DirAsyncButton: TButton
@@ -173,7 +165,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = DirAsyncButtonClick
-      TabOrder = 17
+      TabOrder = 10
       Text = 'Dir'
     end
     object DirectoryAsyncButton: TButton
@@ -181,7 +173,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = DirectoryAsyncButtonClick
-      TabOrder = 18
+      TabOrder = 11
       Text = 'Directory'
     end
     object LsAsyncButton: TButton
@@ -189,7 +181,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = LsAsyncButtonClick
-      TabOrder = 19
+      TabOrder = 12
       Text = 'Ls'
     end
     object ListAsyncButton: TButton
@@ -197,7 +189,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ListAsyncButtonClick
-      TabOrder = 20
+      TabOrder = 13
       Text = 'List'
     end
     object SystAsyncButton: TButton
@@ -205,7 +197,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SystAsyncButtonClick
-      TabOrder = 21
+      TabOrder = 14
       Text = 'Syst'
     end
     object SystemAsyncButton: TButton
@@ -213,7 +205,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SystemAsyncButtonClick
-      TabOrder = 22
+      TabOrder = 15
       Text = 'System'
     end
     object FileSizeAsyncButton: TButton
@@ -221,7 +213,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = FileSizeAsyncButtonClick
-      TabOrder = 23
+      TabOrder = 16
       Text = 'FileSize'
     end
     object SizeAsyncButton: TButton
@@ -229,7 +221,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SizeAsyncButtonClick
-      TabOrder = 24
+      TabOrder = 17
       Text = 'Size'
     end
     object MkdAsyncButton: TButton
@@ -237,7 +229,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = MkdAsyncButtonClick
-      TabOrder = 25
+      TabOrder = 18
       Text = 'Mkd'
     end
     object MkdirAsyncButton: TButton
@@ -245,7 +237,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = MkdirAsyncButtonClick
-      TabOrder = 26
+      TabOrder = 19
       Text = 'Mkdir'
     end
     object RmdAsyncButton: TButton
@@ -253,7 +245,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RmdAsyncButtonClick
-      TabOrder = 27
+      TabOrder = 20
       Text = 'Rmd'
     end
     object RmdirAsyncButton: TButton
@@ -261,7 +253,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RmdirAsyncButtonClick
-      TabOrder = 28
+      TabOrder = 21
       Text = 'Rmdir'
     end
     object RenAsyncButton: TButton
@@ -269,7 +261,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RenAsyncButtonClick
-      TabOrder = 29
+      TabOrder = 22
       Text = 'Ren'
     end
     object RenameAsyncButton: TButton
@@ -277,7 +269,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RenameAsyncButtonClick
-      TabOrder = 30
+      TabOrder = 23
       Text = 'Rename'
     end
     object DeleAsyncButton: TButton
@@ -285,7 +277,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = DeleAsyncButtonClick
-      TabOrder = 31
+      TabOrder = 24
       Text = 'Dele'
     end
     object DeleteAsyncButton: TButton
@@ -293,7 +285,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = DeleteAsyncButtonClick
-      TabOrder = 32
+      TabOrder = 25
       Text = 'Delete'
     end
     object PwdAsyncButton: TButton
@@ -301,7 +293,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = PwdAsyncButtonClick
-      TabOrder = 33
+      TabOrder = 26
       Text = 'Pwd'
     end
     object QuoteAsyncButton: TButton
@@ -309,7 +301,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = QuoteAsyncButtonClick
-      TabOrder = 34
+      TabOrder = 27
       Text = 'Quote'
     end
     object DoQuoteAsyncButton: TButton
@@ -317,7 +309,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = DoQuoteAsyncButtonClick
-      TabOrder = 35
+      TabOrder = 28
       Text = 'DoQuote'
     end
     object PutAsyncButton: TButton
@@ -325,7 +317,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = PutAsyncButtonClick
-      TabOrder = 36
+      TabOrder = 29
       Text = 'Put'
     end
     object TransmitAsyncButton: TButton
@@ -333,7 +325,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = TransmitAsyncButtonClick
-      TabOrder = 37
+      TabOrder = 30
       Text = 'Transmit'
     end
     object TypeSetAsyncButton: TButton
@@ -341,7 +333,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = TypeSetAsyncButtonClick
-      TabOrder = 38
+      TabOrder = 31
       Text = 'TypeSet'
     end
     object RestGetAsyncButton: TButton
@@ -349,7 +341,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RestGetAsyncButtonClick
-      TabOrder = 39
+      TabOrder = 32
       Text = 'RestGet'
     end
     object RestartGetAsyncButton: TButton
@@ -357,7 +349,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RestartGetAsyncButtonClick
-      TabOrder = 40
+      TabOrder = 33
       Text = 'RestartGet'
     end
     object CDupAsyncButton: TButton
@@ -365,7 +357,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = CDupAsyncButtonClick
-      TabOrder = 41
+      TabOrder = 34
       Text = 'CDup'
     end
     object ClearButton: TButton
@@ -373,7 +365,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 105.000000000000000000
       Height = 17.000000000000000000
       OnClick = ClearButtonClick
-      TabOrder = 42
+      TabOrder = 35
       Text = 'Clear Display'
     end
     object AppendFileAsyncButton: TButton
@@ -381,7 +373,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = AppendFileAsyncButtonClick
-      TabOrder = 43
+      TabOrder = 36
       Text = 'AppendFile'
     end
     object AppendAsyncButton: TButton
@@ -389,7 +381,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = AppendAsyncButtonClick
-      TabOrder = 44
+      TabOrder = 37
       Text = 'Append'
     end
     object Button1: TButton
@@ -397,7 +389,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 105.000000000000000000
       Height = 17.000000000000000000
       OnClick = Button1Click
-      TabOrder = 45
+      TabOrder = 38
       Text = 'Button1'
     end
     object RestPutAsyncButton: TButton
@@ -405,7 +397,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RestPutAsyncButtonClick
-      TabOrder = 46
+      TabOrder = 39
       Text = 'RestPut'
     end
     object RestartPutAsyncButton: TButton
@@ -413,14 +405,14 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = RestartPutAsyncButtonClick
-      TabOrder = 47
+      TabOrder = 40
       Text = 'RestartPut'
     end
     object ResumeAtEdit: TEdit
       Position.Point = '(560,118)'
       Width = 57.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 48
+      TabOrder = 41
       KeyboardType = vktDefault
       Password = False
       Text = 'ResumeAtEdit'
@@ -430,7 +422,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 163.000000000000000000
       Height = 17.000000000000000000
       OnClick = TransmitUsingStreamButtonClick
-      TabOrder = 49
+      TabOrder = 42
       Text = 'Transmit using a stream'
     end
     object ReceiveUsingStreamButton: TButton
@@ -438,7 +430,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 163.000000000000000000
       Height = 17.000000000000000000
       OnClick = ReceiveUsingStreamButtonClick
-      TabOrder = 50
+      TabOrder = 43
       Text = 'Receive using a stream'
     end
     object StressPutButton: TButton
@@ -446,7 +438,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 105.000000000000000000
       Height = 17.000000000000000000
       OnClick = StressPutButtonClick
-      TabOrder = 51
+      TabOrder = 44
       Text = 'Stress Put'
     end
     object AbortXferAsyncButton: TButton
@@ -454,14 +446,14 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = AbortXferAsyncButtonClick
-      TabOrder = 52
+      TabOrder = 45
       Text = 'AbortXfer'
     end
     object AuthSslButton: TButton
       Position.Point = '(254,132)'
       Width = 81.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 53
+      TabOrder = 46
       Text = 'AuthSsl'
     end
     object AcctAsyncButton: TButton
@@ -469,7 +461,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = AcctAsyncButtonClick
-      TabOrder = 54
+      TabOrder = 47
       Text = 'Account'
     end
     object SiteExecAsyncButton: TButton
@@ -477,7 +469,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SiteExecAsyncButtonClick
-      TabOrder = 55
+      TabOrder = 48
       Text = 'SiteExec'
     end
     object ClntAsyncButton: TButton
@@ -485,7 +477,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ClntAsyncButtonClick
-      TabOrder = 56
+      TabOrder = 49
       Text = 'Client'
     end
     object MlsdAsyncButton: TButton
@@ -493,7 +485,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = MlsdAsyncButtonClick
-      TabOrder = 57
+      TabOrder = 50
       Text = 'MLSD'
     end
     object MlstAsyncButton: TButton
@@ -501,7 +493,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = MlstAsyncButtonClick
-      TabOrder = 58
+      TabOrder = 51
       Text = 'MLST'
     end
     object XCmlsdAsyncButton: TButton
@@ -509,7 +501,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = XCmlsdAsyncButtonClick
-      TabOrder = 59
+      TabOrder = 52
       Text = 'XCMLSD'
     end
     object FeatAsyncButton: TButton
@@ -517,7 +509,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = FeatAsyncButtonClick
-      TabOrder = 60
+      TabOrder = 53
       Text = 'Feat'
     end
     object XDmlsdAsyncButton: TButton
@@ -525,7 +517,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = XDmlsdAsyncButtonClick
-      TabOrder = 61
+      TabOrder = 54
       Text = 'XDMLSD'
     end
     object Md5AsyncButton: TButton
@@ -533,7 +525,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = Md5AsyncButtonClick
-      TabOrder = 62
+      TabOrder = 55
       Text = 'MD5'
     end
     object MdtmAsyncButton: TButton
@@ -541,7 +533,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = MdtmAsyncButtonClick
-      TabOrder = 63
+      TabOrder = 56
       Text = 'MDTM'
     end
     object XcrcAsyncButton: TButton
@@ -549,7 +541,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = XcrcAsyncButtonClick
-      TabOrder = 64
+      TabOrder = 57
       Text = 'XCRC'
     end
     object MfmtAsyncButton: TButton
@@ -557,7 +549,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = MfmtAsyncButtonClick
-      TabOrder = 65
+      TabOrder = 58
       Text = 'MFMT'
     end
     object SiteZoneAsyncButton: TButton
@@ -565,7 +557,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SiteZoneAsyncButtonClick
-      TabOrder = 66
+      TabOrder = 59
       Text = 'SiteZone'
     end
     object SiteIndexAsyncButton: TButton
@@ -573,7 +565,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SiteIndexAsyncButtonClick
-      TabOrder = 67
+      TabOrder = 60
       Text = 'SiteIndex'
     end
     object SitePaswdAsyncButton: TButton
@@ -581,7 +573,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SitePaswdAsyncButtonClick
-      TabOrder = 68
+      TabOrder = 61
       Text = 'SitePaswd'
     end
     object SiteMsgAsyncButton: TButton
@@ -589,7 +581,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = SiteMsgAsyncButtonClick
-      TabOrder = 69
+      TabOrder = 62
       Text = 'SiteMsg'
     end
     object XMd5AsyncButton: TButton
@@ -597,7 +589,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = XMd5AsyncButtonClick
-      TabOrder = 70
+      TabOrder = 63
       Text = 'XMD5'
     end
     object AlloAsyncButton: TButton
@@ -605,14 +597,14 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = AlloAsyncButtonClick
-      TabOrder = 71
+      TabOrder = 64
       Text = 'Allo'
     end
     object PosStartEdit: TEdit
       Position.Point = '(560,138)'
       Width = 57.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 72
+      TabOrder = 65
       KeyboardType = vktDefault
       Password = False
       Text = 'PosStartEdit'
@@ -621,7 +613,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Position.Point = '(560,158)'
       Width = 57.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 73
+      TabOrder = 66
       KeyboardType = vktDefault
       Password = False
       Text = 'PosEndEdit'
@@ -631,7 +623,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = CombAsyncButtonClick
-      TabOrder = 74
+      TabOrder = 67
       Text = 'Comb'
     end
     object OptsAsyncButton: TButton
@@ -639,7 +631,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = OptsAsyncButtonClick
-      TabOrder = 75
+      TabOrder = 68
       Text = 'Opts'
     end
     object ModeZAsyncButton: TButton
@@ -647,7 +639,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ModeZAsyncButtonClick
-      TabOrder = 76
+      TabOrder = 69
       Text = 'Mode Z'
     end
     object ModeSAsyncButton: TButton
@@ -655,14 +647,14 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ModeSAsyncButtonClick
-      TabOrder = 77
+      TabOrder = 70
       Text = 'Mode S'
     end
     object MaxKB: TEdit
       Position.Point = '(560,178)'
       Width = 57.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 78
+      TabOrder = 71
       KeyboardType = vktDefault
       Password = False
       Text = 'MaxKB'
@@ -672,7 +664,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ConnectHostAsyncButtonClick
-      TabOrder = 79
+      TabOrder = 72
       Text = 'Connect Host'
     end
     object HostAsyncButton: TButton
@@ -680,7 +672,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = HostAsyncButtonClick
-      TabOrder = 80
+      TabOrder = 73
       Text = 'Host'
     end
     object ReinAsyncButton: TButton
@@ -688,7 +680,7 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = ReinAsyncButtonClick
-      TabOrder = 81
+      TabOrder = 74
       Text = 'Reinitialize'
     end
     object LangAsyncButton: TButton
@@ -696,24 +688,24 @@ object FtpReceiveForm: TFtpReceiveForm
       Width = 81.000000000000000000
       Height = 17.000000000000000000
       OnClick = LangAsyncButtonClick
-      TabOrder = 82
+      TabOrder = 75
       Text = 'LANG'
     end
     object Lanugage: TEdit
       Position.Point = '(560,200)'
       Width = 57.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 83
+      TabOrder = 76
       KeyboardType = vktDefault
       Password = False
       Text = 'EN'
     end
-    object Button2: TButton
+    object SleepButton: TButton
       Position.Point = '(418,204)'
       Width = 81.000000000000000000
       Height = 17.000000000000000000
-      OnClick = Button2Click
-      TabOrder = 84
+      OnClick = SleepButtonClick
+      TabOrder = 77
       Text = 'Sleep(10 sec)'
     end
   end
@@ -721,13 +713,11 @@ object FtpReceiveForm: TFtpReceiveForm
     Align = alTop
     Width = 634.000000000000000000
     Height = 173.000000000000000000
-    TabOrder = 2
     TabIndex = 1
     TabHeight = 20.000000000000000000
     object MainSettingsTabSheet: TTabItem
       Width = 80.000000000000000000
       Height = 20.000000000000000000
-      TabOrder = 0
       Index = 0
       TextAlign = taCenter
       Text = 'Main'
@@ -739,12 +729,10 @@ object FtpReceiveForm: TFtpReceiveForm
         Height = 149.000000000000000000
         Padding.Rect = '(2,2,2,2)'
         StyleLookup = 'PanelWinStyle'
-        TabOrder = 0
         object Label1: TLabel
           Position.Point = '(11,12)'
           Width = 58.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 0
           AutoSize = True
           Text = 'HostName'
           WordWrap = False
@@ -753,7 +741,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(20,95)'
           Width = 48.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 1
           AutoSize = True
           Text = 'Host File'
           WordWrap = False
@@ -762,7 +749,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(11,39)'
           Width = 57.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 2
           AutoSize = True
           Text = 'UserName'
           WordWrap = False
@@ -771,7 +757,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(216,40)'
           Width = 53.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 3
           AutoSize = True
           Text = 'PassWord'
           WordWrap = False
@@ -780,7 +765,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(16,123)'
           Width = 50.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 4
           AutoSize = True
           Text = 'Local File'
           WordWrap = False
@@ -789,7 +773,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(240,12)'
           Width = 25.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 5
           AutoSize = True
           Text = 'Port'
           WordWrap = False
@@ -798,7 +781,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(7,63)'
           Width = 60.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 6
           AutoSize = True
           Text = 'Port Range'
           WordWrap = False
@@ -807,7 +789,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(137,63)'
           Width = 12.500000000000000000
           Height = 15.500000000000000000
-          TabOrder = 7
           Text = 'to'
           WordWrap = False
         end
@@ -815,7 +796,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(224,64)'
           Width = 44.000000000000000000
           Height = 19.000000000000000000
-          TabOrder = 8
           AutoSize = True
           Text = 'Account'
           WordWrap = False
@@ -824,7 +804,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(501,96)'
           Width = 53.000000000000000000
           Height = 13.000000000000000000
-          TabOrder = 9
           Text = 'CodePage:'
           WordWrap = False
         end
@@ -832,7 +811,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(460,72)'
           Width = 25.000000000000000000
           Height = 13.000000000000000000
-          TabOrder = 10
           Text = 'Opts:'
           WordWrap = False
         end
@@ -840,7 +818,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(72,8)'
           Width = 137.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 11
           KeyboardType = vktDefault
           Password = False
           Text = 'HostNameEdit'
@@ -849,7 +826,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(212,92)'
           Width = 261.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 12
           KeyboardType = vktDefault
           Password = False
           Text = 'HostFileEdit'
@@ -858,7 +834,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(72,36)'
           Width = 137.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 13
           KeyboardType = vktDefault
           Password = False
           Text = 'UserNameEdit'
@@ -867,7 +842,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(276,36)'
           Width = 137.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 14
           KeyboardType = vktDefault
           Password = False
           Text = 'PassWordEdit'
@@ -876,14 +850,12 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(491,4)'
           Width = 117.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 15
           Text = 'Display Data'
         end
         object LocalFileEdit: TEdit
           Position.Point = '(72,119)'
           Width = 545.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 16
           KeyboardType = vktDefault
           Password = False
           Text = 'LocalFileEdit'
@@ -892,7 +864,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(376,12)'
           Width = 93.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 17
           IsChecked = True
           Text = 'Binary Mode'
         end
@@ -900,7 +871,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(72,92)'
           Width = 137.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 18
           KeyboardType = vktDefault
           Password = False
           Text = 'HostDirEdit'
@@ -909,7 +879,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(276,8)'
           Width = 85.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 19
           KeyboardType = vktDefault
           Password = False
           Text = 'PortEdit'
@@ -918,28 +887,24 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(491,34)'
           Width = 117.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 20
           Text = 'Synchronous'
         end
         object PassiveCheckBox: TCheckBox
           Position.Point = '(491,19)'
           Width = 117.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 21
           Text = 'Passive Mode'
         end
         object NoAutoResumeAtCheckBox: TCheckBox
           Position.Point = '(491,49)'
           Width = 117.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 22
           Text = 'NoAutoResumeAt'
         end
         object DataPortRangeStartEdit: TEdit
           Position.Point = '(72,60)'
           Width = 57.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 23
           KeyboardType = vktDefault
           Password = False
           Text = 'DataPortRangeStartEdit'
@@ -948,7 +913,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(156,60)'
           Width = 53.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 24
           KeyboardType = vktDefault
           Password = False
           Text = 'DataPortRangeEndEdit'
@@ -957,7 +921,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(276,60)'
           Width = 137.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 25
           KeyboardType = vktDefault
           Password = False
           Text = 'AccountEdit'
@@ -966,7 +929,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(560,92)'
           Width = 57.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 26
           KeyboardType = vktDefault
           OnChange = CodePageEditChange
           Password = False
@@ -976,7 +938,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Position.Point = '(491,69)'
           Width = 126.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 27
           ItemIndex = 0
           ItemHeight = 13.000000000000000000
           object ListBoxItem1: TListBoxItem
@@ -984,7 +945,6 @@ object FtpReceiveForm: TFtpReceiveForm
             Width = 101.000000000000000000
             Height = 17.000000000000000000
             HitTest = False
-            TabOrder = 0
             IsSelected = True
             Text = 'UTF8 ON'
           end
@@ -993,7 +953,6 @@ object FtpReceiveForm: TFtpReceiveForm
             Width = 106.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
-            TabOrder = 1
             Text = 'UTF8 OFF'
           end
           object ListBoxItem3: TListBoxItem
@@ -1001,7 +960,6 @@ object FtpReceiveForm: TFtpReceiveForm
             Width = 106.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
-            TabOrder = 2
             Text = 'MODE Z LEVEL 8'
           end
           object ListBoxItem4: TListBoxItem
@@ -1009,7 +967,6 @@ object FtpReceiveForm: TFtpReceiveForm
             Width = 106.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
-            TabOrder = 3
             Text = 'MODE Z LEVEL 4'
           end
           object ListBoxItem5: TListBoxItem
@@ -1017,7 +974,6 @@ object FtpReceiveForm: TFtpReceiveForm
             Width = 106.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
-            TabOrder = 4
             Text = 'MODE Z LEVEL 2'
           end
         end
@@ -1027,70 +983,62 @@ object FtpReceiveForm: TFtpReceiveForm
       Position.Point = '(80,0)'
       Width = 100.000000000000000000
       Height = 20.000000000000000000
-      TabOrder = 1
       Index = 1
       TextAlign = taCenter
       Text = 'Connection Type'
       WordWrap = False
       object Label22: TLabel
         Position.Point = '(39,10)'
-        Width = 28.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 0
+        Width = 28.003416061401370000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 'Type'
         WordWrap = False
       end
       object Label23: TLabel
         Position.Point = '(225,11)'
-        Width = 88.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 1
+        Width = 89.271476745605470000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 'HTTP proxy auth.'
         WordWrap = False
       end
       object Label18: TLabel
         Position.Point = '(14,37)'
-        Width = 56.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 2
+        Width = 56.405757904052730000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 'Proxy host'
         WordWrap = False
       end
       object Label19: TLabel
         Position.Point = '(16,63)'
-        Width = 56.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 3
+        Width = 55.782711029052730000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 'Proxy port'
         WordWrap = False
       end
       object Label20: TLabel
         Position.Point = '(260,37)'
-        Width = 55.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 4
+        Width = 55.788082122802730000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 'Proxy user'
         WordWrap = False
       end
       object Label21: TLabel
         Position.Point = '(235,64)'
-        Width = 82.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 5
+        Width = 82.176261901855470000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 'Proxy password'
         WordWrap = False
       end
       object Label17: TLabel
         Position.Point = '(16,92)'
-        Width = 448.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 6
+        Width = 451.218719482421900000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 
           'Note: Property Passive is set (overwritten) when HTTP or SOCKS p' +
@@ -1099,9 +1047,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label24: TLabel
         Position.Point = '(16,106)'
-        Width = 479.000000000000000000
-        Height = 19.000000000000000000
-        TabOrder = 7
+        Width = 479.143035888671900000
+        Height = 18.630859375000000000
         AutoSize = True
         Text = 
           'The ftpProxy connection-type supports type USER@HOST FTP-proxies' +
@@ -1112,7 +1059,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Position.Point = '(71,8)'
         Width = 145.000000000000000000
         Height = 21.000000000000000000
-        TabOrder = 8
+        TabOrder = 0
         ItemIndex = -1
         OnChange = ProxyTypeComboBoxCloseUp
       end
@@ -1120,7 +1067,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Position.Point = '(317,8)'
         Width = 145.000000000000000000
         Height = 21.000000000000000000
-        TabOrder = 9
+        TabOrder = 1
         ItemIndex = -1
         OnChange = ProxyHttpAuthTypeComboBoxCloseUp
       end
@@ -1128,7 +1075,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Position.Point = '(71,34)'
         Width = 145.000000000000000000
         Height = 21.000000000000000000
-        TabOrder = 10
+        TabOrder = 2
         KeyboardType = vktDefault
         Password = False
         Text = 'ProxyHostEdit'
@@ -1137,7 +1084,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Position.Point = '(71,61)'
         Width = 56.000000000000000000
         Height = 21.000000000000000000
-        TabOrder = 11
+        TabOrder = 3
         KeyboardType = vktDefault
         Password = False
         Text = 'ProxyPortEdit'
@@ -1146,7 +1093,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Position.Point = '(317,34)'
         Width = 145.000000000000000000
         Height = 21.000000000000000000
-        TabOrder = 12
+        TabOrder = 4
         KeyboardType = vktDefault
         Password = False
         Text = 'ProxyUserEdit'
@@ -1155,7 +1102,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Position.Point = '(317,60)'
         Width = 145.000000000000000000
         Height = 21.000000000000000000
-        TabOrder = 13
+        TabOrder = 5
         KeyboardType = vktDefault
         Password = False
         Text = 'ProxyPasswordEdit'

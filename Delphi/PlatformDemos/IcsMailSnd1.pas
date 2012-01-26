@@ -8,7 +8,7 @@ Version:      6.10
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2011 by François PIETTE
+Legal issues: Copyright (C) 1997-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -79,8 +79,6 @@ Mar 01, 2011  V6.10 Arno enable/disable the proxy-controls depending on proxy
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsMailSnd1;
-
-{$I OverbyteIcsDefs.inc}
 {$B-}                 { Enable partial boolean evaluation   }
 {$T-}                 { Untyped pointers                    }
 {$X+}                 { Enable extended syntax              }
@@ -93,9 +91,9 @@ unit IcsMailSnd1;
 
 interface
 
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF FMX}
   {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
 {$ENDIF}

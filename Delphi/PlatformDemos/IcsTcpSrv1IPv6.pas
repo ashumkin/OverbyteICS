@@ -9,7 +9,7 @@ Description:  Basic TCP server showing how to use TWSocketServer and
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2008 by François PIETTE
+Legal issues: Copyright (C) 1999-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -54,16 +54,16 @@ Jun 15, 2010 V7.03 A.Garrels changed to demonstrate IPv6 and listening on
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsTcpSrv1IPv6;
 
-{$I OverbyteIcsDefs.inc}
-
 interface
 
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF FMX}
   {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
 {$ENDIF}
+
+{$WARN SYMBOL_PLATFORM OFF}
 
 uses
 {$IFDEF MSWINDOWS}
@@ -191,7 +191,9 @@ begin
     { Compute INI file name based on exe file name. Remove path to make it  }
     { go to windows directory.                                              }
     FIniFileName := GetIcsIniFileName;
+{$IFDEF MSWINDOWS}
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
+{$ENDIF}
 {$IFDEF POSIX}
     FMessagePump  := TIcsMessagePump.Create;
 {$ENDIF}

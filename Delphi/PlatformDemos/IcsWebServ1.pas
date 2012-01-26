@@ -20,8 +20,9 @@ Version:      7.21
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, <francois.piette@overbyte.be>
+Legal issues: Copyright (C) 1999-2012 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
+              <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
               implied warranty.  In no event will the author be held liable
@@ -102,10 +103,9 @@ Feb 4,  2011 V7.21 Angus added bandwidth throttling using TCustomThrottledWSocke
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsWebServ1;
 
-{$I OverbyteIcsDefs.inc}
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF FMX}
   {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
 {$ENDIF}
@@ -474,8 +474,8 @@ begin
     Display('        Version ' +
             Format('%d.%d', [WinsockInfo.wHighVersion shr 8,
                              WinsockInfo.wHighVersion and 15]));
-    Display('        ' + StrPas(wsi.szDescription));
-    Display('        ' + StrPas(wsi.szSystemStatus));
+    Display('        ' + string(StrPas(wsi.szDescription)));
+    Display('        ' + string(StrPas(wsi.szSystemStatus)));
   {$ENDIF}
     MyIp := TStringList.Create;
     try
@@ -657,7 +657,7 @@ begin
     StartButton.Enabled               := FALSE;
     StopButton.Enabled                := TRUE;
     Display('Server is waiting for connections on port ' + HttpServer1.Port);
-    DemoUrl := 'http://' + LowerCase(LocalHostName);
+    DemoUrl := 'http://' + LowerCase(string(LocalHostName));
     if (HttpServer1.Port <> '80') and (HttpServer1.Port <> 'http') then
         DemoUrl := DemoUrl + ':' + HttpServer1.Port;
     DemoUrl := DemoUrl + '/demo.html';
@@ -691,7 +691,8 @@ procedure TWebServForm.HttpServer1ClientConnect(
     Client : TObject;               { Client connecting                     }
     Error  : Word);                 { Error in connection                   }
 begin
-    PostMessage(FNotifyWindow, WM_CLIENT_COUNT, 0, 0);
+    if Error = 0 then
+        PostMessage(FNotifyWindow, WM_CLIENT_COUNT, 0, 0);
 end;
 
 
@@ -1212,6 +1213,7 @@ begin
         '<HTML>' +
           '<HEAD>' +
             '<TITLE>ICS WebServer Upload Form Demo</TITLE>' +
+            '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' +
           '</HEAD>' + #13#10 +
           '<BODY>' +
             '<FORM ACTION="' + FILE_UPLOAD_URL + '"' +
@@ -1369,11 +1371,11 @@ begin
         { Then we check if the request is one we handle }
         if CompareText(ClientCnx.Path, '/cgi-bin/FormHandler') = 0 then begin
             { We receive URL-Encoded data, convert to string }
-{$IFDEF COMPILER12_UP}
+{$IF CompilerVersion > 19}
             ClientCnx.FPostedDataBuffer := Pointer(UnicodeString(ClientCnx.FPostedRawData)); // Cast to Unicode
 {$ELSE}
             ClientCnx.FPostedDataBuffer := ClientCnx.FPostedRawData;
-{$ENDIF}
+{$IFEND}
             { We are happy to handle this one }
             ProcessPostedData_FormHandler(ClientCnx);
         end
@@ -1821,6 +1823,5 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
 end.
 

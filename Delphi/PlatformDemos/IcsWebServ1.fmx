@@ -15,12 +15,10 @@ object WebServForm: TWebServForm
     Align = alTop
     Width = 503.000000000000000000
     Height = 130.000000000000000000
-    TabOrder = 0
     object Label1: TLabel
       Position.Point = '(40,8)'
-      Width = 39.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 0
+      Width = 38.439449310302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'DocDir'
       WordWrap = False
@@ -29,9 +27,8 @@ object WebServForm: TWebServForm
     end
     object Label2: TLabel
       Position.Point = '(19,32)'
-      Width = 60.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 1
+      Width = 59.988277435302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'DefaultDoc'
       WordWrap = False
@@ -40,9 +37,8 @@ object WebServForm: TWebServForm
     end
     object Label3: TLabel
       Position.Point = '(256,5)'
-      Width = 25.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 2
+      Width = 24.759275436401370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Port'
       WordWrap = False
@@ -51,9 +47,8 @@ object WebServForm: TWebServForm
     end
     object ClientCountLabel: TLabel
       Position.Point = '(297,34)'
-      Width = 89.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 3
+      Width = 89.427238464355470000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'ClientCountLabel'
       WordWrap = False
@@ -62,9 +57,8 @@ object WebServForm: TWebServForm
     end
     object Label5: TLabel
       Position.Point = '(255,34)'
-      Width = 40.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 4
+      Width = 39.943355560302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Clients:'
       WordWrap = False
@@ -73,9 +67,8 @@ object WebServForm: TWebServForm
     end
     object Label4: TLabel
       Position.Point = '(25,81)'
-      Width = 54.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 5
+      Width = 53.054195404052730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Redir URL'
       WordWrap = False
@@ -84,9 +77,8 @@ object WebServForm: TWebServForm
     end
     object Label6: TLabel
       Position.Point = '(12,57)'
-      Width = 67.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 6
+      Width = 65.176757812500000000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'TemplateDir'
       WordWrap = False
@@ -95,9 +87,8 @@ object WebServForm: TWebServForm
     end
     object Label7: TLabel
       Position.Point = '(355,81)'
-      Width = 95.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 7
+      Width = 94.771476745605470000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'KeepAliveTimeSec'
       WordWrap = False
@@ -106,9 +97,8 @@ object WebServForm: TWebServForm
     end
     object Label8: TLabel
       Position.Point = '(330,106)'
-      Width = 120.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 8
+      Width = 119.532218933105500000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'MaxRequestsKeepAlive'
       WordWrap = False
@@ -117,9 +107,8 @@ object WebServForm: TWebServForm
     end
     object Label9: TLabel
       Position.Point = '(9,106)'
-      Width = 166.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 9
+      Width = 167.152328491210900000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Maximum Bandwidth (bytes/sec)'
       WordWrap = False
@@ -130,7 +119,7 @@ object WebServForm: TWebServForm
       Position.Point = '(80,4)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 10
+      TabOrder = 0
       KeyboardType = vktDefault
       Password = False
       Text = 'DocDirEdit'
@@ -141,7 +130,7 @@ object WebServForm: TWebServForm
       Position.Point = '(80,29)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 11
+      TabOrder = 1
       KeyboardType = vktDefault
       Password = False
       Text = 'DefaultDocEdit'
@@ -153,7 +142,7 @@ object WebServForm: TWebServForm
       Width = 53.000000000000000000
       Height = 21.000000000000000000
       OnClick = StartButtonClick
-      TabOrder = 12
+      TabOrder = 2
       Text = 'Start'
       Left = 251
       Top = 52
@@ -163,7 +152,7 @@ object WebServForm: TWebServForm
       Width = 53.000000000000000000
       Height = 21.000000000000000000
       OnClick = StopButtonClick
-      TabOrder = 13
+      TabOrder = 3
       Text = 'Stop'
       Left = 251
       Top = 79
@@ -172,7 +161,7 @@ object WebServForm: TWebServForm
       Position.Point = '(283,3)'
       Width = 53.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 14
+      TabOrder = 4
       KeyboardType = vktDefault
       Password = False
       Text = 'PortEdit'
@@ -184,7 +173,7 @@ object WebServForm: TWebServForm
       Width = 53.000000000000000000
       Height = 21.000000000000000000
       OnClick = ClearButtonClick
-      TabOrder = 15
+      TabOrder = 5
       Text = 'Clear'
       Left = 311
       Top = 52
@@ -193,7 +182,7 @@ object WebServForm: TWebServForm
       Position.Point = '(389,57)'
       Width = 104.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 16
+      TabOrder = 6
       Text = 'Display Header'
       Left = 389
       Top = 57
@@ -203,7 +192,7 @@ object WebServForm: TWebServForm
       Width = 108.000000000000000000
       Height = 17.000000000000000000
       OnClick = WriteLogFileCheckBoxClick
-      TabOrder = 17
+      TabOrder = 7
       Text = 'Write to log file'
       Left = 389
       Top = 40
@@ -212,7 +201,7 @@ object WebServForm: TWebServForm
       Position.Point = '(401,23)'
       Width = 92.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 18
+      TabOrder = 8
       Text = 'Allow Dir List'
       Left = 401
       Top = 23
@@ -221,7 +210,7 @@ object WebServForm: TWebServForm
       Position.Point = '(373,6)'
       Width = 124.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 19
+      TabOrder = 9
       Text = 'Allow Outside Root'
       Left = 373
       Top = 6
@@ -230,7 +219,7 @@ object WebServForm: TWebServForm
       Position.Point = '(80,79)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 20
+      TabOrder = 10
       KeyboardType = vktDefault
       Password = False
       Text = 'RedirURLEdit'
@@ -241,7 +230,7 @@ object WebServForm: TWebServForm
       Position.Point = '(80,54)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 21
+      TabOrder = 11
       KeyboardType = vktDefault
       Password = False
       Text = 'TemplateDirEdit'
@@ -252,7 +241,7 @@ object WebServForm: TWebServForm
       Position.Point = '(453,79)'
       Width = 33.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 22
+      TabOrder = 12
       KeyboardType = vktDefault
       Password = False
       Text = 'KeepAliveTimeSecEdit'
@@ -263,7 +252,7 @@ object WebServForm: TWebServForm
       Position.Point = '(453,104)'
       Width = 33.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 23
+      TabOrder = 13
       KeyboardType = vktDefault
       Password = False
       Text = 'MaxRequestsKeepAliveEdit'
@@ -274,7 +263,7 @@ object WebServForm: TWebServForm
       Position.Point = '(178,104)'
       Width = 67.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 24
+      TabOrder = 14
       KeyboardType = vktDefault
       Password = False
       Text = 'BandwidthLimitEdit'
@@ -285,7 +274,7 @@ object WebServForm: TWebServForm
       Position.Point = '(249,105)'
       Width = 88.000000000000000000
       Height = 19.000000000000000000
-      TabOrder = 25
+      TabOrder = 15
       Text = 'No Display'
     end
   end
@@ -294,10 +283,10 @@ object WebServForm: TWebServForm
     Position.Point = '(0,130)'
     Width = 503.000000000000000000
     Height = 205.000000000000000000
-    TabOrder = 1
-    Text = 'DisplayMemo'
+    TabOrder = 0
+    Lines.Strings = (
+      'DisplayMemo')
     KeyboardType = vktDefault
-    Top = 125
   end
   object HttpServer1: THttpServer
     ListenBacklog = 5
@@ -316,6 +305,7 @@ object WebServForm: TWebServForm
     MaxRequestsKeepAlive = 100
     SizeCompressMin = 5000
     SizeCompressMax = 5000000
+    MaxBlkSize = 8192
     BandwidthLimit = 0
     BandwidthSampling = 1000
     OnServerStarted = HttpServer1ServerStarted

@@ -17,21 +17,18 @@ object ClientForm: TClientForm
     Width = 452.000000000000000000
     Height = 174.000000000000000000
     TabOrder = 0
-    WordWrap = True
-    Text = 'DisplayMemo'
+    Lines.Strings = (
+      'DisplayMemo')
     KeyboardType = vktDefault
-    Top = 73
   end
   object Panel1: TPanel
     Align = alTop
     Width = 452.000000000000000000
     Height = 73.000000000000000000
-    TabOrder = 1
     object Label1: TLabel
       Position.Point = '(8,12)'
-      Width = 25.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 0
+      Width = 24.759275436401370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Port'
       WordWrap = False
@@ -40,9 +37,8 @@ object ClientForm: TClientForm
     end
     object Label2: TLabel
       Position.Point = '(104,12)'
-      Width = 35.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 1
+      Width = 35.168453216552730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Server'
       WordWrap = False
@@ -51,9 +47,8 @@ object ClientForm: TClientForm
     end
     object Label3: TLabel
       Position.Point = '(6,43)'
-      Width = 27.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 2
+      Width = 27.310544967651370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Data'
       WordWrap = False
@@ -64,7 +59,7 @@ object ClientForm: TClientForm
       Position.Point = '(32,40)'
       Width = 185.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 3
+      TabOrder = 0
       KeyboardType = vktDefault
       Password = False
       Text = 'SendEdit'
@@ -76,7 +71,7 @@ object ClientForm: TClientForm
       Width = 75.000000000000000000
       Height = 21.000000000000000000
       OnClick = SendButtonClick
-      TabOrder = 4
+      TabOrder = 1
       Text = 'Send'
       Default = True
       Left = 230
@@ -88,7 +83,7 @@ object ClientForm: TClientForm
       Width = 75.000000000000000000
       Height = 21.000000000000000000
       OnClick = DisconnectButtonClick
-      TabOrder = 5
+      TabOrder = 2
       Text = 'Disconnect'
       Left = 214
       Top = 8
@@ -97,7 +92,7 @@ object ClientForm: TClientForm
       Position.Point = '(32,8)'
       Width = 65.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 6
+      TabOrder = 3
       KeyboardType = vktDefault
       Password = False
       Text = 'telnet'
@@ -108,7 +103,7 @@ object ClientForm: TClientForm
       Position.Point = '(144,8)'
       Width = 65.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 7
+      TabOrder = 4
       KeyboardType = vktDefault
       Password = False
       Text = 'localhost'
@@ -119,7 +114,7 @@ object ClientForm: TClientForm
       Position.Point = '(320,44)'
       Width = 85.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 8
+      TabOrder = 5
       Text = 'Allow Binary'
       Left = 320
       Top = 44
@@ -128,11 +123,20 @@ object ClientForm: TClientForm
       Position.Point = '(320,24)'
       Width = 97.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 9
+      TabOrder = 6
       IsChecked = True
       Text = 'Add CR/LF'
       Left = 320
       Top = 24
+    end
+    object ShutDownEdit: TEdit
+      Position.Point = '(387,6)'
+      Width = 31.000000000000000000
+      Height = 22.000000000000000000
+      TabOrder = 7
+      KeyboardType = vktDefault
+      Password = False
+      Text = '1'
     end
   end
   object CliSocket: TWSocket

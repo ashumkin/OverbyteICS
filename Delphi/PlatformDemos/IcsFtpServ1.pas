@@ -12,7 +12,7 @@ Version:      1.17
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2011 by François PIETTE
+Legal issues: Copyright (C) 1998-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -103,11 +103,10 @@ ReadOnly=false
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsFtpServ1;
-{$I ..\vc32\OverbyteIcsDefs.INC}
 
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF FMX}
   {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
 {$ENDIF}
@@ -765,6 +764,7 @@ begin
     else
         FtpServer1.BandwidthLimit := 0;
 {$ENDIF}
+    FtpServer1.BindFtpData := BindFtpData.IsChecked;
     FtpServer1.Port   := PortEdit.Text;
     FtpServer1.Start;
 end;
@@ -823,19 +823,21 @@ end;
 procedure TFtpServerForm.FtpServer1ClientConnect(Sender: TObject;
   Client: TFtpCtrlSocket; Error: Word);
 begin
-    { The next test shows how to refuse a client }
-    if Client.GetPeerAddr = '193.121.12.25' then begin
-        Client.SendStr('421 Connection not allowed.' + #13#10);
-        Client.Close;
-        Exit;
+    if Error = 0 then begin
+        { The next test shows how to refuse a client }
+        if Client.GetPeerAddr = '193.121.12.25' then begin
+            Client.SendStr('421 Connection not allowed.' + #13#10);
+            Client.Close;
+            Exit;
+        end;
+        Client.SessIdInfo := Client.GetPeerAddr + '=(Not Logged On)';
+        InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' connected');
+      { get INI file for default accounts, may be changed if HOST command used }
+        Client.AccountIniName := FtpServerForm.FIniRoot + 'ftpaccounts-default.ini';
+        Client.AccountReadOnly := true;
+        Client.AccountPassword := '';
+        UpdateClientCount;
     end;
-    Client.SessIdInfo := Client.GetPeerAddr + '=(Not Logged On)';
-    InfoMemo.Lines.Add('! ' + Client.SessIdInfo + ' connected');
-  { get INI file for default accounts, may be changed if HOST command used }
-    Client.AccountIniName := FtpServerForm.FIniRoot + 'ftpaccounts-default.ini';
-    Client.AccountReadOnly := true;
-    Client.AccountPassword := '';
-    UpdateClientCount;
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

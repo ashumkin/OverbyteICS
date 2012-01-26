@@ -9,7 +9,7 @@ Object:       Demo for TFtpClient object (RFC 959 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2010 by François PIETTE
+Legal issues: Copyright (C) 1997-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -91,7 +91,6 @@ Mar 01, 2011  V7.09 Arno enable/disable the proxy-controls depending on proxy
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsFtpTst1;
-{$I OverbyteIcsDefs.inc} { Is STREAM64 defined? It is by default since D6! }
 {$B-}                    { Enable partial boolean evaluation   }
 {$T-}                    { Untyped pointers                    }
 {$X+}                    { Enable extended syntax              }
@@ -100,9 +99,9 @@ unit IcsFtpTst1;
 
 interface
 
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF FMX}
   {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
 {$ENDIF}
@@ -273,7 +272,7 @@ type
     ProxyPasswordEdit: TEdit;
     Label17: TLabel;
     Label24: TLabel;
-    Button2: TButton;
+    SleepButton: TButton;
     StyleBook1: TStyleBook;
     procedure ExitButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -361,7 +360,7 @@ type
     procedure LangAsyncButtonClick(Sender: TObject);
     procedure ProxyTypeComboBoxCloseUp(Sender: TObject);
     procedure ProxyHttpAuthTypeComboBoxCloseUp(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
+    procedure SleepButtonClick(Sender: TObject);
   private
     FIniFileName   : String;
     FInitialized   : Boolean;
@@ -1349,7 +1348,7 @@ begin
 end;
 
 
-procedure TFtpReceiveForm.Button2Click(Sender: TObject);
+procedure TFtpReceiveForm.SleepButtonClick(Sender: TObject);
 begin
   Sleep(10000);
 end;

@@ -1,9 +1,9 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{C4D4CB81-E86D-4EA5-B4AE-767B31CAE15E}</ProjectGuid>
+			<ProjectGuid>{5A9BF66C-9E8B-4376-8780-7EFFA26BACC3}</ProjectGuid>
 			<ProjectVersion>13.4</ProjectVersion>
 			<FrameworkType>FMX</FrameworkType>
-			<MainSource>IcsThreadTimerDemo.dpr</MainSource>
+			<MainSource>IcsBatchDnsLookup.dpr</MainSource>
 			<Base>True</Base>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<Platform Condition="'$(Platform)'==''">OSX32</Platform>
@@ -53,7 +53,7 @@
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DCC_UnitSearchPath>..\Vc32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_Define>FMX;$(DCC_Define)</DCC_Define>
-			<DCC_UsePackage>bindcompfmx;fmx;rtl;dbrtl;IndySystem;DbxClientDriver;bindcomp;inetdb;DBXInterBaseDriver;DataSnapClient;DataSnapCommon;DataSnapServer;DataSnapProviderClient;xmlrtl;ibxpress;DbxCommonDriver;IndyProtocols;DBXMySQLDriver;dbxcds;bindengine;soaprtl;DBXOracleDriver;dsnap;DBXInformixDriver;IndyCore;fmxase;CloudService;DBXFirebirdDriver;inet;fmxobj;inetdbxpress;DBXSybaseASADriver;fmxdae;dbexpress;DataSnapIndy10ServerTransport;IPIndyImpl;$(DCC_UsePackage)</DCC_UsePackage>
+			<DCC_UsePackage>bindcompfmx;fmx;rtl;dbrtl;DbxClientDriver;bindcomp;inetdb;DBXInterBaseDriver;DataSnapClient;DataSnapCommon;DataSnapServer;DataSnapProviderClient;xmlrtl;DbxCommonDriver;DBXMySQLDriver;dbxcds;bindengine;soaprtl;DBXOracleDriver;CustomIPTransport;dsnap;DBXInformixDriver;fmxase;DBXFirebirdDriver;inet;fmxobj;inetdbxpress;DBXSybaseASADriver;fmxdae;dbexpress;DataSnapIndy10ServerTransport;$(DCC_UsePackage)</DCC_UsePackage>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
 			<Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
 			<Manifest_File>None</Manifest_File>
@@ -63,18 +63,18 @@
 			<DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_Win64)'!=''">
-			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
-			<DCC_UsePackage>OverbyteIcsDXe2Run;vclib;DBXOdbcDriver;DBXSybaseASEDriver;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;DBXDb2Driver;websnap;VclSmp;vcl;DataSnapConnectors;DBXMSSQLDriver;dsnapcon;vclx;webdsnap;adortl;$(DCC_UsePackage)</DCC_UsePackage>
+			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+			<DCC_UsePackage>OverbyteIcsDXe2Run;DBXOdbcDriver;DBXSybaseASEDriver;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;DBXDb2Driver;websnap;VclSmp;vcl;DBXMSSQLDriver;dsnapcon;vclx;webdsnap;$(DCC_UsePackage)</DCC_UsePackage>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_OSX32)'!=''">
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<VerInfo_Keys>CFBundleName=$(MSBuildProjectName);CFBundleDisplayName=$(MSBuildProjectName);CFBundleIdentifier=$(MSBuildProjectName);CFBundleVersion=1.0.0.0;CFBundlePackageType=APPL;CFBundleSignature=????;CFBundleAllowMixedLocalizations=YES;CFBundleExecutable=$(MSBuildProjectName)</VerInfo_Keys>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_Win32)'!=''">
-			<DCC_UsePackage>vcldbx;OverbyteIcsDXe2Run;vclib;inetdbbde;DBXOdbcDriver;svnui;DBXSybaseASEDriver;vclimg;fmi;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;DBXDb2Driver;websnap;VclSmp;vcl;DataSnapConnectors;DBXMSSQLDriver;dsnapcon;vclx;webdsnap;svn;bdertl;adortl;$(DCC_UsePackage)</DCC_UsePackage>
+			<DCC_UsePackage>vcldbx;IndySystem;OverbyteIcsDXe2Run;vclib;inetdbbde;DBXOdbcDriver;svnui;ibxpress;DBXSybaseASEDriver;vclimg;IndyProtocols;fmi;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;DBXDb2Driver;websnap;VclSmp;IndyCore;vcl;DataSnapConnectors;CloudService;DBXMSSQLDriver;dsnapcon;vclx;webdsnap;svn;bdertl;adortl;$(DCC_UsePackage)</DCC_UsePackage>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_Locale>1033</VerInfo_Locale>
@@ -82,7 +82,8 @@
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
-			<DCC_DebugDCUs>true</DCC_DebugDCUs>
+			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+			<DCC_RangeChecking>true</DCC_RangeChecking>
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
@@ -90,7 +91,6 @@
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1_OSX32)'!=''">
-			<DCC_DebugDCUs>false</DCC_DebugDCUs>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<VerInfo_Keys>CFBundleName=$(MSBuildProjectName);CFBundleDisplayName=$(MSBuildProjectName);CFBundleIdentifier=$(MSBuildProjectName);CFBundleVersion=1.0.0.0;CFBundlePackageType=APPL;CFBundleSignature=????;CFBundleAllowMixedLocalizations=YES;CFBundleExecutable=$(MSBuildProjectName)</VerInfo_Keys>
 			<Debugger_Launcher>/usr/X11/bin/xterm -e &quot;%debuggee%&quot;</Debugger_Launcher>
@@ -110,8 +110,8 @@
 			<DelphiCompile Include="$(MainSource)">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="IcsThreadTimerDemo1.pas">
-				<Form>IcsTimerDemoForm</Form>
+			<DCCReference Include="IcsBatchDnsLookup1.pas">
+				<Form>BatchDnsLookupForm</Form>
 			</DCCReference>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
@@ -131,7 +131,7 @@
 			<BorlandProject>
 				<Delphi.Personality>
 					<Source>
-						<Source Name="MainSource">IcsThreadTimerDemo.dpr</Source>
+						<Source Name="MainSource">IcsBatchDnsLookup.dpr</Source>
 					</Source>
 					<VersionInfo>
 						<VersionInfo Name="IncludeVerInfo">False</VersionInfo>
@@ -162,30 +162,30 @@
 					</VersionInfoKeys>
 				</Delphi.Personality>
 				<Deployment>
-					<DeployFile Class="DebugSymbols" Configuration="Debug" LocalName="OSX32\Debug\IcsThreadTimerDemo.rsm">
+					<DeployFile Class="DebugSymbols" Configuration="Debug" LocalName="OSX32\Debug\IcsBatchDnsLookup.rsm">
 						<Platform Name="OSX32">
 							<RemoteDir>Contents\MacOS\</RemoteDir>
-							<RemoteName>IcsThreadTimerDemo.rsm</RemoteName>
-						</Platform>
-					</DeployFile>
-					<DeployFile Class="ProjectOSXEntitlements" Configuration="Debug" LocalName="OSX32\Debug\IcsThreadTimerDemo.entitlements">
-						<Platform Name="OSX32">
-							<Enabled>false</Enabled>
+							<RemoteName>IcsBatchDnsLookup.rsm</RemoteName>
 						</Platform>
 					</DeployFile>
 					<DeployFile Class="DependencyModule" LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib">
 						<Platform Name="OSX32"/>
 					</DeployFile>
-					<DeployFile Class="ProjectOSXResource" Configuration="Debug" LocalName="OSX32\Debug\IcsThreadTimerDemo.icns">
+					<DeployFile Class="ProjectOSXResource" Configuration="Debug" LocalName="OSX32\Debug\IcsBatchDnsLookup.icns">
 						<Platform Name="OSX32"/>
 					</DeployFile>
-					<DeployFile Class="ProjectOutput" Configuration="Debug" LocalName="OSX32\Debug\IcsThreadTimerDemo">
-						<Platform Name="OSX32"/>
-					</DeployFile>
-					<DeployFile Class="ProjectOSXInfoPList" Configuration="Debug" LocalName="OSX32\Debug\IcsThreadTimerDemo.info.plist">
+					<DeployFile Class="ProjectOSXInfoPList" Configuration="Debug" LocalName="OSX32\Debug\IcsBatchDnsLookup.info.plist">
 						<Platform Name="OSX32">
 							<RemoteName>Info.plist</RemoteName>
 						</Platform>
+					</DeployFile>
+					<DeployFile Class="ProjectOSXEntitlements" Configuration="Debug" LocalName="OSX32\Debug\IcsBatchDnsLookup.entitlements">
+						<Platform Name="OSX32">
+							<Enabled>false</Enabled>
+						</Platform>
+					</DeployFile>
+					<DeployFile Class="ProjectOutput" Configuration="Debug" LocalName="OSX32\Debug\IcsBatchDnsLookup">
+						<Platform Name="OSX32"/>
 					</DeployFile>
 					<DeployClass Name="ProjectOutput" Required="true">
 						<Platform Name="OSX32">
@@ -250,6 +250,12 @@
 						</Platform>
 						<Platform Name="Win32">
 							<Operation>0</Operation>
+						</Platform>
+					</DeployClass>
+					<DeployClass Name="ProjectOSXEntitlements">
+						<Platform Name="OSX32">
+							<RemoteDir>Contents</RemoteDir>
+							<Operation>1</Operation>
 						</Platform>
 					</DeployClass>
 					<DeployClass Name="AdditionalDebugSymbols">

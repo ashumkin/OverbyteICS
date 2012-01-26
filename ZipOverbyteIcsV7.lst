@@ -1621,3 +1621,8 @@ Delphi\PlatformDemos\IcsTcpSrvIPv6.dproj
 Delphi\PlatformDemos\IcsTcpSrv1IPv6.fmx
 Delphi\PlatformDemos\IcsTcpSrv1IPv6.pas
 
+Delphi\PlatformDemos\IcsBatchDnsLookup.dpr
+Delphi\PlatformDemos\IcsBatchDnsLookup.dproj
+Delphi\PlatformDemos\IcsBatchDnsLookup1.fmx
+Delphi\PlatformDemos\IcsBatchDnsLookup1.pas
+

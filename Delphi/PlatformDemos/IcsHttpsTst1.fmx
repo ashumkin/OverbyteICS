@@ -17,7 +17,6 @@ object HttpsTstForm: THttpsTstForm
     Position.Point = '(0,329)'
     Width = 657.000000000000000000
     Height = 3.000000000000000000
-    TabOrder = 0
     MinSize = 20.000000000000000000
     Top = 295
   end
@@ -26,9 +25,9 @@ object HttpsTstForm: THttpsTstForm
     Position.Point = '(0,199)'
     Width = 657.000000000000000000
     Height = 130.000000000000000000
-    TabOrder = 1
-    WordWrap = True
-    Text = 'DisplayMemo'
+    TabOrder = 0
+    Lines.Strings = (
+      'DisplayMemo')
     KeyboardType = vktDefault
   end
   object DocumentMemo: TMemo
@@ -36,174 +35,155 @@ object HttpsTstForm: THttpsTstForm
     Position.Point = '(0,332)'
     Width = 657.000000000000000000
     Height = 89.000000000000000000
-    TabOrder = 2
-    WordWrap = True
-    Text = 'DocumentMemo'
+    TabOrder = 1
+    Lines.Strings = (
+      'DocumentMemo')
     KeyboardType = vktDefault
   end
   object ToolsPanel: TPanel
     Align = alTop
     Width = 657.000000000000000000
     Height = 199.000000000000000000
-    TabOrder = 3
     object Label1: TLabel
       Position.Point = '(48,7)'
-      Width = 18.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 0
+      Width = 18.464353561401370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Url'
       WordWrap = False
     end
     object Label8: TLabel
       Position.Point = '(447,8)'
-      Width = 66.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 1
+      Width = 65.391601562500000000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Socks server'
       WordWrap = False
     end
     object Label9: TLabel
       Position.Point = '(457,32)'
-      Width = 57.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 2
+      Width = 56.196285247802730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Socks Port'
       WordWrap = False
     end
     object Label2: TLabel
       Position.Point = '(9,31)'
-      Width = 56.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 3
+      Width = 56.164058685302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Document'
       WordWrap = False
     end
     object Label3: TLabel
       Position.Point = '(23,55)'
-      Width = 42.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 4
+      Width = 41.662105560302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'CertFile'
       WordWrap = False
     end
     object Label7: TLabel
       Position.Point = '(238,56)'
-      Width = 38.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 5
+      Width = 38.374996185302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'CA File'
       WordWrap = False
     end
     object Label10: TLabel
       Position.Point = '(454,56)'
-      Width = 60.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 6
+      Width = 60.788570404052730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Socks Level'
       WordWrap = False
     end
     object Label6: TLabel
       Position.Point = '(11,79)'
-      Width = 55.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 7
+      Width = 55.959957122802730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'PrivateKey'
       WordWrap = False
     end
     object Label4: TLabel
       Position.Point = '(6,103)'
-      Width = 59.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 8
+      Width = 58.908687591552730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'PassPhrase'
       WordWrap = False
     end
     object Label12: TLabel
       Position.Point = '(6,120)'
-      Width = 60.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 9
+      Width = 59.290035247802730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Acceptable'
       WordWrap = False
     end
     object Label13: TLabel
       Position.Point = '(34,132)'
-      Width = 31.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 10
+      Width = 30.506345748901370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'hosts'
       WordWrap = False
     end
     object Label5: TLabel
       Position.Point = '(482,103)'
-      Width = 31.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 11
+      Width = 31.602048873901370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Proxy'
       WordWrap = False
     end
     object Label11: TLabel
       Position.Point = '(482,122)'
-      Width = 31.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 12
+      Width = 31.602048873901370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Proxy'
       WordWrap = False
     end
     object Label14: TLabel
       Position.Point = '(488,134)'
-      Width = 25.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 13
+      Width = 24.759275436401370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Port'
       WordWrap = False
     end
     object Label15: TLabel
       Position.Point = '(488,74)'
-      Width = 26.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 14
+      Width = 26.386716842651370000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Http'
       WordWrap = False
     end
     object Label16: TLabel
       Position.Point = '(472,86)'
-      Width = 42.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 15
+      Width = 41.500972747802730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Version'
       WordWrap = False
     end
     object Label17: TLabel
       Position.Point = '(236,80)'
-      Width = 43.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 16
+      Width = 43.789058685302730000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'CA Path'
       WordWrap = False
     end
     object Label18: TLabel
       Position.Point = '(7,151)'
-      Width = 135.000000000000000000
-      Height = 19.000000000000000000
-      TabOrder = 17
+      Width = 133.905258178710900000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'Modified Since Date/Time'
       WordWrap = False
@@ -212,7 +192,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(68,4)'
       Width = 373.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 18
+      TabOrder = 0
       KeyboardType = vktDefault
       Password = False
       Text = 'UrlEdit'
@@ -221,7 +201,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(516,4)'
       Width = 121.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 19
+      TabOrder = 1
       KeyboardType = vktDefault
       Password = False
       Text = 'SocksServerEdit'
@@ -230,7 +210,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(516,28)'
       Width = 121.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 20
+      TabOrder = 2
       KeyboardType = vktDefault
       Password = False
       Text = 'SocksPortEdit'
@@ -239,7 +219,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(68,28)'
       Width = 373.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 21
+      TabOrder = 3
       KeyboardType = vktDefault
       Password = False
       Text = 'DocEdit'
@@ -248,7 +228,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(68,52)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 22
+      TabOrder = 4
       KeyboardType = vktDefault
       Password = False
       Text = 'CertFileEdit'
@@ -257,7 +237,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(276,52)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 23
+      TabOrder = 5
       KeyboardType = vktDefault
       Password = False
       Text = 'CAFileEdit'
@@ -266,7 +246,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(240,104)'
       Width = 89.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 24
+      TabOrder = 6
       Text = 'Verify Peer'
       Left = 238
       Top = 104
@@ -275,7 +255,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(276,76)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 25
+      TabOrder = 7
       KeyboardType = vktDefault
       Password = False
       Text = 'CAPathEdit'
@@ -284,7 +264,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(68,76)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 26
+      TabOrder = 8
       KeyboardType = vktDefault
       Password = False
       Text = 'PrivKeyFileEdit'
@@ -293,7 +273,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(68,100)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 27
+      TabOrder = 9
       KeyboardType = vktDefault
       Password = False
       Text = 'PassPhraseEdit'
@@ -302,7 +282,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(68,124)'
       Width = 373.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 28
+      TabOrder = 10
       KeyboardType = vktDefault
       Password = False
       Text = 'AcceptableHostsEdit'
@@ -311,7 +291,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(516,52)'
       Width = 49.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 29
+      TabOrder = 11
       ItemIndex = 0
       ItemHeight = 13.000000000000000000
       Left = 516
@@ -321,7 +301,6 @@ object HttpsTstForm: THttpsTstForm
         Width = 24.000000000000000000
         Height = 17.000000000000000000
         HitTest = False
-        TabOrder = 0
         IsSelected = True
         Text = '5'
       end
@@ -330,7 +309,6 @@ object HttpsTstForm: THttpsTstForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
-        TabOrder = 1
         Text = '4A'
       end
       object ListBoxItem3: TListBoxItem
@@ -338,7 +316,6 @@ object HttpsTstForm: THttpsTstForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
-        TabOrder = 2
         Text = '4'
       end
     end
@@ -347,7 +324,7 @@ object HttpsTstForm: THttpsTstForm
       Width = 69.000000000000000000
       Height = 21.000000000000000000
       OnClick = GetButtonClick
-      TabOrder = 30
+      TabOrder = 12
       Text = 'Get'
       Default = True
     end
@@ -356,7 +333,7 @@ object HttpsTstForm: THttpsTstForm
       Width = 69.000000000000000000
       Height = 21.000000000000000000
       OnClick = ClearButtonClick
-      TabOrder = 31
+      TabOrder = 13
       Text = 'Clear'
     end
     object CloseButton: TButton
@@ -364,14 +341,14 @@ object HttpsTstForm: THttpsTstForm
       Width = 69.000000000000000000
       Height = 21.000000000000000000
       OnClick = CloseButtonClick
-      TabOrder = 32
+      TabOrder = 14
       Text = 'Close'
     end
     object ProxyHostEdit: TEdit
       Position.Point = '(516,100)'
       Width = 121.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 33
+      TabOrder = 15
       KeyboardType = vktDefault
       Password = False
       Text = 'ProxyHostEdit'
@@ -380,7 +357,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(516,124)'
       Width = 121.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 34
+      TabOrder = 16
       KeyboardType = vktDefault
       Password = False
       Text = 'ProxyPortEdit'
@@ -389,7 +366,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(328,104)'
       Width = 121.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 35
+      TabOrder = 17
       Text = 'SSL session cache'
       Left = 320
       Top = 104
@@ -399,7 +376,7 @@ object HttpsTstForm: THttpsTstForm
       Width = 69.000000000000000000
       Height = 21.000000000000000000
       OnClick = ButtonOSSLVersionClick
-      TabOrder = 36
+      TabOrder = 18
       Text = 'OpenSSL?'
       Left = 236
       Top = 172
@@ -408,7 +385,7 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(144,148)'
       Width = 116.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 37
+      TabOrder = 19
       KeyboardType = vktDefault
       Password = False
       Text = 'DateTimeEdit'
@@ -420,18 +397,17 @@ object HttpsTstForm: THttpsTstForm
       Width = 69.000000000000000000
       Height = 21.000000000000000000
       OnClick = HeadButtonClick
-      TabOrder = 38
+      TabOrder = 20
       Text = 'Head'
       Left = 92
       Top = 172
     end
     object AbortButton: TButton
-      Enabled = False
       Position.Point = '(380,172)'
       Width = 69.000000000000000000
       Height = 21.000000000000000000
       OnClick = AbortButtonClick
-      TabOrder = 39
+      TabOrder = 21
       Text = 'Abort'
       Left = 380
       Top = 172
@@ -440,35 +416,34 @@ object HttpsTstForm: THttpsTstForm
       Position.Point = '(512,144)'
       Width = 120.000000000000000000
       Height = 19.000000000000000000
-      TabOrder = 40
+      TabOrder = 22
       Text = 'loDebugOut'
     end
     object DebugEventCheckBox: TCheckBox
       Position.Point = '(512,160)'
       Width = 120.000000000000000000
       Height = 19.000000000000000000
-      TabOrder = 41
+      TabOrder = 23
       Text = 'loDebugEvent'
     end
     object DebugFileCheckBox: TCheckBox
       Position.Point = '(512,176)'
       Width = 120.000000000000000000
       Height = 19.000000000000000000
-      TabOrder = 42
+      TabOrder = 24
       Text = 'loDebugFile'
     end
     object HttpVersionComboBox: TComboBox
       Position.Point = '(516,76)'
       Width = 100.000000000000000000
       Height = 22.000000000000000000
-      TabOrder = 43
+      TabOrder = 25
       ItemIndex = 0
       object ListBoxItem7: TListBoxItem
         Position.Point = '(5000,5000)'
         Width = 75.000000000000000000
         Height = 18.000000000000000000
         HitTest = False
-        TabOrder = 0
         IsSelected = True
         Text = 'HTTP/1.0'
       end
@@ -477,7 +452,6 @@ object HttpsTstForm: THttpsTstForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
-        TabOrder = 1
         Text = 'HTTP/1.1'
       end
     end
@@ -503,7 +477,6 @@ object HttpsTstForm: THttpsTstForm
     Options = []
     IcsLogger = IcsLogger1
     Timeout = 30
-    OnHeaderData = SslHttpCli1HeaderData
     OnCommand = SslHttpCli1Command
     OnDocBegin = SslHttpCli1DocBegin
     OnDocData = SslHttpCli1DocData

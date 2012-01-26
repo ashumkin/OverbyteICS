@@ -12,7 +12,7 @@ EMail:        http://www.overbyte.be        http://www.rtfm.be/fpiette
                                             francois.piette@pophost.eunet.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2001-2010 by Franois PIETTE
+Legal issues: Copyright (C) 2001-2012 by Franois PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -54,11 +54,9 @@ program IcsConSmtp;
 
 {$APPTYPE CONSOLE}
 
-{$I OVERBYTEICSDEFS.INC}
-
-{$IFNDEF COMPILER16_UP}
+{$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
-{$ENDIF}
+{$IFEND}
 {$IFNDEF NOFORMS}
   {$MESSAGE FATAL 'Please add "NOFORMS" to project option''s defines'};
 {$ENDIF}

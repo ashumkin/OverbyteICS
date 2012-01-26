@@ -154,13 +154,18 @@
 							<RemoteName>Info.plist</RemoteName>
 						</Platform>
 					</DeployFile>
-					<DeployFile Class="DependencyModule" LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib">
-						<Platform Name="OSX32"/>
-					</DeployFile>
 					<DeployFile Class="DebugSymbols" Configuration="Debug" LocalName="OSX32\Debug\IcsTcpSrvIPv6.rsm">
 						<Platform Name="OSX32">
 							<RemoteDir>Contents\MacOS\</RemoteDir>
 							<RemoteName>IcsTcpSrvIPv6.rsm</RemoteName>
+						</Platform>
+					</DeployFile>
+					<DeployFile Class="DependencyModule" LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib">
+						<Platform Name="OSX32"/>
+					</DeployFile>
+					<DeployFile Class="ProjectOSXEntitlements" Configuration="Debug" LocalName="OSX32\Debug\IcsTcpSrvIPv6.entitlements">
+						<Platform Name="OSX32">
+							<Enabled>false</Enabled>
 						</Platform>
 					</DeployFile>
 					<DeployFile Class="ProjectOutput" Configuration="Debug" LocalName="OSX32\Debug\IcsTcpSrvIPv6">

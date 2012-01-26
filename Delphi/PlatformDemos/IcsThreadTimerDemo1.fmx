@@ -12,9 +12,8 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
   Top = 184
   object Label1: TLabel
     Position.Point = '(146,60)'
-    Width = 62.500000000000000000
-    Height = 15.500000000000000000
-    TabOrder = 0
+    Width = 63.941402435302730000
+    Height = 18.630859375000000000
     AutoSize = True
     Text = 'Timer count'
     WordWrap = False
@@ -26,7 +25,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Width = 75.000000000000000000
     Height = 25.000000000000000000
     OnClick = StartButtonClick
-    TabOrder = 1
+    TabOrder = 0
     Text = 'Start Timer'
     Left = 12
     Top = 8
@@ -35,18 +34,16 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Position.Point = '(12,62)'
     Width = 119.000000000000000000
     Height = 210.000000000000000000
-    TabOrder = 2
+    TabOrder = 1
     WordWrap = True
     KeyboardType = vktDefault
-    Left = 12
-    Top = 62
   end
   object StopButton: TButton
     Position.Point = '(96,8)'
     Width = 75.000000000000000000
     Height = 25.000000000000000000
     OnClick = StopButtonClick
-    TabOrder = 3
+    TabOrder = 2
     Text = 'Stop'
     Left = 92
     Top = 8
@@ -55,7 +52,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Position.Point = '(146,74)'
     Width = 53.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 4
+    TabOrder = 3
     KeyboardType = vktDefault
     Password = False
     Text = '10000'
@@ -67,7 +64,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Width = 75.000000000000000000
     Height = 25.000000000000000000
     OnClick = FreeAllButtonClick
-    TabOrder = 5
+    TabOrder = 4
     Text = 'FreeAll'
     Left = 172
     Top = 8
@@ -77,7 +74,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Width = 75.000000000000000000
     Height = 25.000000000000000000
     OnClick = SleepButtonClick
-    TabOrder = 6
+    TabOrder = 5
     Text = 'Sleep(5000)'
     Left = 146
     Top = 100
@@ -86,13 +83,11 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Position.Point = '(136,130)'
     Width = 121.000000000000000000
     Height = 143.000000000000000000
-    TabOrder = 7
     Text = ' Global Vars '
     object Label2: TLabel
       Position.Point = '(10,20)'
-      Width = 102.500000000000000000
-      Height = 15.500000000000000000
-      TabOrder = 0
+      Width = 104.283683776855500000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'MaxTimerPerThread'
       WordWrap = False
@@ -101,9 +96,8 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     end
     object Label3: TLabel
       Position.Point = '(11,62)'
-      Width = 104.500000000000000000
-      Height = 15.500000000000000000
-      TabOrder = 1
+      Width = 104.573722839355500000
+      Height = 18.630859375000000000
       AutoSize = True
       Text = 'MinTimerResolution'
       WordWrap = False
@@ -115,7 +109,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
       Width = 75.000000000000000000
       Height = 25.000000000000000000
       OnClick = SetGlobalsButtonClick
-      TabOrder = 2
+      TabOrder = 0
       Text = 'SetGlobals'
       Left = 10
       Top = 106
@@ -124,7 +118,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
       Position.Point = '(10,34)'
       Width = 53.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 3
+      TabOrder = 1
       KeyboardType = vktDefault
       Password = False
       Text = '100'
@@ -135,7 +129,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
       Position.Point = '(10,76)'
       Width = 53.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 4
+      TabOrder = 2
       KeyboardType = vktDefault
       Password = False
       Text = '100'
@@ -147,7 +141,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Position.Point = '(12,38)'
     Width = 131.000000000000000000
     Height = 17.000000000000000000
-    TabOrder = 8
+    TabOrder = 6
     Text = 'Loop/FreeAll - Interval:'
     Left = 12
     Top = 38
@@ -156,7 +150,7 @@ object IcsTimerDemoForm: TIcsTimerDemoForm
     Position.Point = '(146,36)'
     Width = 53.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 9
+    TabOrder = 7
     KeyboardType = vktDefault
     Password = False
     Text = '10'
