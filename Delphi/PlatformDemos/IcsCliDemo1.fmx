@@ -129,15 +129,6 @@ object ClientForm: TClientForm
       Left = 320
       Top = 24
     end
-    object ShutDownEdit: TEdit
-      Position.Point = '(387,6)'
-      Width = 31.000000000000000000
-      Height = 22.000000000000000000
-      TabOrder = 7
-      KeyboardType = vktDefault
-      Password = False
-      Text = '1'
-    end
   end
   object CliSocket: TWSocket
     LineMode = False
