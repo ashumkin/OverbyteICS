@@ -48,7 +48,10 @@ unit OverbyteIcsWebAppServerHead;
 interface
 
 uses
-    Windows, Classes, SysUtils, Math,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils, Math,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerUrlDefs,
     OverbyteIcsWebAppServerHttpHandlerBase,

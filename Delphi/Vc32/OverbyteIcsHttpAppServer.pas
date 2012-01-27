@@ -371,7 +371,7 @@ type
         property OnVirtualException : TVirtualExceptionEvent read  FOnVirtualExceptionEvent
                                                              write FOnVirtualExceptionEvent;      { V7.05 }
     end;
-
+{$IFDEF MSWINDOWS} // todo: make it POSIX compatible
 function ReverseTextFileToHtmlToString(
     const LogViewURL : String;
     const TextFont   : String;
@@ -395,7 +395,7 @@ procedure ReverseTextFileToHtmlToStream(
     const FileName   : String;
     const APageSize  : Integer;      // 0 is default page size
     const APosInt    : Integer);     // Start position, 0 is end of file
-
+{$ENDIF}
 const
     NO_CACHE       = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
 
@@ -524,7 +524,7 @@ var
     Disp  : THttpDispatchElement;
     Index : Integer;
 begin
-    Index := FGetHandler.IndexOf(UpperCase(Path));
+    Index := FGetHandler.IndexOf({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF});
     if Index >= 0 then begin
         // Already exists, update
         Disp           := THttpDispatchElement(FGetHandler.Objects[Index]);
@@ -539,7 +539,7 @@ begin
         Disp.FLags     := Flags;
         Disp.Proc      := Proc;
         Disp.SObjClass := nil;
-        FGetHandler.AddObject(UpperCase(Path), Disp);
+        FGetHandler.AddObject({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF}, Disp);
     end;
 end;
 
@@ -553,7 +553,7 @@ var
     Disp  : THttpDispatchElement;
     Index : Integer;
 begin
-    Index := FGetHandler.IndexOf(UpperCase(Path));
+    Index := FGetHandler.IndexOf({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF});
     if Index >= 0 then begin
         // Already exists, update
         Disp           := THttpDispatchElement(FGetHandler.Objects[Index]);
@@ -568,7 +568,7 @@ begin
         Disp.FLags     := Flags;
         Disp.Proc      := nil;
         Disp.SObjClass := SObjClass;
-        FGetHandler.AddObject(UpperCase(Path), Disp);
+        FGetHandler.AddObject({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF}, Disp);
     end;
 end;
 
@@ -582,7 +582,7 @@ var
     Disp  : THttpDispatchElement;
     Index : Integer;
 begin
-    Index := FPostHandler.IndexOf(UpperCase(Path));
+    Index := FPostHandler.IndexOf({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF});
     if Index >= 0 then begin
         // Already exists, update
         Disp           := THttpDispatchElement(FPostHandler.Objects[Index]);
@@ -597,7 +597,7 @@ begin
         Disp.FLags     := Flags;
         Disp.Proc      := nil;
         Disp.SObjClass := SObjClass;
-        FPostHandler.AddObject(UpperCase(Path), Disp);
+        FPostHandler.AddObject({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF}, Disp);
     end;
 end;
 
@@ -611,7 +611,7 @@ var
     Disp  : THttpDispatchElement;
     Index : Integer;
 begin
-    Index := FPostHandler.IndexOf(UpperCase(Path));
+    Index := FPostHandler.IndexOf({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF});
     if Index >= 0 then begin
         // Already exists, update
         Disp           := THttpDispatchElement(FPostHandler.Objects[Index]);
@@ -626,7 +626,7 @@ begin
         Disp.FLags     := Flags;
         Disp.Proc      := Proc;
         Disp.SObjClass := nil;
-        FPostHandler.AddObject(UpperCase(Path), Disp);
+        FPostHandler.AddObject({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF}, Disp);
     end;
 end;
 
@@ -935,7 +935,7 @@ var
     Item  : THttpAllowedElement;
     Index : Integer;
 begin
-    Index := FGetAllowedPath.IndexOf(UpperCase(Path));
+    Index := FGetAllowedPath.IndexOf({$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF});
     if Index >= 0 then begin
         // Update the element if the path already exists
         Item       := THttpAllowedElement(FGetAllowedPath.Objects[Index]);
@@ -944,7 +944,7 @@ begin
     else begin
         // Create a new element if path doesn't exist yet
         Item       := THttpAllowedElement.Create;
-        Item.Path  := UpperCase(Path);
+        Item.Path  := {$IFDEF POSIX}Path{$ELSE}UpperCase(Path){$ENDIF};
         Item.Flags := Flags;
         FGetAllowedPath.AddObject(Item.Path, Item);
     end;
@@ -1227,6 +1227,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
 function ReverseTextFileToHtmlToString(
     const LogViewURL : String;
     const TextFont   : String;
@@ -1438,7 +1439,7 @@ begin
         CloseHandle(FileHdl);
     end;
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpAppSrvConnection.BeforeGetHandler(

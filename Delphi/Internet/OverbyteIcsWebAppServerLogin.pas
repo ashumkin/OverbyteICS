@@ -52,8 +52,12 @@ unit OverbyteIcsWebAppServerLogin;
 interface
 
 uses
-    Windows, Classes, SysUtils,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils,
     OverbyteIcsMD5,
+    OverbyteIcsUtils,
     OverbyteIcsHttpSrv,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerDataModule,
@@ -100,7 +104,7 @@ begin
 
     MySessionData.LastRequest    := Now;
     MySessionData.RequestCount   := MySessionData.RequestCount + 1;
-    MySessionData.LoginChallenge := StrMD5(IntToHex(GetTickCount, 8));
+    MySessionData.LoginChallenge := StrMD5(IntToHex(IcsGetTickCount, 8));
     AnswerPage('',
                Headers,
                'LoginForm.html',
@@ -150,7 +154,7 @@ procedure TUrlHandlerJavascriptErrorHtml.Execute;
 begin
     AnswerPage('',
                '',
-               '\JavascriptError.html',
+               'JavascriptError.html',
                nil,
                ['COUNTER',       UrlCounter]);
     Finish;

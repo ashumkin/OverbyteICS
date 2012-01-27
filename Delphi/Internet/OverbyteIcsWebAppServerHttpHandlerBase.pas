@@ -48,7 +48,10 @@ unit OverbyteIcsWebAppServerHttpHandlerBase;
 interface
 
 uses
-    Windows, Classes, SysUtils,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerUrlDefs,
     OverbyteIcsWebAppServerSessionData;
@@ -90,7 +93,7 @@ procedure TUrlHandlerBase.Relocate(
 begin
     AnswerPage('302 moved',
                'Location: ' + Location + CRLF + NO_CACHE,
-               '\Moved.html', nil,
+               'Moved.html', nil,
                ['LOCATION', Location]);
 end;
 

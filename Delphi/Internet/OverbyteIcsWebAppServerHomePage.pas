@@ -47,7 +47,10 @@ unit OverbyteIcsWebAppServerHomePage;
 interface
 
 uses
-    Windows, Classes, SysUtils,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils,
     OverbyteIcsHttpSrv,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerDataModule,
@@ -79,7 +82,7 @@ procedure TUrlHandlerHomePageHtml.Execute;
 begin
     if NotLogged then
         Exit;
-    AnswerPage('', NO_CACHE, '/HomePage.html', nil,
+    AnswerPage('', NO_CACHE, 'HomePage.html', nil,
                ['LOGIN',       UrlLogin,
                 'COUNTER',     UrlCounter,
                 'CONFIG',      UrlConfigForm,

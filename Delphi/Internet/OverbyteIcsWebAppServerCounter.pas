@@ -50,7 +50,15 @@ unit OverbyteIcsWebAppServerCounter;
 interface
 
 uses
-    Windows, Classes, SysUtils, Graphics, Jpeg,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils,
+  {$IFDEF FMX}
+    System.Types, System.UITypes, FMX.Types,
+  {$ELSE}
+    Graphics, Jpeg,
+  {$ENDIF}
     OverbyteIcsHttpSrv,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerDataModule,
@@ -74,7 +82,9 @@ var
     CounterString : String;
     Counter       : Integer;
     CounterRef    : String;
+  {$IFNDEF FMX}
     JpegImg       : TJPEGImage;
+  {$ENDIF}
 begin
     ExtractURLEncodedValue(Params, 'Ref', CounterRef);
     if CounterRef = '' then
@@ -89,10 +99,45 @@ begin
     // We only display text. Convert the counter value to text
     CounterString := IntToStr(Counter);
 
-    // Now build then JPEG image
+    // Now build the JPEG image
     if Assigned(DocStream) then
         DocStream.Free;
     DocStream := TMemoryStream.Create;
+  {$IFDEF FMX}
+    BitMapImg := TBitmap.Create(64, 32);
+    try
+        with BitMapImg.Canvas do begin
+            BeginScene;
+            try
+                StrokeThickness := 2;
+                Fill.Color      := claGray;
+                FillRect(RectF(0, 0, BitMapImg.Width, BitMapImg.Height),
+                         16, 16, AllCorners, 1.0);
+                DrawRect(RectF(1, 1, BitMapImg.Width -1, BitMapImg.Height -1),
+                         16, 16, AllCorners, 1.0);
+                Font.Family := 'Arial';
+                Font.Size   := 16;
+                Fill.Color  := claWhite;
+                FillText(RectF(1, 1, BitMapImg.Width -1, BitMapImg.Height -1),
+                         CounterString, False, 1.0, [], TTextAlign.taCenter,
+                         TTextAlign.taCenter);
+            finally
+                EndScene;
+            end;
+        end;
+        {with DefaultBitmapCodecClass.Create do begin
+            try
+                SaveToStream(DocStream, BitMapImg, 'jpeg');
+            finally
+                Free;
+            end;
+        end;}
+        BitMapImg.SaveToStream(DocStream); // defaults to png
+    finally
+        BitMapImg.Free;
+    end;
+    AnswerStream('', 'image/png', NO_CACHE);
+  {$ELSE}
     JpegImg := TJPEGImage.Create;
     try
         BitMapImg := TBitMap.Create;
@@ -119,6 +164,7 @@ begin
         JpegImg.Destroy;
     end;
     AnswerStream('', 'image/jpeg', NO_CACHE);
+  {$ENDIF FMX}
     Finish;
 end;
 

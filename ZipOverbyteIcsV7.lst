@@ -1626,3 +1626,8 @@ Delphi\PlatformDemos\IcsBatchDnsLookup.dproj
 Delphi\PlatformDemos\IcsBatchDnsLookup1.fmx
 Delphi\PlatformDemos\IcsBatchDnsLookup1.pas
 
+Delphi\PlatformDemos\IcsWebAppServ.dpr
+Delphi\PlatformDemos\IcsWebAppServ.dproj
+Delphi\PlatformDemos\IcsWebAppServerMain.fmx
+Delphi\PlatformDemos\IcsWebAppServerMain.pas
+

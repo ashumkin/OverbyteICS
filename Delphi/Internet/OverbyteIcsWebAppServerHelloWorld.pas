@@ -47,7 +47,10 @@ unit OverbyteIcsWebAppServerHelloWorld;
 interface
 
 uses
-    Windows, Classes, SysUtils,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils,
     OverbyteIcsHttpAppServer;
 
 type

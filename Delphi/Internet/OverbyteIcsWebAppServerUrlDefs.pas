@@ -51,7 +51,7 @@ const
     UrlLogin                   = '/login/loginform.html';
     UrlDoLoginSecure           = '/DoLoginSecure.Html';
     UrlHomePage                = '/HomePage.html';
-    UrlCounter                 = '/Counter.jpg';
+    UrlCounter                 = {$IFDEF FMX}'/Counter.png'{$ELSE}'/Counter.jpg'{$ENDIF};
     UrlConfigForm              = '/ConfigForm.html';
     UrlDoConfigHtml            = '/DoConfig.html';
     UrlConfigLogoPng           = '/ConfigLogo.png';

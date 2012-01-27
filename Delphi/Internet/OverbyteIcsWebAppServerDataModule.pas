@@ -50,7 +50,13 @@ unit OverbyteIcsWebAppServerDataModule;
 interface
 
 uses
-    Windows, SysUtils, Classes, OverbyteIcsIniFiles;
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Posix.Unistd,
+  {$ENDIF}
+    SysUtils, Classes, OverbyteIcsIniFiles;
 
 type
     TWebAppSrvDisplayEvent = procedure (Sender : TObject;
@@ -176,7 +182,7 @@ end;
 procedure TWebAppSrvDataModule.SetDataDir(const Value: String);
 begin
     FDataDir         := Value;
-    FCounterFileName := FDataDir + '\Counters.ini';
+    FCounterFileName := FDataDir + PathDelim + 'Counters.ini';
 end;
 
 // Delete a directory, all files it contains as well as all subdirectories
@@ -193,10 +199,10 @@ begin
             if (F.Attr and faDirectory) <> 0 then begin
                 // We have a subdirectory
                 if (F.Name <> '.') and (F.Name <> '..') then
-                    ForceRemoveDir(Dir + '\' + F.Name)
+                    ForceRemoveDir(Dir + PathDelim + F.Name)
             end
             else
-                DeleteFile(Dir + '\' + F.Name);
+                DeleteFile(Dir + PathDelim + F.Name);
             Status := FindNext(F);
         end;
     finally
@@ -241,7 +247,7 @@ begin
                    (Length(F.Name) >= 14) and
                    (IsNumeric(F.Name, 14)) and
                    (Copy(F.Name, 1, 14) <= TimeStamp) then begin
-                    ForceRemoveDir(Dir + '\' + F.Name)
+                    ForceRemoveDir(Dir + PathDelim + F.Name)
                 end;
             end;
             Status := FindNext(F);

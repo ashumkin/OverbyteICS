@@ -50,7 +50,10 @@ unit OverbyteIcsWebAppServerCounterView;
 interface
 
 uses
-    Windows, Classes, SysUtils, OverbyteIcsIniFiles, Variants,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    Classes, SysUtils, OverbyteIcsIniFiles, Variants,
     OverbyteIcsHttpSrv,
     OverbyteIcsHttpAppServer,
     OverbyteIcsWebAppServerDataModule,

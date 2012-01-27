@@ -52,8 +52,16 @@ unit OverbyteIcsWebAppServerMailer;
 
 interface
 
-Uses
-    Windows, SysUtils, Classes, ExtCtrls,
+uses
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+    SysUtils, Classes,
+  {$IFDEF FMX}
+    FMX.Types,
+  {$ELSE}
+    ExtCtrls,
+  {$ENDIF}
     OverbyteIcsHttpAppServer, OverbyteIcsHttpSrv, OverbyteIcsWebSession,
     OverbyteIcsSmtpProt, OverbyteIcsUtils, OverbyteIcsWSocket,
     OverbyteIcsFtpSrvT;
@@ -107,7 +115,8 @@ const
 
 implementation
 
-uses OverbyteIcsWebAppServerMain;
+uses
+  {$IFDEF FMX} IcsWebAppServerMain {$ELSE} OverbyteIcsWebAppServerMain {$ENDIF};
 
 function GetTempLastMod (Client: THttpAppSrvConnection; const FName: string): string ;
 var

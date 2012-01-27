@@ -50,7 +50,14 @@ unit OverbyteIcsWebAppServerConfig;
 interface
 
 uses
-    Windows, Classes, SysUtils,
+  {$IFDEF MSWINDOWS}
+    Windows,
+  {$ENDIF}
+  {$IFDEF POSIX}
+    Posix.Unistd,
+    Posix.Stdio,
+  {$ENDIF}
+    Classes, SysUtils,
     OverbyteIcsHttpSrv,
     OverbyteIcsHttpAppServer,
     OverbyteIcsFormDataDecoder,
@@ -86,7 +93,7 @@ procedure TUrlHandlerConfigFormHtml.Execute;
 begin
     if NotLogged then
         Exit;
-    AnswerPage('', NO_CACHE, '/Config.html', nil,
+    AnswerPage('', NO_CACHE, 'Config.html', nil,
                ['LOGIN',     UrlLogin,
                 'COUNTER',   UrlCounter,
                 'USERCODE',  SessionData.UserCode,
@@ -147,17 +154,17 @@ begin
                         // Create a temp dir
                         // The server will delete any tempdir after the datetime
                         // included in the name has expired
-                        SessionData.ConfigTempDir := '\' +
+                        SessionData.ConfigTempDir := PathDelim +
                                    FormatDateTime('YYYYMMDDHHNNSSZZZ',
                                                   Now + EncodeTime(0, 15, 0, 0));
                         TempDir := SessionData.ConfigTempDir +
-                                   '\' + SessionData.UserCode;
+                                   PathDelim + SessionData.UserCode;
                         ForceDirectories(WebAppSrvDataModule.DataDir +
                                          TempDir);
                         // Save the logo file in the temp directory
                         // Do not use the original filename !
                         Field.SaveToFile(WebAppSrvDataModule.DataDir +
-                                         TempDir + '\Logo.png');
+                                         TempDir + PathDelim + 'Logo.png');
                     end;
                 end;
             end;
@@ -172,7 +179,7 @@ begin
                      '<html><body><a href="' + UrlConfigForm + '">' +
                      ErrMsg + '</a></body></html>')
     else begin
-        AnswerPage('', NO_CACHE, '/ConfigConfirm.html', nil,
+        AnswerPage('', NO_CACHE, 'ConfigConfirm.html', nil,
                    ['PORT',   SessionData.ConfigPort,
                     'LOGO',   'ConfigLogo.png',
                     'ACTION', UrlDoConfigConfirmSaveHtml]);
@@ -189,11 +196,11 @@ begin
     if SessionData.ConfigHasLogo then
         FileName := WebAppSrvDataModule.DataDir +
                     SessionData.ConfigTempDir +
-                    '\' + SessionData.UserCode +
-                    '\Logo.png'
+                    PathDelim + SessionData.UserCode +
+                    PathDelim + 'Logo.png'
     else
         FileName := WebAppSrvDataModule.ImagesDir +
-                    '\Logo.png';
+                    PathDelim + 'Logo.png';
 
     DocStream.Free;
     DocStream := TFileStream.Create(FileName, fmOpenRead);
@@ -217,12 +224,12 @@ begin
         end;
         if SessionData.ConfigHasLogo then begin
             FileName := WebAppSrvDataModule.DataDir + SessionData.ConfigTempDir +
-                        '\' + SessionData.UserCode + '\Logo.png';
+                        PathDelim + SessionData.UserCode + PathDelim + 'Logo.png';
             if (SessionData.ConfigTempDir <> '') and (FileExists(FileName)) then begin
                 // Replace the existant logo image with the new one
-                DeleteFile(WebAppSrvDataModule.ImagesDir + '\Logo.png');
+                DeleteFile(WebAppSrvDataModule.ImagesDir + PathDelim + 'Logo.png');
                 RenameFile(FileName,
-                           WebAppSrvDataModule.ImagesDir + '\Logo.png');
+                           WebAppSrvDataModule.ImagesDir + PathDelim + 'Logo.png');
                 ForceRemoveDir(WebAppSrvDataModule.DataDir + SessionData.ConfigTempDir);
             end;
         end;
