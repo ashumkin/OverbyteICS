@@ -8,8 +8,8 @@ Version:      1.04
 EMail:        francois.piette@overbyte.be    http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2009 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2012 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -50,6 +50,13 @@ Aug 08, 2010 V1.04 F.Piette: OnBgException is now published. Use a different
 unit IcsWebAppServerMain;
 
 interface
+
+{$IF CompilerVersion < 23}
+  {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
+{$IFEND}
+{$IFNDEF FMX}
+  {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
+{$ENDIF}
 
 uses
 {$IFDEF MSWINDOWS}
