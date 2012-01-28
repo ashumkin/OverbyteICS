@@ -538,8 +538,8 @@ begin
     BaseDir                    := IncludeTrailingPathDelimiter(BaseDir);
     FDataDir                   := BaseDir  + 'Data';
     FSessionFile               := FDataDir + PathDelim + 'Sessions.dat';
-    HttpAppSrv1.DocDir         := BaseDir  + 'wwwRoot';
-    HttpAppSrv1.TemplateDir    := BaseDir  + 'Templates';
+    HttpAppSrv1.DocDir         := BaseDir  + 'wwwroot';
+    HttpAppSrv1.TemplateDir    := BaseDir  + 'templates';
     HttpAppSrv1.DefaultDoc     := 'index.html';
 
     // Force directory creation
