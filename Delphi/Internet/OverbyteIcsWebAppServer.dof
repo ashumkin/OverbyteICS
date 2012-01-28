@@ -9,7 +9,7 @@ UnsafeCast=0
 OutputDir=
 UnitOutputDir=.\dcu
 SearchPath=..\Vc32
-Conditionals=USE_SSL
+Conditionals=USE_SSL;BUILTIN_TIMEOUT
 UsePackages=0
 [IcsCustom]
 Win64Supported=1
