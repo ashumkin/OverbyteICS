@@ -105,19 +105,14 @@ var
     I : Integer;
 begin
     try
-        if Cli.StatusCode = 200 then begin
-            if Cli.RcvdHeader.Count > 0 then begin
-                if not AllHdrs then
-                    Response := Response + Cli.RcvdHeader[0]
-                else
-                    for I := 0 to Cli.RcvdHeader.Count - 1 do
-                        Response := Response +
-                                    Cli.RcvdHeader[I] + '<br>';
-            end
+        if Cli.RcvdHeader.Count > 0 then begin
+            if not AllHdrs then
+                Response := Response + Cli.RcvdHeader[0]
+            else
+                for I := 0 to Cli.RcvdHeader.Count - 1 do
+                    Response := Response +
+                                Cli.RcvdHeader[I] + '<br>' + CRLF;
         end
-        else if Cli.StatusCode <> 0 then
-            Response := Response + IntToStr(Cli.StatusCode) +
-                        ' ' +  Cli.ReasonPhrase
         else if ErrCode <> 0 then
             Response := Response + 'error #' + IntToStr(ErrCode)
         else
