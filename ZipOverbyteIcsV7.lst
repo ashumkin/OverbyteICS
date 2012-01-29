@@ -1641,3 +1641,15 @@ Delphi\PlatformDemos\IcsUdpSend.dproj
 Delphi\PlatformDemos\IcsUdpSend1.fmx
 Delphi\PlatformDemos\IcsUdpSend1.pas
 
+Delphi\PlatformDemos\IcsDll1.dpr
+Delphi\PlatformDemos\IcsDll1.dproj
+
+Delphi\PlatformDemos\IcsDll2.dpr
+Delphi\PlatformDemos\IcsDll2.dproj
+
+Delphi\PlatformDemos\IcsDllTst.dpr
+Delphi\PlatformDemos\IcsDllTst.dproj
+Delphi\PlatformDemos\IcsDllTst1.fmx
+Delphi\PlatformDemos\IcsDllTst1.pas
+
+Delphi\PlatformDemos\IcsDllTest.groupproj
