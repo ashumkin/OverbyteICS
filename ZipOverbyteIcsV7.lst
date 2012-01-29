@@ -1631,3 +1631,13 @@ Delphi\PlatformDemos\IcsWebAppServ.dproj
 Delphi\PlatformDemos\IcsWebAppServerMain.fmx
 Delphi\PlatformDemos\IcsWebAppServerMain.pas
 
+Delphi\PlatformDemos\IcsUdpLstn.dpr
+Delphi\PlatformDemos\IcsUdpLstn.dproj
+Delphi\PlatformDemos\IcsUdpLstn1.fmx
+Delphi\PlatformDemos\IcsUdpLstn1.pas
+
+Delphi\PlatformDemos\IcsUdpSend.dpr
+Delphi\PlatformDemos\IcsUdpSend.dproj
+Delphi\PlatformDemos\IcsUdpSend1.fmx
+Delphi\PlatformDemos\IcsUdpSend1.pas
+

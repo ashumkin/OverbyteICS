@@ -1043,6 +1043,7 @@ uses
   Ics.Posix.KEventTypes,
   Ics.Posix.KEventApi,
   Ics.Posix.WinTypes,
+  SysUtils,
 {$ENDIF}
   OverbyteIcsTypes,      OverbyteIcsLibrary,
   OverbyteIcsWndControl, OverbyteIcsWSockBuf;
@@ -1197,6 +1198,21 @@ type
 
     TTimeVal = timeval;
     PTimeval = ^TTimeVal;
+
+    IN6_ADDR = record
+    case Integer of
+        0: (Byte     : array [0..15] of AnsiChar);
+        1: (Word     : array [0..7]  of Word);
+        2: (s6_bytes : array [0..15] of Byte);
+        3: (s6_addr  : array [0..15] of Byte);
+        4: (s6_words : array [0..7]  of Word);
+    end;
+    TIn6Addr   = IN6_ADDR;
+    PIn6Addr   = ^TIn6Addr;
+    PIN6_ADDR  = PIn6Addr;
+
+function IN6_ADDR_EQUAL(const a: PIn6Addr; const b: PIn6Addr): Boolean;
+function IN6ADDR_ISANY(sa: PSockAddrIn6): Boolean;
 {$ENDIF POSIX}
 {$IFDEF MSWINDOWS}
 type
@@ -3428,7 +3444,34 @@ type
 
 var
   GAsyncSocketQueue : TIcsEventQueue = nil;
-{$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ From OverbyteIcsWinsock.pas }
+function IN6_ADDR_EQUAL(const a: PIn6Addr; const b: PIn6Addr): Boolean;
+begin
+    Result := CompareMem(a, b, SizeOf(TIn6Addr));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IN6ADDR_ISANY(sa: PSockAddrIn6): Boolean;
+begin
+    if sa <> nil then begin
+        with sa^ do begin
+            Result := (sin6_family = AF_INET6) and
+                      (PLongWord(@sin6_addr.s6_addr[0])^ = 0) and
+                      (PLongWord(@sin6_addr.s6_addr[4])^ = 0) and
+                      (PLongWord(@sin6_addr.s6_addr[8])^ = 0) and
+                      (PLongWord(@sin6_addr.s6_addr[12])^ = 0);
+        end;
+    end
+    else
+      Result := False;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF POSIX}
 
 type
   TIcsAsyncDnsLookupRequestState = (lrsNone, lrsInWork, lrsAlready);
@@ -6504,6 +6547,10 @@ function TCustomWSocket.DoRecvFrom(
 begin
     Result := WSocket_Synchronized_recvfrom(FHSocket, Buffer, BufferSize,
                                             Flags, From, FromLen);
+  {$IFDEF POSIX}
+    if (not FPaused) and ((Result > -1) or (errno = WSAEWOULDBLOCK)) then
+        WSocketSynchronizedEnableReadEvent(Self);
+  {$ENDIF}
 {   FRcvdFlag := (Result > 0); }
     FRcvdFlag := (Result >= BufferSize);
 end;
@@ -8307,6 +8354,8 @@ begin
                 Exit;
             end;
         end;
+
+        FSelectEvent := FD_READ or FD_WRITE;
     end
     else begin
         { Socket type is SOCK_STREAM }
@@ -8329,10 +8378,10 @@ begin
         if (FLocalPortNum <> 0) or
         ((FLocalAddr <> ICS_ANY_HOST_V4) and (FLocalAddr <> ICS_ANY_HOST_V6)) then
             BindSocket;
+
+        FSelectEvent := FD_READ or FD_WRITE or FD_CLOSE or FD_CONNECT;
     end;
 
-    FSelectEvent := FD_READ or FD_WRITE or FD_CLOSE or
-                    {FD_ACCEPT or} FD_CONNECT;  { FD_ACCEPT not needed } {AG 29.03.08}
     iStatus       := WSocket_Synchronized_WSAASyncSelect(
                                                        {$IFDEF POSIX}
                                                          Self,
@@ -8612,9 +8661,10 @@ begin
     { accept. Keeping only FD_ACCEPT and FD_CLOSE solved the problem.        }
     { Anyway, a listening socket doesn't send nor receive any data so those  }
     { notification are useless.                                              }
-    FSelectEvent := FD_ACCEPT or FD_CLOSE;
-    if FType <> SOCK_STREAM then
-        FSelectEvent := FSelectEvent or FD_READ or FD_WRITE;
+    if FType = SOCK_STREAM then
+        FSelectEvent := FD_ACCEPT or FD_CLOSE
+    else
+        FSelectEvent := FD_READ or FD_WRITE; // works in both Win and Posix
     iStatus      := WSocket_Synchronized_WSAASyncSelect(
                                                       {$IFDEF POSIX}
                                                         Self,

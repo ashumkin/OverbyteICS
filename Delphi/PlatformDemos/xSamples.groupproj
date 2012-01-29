@@ -30,6 +30,12 @@
 			<Projects Include="IcsFtpServ.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="IcsUdpLstn.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="IcsUdpSend.dproj">
+				<Dependencies/>
+			</Projects>
 			<Projects Include="IcsBatchDnsLookup.dproj">
 				<Dependencies/>
 			</Projects>
@@ -125,6 +131,24 @@
 		<Target Name="IcsFtpServ:Make">
 			<MSBuild Projects="IcsFtpServ.dproj" Targets="Make"/>
 		</Target>
+		<Target Name="IcsUdpLstn">
+			<MSBuild Projects="IcsUdpLstn.dproj"/>
+		</Target>
+		<Target Name="IcsUdpLstn:Clean">
+			<MSBuild Projects="IcsUdpLstn.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsUdpLstn:Make">
+			<MSBuild Projects="IcsUdpLstn.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="IcsUdpSend">
+			<MSBuild Projects="IcsUdpSend.dproj"/>
+		</Target>
+		<Target Name="IcsUdpSend:Clean">
+			<MSBuild Projects="IcsUdpSend.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="IcsUdpSend:Make">
+			<MSBuild Projects="IcsUdpSend.dproj" Targets="Make"/>
+		</Target>
 		<Target Name="IcsBatchDnsLookup">
 			<MSBuild Projects="IcsBatchDnsLookup.dproj"/>
 		</Target>
@@ -144,13 +168,13 @@
 			<MSBuild Projects="IcsThreadTimerDemo.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="IcsCliDemo;IcsTcpSrvIPv6;IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsWebServ;IcsWebAppServ;IcsFtpTst;IcsFtpServ;IcsBatchDnsLookup;IcsThreadTimerDemo"/>
+			<CallTarget Targets="IcsCliDemo;IcsTcpSrvIPv6;IcsConSmtp;IcsMailSnd;IcsHttpsTst;IcsWebServ;IcsWebAppServ;IcsFtpTst;IcsFtpServ;IcsUdpLstn;IcsUdpSend;IcsBatchDnsLookup;IcsThreadTimerDemo"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="IcsCliDemo:Clean;IcsTcpSrvIPv6:Clean;IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsWebServ:Clean;IcsWebAppServ:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsBatchDnsLookup:Clean;IcsThreadTimerDemo:Clean"/>
+			<CallTarget Targets="IcsCliDemo:Clean;IcsTcpSrvIPv6:Clean;IcsConSmtp:Clean;IcsMailSnd:Clean;IcsHttpsTst:Clean;IcsWebServ:Clean;IcsWebAppServ:Clean;IcsFtpTst:Clean;IcsFtpServ:Clean;IcsUdpLstn:Clean;IcsUdpSend:Clean;IcsBatchDnsLookup:Clean;IcsThreadTimerDemo:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="IcsCliDemo:Make;IcsTcpSrvIPv6:Make;IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsWebServ:Make;IcsWebAppServ:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsBatchDnsLookup:Make;IcsThreadTimerDemo:Make"/>
+			<CallTarget Targets="IcsCliDemo:Make;IcsTcpSrvIPv6:Make;IcsConSmtp:Make;IcsMailSnd:Make;IcsHttpsTst:Make;IcsWebServ:Make;IcsWebAppServ:Make;IcsFtpTst:Make;IcsFtpServ:Make;IcsUdpLstn:Make;IcsUdpSend:Make;IcsBatchDnsLookup:Make;IcsThreadTimerDemo:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
