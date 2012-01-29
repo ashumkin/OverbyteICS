@@ -12,7 +12,7 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses
-  {$IFDEF MSWINDOWS}
+{$IFDEF MSWINDOWS}
   Winapi.Windows,
   WinApi.Messages,
 {$ENDIF}
@@ -78,6 +78,7 @@ var
 implementation
 
 {$R *.fmx}
+
 uses
     Math;
 
@@ -85,8 +86,6 @@ const
     SectionWindow      = 'Window';   // Must be unique for each window
     KeyTop             = 'Top';
     KeyLeft            = 'Left';
-    //KeyWidth           = 'Width';
-    //KeyHeight          = 'Height';
     SectionSetup       = 'Setup';
     KeyMin             = 'MinLookupThreads';
     KeyMax             = 'MaxLookupThreads';
