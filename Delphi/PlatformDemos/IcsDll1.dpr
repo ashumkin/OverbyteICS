@@ -16,7 +16,7 @@ Description:  This is a demo showing how to use a TWSocket component in a DLL.
               such as 10061 when the server is not running.
               To debug the DLL, enter DllTst1.exe as a host application into
               the run parameters.
-Version:      1.02
+Version:      1.03
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -52,6 +52,7 @@ Legal issues: Copyright (C) 2000-2012 by François PIETTE
 History:
 Apr 29, 2000 V1.01 Use WSocketForceLoadWinsock.
 Apr 27, 2002 V1.02 Use WSocketUnregisterClass
+Jan 29, 2012 V1.03 Arno fixed it.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -78,8 +79,8 @@ uses
   OverbyteIcsWSocket;
 
 const
-  IcsDll1Version            = 102;
-  CopyRight    : String     = ' IcsDll1 (c) 2000-2012 Francois Piette V1.02 ';
+  IcsDll1Version            = 103;
+  CopyRight    : String     = ' IcsDll1 (c) 2000-2012 Francois Piette V1.03 ';
 
 // If you use strings or other dynamically allocated data between the DLL and
 // the main program, then you _must_ use ShareMem unit as explained in Delphi
@@ -107,6 +108,7 @@ type
     FBufSize        : PInteger;
     FHostName       : PAnsiChar;
     FPort           : PAnsiChar;
+    FReady          : Boolean;
     procedure ClientWSocketDataAvailable(Sender: TObject; Error: Word);
     procedure ClientWSocketSessionConnected(Sender: TObject; Error: Word);
     procedure ClientWSocketSessionClosed(Sender: TObject; Error: Word);
@@ -114,8 +116,6 @@ type
     procedure Execute; override;
   public
     constructor Create;
-    destructor  Destroy; override;
-
     property ClientWSocket : TWSocket  read FClientSocket write FClientSocket;
     property Buffer        : PAnsiChar read FBuffer       write FBuffer;
     property BufSize       : PInteger  read FBufSize      write FBufSize;
@@ -130,20 +130,8 @@ type
 { the client thread before it actually start working.                       }
 constructor TClientThread.Create;
 begin
-    FreeOnTerminate := TRUE;
     inherited Create(TRUE);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Destroy the thread. Destroy the ClientWSocket if needed.                  }
-destructor TClientThread.Destroy;
-begin
-    if Assigned(FClientSocket) then begin
-         FClientSocket.Free;
-         FClientSocket := nil;
-    end;
-    inherited Destroy;
+    FreeOnTerminate := False;
 end;
 
 
@@ -154,25 +142,30 @@ end;
 { something is received.                                                    }
 procedure TClientThread.Execute;
 begin
+    FReady := True;
     try
         { Create the client TWSocket. It is important to create it inside the }
         { Execute method because it *must* be created by the thread.          }
         { Otherwise the messages sent by winsock would be processed in the    }
         { main thread context, effectively disabling multi-threading.         }
         FClientSocket                    := TWSocket.Create(nil);
-        FClientSocket.SocketFamily       := sfAny;
-        FClientSocket.OnDataAvailable    := ClientWSocketDataAvailable;
-        FClientSocket.OnSessionConnected := ClientWSocketSessionConnected;
-        FClientSocket.OnSessionClosed    := ClientWSocketSessionClosed;
-        FClientSocket.LineMode           := TRUE;
-        FClientSocket.Addr               := string(FHostName);
-        FClientSocket.Port               := string(FPort);
-        FClientSocket.Proto              := 'tcp';
-        FClientSocket.Connect;
+        try
+            FClientSocket.SocketFamily       := sfAny;
+            FClientSocket.OnDataAvailable    := ClientWSocketDataAvailable;
+            FClientSocket.OnSessionConnected := ClientWSocketSessionConnected;
+            FClientSocket.OnSessionClosed    := ClientWSocketSessionClosed;
+            FClientSocket.LineMode           := TRUE;
+            FClientSocket.Addr               := string(FHostName);
+            FClientSocket.Port               := string(FPort);
+            FClientSocket.Proto              := 'tcp';
+            FClientSocket.Connect;
 
-        { Message loop to handle TWSocket messages                          }
-        { The loop is exited when WM_QUIT message is received               }
-        FClientSocket.MessageLoop;
+            { Message loop to handle TWSocket messages                          }
+            { The loop is exited when WM_QUIT message is received               }
+            FClientSocket.MessageLoop;
+        finally
+            FClientSocket.Free;
+        end;
     except
         on E:Exception do begin
             FErrorCode^ := -3;
@@ -265,6 +258,9 @@ var
 begin
     try
         Result := -1;
+      {$IFDEF MSWINDOWS}
+        OverbyteIcsWinsock.ForceLoadWinsock;
+      {$ENDIF}
         // Create a new thread. It is created in sleeping state
         WorkerThread           := TClientThread.Create;
         // Then pass all parameters
@@ -275,8 +271,10 @@ begin
         WorkerThread.Port      := Port;
         // Then let thread start his work
         WorkerThread.Start;
+        while not WorkerThread.FReady do
+            Sleep(10);
         // And wait until it finishes
-        WorkerThread.WaitFor;
+        WorkerThread.Free;
     except
         on E:Exception do begin
             Result := -2;
@@ -302,7 +300,6 @@ end;
 begin
 //  MessageBox(0, PChar('DLL Init ' + IntToStr(WSocketGCount)), 'DLL', MB_OK);
 {$IFDEF MSWINDOWS}
-    WSocketForceLoadWinsock;
     DLLProc := @DLLHandler;
 {$ENDIF}
 end.
