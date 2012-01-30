@@ -1521,11 +1521,13 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function IcsAsyncGetHostByName(AWnd                : HWND;
                                    AMsgID              : UINT;
                                    const ASocketFamily : TSocketFamily;
-                                   const AName         : String): THandle;
+                                   const AName         : String;
+                                   const AProtocol     : Integer): THandle;
     function IcsAsyncGetHostByAddr(AWnd                : HWND;
                                    AMsgID              : UINT;
                                    const ASocketFamily : TSocketFamily;
-                                   const AAddr         : String): THandle;
+                                   const AAddr         : String;
+                                   const AProtocol     : Integer): THandle;
     function IcsCancelAsyncRequest(const ARequest: THandle): Integer;
   public
     property sin  : TSockAddrIn read GetSin write SetSin;
@@ -1563,9 +1565,12 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     function    SendStr(const Str : UnicodeString; ACodePage: LongWord) : Integer; overload; virtual;
     function    SendStr(const Str : UnicodeString) : Integer; overload; virtual;
 {$ENDIF}
-    procedure   DnsLookup(const AHostName : String); virtual;
-    procedure   ReverseDnsLookup(const HostAddr: String); virtual;
-    procedure   ReverseDnsLookupSync(const HostAddr: String); virtual;  {AG 03/03/06}
+    procedure   DnsLookup(const AHostName : String); overload; virtual;
+    procedure   DnsLookup(const AHostName : String; const AProtocol: Integer); overload; virtual;
+    procedure   ReverseDnsLookup(const HostAddr: String); overload; virtual;
+    procedure   ReverseDnsLookup(const HostAddr: String; const AProtocol: Integer); overload; virtual;
+    procedure   ReverseDnsLookupSync(const HostAddr: String); overload; virtual;  {AG 03/03/06}
+    procedure   ReverseDnsLookupSync(const HostAddr: String; const AProtocol: Integer); overload; virtual;
     procedure   CancelDnsLookup; virtual;
     { Sets behavior of the internal DNS lookup object.                         }
     { AMinThreads determines the number of persistent DNS lookup threads while }
@@ -3136,13 +3141,18 @@ function  GetWindowsErr(ErrCode: Integer): String;
 function  WSocketGetHostByAddr(Addr : AnsiString) : PHostEnt;
 function  WSocketGetHostByName(Name : AnsiString) : PHostEnt;
 function  LocalHostName : AnsiString;
-function  LocalIPList(const ASocketFamily: TSocketFamily = DefaultSocketFamily) : TStrings;
-procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = DefaultSocketFamily);
+function  LocalIPList(const ASocketFamily: TSocketFamily = DefaultSocketFamily;
+  const AProtocol: Integer = IPPROTO_TCP) : TStrings;
+procedure GetLocalIPList(AIPList: TStrings;
+  const ASocketFamily: TSocketFamily = DefaultSocketFamily;
+  const AProtocol: Integer = IPPROTO_TCP);
 function  WSocketResolveIp(const IpAddr : AnsiString;
-  const ASocketFamily: TSocketFamily = DefaultSocketFamily) : AnsiString;
+  const ASocketFamily: TSocketFamily = DefaultSocketFamily;
+  const AProtocol: Integer = IPPROTO_TCP) : AnsiString;
 function  WSocketResolveHost(InAddr : AnsiString) : TInAddr; overload;
 procedure WSocketResolveHost(const AHostName: string; var AAddr: TSockAddrIn6;
-                             const ASocketFamily: TSocketFamily); overload;
+                             const ASocketFamily: TSocketFamily;
+                             const AProtocol: Integer); overload;
 function  WSocketResolvePort(Port : AnsiString; Proto : AnsiString) : Word;
 function  WSocketResolveProto(sProto : AnsiString) : Integer;
 procedure WSocketForceLoadWinsock; {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -3259,7 +3269,8 @@ procedure WSocket_FreeAddrInfo(ai: PAddrInfo);
 
 function WSocket_ResolveName(const AName: string; const AReverse: Boolean;
                              const AFamily: TSocketFamily;
-                             AResultList: TStrings): Integer;
+                             AResultList: TStrings;
+                             const AProtocol: Integer): Integer;
 
 const
     ICS_LOCAL_HOST_V4  = '127.0.0.1';
@@ -3480,6 +3491,7 @@ type
     FWndHandle    : HWND;
     FMsgID        : UINT;
     FSocketFamily : TSocketFamily;
+    FProtocol     : Integer;
     FState        : TIcsAsyncDnsLookupRequestState;
     FReverse      : Boolean;
     FCanceled     : Boolean;
@@ -3506,7 +3518,7 @@ type
     procedure LockThreadList;
     procedure UnlockThreadList;
     function ExecAsync(AWnd: HWND; AMsgID: UINT; ASocketFamily: TSocketFamily;
-      const AName: string; AReverse: Boolean): THandle;
+      const AName: string; AReverse: Boolean; AProtocol: Integer): THandle;
     function GetNextRequest(AThread: TIcsAsyncDnsLookupThread): TIcsAsyncDnsLookupRequest;
     function RemoveRequest(AReq: TIcsAsyncDnsLookupRequest): Boolean;
     function CancelAsyncRequest(AReq: THandle): Integer;
@@ -4867,7 +4879,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocket_Synchronized_ResolveName(const AName: string;
   const AReverse: Boolean; const AFamily: TSocketFamily;
-  AResultList: TStrings): Integer; forward;
+  AResultList: TStrings; const AProtocol: Integer): Integer; forward;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Winsock is dynamically loaded and unloaded when needed. In some cases     }
@@ -7403,23 +7415,25 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomWSocket.IcsAsyncGetHostByName(AWnd: HWND; AMsgID: UINT;
-  const ASocketFamily: TSocketFamily; const AName: String): THandle;
+  const ASocketFamily: TSocketFamily; const AName: String;
+  const AProtocol: Integer): THandle;
 begin
     if FAsyncLookupPtr = nil then
         RegisterIcsAsyncDnsLookup;
     Result := TIcsAsyncDnsLookup(FAsyncLookupPtr).ExecAsync(
-                                    AWnd, AMsgID, ASocketFamily, AName, FALSE);
+                          AWnd, AMsgID, ASocketFamily, AName, FALSE, AProtocol);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TCustomWSocket.IcsAsyncGetHostByAddr(AWnd: HWND; AMsgID: UINT;
-  const ASocketFamily: TSocketFamily; const AAddr: String): THandle;
+  const ASocketFamily: TSocketFamily; const AAddr: String;
+  const AProtocol: Integer): THandle;
 begin
     if FAsyncLookupPtr = nil then
         RegisterIcsAsyncDnsLookup;
     Result := TIcsAsyncDnsLookup(FAsyncLookupPtr).ExecAsync(
-                                    AWnd, AMsgID, ASocketFamily, AAddr, TRUE);
+                           AWnd, AMsgID, ASocketFamily, AAddr, TRUE, AProtocol);
 end;
 
 
@@ -7438,7 +7452,8 @@ end;
 procedure WSocket_Synchronized_ResolveHost(
     const AHostName  : string;
     var ASockAddrIn6 : TSockAddrIn6;
-    const AFamily    : TSocketFamily); overload;
+    const AFamily    : TSocketFamily;
+    const AProtocol: Integer); overload;
 var
     Hints     : TAddrInfo;
     AddrInfo  : PAddrInfo;
@@ -7491,8 +7506,8 @@ begin
                 Hints.ai_family := AF_UNSPEC;} // = 0 anyway
 
             AddrInfo := nil;
+            Hints.ai_protocol := AProtocol;
           {$IFDEF POSIX}
-            Hints.ai_protocol := IPPROTO_TCP; // Prevents duplicated entries (one for TCP and one for UDP)
             RetVal   := WSocket_Synchronized_GetAddrInfo(PAnsiChar(UnicodeToAnsi(AHostName, CP_UTF8)),
                                                          nil, @Hints, AddrInfo);
           {$ELSE}
@@ -7624,13 +7639,14 @@ end;
 procedure WSocketResolveHost(
     const AHostName     : string;
     var AAddr           : TSockAddrIn6;
-    const ASocketFamily : TSocketFamily);
+    const ASocketFamily : TSocketFamily;
+    const AProtocol: Integer);
 begin
     {$IFNDEF NO_ADV_MT}
     SafeIncrementCount;
     try
 {$ENDIF}
-        WSocket_Synchronized_ResolveHost(AHostName, AAddr, ASocketFamily);
+        WSocket_Synchronized_ResolveHost(AHostName, AAddr, ASocketFamily, AProtocol);
 {$IFNDEF NO_ADV_MT}
     finally
         SafeDecrementCount;
@@ -7826,6 +7842,14 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.DnsLookup(const AHostName : String);
+begin
+    DnsLookup(AHostName, IPPROTO_TCP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.DnsLookup(const AHostName : String;
+  const AProtocol: Integer);
 var
     IPAddr   : TInAddr;
     IPv6Addr : TIcsIPv6Address;
@@ -7900,7 +7924,8 @@ begin
                                   FWindowHandle,
                                   FMsg_WM_ASYNCGETHOSTBYNAME,
                                   FSocketFamily,
-                                  _Trim(AHostName));
+                                  _Trim(AHostName),
+                                  AProtocol);
 
     if FDnsLookupHandle = 0 then begin
         RaiseException(String(HostName) + ': can''t start DNS lookup - ' +
@@ -7916,6 +7941,14 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.ReverseDnsLookup(const HostAddr: String);
+begin
+    ReverseDnsLookup(HostAddr, IPPROTO_TCP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.ReverseDnsLookup(const HostAddr: String;
+  const AProtocol: Integer);
 {$IFDEF MSWINDOWS}
 var
     lAddr  : u_long;
@@ -7959,7 +7992,8 @@ begin
                             FWindowHandle,
                             FMsg_WM_ASYNCGETHOSTBYADDR,
                             FSocketFamily,
-                            _Trim(HostAddr));
+                            _Trim(HostAddr),
+                            AProtocol);
 
     if FDnsLookupHandle = 0 then
         RaiseException(HostAddr + ': can''t start reverse DNS lookup - ' +
@@ -7968,7 +8002,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TCustomWSocket.ReverseDnsLookupSync(const HostAddr: String); {AG 03/03/06}
+procedure TCustomWSocket.ReverseDnsLookupSync(const HostAddr: String);
+begin
+    ReverseDnsLookupSync(HostAddr, IPPROTO_TCP);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.ReverseDnsLookupSync(const HostAddr: String;
+  const AProtocol: Integer); {AG 03/03/06}
 var
     szAddr : array [0..256] of AnsiChar;
     lAddr  : u_long;
@@ -8014,7 +8056,7 @@ begin
     end
     else begin
         lAddr := WSocket_Synchronized_ResolveName(HostAddr, TRUE, FSocketFamily,
-                                                  FDnsResultList);
+                                                  FDnsResultList, AProtocol);
         if lAddr <> 0 then
             TriggerDnsLookupDone(lAddr)
         else begin
@@ -8041,7 +8083,7 @@ begin
               WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
     end
     else begin
-        WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FSocketFamily);
+        WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FSocketFamily, FProto);
         LocalSockName.sin6_port := WSocket_Synchronized_htons(FLocalPortNum);
     end;
     SockNamelen := SizeOfAddr(LocalSockName);
@@ -8211,7 +8253,7 @@ begin
                 PSockAddrIn(@Fsin).sin_addr.S_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr;
             end
             else
-                WSocket_Synchronized_ResolveHost(FAddrStr, Fsin, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FAddrStr, Fsin, FSocketFamily, FProto);
 
             FAddrResolved := TRUE;
             FAddrFormat := Fsin.sin6_family;
@@ -8313,7 +8355,7 @@ begin
                     PSockAddrIn(@laddr)^.sin_addr.S_addr :=
                     WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).S_addr
                 else
-                    WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, sfIPv6);
+                    WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, sfIPv6, FProto);
 
                 if FAddrFormat = PF_INET then
                     iStatus := WSocket_Synchronized_SetSockOpt(FHSocket,
@@ -8498,7 +8540,7 @@ begin
                 PSockAddrIn(@Fsin).sin_addr.s_addr := WSocket_Synchronized_ResolveHost(AnsiString(FAddrStr)).s_addr;
             end
             else
-                WSocket_Synchronized_ResolveHost(FAddrStr, Fsin, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FAddrStr, Fsin, FSocketFamily, FProto);
 
             FAddrResolved := TRUE;
             FAddrFormat := Fsin.sin6_family;
@@ -8974,7 +9016,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSocketResolveIp(
     const IpAddr        : AnsiString;
-    const ASocketFamily : TSocketFamily = DefaultSocketFamily) : AnsiString;
+    const ASocketFamily : TSocketFamily = DefaultSocketFamily;
+    const AProtocol     : Integer  = IPPROTO_TCP) : AnsiString;
 var
     Phe     : PHostEnt;
     ResList : TStringList;
@@ -8996,7 +9039,7 @@ begin
     else begin
         ResList := TStringList.Create;
         try
-            if (WSocket_ResolveName(string(IpAddr), TRUE, ASocketFamily, ResList) <> 0) or
+            if (WSocket_ResolveName(string(IpAddr), TRUE, ASocketFamily, ResList, AProtocol) <> 0) or
                (ResList.Count = 0) then
             begin
                 Result := '';
@@ -9025,13 +9068,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure GetLocalIPList(AIPList: TStrings; const ASocketFamily: TSocketFamily = DefaultSocketFamily);
+procedure GetLocalIPList(AIPList: TStrings;
+  const ASocketFamily: TSocketFamily = DefaultSocketFamily;
+  const AProtocol: Integer = IPPROTO_TCP);
 begin
 {$IFNDEF NO_ADV_MT}
     CritSecIpList.Enter;
     try
 {$ENDIF}
-        AIPList.Assign(LocalIPList(ASocketFamily));
+        AIPList.Assign(LocalIPList(ASocketFamily, AProtocol));
 {$IFNDEF NO_ADV_MT}
     finally
         CritSecIpList.Leave;
@@ -9041,7 +9086,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function LocalIPList(const ASocketFamily: TSocketFamily = DefaultSocketFamily) : TStrings;
+function LocalIPList(const ASocketFamily: TSocketFamily = DefaultSocketFamily;
+  const AProtocol: Integer  = IPPROTO_TCP) : TStrings;
 var
     phe           : PHostEnt;
     Hints         : TAddrInfo;
@@ -9071,10 +9117,10 @@ begin
             else if ASocketFamily = sfIPv4 then
                 Hints.ai_family := AF_INET;
             AddrInfo := nil;
+            Hints.ai_protocol := AProtocol;
           {$IFDEF MSWINDOWS}
             RetVal := WSocket_GetAddrInfo(PChar(LHostName), nil, @Hints, AddrInfo);
           {$ELSE}
-            Hints.ai_protocol := IPPROTO_TCP; // Prevents duplicated entries (one for TCP and one for UDP)
             RetVal := WSocket_GetAddrInfo(PAnsiChar(UnicodeToAnsi(LHostName, CP_UTF8)), nil, @Hints, AddrInfo);
           {$ENDIF}
             if RetVal <> 0 then
@@ -9963,7 +10009,7 @@ begin
                 WSocket_Synchronized_ResolveHost(AnsiString(FSocksServer)).s_addr;
             end
             else begin
-                WSocket_Synchronized_ResolveHost(FSocksServer, Fsin, FSocketFamily);
+                WSocket_Synchronized_ResolveHost(FSocksServer, Fsin, FSocketFamily, IPPROTO_TCP);
                 if (Fsin.sin6_family <> AF_INET) and (FSocksLevel[1] <> '5') then
                     raise ESocketException.Create('IPv6 not supported with current socks version');
             end;
@@ -17820,7 +17866,7 @@ begin
                 end
                 else
                     WSocket_Synchronized_ResolveHost(HttpTunnelServer, Fsin,
-                                                     FSocketFamily);
+                                                     FSocketFamily, IPPROTO_TCP);
                 FAddrResolved := TRUE;
             end;
             { The next line will trigger an exception in case of failure }
@@ -19675,7 +19721,8 @@ function WSocket_Synchronized_ResolveName(
     const AName        : string;
     const AReverse     : Boolean;
     const AFamily      : TSocketFamily;
-    AResultList        : TStrings): Integer;
+    AResultList        : TStrings;
+    const AProtocol    : Integer): Integer;
 var
     Hints     : TAddrInfo;
     AddrInfo  : PAddrInfo;
@@ -19697,8 +19744,8 @@ begin
         Hints.ai_flags := AI_NUMERICHOST;
 
     AddrInfo := nil;
+    Hints.ai_protocol := AProtocol;
   {$IFNDEF POSIX}
-    Hints.ai_protocol := IPPROTO_TCP; // Prevents duplicated entries (one for TCP and one for UDP)
     Result   := GetAddrInfo(PChar(AName), nil, @Hints, AddrInfo);
   {$ELSE}
     Result   := GetAddrInfo(PAnsiChar(AnsiString(AName)), nil, Hints, AddrInfo);
@@ -19779,14 +19826,15 @@ function WSocket_ResolveName(
     const AName      : string;
     const AReverse   : Boolean;
     const AFamily    : TSocketFamily;
-    AResultList      : TStrings): Integer;
+    AResultList      : TStrings;
+    const AProtocol  : Integer): Integer;
 begin
 {$IFNDEF NO_ADV_MT}
     SafeIncrementCount;
     try
 {$ENDIF}
         Result := WSocket_Synchronized_ResolveName(AName, AReverse, AFamily,
-                                                   AResultList);
+                                                   AResultList, AProtocol);
 {$IFNDEF NO_ADV_MT}
     finally
         SafeDecrementCount;
@@ -19856,7 +19904,8 @@ begin
                                            Request.FLookupName,
                                            Request.FReverse,
                                            Request.FSocketFamily,
-                                           FDnsResultList);
+                                           FDnsResultList,
+                                           Request.FProtocol);
                 if (not Terminated) and (not Request.FCanceled) and
                  {$IFDEF MSWINDOWS}
                    _IsWindow(Request.FWndHandle)
@@ -19919,7 +19968,8 @@ function TIcsAsyncDnsLookup.ExecAsync(
     AMsgID        : UINT;
     ASocketFamily : TSocketFamily;
     const AName   : string;
-    AReverse      : Boolean): THandle;
+    AReverse      : Boolean;
+    AProtocol     : Integer): THandle;
 var
     Req    : TIcsAsyncDnsLookupRequest;
     Thread : TIcsAsyncDnsLookupThread;
@@ -19940,6 +19990,7 @@ begin
         Req.FSocketFamily := ASocketFamily;
         Req.FReverse      := AReverse;
         Req.FLookupName   := AName;
+        Req.FProtocol     := AProtocol;
         FQueue.Add(Req);
     finally
         UnlockQueue;
