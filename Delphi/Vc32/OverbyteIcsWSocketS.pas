@@ -1086,7 +1086,8 @@ begin
                     WSocketResolveHost(AnsiString(AItem.Addr)).s_addr;
             end
             else
-                WSocketResolveHost(AItem.Addr, AItem.Fsin, AItem.SocketFamily);
+                WSocketResolveHost(AItem.Addr, AItem.Fsin, AItem.SocketFamily,
+                                   IPPROTO_TCP);
         except
             on E: Exception do begin
                 AItem.AssignDefaults;
