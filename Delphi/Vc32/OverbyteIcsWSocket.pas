@@ -1247,6 +1247,7 @@ const
       'Connecting', 'SocksConnected', 'Connected', 'Accepting', 'Listening',
       'Closed');
 type
+  TNetChangeEvent    = procedure (Sender: TObject; ErrCode: Word) of object;
   TDataAvailable     = procedure (Sender: TObject; ErrCode: Word) of object;
   TDataSent          = procedure (Sender: TObject; ErrCode: Word) of object;
   TSendData          = procedure (Sender: TObject; BytesSent: Integer) of object;
@@ -1261,7 +1262,9 @@ type
   TWSocketOption       = (wsoNoReceiveLoop, wsoTcpNoDelay, wsoSIO_RCVALL,
                          { The HTTP tunnel supports HTTP/1.1. If next option }
                          { is set HTTP/1.0 responses are treated as errors.  }
-                          wsoNoHttp10Tunnel);
+                          wsoNoHttp10Tunnel,
+                          wsoNotifyAddressListChange,
+                          wsoNotifyRoutingInterfaceChange);
   TWSocketOptions      = set of TWSocketOption;
 
   TTcpKeepAlive = packed record
@@ -1434,6 +1437,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     //FThreadId           : THandle;
     FSocketSndBufSize   : Integer;  { Winsock internal socket send buffer size }
     FSocketRcvBufSize   : Integer;  { Winsock internal socket Recv buffer size }
+    FOnAddressListChanged : TNetChangeEvent;
+    FOnRoutingInterfaceChanged : TNetChangeEvent;
 {$IFNDEF NO_DEBUG_LOG}
     FIcsLogger          : TIcsLogger;                                           { V5.21 }
     procedure   SetIcsLogger(const Value : TIcsLogger); virtual;                { V5.21 }
@@ -1471,6 +1476,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetLocalPort(const sLocalPort : String);
     procedure   SetProto(sProto : String); virtual;
     procedure   SetSocketFamily(const Value: TSocketFamily);
+    procedure   SetOnRoutingInterfaceChanged(const Value: TNetChangeEvent);
+    procedure   SetOnAddressListChanged(const Value: TNetChangeEvent);
     function    GetRcvdCount : LongInt; virtual;
     procedure   SetBufSize(Value : Integer); virtual;
     function    GetBufSize: Integer; virtual;
@@ -1498,6 +1505,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   TriggerChangeState(OldState, NewState : TSocketState); virtual;
     procedure   TriggerDNSLookupDone(Error : Word); virtual;
     procedure   TriggerError; virtual;
+    procedure   TriggerAddressListChanged(ErrCode: Word);
+    procedure   TriggerRoutingInterfaceChanged(ErrCode: Word);
     function    DoRecv(var Buffer : TWSocketData;
                        BufferSize : Integer;
                        Flags      : Integer) : Integer; virtual;
@@ -1512,6 +1521,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure Do_FD_WRITE(var msg: TMessage); virtual;
     procedure Do_FD_ACCEPT(var msg: TMessage); virtual;
     procedure Do_FD_CLOSE(var msg: TMessage); virtual;
+    procedure Do_FD_ROUTING_INTERFACE_CHANGE(var msg: TMessage); virtual;
+    procedure Do_FD_ADDRESS_LIST_CHANGE(var msg: TMessage); virtual;
     procedure DupConnected; virtual;
     procedure SetSin(const Value: TSockAddrIn);
     function  GetSin: TSockAddrIn;
@@ -1595,6 +1606,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetLingerOption;
     procedure   SetKeepAliveOption;
     function    SetTcpNoDelayOption: Boolean; { V7.27 }
+    function    SetRoutingInterfaceChangeNotification: Boolean; virtual;
+    function    SetAddressListChangeNotification: Boolean; virtual;
     procedure   Dup(NewHSocket : TSocket); virtual;
     procedure   Shutdown(How : Integer); virtual;
     procedure   Pause; virtual;
@@ -1706,6 +1719,11 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                                                     write SetCounterClass;
     property SocketFamily : TSocketFamily           read  FSocketFamily
                                                     write SetSocketFamily;
+    property OnAddressListChanged : TNetChangeEvent read  FOnAddressListChanged
+                                                    write SetOnAddressListChanged;
+    property OnRoutingInterfaceChanged : TNetChangeEvent
+                                                    read  FOnRoutingInterfaceChanged
+                                                    write SetOnRoutingInterfaceChanged;
   end;
 
   THttpTunnelAuthType = (htatDetect, htatNone, htatBasic,
@@ -3026,6 +3044,8 @@ type
     property HttpTunnelCurrentAuthType;
     property HttpTunnelBufferSize;
     property HttpTunnelLastResponse;
+    property OnAddressListChanged;
+    property OnRoutingInterfaceChanged;
   published
     property Addr;
     property SocketFamily;
@@ -7011,6 +7031,60 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.Do_FD_ROUTING_INTERFACE_CHANGE(var msg: TMessage);
+begin
+    TriggerRoutingInterfaceChanged(IcsHiWord(msg.LParam));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.Do_FD_ADDRESS_LIST_CHANGE(var msg: TMessage);
+begin
+    TriggerAddressListChanged(IcsHiWord(msg.LParam));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.TriggerAddressListChanged(ErrCode: Word);
+begin
+    if Assigned(FOnAddressListChanged) then
+        FOnAddressListChanged(Self, ErrCode);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.TriggerRoutingInterfaceChanged(ErrCode: Word);
+begin
+    if Assigned(FOnRoutingInterfaceChanged) then
+        FOnRoutingInterfaceChanged(Self, ErrCode);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetOnAddressListChanged(
+    const Value: TNetChangeEvent);
+begin
+    FOnAddressListChanged := Value;
+    if Assigned(FOnAddressListChanged) then
+        Include(FComponentOptions, wsoNotifyAddressListChange)
+    else
+        Exclude(FComponentOptions, wsoNotifyAddressListChange);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetOnRoutingInterfaceChanged(
+    const Value: TNetChangeEvent);
+begin
+    FOnRoutingInterfaceChanged := Value;
+    if Assigned(FOnRoutingInterfaceChanged) then
+        Include(FComponentOptions, wsoNotifyRoutingInterfaceChange)
+    else
+        Exclude(FComponentOptions, wsoNotifyRoutingInterfaceChange);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF NO_DEBUG_LOG}
 function WinsockMsgToString(var msg: TMessage) : String;
 begin
@@ -7077,6 +7151,19 @@ begin
         {WriteLn('FD_CLOSE ', FHSocket);}
         Do_FD_CLOSE(msg);
     end;
+
+ {$IFDEF MSWINDOWS}
+    if ParamLo and FD_ROUTING_INTERFACE_CHANGE <> 0 then begin
+        FSelectMessage := FD_ROUTING_INTERFACE_CHANGE;
+        Do_FD_ROUTING_INTERFACE_CHANGE(msg);
+    end;
+
+    if ParamLo and FD_ADDRESS_LIST_CHANGE <> 0 then begin
+        FSelectMessage := FD_ADDRESS_LIST_CHANGE;
+        Do_FD_ADDRESS_LIST_CHANGE(msg);
+    end;
+ {$ENDIF}
+
     FSelectMessage := 0;
 end;
 
@@ -8191,6 +8278,69 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocket.SetAddressListChangeNotification: Boolean;
+{$IFDEF MSWINDOWS}
+var
+    LBytesRcvd : LongWord;
+begin
+    if FHSocket <> INVALID_SOCKET then begin
+        if FSelectEvent and FD_ADDRESS_LIST_CHANGE = 0 then begin
+            FSelectEvent := FSelectEvent or FD_ADDRESS_LIST_CHANGE;
+            Result := WSocket_Synchronized_WSAASyncSelect(FHSocket,
+                                                          Handle,
+                                                          FMsg_WM_ASYNCSELECT,
+                                                          FSelectEvent) <> SOCKET_ERROR;
+        end
+        else
+            Result := True;
+        if Result then
+            Result := (WSocket_WSAIoctl(FHSocket, SIO_ADDRESS_LIST_CHANGE, nil, 0,
+                                        nil, 0, LBytesRcvd, nil, nil) <> SOCKET_ERROR) or
+                      (WSocket_Synchronized_WSAGetLastError = WSAEWOULDBLOCK);
+    end
+    else
+        Result := True;
+{$ENDIF}
+{$IFDEF POSIX}
+begin
+    Result := False;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocket.SetRoutingInterfaceChangeNotification: Boolean;
+{$IFDEF MSWINDOWS}
+var
+    LBytesRcvd : LongWord;
+begin
+    if FHSocket <> INVALID_SOCKET then begin
+        if FSelectEvent and FD_ROUTING_INTERFACE_CHANGE = 0 then begin
+            FSelectEvent := FSelectEvent or FD_ROUTING_INTERFACE_CHANGE;
+            Result := WSocket_Synchronized_WSAASyncSelect(FHSocket,
+                                                          Handle,
+                                                          FMsg_WM_ASYNCSELECT,
+                                                          FSelectEvent) <> SOCKET_ERROR;
+        end
+        else
+            Result := True;
+        if Result then
+            Result := (WSocket_WSAIoctl(FHSocket, SIO_ROUTING_INTERFACE_CHANGE,
+                                        @Fsin, SizeOfAddr(Fsin), nil, 0, LBytesRcvd,
+                                        nil, nil) <> SOCKET_ERROR) or
+                      (WSocket_Synchronized_WSAGetLastError = WSAEWOULDBLOCK);
+    end
+    else
+        Result := False;
+{$ENDIF}
+{$IFDEF POSIX}
+begin
+    Result := False;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomWSocket.Connect;
 var
     iStatus : Integer;
@@ -8424,6 +8574,13 @@ begin
         FSelectEvent := FD_READ or FD_WRITE or FD_CLOSE or FD_CONNECT;
     end;
 
+  {$IFDEF MSWINDOWS}
+    if wsoNotifyAddressListChange in ComponentOptions then
+        FSelectEvent := FSelectEvent or FD_ADDRESS_LIST_CHANGE;
+    if wsoNotifyRoutingInterfaceChange in ComponentOptions then
+        FSelectEvent := FSelectEvent or FD_ROUTING_INTERFACE_CHANGE;
+  {$ENDIF}
+
     iStatus       := WSocket_Synchronized_WSAASyncSelect(
                                                        {$IFDEF POSIX}
                                                          Self,
@@ -8436,6 +8593,20 @@ begin
         SocketError('WSAAsyncSelect');
         Exit;
     end;
+
+  {$IFDEF MSWINDOWS}
+    if (wsoNotifyAddressListChange in ComponentOptions) and
+       (not SetAddressListChangeNotification) then begin
+        SocketError('Connect: SetAddressListChangeNotification');
+        Exit;
+    end;
+
+    if (wsoNotifyRoutingInterfaceChange in ComponentOptions) and
+       (not SetRoutingInterfaceChangeNotification) then begin
+        SocketError('Connect: SetRoutingInterfaceChangeNotification');
+        Exit;
+    end;
+  {$ENDIF}
 
     if FType = SOCK_DGRAM then begin
         ChangeState(wsConnected);
@@ -8707,6 +8878,14 @@ begin
         FSelectEvent := FD_ACCEPT or FD_CLOSE
     else
         FSelectEvent := FD_READ or FD_WRITE; // works in both Win and Posix
+
+  {$IFDEF MSWINDOWS}
+    if wsoNotifyAddressListChange in ComponentOptions then
+        FSelectEvent := FSelectEvent or FD_ADDRESS_LIST_CHANGE;
+    if wsoNotifyRoutingInterfaceChange in ComponentOptions then
+        FSelectEvent := FSelectEvent or FD_ROUTING_INTERFACE_CHANGE;
+  {$ENDIF}
+
     iStatus      := WSocket_Synchronized_WSAASyncSelect(
                                                       {$IFDEF POSIX}
                                                         Self,
@@ -8719,6 +8898,20 @@ begin
         SocketError('WSAASyncSelect');
         exit;
     end;
+
+  {$IFDEF MSWINDOWS}
+    if (wsoNotifyAddressListChange in ComponentOptions) and
+       (not SetAddressListChangeNotification) then begin
+        SocketError('Listen: SetAddressListChangeNotification');
+        Exit;
+    end;
+
+    if (wsoNotifyRoutingInterfaceChange in ComponentOptions) and
+       (not SetRoutingInterfaceChangeNotification) then begin
+        SocketError('Listen: SetRoutingInterfaceChangeNotification');
+        Exit;
+    end;
+  {$ENDIF}
 end;
 
 

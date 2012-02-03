@@ -725,18 +725,63 @@ const
 
 { Define flags to be used with the WSAAsyncSelect() call. }
 
+{*
+ * WinSock 2 extension -- bit values and indices for FD_XXX network events
+ *}
+  FD_READ_BIT             = 0;
+  {$EXTERNALSYM FD_READ_BIT}
+  FD_READ                 = 1 shl FD_READ_BIT;
   {$EXTERNALSYM FD_READ}
-  FD_READ         = $01;
+
+  FD_WRITE_BIT            = 1;
+  {$EXTERNALSYM FD_WRITE_BIT}
+  FD_WRITE                = 1 shl FD_WRITE_BIT;
   {$EXTERNALSYM FD_WRITE}
-  FD_WRITE        = $02;
+
+  FD_OOB_BIT              = 2;
+  {$EXTERNALSYM FD_OOB_BIT}
+  FD_OOB                  = 1 shl FD_OOB_BIT;
   {$EXTERNALSYM FD_OOB}
-  FD_OOB          = $04;
+
+  FD_ACCEPT_BIT           = 3;
+  {$EXTERNALSYM FD_ACCEPT_BIT}
+  FD_ACCEPT               = 1 shl FD_ACCEPT_BIT;
   {$EXTERNALSYM FD_ACCEPT}
-  FD_ACCEPT       = $08;
+
+  FD_CONNECT_BIT          = 4;
+  {$EXTERNALSYM FD_CONNECT_BIT}
+  FD_CONNECT              = 1 shl FD_CONNECT_BIT;
   {$EXTERNALSYM FD_CONNECT}
-  FD_CONNECT      = $10;
+
+  FD_CLOSE_BIT            = 5;
+  {$EXTERNALSYM FD_CLOSE_BIT}
+  FD_CLOSE                = 1 shl FD_CLOSE_BIT;
   {$EXTERNALSYM FD_CLOSE}
-  FD_CLOSE        = $20;
+
+  FD_QOS_BIT              = 6;
+  {$EXTERNALSYM FD_QOS_BIT}
+  FD_QOS                  = 1 shl FD_QOS_BIT;
+  {$EXTERNALSYM FD_QOS}
+
+  FD_GROUP_QOS_BIT        = 7;
+  {$EXTERNALSYM FD_GROUP_QOS_BIT}
+  FD_GROUP_QOS            = 1 shl FD_GROUP_QOS_BIT;
+  {$EXTERNALSYM FD_GROUP_QOS}
+
+  FD_ROUTING_INTERFACE_CHANGE_BIT = 8;
+  {$EXTERNALSYM FD_ROUTING_INTERFACE_CHANGE_BIT}
+  FD_ROUTING_INTERFACE_CHANGE     = 1 shl FD_ROUTING_INTERFACE_CHANGE_BIT;
+  {$EXTERNALSYM FD_ROUTING_INTERFACE_CHANGE}
+
+  FD_ADDRESS_LIST_CHANGE_BIT      = 9;
+  {$EXTERNALSYM FD_ADDRESS_LIST_CHANGE_BIT}
+  FD_ADDRESS_LIST_CHANGE          = 1 shl FD_ADDRESS_LIST_CHANGE_BIT;
+  {$EXTERNALSYM FD_ADDRESS_LIST_CHANGE}
+
+  FD_MAX_EVENTS           = 10;
+  {$EXTERNALSYM FD_MAX_EVENTS}
+  FD_ALL_EVENTS           = ((1 shl FD_MAX_EVENTS) - 1);
+  {$EXTERNALSYM FD_ALL_EVENTS}
 
 { All Windows Sockets error constants are biased by WSABASEERR from the "normal" }
 
@@ -1357,6 +1402,10 @@ procedure IN6_SET_ADDR_V4MAPPED(a6: PIn6Addr; const a4: PInAddr); {$IFDEF USE_IN
 procedure IN6ADDR_SETV4MAPPED(a6: PSockAddrIn6; const a4: PInAddr; scope: SCOPE_ID; port: u_short); {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$ENDIF}
 
+{*
+ * WinSock 2 extension -- manifest constants for WSAIoctl()
+ *}
+
 const
 {$EXTERNALSYM IOC_UNIX}
     IOC_UNIX             = $00000000;       { Do not use this in Windows     }
@@ -1392,6 +1441,48 @@ const
     SIO_GET_INTERFACE_LIST = IOC_OUT or ((SizeOf(u_long) and IOCPARM_MASK) shl 16) or (Ord('t') shl 8) or 127;
 {$EXTERNALSYM SIO_ADDRESS_LIST_QUERY}
     SIO_ADDRESS_LIST_QUERY = DWORD(IOC_OUT or IOC_WS2 or 22);
+
+
+//#if (_WIN32_WINNT >= 0x0600)
+{*
+ * WSK-specific IO control codes are Winsock2 codes with the highest-order
+ * 3 bits of the Vendor/AddressFamily-specific field set to 1.
+ *}
+  //{$EXTERNALSYM IOC_WSK}
+  //IOC_WSK                             = IOC_WS2 or $07000000;
+//#endif //(_WIN32_WINNT >= 0x0600)
+
+{
+#define _WSAIO(x,y)                   (IOC_VOID|(x)|(y))
+#define _WSAIOR(x,y)                  (IOC_OUT|(x)|(y))
+#define _WSAIOW(x,y)                  (IOC_IN|(x)|(y))
+#define _WSAIORW(x,y)                 (IOC_INOUT|(x)|(y))
+
+#define SIO_ASSOCIATE_HANDLE          _WSAIOW(IOC_WS2,1)
+#define SIO_ENABLE_CIRCULAR_QUEUEING  _WSAIO(IOC_WS2,2)
+#define SIO_FIND_ROUTE                _WSAIOR(IOC_WS2,3)
+#define SIO_FLUSH                     _WSAIO(IOC_WS2,4)
+#define SIO_GET_BROADCAST_ADDRESS     _WSAIOR(IOC_WS2,5)
+#define SIO_GET_EXTENSION_FUNCTION_POINTER  _WSAIORW(IOC_WS2,6)
+#define SIO_GET_QOS                   _WSAIORW(IOC_WS2,7)
+#define SIO_GET_GROUP_QOS             _WSAIORW(IOC_WS2,8)
+#define SIO_MULTIPOINT_LOOPBACK       _WSAIOW(IOC_WS2,9)
+#define SIO_MULTICAST_SCOPE           _WSAIOW(IOC_WS2,10)
+#define SIO_SET_QOS                   _WSAIOW(IOC_WS2,11)
+#define SIO_SET_GROUP_QOS             _WSAIOW(IOC_WS2,12)
+#define SIO_TRANSLATE_HANDLE          _WSAIORW(IOC_WS2,13)
+#define SIO_ROUTING_INTERFACE_QUERY   _WSAIORW(IOC_WS2,20)
+}
+  {$EXTERNALSYM SIO_ROUTING_INTERFACE_CHANGE}
+  SIO_ROUTING_INTERFACE_CHANGE        = DWORD(IOC_IN or IOC_WS2 or 21);
+//#define SIO_ROUTING_INTERFACE_CHANGE  _WSAIOW(IOC_WS2,21)
+//#define SIO_ADDRESS_LIST_QUERY        _WSAIOR(IOC_WS2,22)
+  {$EXTERNALSYM SIO_ADDRESS_LIST_CHANGE}
+  SIO_ADDRESS_LIST_CHANGE             = DWORD(IOC_VOID or IOC_WS2 or 23);
+//#define SIO_ADDRESS_LIST_CHANGE       _WSAIO(IOC_WS2,23)
+//#define SIO_QUERY_TARGET_PNP_HANDLE   _WSAIOR(IOC_WS2,24)
+
+
 
 {$EXTERNALSYM WSAStartup}
 function WSAStartup(wVersionRequired: word; var WSData: TWSAData): Integer;

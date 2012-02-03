@@ -300,6 +300,7 @@ type
       FLastError: Integer;
       FCloseInvoked: Boolean;
       FPaused: Boolean;
+      FSelectEvent: LongWord;
       procedure SetAddr(const Value: string);
       procedure SetSocketFamily(const Value: TSocketFamily);
       function GetAddrResolved: string;
@@ -347,6 +348,8 @@ type
       property  Paused: Boolean read FPaused;
       property  PortNum: Integer read FPortNum write FPortNum;
       property  State: TSocketState read FState write FState;
+      function  SetAddressListChangeNotification: Boolean;
+      function  SetRoutingInterfaceChangeNotification: Boolean;
     published
       property Addr: string read FAddr write SetAddr;
       property ListenBacklog: Integer           read  FListenBacklog
@@ -1124,6 +1127,15 @@ begin
             Exit;
         end;
 
+        AItem.FSelectEvent := FD_ACCEPT or FD_CLOSE;
+
+      {$IFDEF MSWINDOWS}
+        if wsoNotifyAddressListChange in ComponentOptions then
+            AItem.FSelectEvent := AItem.FSelectEvent or FD_ADDRESS_LIST_CHANGE;
+        if wsoNotifyRoutingInterfaceChange in ComponentOptions then
+            AItem.FSelectEvent := AItem.FSelectEvent or FD_ROUTING_INTERFACE_CHANGE;
+      {$ENDIF}
+
         iStatus := WSocket_WSAASyncSelect(
                                         {$IFDEF POSIX}
                                           AItem,
@@ -1131,11 +1143,25 @@ begin
                                           AItem.HSocket,
                                           Handle,
                                           FMsg_WM_ASYNCSELECT,
-                                          FD_ACCEPT or FD_CLOSE);
+                                          AItem.FSelectEvent);
         if iStatus <> 0 then begin
             MlSocketError(AItem, 'listen: WSAASyncSelect');
             Exit;
         end;
+
+      {$IFDEF MSWINDOWS}
+        if (wsoNotifyAddressListChange in ComponentOptions) and
+           (not AItem.SetAddressListChangeNotification) then begin
+            MlSocketError(AItem, 'listen: SetAddressListChangeNotification');
+            Exit;
+        end;
+
+        if (wsoNotifyRoutingInterfaceChange in ComponentOptions) and
+           (not AItem.SetRoutingInterfaceChangeNotification)then begin
+            MlSocketError(AItem, 'listen: SetRoutingInterfaceChangeNotification');
+            Exit;
+        end;
+      {$ENDIF}
     finally
         FMultiListenIndex := -1;
     end;
@@ -1346,6 +1372,19 @@ begin
             FSelectMessage := FD_CLOSE;
             Do_FD_CLOSE(msg);
         end;
+
+      {$IFDEF MSWINDOWS}
+        if ParamLo and FD_ROUTING_INTERFACE_CHANGE <> 0 then begin
+            FSelectMessage := FD_ROUTING_INTERFACE_CHANGE;
+            Do_FD_ROUTING_INTERFACE_CHANGE(msg);
+        end;
+
+        if ParamLo and FD_ADDRESS_LIST_CHANGE <> 0 then begin
+            FSelectMessage := FD_ADDRESS_LIST_CHANGE;
+            Do_FD_ADDRESS_LIST_CHANGE(msg);
+        end;
+      {$ENDIF}
+
         FSelectMessage := 0;
 
     end
@@ -1367,6 +1406,18 @@ begin
         Check := ParamLo and FD_CLOSE;
         if Check <> 0 then
             Ml_Do_FD_CLOSE(AItem, msg);
+
+      {$IFDEF MSWINDOWS}
+        if ParamLo and FD_ROUTING_INTERFACE_CHANGE <> 0 then begin
+            FSelectMessage := FD_ROUTING_INTERFACE_CHANGE;
+            Do_FD_ROUTING_INTERFACE_CHANGE(msg);
+        end;
+
+        if ParamLo and FD_ADDRESS_LIST_CHANGE <> 0 then begin
+            FSelectMessage := FD_ADDRESS_LIST_CHANGE;
+            Do_FD_ADDRESS_LIST_CHANGE(msg);
+        end;
+      {$ENDIF}
     end;
 end;
 
@@ -1599,6 +1650,69 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.SetAddressListChangeNotification: Boolean;
+{$IFDEF MSWINDOWS}
+var
+    LBytesRcvd : LongWord;
+begin
+    if FHSocket <> INVALID_SOCKET then begin
+        if FSelectEvent and FD_ADDRESS_LIST_CHANGE = 0 then begin
+            FSelectEvent := FSelectEvent or FD_ADDRESS_LIST_CHANGE;
+            Result := WSocket_WSAASyncSelect(FHSocket,
+                                             OwnerServer.Handle,
+                                             OwnerServer.FMsg_WM_ASYNCSELECT,
+                                             FSelectEvent) <> SOCKET_ERROR;
+        end
+        else
+            Result := True;
+        if Result then
+            Result := (WSocket_WSAIoctl(FHSocket, SIO_ADDRESS_LIST_CHANGE, nil, 0,
+                                        nil, 0, LBytesRcvd, nil, nil) <> SOCKET_ERROR) or
+                      (WSocket_WSAGetLastError = WSAEWOULDBLOCK);
+    end
+    else
+        Result := False;
+{$ENDIF}
+{$IFDEF POSIX}
+begin
+    Result := False;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWSocketMultiListenItem.SetRoutingInterfaceChangeNotification: Boolean;
+{$IFDEF MSWINDOWS}
+var
+    LBytesRcvd : LongWord;
+begin
+    if FHSocket <> INVALID_SOCKET then begin
+        if FSelectEvent and FD_ROUTING_INTERFACE_CHANGE = 0 then begin
+            FSelectEvent := FSelectEvent or FD_ROUTING_INTERFACE_CHANGE;
+            Result := WSocket_WSAASyncSelect(FHSocket,
+                                             OwnerServer.Handle,
+                                             OwnerServer.FMsg_WM_ASYNCSELECT,
+                                             FSelectEvent) <> SOCKET_ERROR;
+        end
+        else
+            Result := True;
+        if Result then
+            Result := (WSocket_WSAIoctl(FHSocket, SIO_ROUTING_INTERFACE_CHANGE,
+                                        @Fsin, SizeOfAddr(Fsin), nil, 0, LBytesRcvd,
+                                        nil, nil) <> SOCKET_ERROR) or
+                      (WSocket_WSAGetLastError = WSAEWOULDBLOCK);
+        end
+    else
+        Result := False;
+{$ENDIF}
+{$IFDEF POSIX}
+begin
+    Result := False;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { TWSocketMultiListenCollection }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
