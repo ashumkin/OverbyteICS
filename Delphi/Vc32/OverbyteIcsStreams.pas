@@ -3,8 +3,8 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.16
-Legal issues: Copyright (C) 2005-2010 by Arno Garrels, Berlin, Germany,
+Version:      6.17
+Legal issues: Copyright (C) 2005-2012 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
               This software is provided 'as-is', without any express or
@@ -77,6 +77,12 @@ May 07, 2009 V6.13 TIcsStreamWriter did not convert from ANSI to UTF-7.
 Dec 05, 2009 V6.14 Use IcsSwap16Buf() and global code page ID constants.
 Oct 20, 2010 V6.15 Fixed a bug in TIcsStreamReader.InternalReadLn.
 Oct 20, 2010 V6.16 Fixed a bug in TIcsStreamReader.ReadLn.
+Feb 08, 2012 V6.17 Fixed a 64-bit bug and a memory leak in TBufferedFileStream.
+                   TIcsBufferedStream, TIcsStreamReader and TIcsStreamWriter
+                   removed some default parameter values from constructors,
+                   verify that existing code calls the right overload.
+
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsStreams;
@@ -134,7 +140,7 @@ type
 {$ELSE}
     TBufferedFileStream = class(TStream)
     private
-        FHandle     : Longint;
+        FHandle     : {$IFDEF COMPILER16_UP} THandle {$ELSE} Integer {$ENDIF};
         FFileSize   : BigInt;
         FFileOffset : BigInt;
         FBuf        : TBytes;  { V6.11 }
@@ -247,16 +253,19 @@ type
     public
         constructor Create; overload; // Dummy, don't call!
         constructor Create(Stream     : TStream;
-                           BufferSize : Integer = DEFAULT_BUFSIZE;
+                           BufferSize : Integer;
                            OwnsStream : Boolean = FALSE); overload; virtual;
+
         constructor Create(const FileName : String;
                            Mode           : Word;
-                           Rights         : Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF};
-                           BufferSize     : Integer = DEFAULT_BUFSIZE); overload; virtual;
+                           Rights         : Cardinal;
+                           BufferSize     : Integer); overload; virtual;
         constructor Create(const FileName : WideString;
                            Mode           : Word;
-                           Rights         : Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF};
-                           BufferSize     : Integer = DEFAULT_BUFSIZE); overload; virtual;
+                           Rights         : Cardinal;
+                           BufferSize     : Integer); overload; virtual;
+        constructor Create(const FileName: String; Mode: Word; BufferSize: Integer); overload; virtual;
+        constructor Create(const FileName: WideString; Mode: Word; BufferSize: Integer); overload; virtual;
         destructor  Destroy; override;
 
         procedure   Flush; {$IFDEF USE_INLINE} inline;{$ENDIF}
@@ -310,16 +319,16 @@ type
                            BufferSize : Integer = DEFAULT_BUFSIZE); overload;
 
         constructor Create(const FileName : String;
-                           Mode           : Word; // ignored, could be removed
-                           BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
+                           Mode           : Word;
+                           BufferSize     : Integer = DEFAULT_BUFSIZE); override;
         constructor Create(const FileName : String;
                            DetectBOM      : Boolean = TRUE;
                            CodePage       : LongWord = CP_ACP;
                            BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
 
         constructor Create(const FileName : WideString;
-                           Mode           : Word; //ignored, could be removed
-                           BufferSize     : Integer = DEFAULT_BUFSIZE); overload;
+                           Mode           : Word;
+                           BufferSize     : Integer = DEFAULT_BUFSIZE); override;
         constructor Create(const FileName : WideString;
                            DetectBOM      : Boolean = TRUE;
                            CodePage       : LongWord = CP_ACP;
@@ -364,8 +373,8 @@ type
 
         constructor Create(const FileName : String;
                            Mode           : Word;
-                           Rights         : Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF};
-                           BufferSize     : Integer = DEFAULT_BUFSIZE); override;
+                           Rights         : Cardinal;
+                           BufferSize     : Integer); override;
         constructor Create(const FileName : String;
                            Append         : Boolean = TRUE;
                            DetectBOM      : Boolean = TRUE;
@@ -374,8 +383,8 @@ type
 
         constructor Create(const FileName : WideString;
                            Mode           : Word;
-                           Rights         : Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF};
-                           BufferSize     : Integer = DEFAULT_BUFSIZE); override;
+                           Rights         : Cardinal;
+                           BufferSize     : Integer); override;
         constructor Create(const FileName : WideString;
                            Append         : Boolean = TRUE;
                            DetectBOM      : Boolean = TRUE;
@@ -471,6 +480,13 @@ implementation
 type
     TDummyByteArray = array [0..0] of Byte; { Casts require range checks OFF }{ V6.11 }
 
+const
+  {$IFDEF COMPILER16_UP}
+    ICS_INVALID_FILE_HANDLE = INVALID_HANDLE_VALUE;
+  {$ELSE}
+    ICS_INVALID_FILE_HANDLE = -1;
+  {$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure CheckAddFileModeReadWrite(var AMode: Word);
@@ -543,7 +559,7 @@ var
 {$ENDIF}
 begin
     inherited Create;
-    FHandle := -1;
+    FHandle := ICS_INVALID_FILE_HANDLE;
     FBuf    := nil;
     //FmWriteFlag := FALSE;  { V1.04 }
     if Mode and fmCreate = fmCreate then begin
@@ -557,7 +573,7 @@ begin
                               LMode,
                             {$ENDIF}  
                               Rights);
-        if FHandle < 0 then
+        if FHandle = ICS_INVALID_FILE_HANDLE then
             raise EFCreateError.CreateResFmt(@SFCreateErrorEx,
                                              [ExpandFileName(FileName),
                                              SysErrorMessage(GetLastError)]);
@@ -566,7 +582,7 @@ begin
         { Even in mode fmOpenWrite we need to read from file as well }
         CheckAddFileModeReadWrite(Mode);
         FHandle := FileOpen(FileName, Mode);
-        if FHandle < 0 then
+        if FHandle = ICS_INVALID_FILE_HANDLE then
             raise EFOpenError.CreateResFmt(@SFOpenErrorEx,
                                            [ExpandFileName(FileName),
                                            SysErrorMessage(GetLastError)]);
@@ -594,11 +610,11 @@ constructor TBufferedFileStream.Create(const FileName : WideString; Mode: Word;
     Rights: Cardinal; BufferSize: Longint);
 begin
     inherited Create;
-    FHandle := -1;
+    FHandle := ICS_INVALID_FILE_HANDLE;
     FBuf    := nil;
     if Mode and fmCreate = fmCreate then begin
         FHandle := IcsFileCreateW(FileName, Rights);
-        if FHandle < 0 then
+        if FHandle = ICS_INVALID_FILE_HANDLE then
             raise EFCreateError.CreateResFmt(@SFCreateErrorEx,
                                              [ExpandFileName(FileName),
                                              SysErrorMessage(GetLastError)]);
@@ -607,7 +623,7 @@ begin
         { Even in mode fmOpenWrite we need to read from file as well }
         CheckAddFileModeReadWrite(Mode);
         FHandle := IcsFileOpenW(FileName, Mode);
-        if FHandle < 0 then
+        if FHandle = ICS_INVALID_FILE_HANDLE then
             raise EFOpenError.CreateResFmt(@SFOpenErrorEx,
                                            [ExpandFileName(FileName),
                                            SysErrorMessage(GetLastError)]);
@@ -620,7 +636,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TBufferedFileStream.Destroy;
 begin
-    if FHandle >= 0 then begin
+    if FHandle <> ICS_INVALID_FILE_HANDLE then begin
         if FDirty then
             WriteToFile;
         FileClose(FHandle);
@@ -670,7 +686,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TBufferedFileStream.Flush;
 begin
-    if FDirty and (FHandle >= 0) and (FBuf <> nil) then
+    if FDirty and (FHandle <> ICS_INVALID_FILE_HANDLE) and (FBuf <> nil) then
         WriteToFile;
 end;
 
@@ -684,7 +700,7 @@ var
     DestPos     : Longint;
 begin
     Result := 0;
-    if FHandle < 0 then Exit;
+    if FHandle = ICS_INVALID_FILE_HANDLE then Exit;
     Remaining := Min(Count, FFileSize - (FFileOffset + FBufPos));
     Result := Remaining;
     if (Remaining > 0) then begin
@@ -723,7 +739,7 @@ var
     DestPos   : Longint;
 begin
     Result := 0;
-    if FHandle < 0 then Exit;
+    if FHandle = ICS_INVALID_FILE_HANDLE then Exit;
     Remaining := Count;
     Result := Remaining;
     if (Remaining > 0) then begin
@@ -779,7 +795,7 @@ var
     NewFileOffset : BigInt;
 begin
     Result := 0;
-    if FHandle < 0 then Exit;
+    if FHandle = ICS_INVALID_FILE_HANDLE then Exit;
 
     {if (Offset = 0) and (Origin = soCurrent) then begin   V6.11
         Result := FFileOffset + FBufPos;
@@ -828,7 +844,7 @@ procedure TBufferedFileStream.SetSize(const NewSize: Int64);
 var
     NSize : Int64;                                          { V6.11 }
 begin
-    if FHandle < 0 then Exit;
+    if FHandle = ICS_INVALID_FILE_HANDLE then Exit;
     Seek(NewSize, {sofromBeginning} soBeginning); {TG 08/28/2006} { V1.03 }
     // if NewSize < FFileSize then                            { V6.11 }
     NSize := FileSeek(FHandle, NewSize, soFromBeginning);   { V6.11 }
@@ -1265,7 +1281,7 @@ var
   FileAccessRights : Cardinal = 0;
 {$ENDIF}
 
-constructor TIcsBufferedStream.Create(Stream: TStream; BufferSize: Longint = DEFAULT_BUFSIZE;
+constructor TIcsBufferedStream.Create(Stream: TStream; BufferSize: Longint;
   OwnsStream: Boolean = FALSE);
 begin
     inherited Create;
@@ -1280,29 +1296,29 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsBufferedStream.Create;
 begin
-    Create(nil); // dummy!
+    Create(nil, 0); // dummy!
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-(*
 constructor TIcsBufferedStream.Create(const FileName: String; Mode: Word;
-  BufferSize: Integer = DEFAULT_BUFSIZE);
+  BufferSize: Integer);
 begin
-    inherited Create;
-    { Even in mode fmOpenWrite we need to read from file as well }
-    CheckAddFileModeReadWrite(Mode);
-    FStream := TFileStream.Create(FileName, Mode);
-    FBufferSize := BufferSize;
-    FOwnsStream := True;
-    IsReadOnly := IsFileModeReadOnly(Mode);
-    Init;
+    Create(FileName, Mode, FileAccessRights, BufferSize);
 end;
-*)
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+constructor TIcsBufferedStream.Create(const FileName: WideString; Mode: Word;
+  BufferSize: Integer);
+begin
+    Create(FileName, Mode, FileAccessRights, BufferSize);
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsBufferedStream.Create(const FileName: String; Mode: Word;
-  Rights: Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF}; BufferSize: Integer = DEFAULT_BUFSIZE);
+  Rights: Cardinal; BufferSize: Integer);
 begin
     inherited Create;
     { Even in mode fmOpenWrite we need to read from file as well }
@@ -1316,24 +1332,8 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-(*
 constructor TIcsBufferedStream.Create(const FileName: WideString; Mode: Word;
-  BufferSize: Integer = DEFAULT_BUFSIZE);
-begin
-    inherited Create;
-    { Even in mode fmOpenWrite we need to read from file as well }
-    CheckAddFileModeReadWrite(Mode);
-    FStream := TIcsFileStreamW.Create(FileName, Mode);
-    FBufferSize := BufferSize;
-    FOwnsStream := True;
-    IsReadOnly := IsFileModeReadOnly(Mode);
-    Init;
-end;
-*)
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsBufferedStream.Create(const FileName: WideString; Mode: Word;
-  Rights: Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF}; BufferSize: Integer = DEFAULT_BUFSIZE);
+  Rights: Cardinal; BufferSize: Integer);
 begin
     inherited Create;
     { Even in mode fmOpenWrite we need to read from file as well }
@@ -1593,7 +1593,8 @@ constructor TIcsStreamReader.Create(const FileName: String;
 begin
     FDetectBOM := DetectBOM;
     FCodePage  := CodePage;
-    inherited Create(FileName, fmOpenRead or fmShareDenyWrite, BufferSize);
+    inherited Create(FileName, fmOpenRead or fmShareDenyWrite, FileAccessRights,
+                     BufferSize);
 end;
 
 
@@ -1612,7 +1613,8 @@ constructor TIcsStreamReader.Create(const FileName: WideString;
 begin
     FDetectBOM := DetectBOM;
     FCodePage  := CodePage;
-    inherited Create(FileName, fmOpenRead or fmShareDenyWrite, BufferSize);
+    inherited Create(FileName, fmOpenRead or fmShareDenyWrite, FileAccessRights,
+                     BufferSize);
 end;
 
 
@@ -2135,7 +2137,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamWriter.Create(const FileName: String; Mode: Word;
-  Rights: Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF}; BufferSize: Integer = DEFAULT_BUFSIZE);
+  Rights: Cardinal; BufferSize: Integer);
 begin
     FCodePage := CP_ACP;
     inherited Create(FileName, Mode, Rights, BufferSize);
@@ -2152,7 +2154,7 @@ begin
     FCodePage := CodePage;
     if Append and FileExists(FileName) then begin
         Mode := fmOpenReadWrite or fmShareDenyWrite;
-        inherited Create(FileName, Mode, BufferSize);
+        inherited Create(FileName, Mode, FileAccessRights, BufferSize);
         if DetectBom then
             FCodePage := GetCodePageFromBOM;
         Seek(0, soEnd);
@@ -2166,7 +2168,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsStreamWriter.Create(const FileName: WideString; Mode: Word;
-  Rights: Cardinal {$IFDEF MSWINDOWS} = 0 {$ENDIF}; BufferSize: Integer = DEFAULT_BUFSIZE);
+  Rights: Cardinal; BufferSize: Integer);
 begin
     FCodePage := CP_ACP;
     inherited Create(FileName, Mode, Rights, BufferSize);
@@ -2183,7 +2185,7 @@ begin
     FCodePage := CodePage;
     if Append and FileExists(FileName) then begin
         Mode := fmOpenReadWrite or fmShareDenyWrite;
-        inherited Create(FileName, Mode, BufferSize);
+        inherited Create(FileName, Mode, FileAccessRights, BufferSize);
         if DetectBom then
             FCodePage := GetCodePageFromBOM;
         Seek(0, soEnd);
@@ -2565,7 +2567,7 @@ end;
 constructor TIcsBinaryReader.Create(const Filename: string);
 begin
     Create(TIcsBufferedStream.Create(FileName, fmOpenRead or fmShareDenyWrite,
-                                     FileAccessRights),
+                                     FileAccessRights, DEFAULT_BUFSIZE),
            True);
 end;
 
@@ -2741,9 +2743,11 @@ end;
 constructor TIcsBinaryWriter.Create(const Filename: string; Append: Boolean);
 begin
     if (not FileExists(Filename)) or (not Append) then
-        FStream := TIcsBufferedStream.Create(Filename, fmCreate, FileAccessRights)
+        FStream := TIcsBufferedStream.Create(Filename, fmCreate,
+                                             DEFAULT_BUFSIZE, FileAccessRights)
     else begin
-        FStream := TIcsBufferedStream.Create(Filename, fmOpenWrite, FileAccessRights);
+        FStream := TIcsBufferedStream.Create(Filename, fmOpenWrite,
+                                             DEFAULT_BUFSIZE, FileAccessRights);
         FStream.Seek(0, soEnd);
     end;
     Create(FStream, True);
