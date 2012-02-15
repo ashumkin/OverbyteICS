@@ -54,6 +54,8 @@ unit OverbyteIcsSspi;
 
 interface
 
+{$IFDEF MSWINDOWS}
+
 uses
   Windows;
   
@@ -596,6 +598,8 @@ type
   TSecPkgContextAuthority = SecPkgContext_AuthorityA;
   PSecPkgContextAuthority = PSecPkgContext_AuthorityA;
 {$ENDIF}
+
+{$ENDIF MSWINDOWS}
 implementation
 
 end.

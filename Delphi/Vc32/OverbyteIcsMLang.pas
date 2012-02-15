@@ -21,6 +21,8 @@ unit OverbyteIcsMLang;
 
 interface
 
+{$IFDEF MSWINDOWS}
+
 uses
   Windows;
 
@@ -57,9 +59,13 @@ function IsConvertINetStringAvailable(
       dwDstEncoding: DWORD
     ): HRESULT;
 
-function Load_MLang: Boolean;    
+function Load_MLang: Boolean;
+
+{$ENDIF MSWINDOWS}
 
 implementation
+
+{$IFDEF MSWINDOWS}
 
 type
     TConvertINetString = function(
@@ -204,4 +210,5 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF MSWINDOWS}
 end.

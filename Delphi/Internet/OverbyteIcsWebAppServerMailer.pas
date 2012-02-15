@@ -48,7 +48,9 @@ Jul 10, 2009 V1.02 Arno Removed string cast warnings.
 Sept 1, 2009 V1.03 Angus - report exceptions creating virtual pages
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsWebAppServerMailer;
+{$ENDIF}
 
 interface
 

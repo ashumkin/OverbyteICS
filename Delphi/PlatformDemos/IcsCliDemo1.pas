@@ -58,17 +58,14 @@ interface
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
-{$IFNDEF FMX}
-  {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
-{$ENDIF}
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Platform, System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit,
   { Don't forget to add your vc32 directory to Delphi library path }
-  OverbyteIcsUtils,
-  OverbyteIcsIniFiles, OverbyteIcsWSocket, OverbyteIcsWndControl;
+  OverbyteIcsUtils, OverbyteIcsIniFiles,
+  OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
   CliDemoVersion     = 107;
@@ -102,6 +99,7 @@ type
     procedure Display(Msg : String);
     procedure ProcessCommand(Cmd : String);
     procedure SendData;
+    procedure CliSocketAddressListChanged(Sender: TObject; ErrCode: Word);
   end;
 
 var
@@ -119,6 +117,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TClientForm.CliSocketAddressListChanged(Sender: TObject; ErrCode: Word);
+begin
+    Display('AddressListChanged');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TClientForm.SendButtonClick(Sender: TObject);
 begin
     if CliSocket.State = wsConnected then begin
@@ -132,6 +137,8 @@ begin
         CliSocket.Addr     := ServerEdit.Text;
         CliSocket.LineMode := TRUE;
         CliSocket.LineEnd  := #13#10;
+        CliSocket.OnAddressListChanged := CliSocketAddressListChanged;
+        CliSocket.OnRoutingInterfaceChanged := CliSocketAddressListChanged;
         try
             CliSocket.Connect;
         except

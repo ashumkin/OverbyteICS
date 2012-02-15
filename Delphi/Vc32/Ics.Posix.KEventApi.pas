@@ -37,7 +37,7 @@ History:
 unit Ics.Posix.KEventApi;
 
 interface
-
+{$IFDEF POSIX}
 uses
   Posix.Base, Posix.Time,
   Ics.Posix.KEventTypes;
@@ -54,7 +54,7 @@ function kevent64(kq: Integer; ChangeList: PKEvent64_s; nChanged: Integer;
                 EventList: PKEvent64_s; nEvents: Integer; Timeout: PTimeSpec): Integer; cdecl;
                 external libc name _PU + 'kevent64';
 {$EXTERNALSYM kevent64}
-
+{$ENDIF POSIX}
 implementation
 
 end.

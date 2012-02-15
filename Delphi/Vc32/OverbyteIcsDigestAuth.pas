@@ -70,7 +70,7 @@ interface
 
 uses
     SysUtils, Classes, OverbyteIcsMD5, OverbyteIcsMimeUtils,
-    OverbyteIcsLibrary, OverbyteIcsTypes;
+    OverbyteIcsTypes;
 
 type
   {$IFNDEF COMPILER12_UP}
@@ -486,7 +486,7 @@ begin
 
     NonceTime := PAuthDigestNonceRec(Pointer(Buf))^.DT;
 
-    Result := (NonceTime > MinDateTime) and (NonceTime <= _Now);
+    Result := (NonceTime > MinDateTime) and (NonceTime <= Now);
 end;
 
 
@@ -546,7 +546,7 @@ begin
     if Pos1 > 0 then begin
         Inc(Pos1, Length('stale="'));
         Pos2 := PosEx('"', ALine, Pos1);
-        Info.Stale := _CompareText(Copy(ALine, Pos1, Pos2 - Pos1), 'true') = 0;
+        Info.Stale := CompareText(Copy(ALine, Pos1, Pos2 - Pos1), 'true') = 0;
     end
     else
         Info.Stale := FALSE;
@@ -646,8 +646,8 @@ var
     NcHex     : String;
 begin
     if Qop <> '' then begin
-        NcHex  := _IntToHex(Nc, 8);
-        Cnonce := _IntToHex(Random(MaxInt), 8);
+        NcHex  := IntToHex(Nc, 8);
+        Cnonce := IntToHex(Random(MaxInt), 8);
     end
     else
         CNonce := '';
@@ -698,8 +698,8 @@ var
     CNonce    : String;
 begin
     if Info.qop <> '' then begin
-        NcHex  := _IntToHex(Info.Nc, 8);
-        CNonce := _IntToHex(Random(MaxInt), 8);
+        NcHex  := IntToHex(Info.Nc, 8);
+        CNonce := IntToHex(Random(MaxInt), 8);
     end;
     AuthDigestCalcHA1(Info.Algorithm,
                       AnsiString(UserName),
@@ -760,7 +760,7 @@ begin
         end;
     end;
 
-    Nonce := String(AuthDigestGenerateIcsNonce(_Now, Secret,
+    Nonce := String(AuthDigestGenerateIcsNonce(Now, Secret,
                                          AnsiString(Opaque),
                                          AnsiString(Realm)));
 

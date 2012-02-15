@@ -66,7 +66,6 @@ Apr 15, 2011  V6.02 Arno prepared for 64-bit.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsWSockBuf;
-
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
@@ -92,17 +91,11 @@ unit OverbyteIcsWSockBuf;
 interface
 
 uses
-{$IFDEF CLR}
-  System.ComponentModel,
-  System.IO,
-  Windows, Classes,
-{$ELSE}
-  Contnrs,   
-{$ENDIF}
 {$IFDEF MSWINDOWS}
   Windows,
 {$ENDIF}
-  SysUtils, Classes, SyncObjs, OverbyteIcsTypes, OverbyteIcsLibrary;
+  SysUtils, Classes, SyncObjs, Contnrs,
+  OverbyteIcsTypes;
 
 const
   WSockBufVersion    = 602;

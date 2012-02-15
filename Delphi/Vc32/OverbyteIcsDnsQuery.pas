@@ -63,7 +63,9 @@ Oct 09, 2009 V6.03 Yaroslav Chernykh fixed a bug in WSocketSessionConnected()
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsDnsQuery;
+{$ENDIF}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -91,14 +93,18 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-    Messages,
     Windows,
 {$ENDIF}
 {$IFDEF POSIX}
     Ics.Posix.WinTypes,
-    Ics.Posix.Messages,
 {$ENDIF}
-    SysUtils, Classes, OverbyteIcsWinsock, OverbyteIcsWSocket;
+    SysUtils, Classes,
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWSocket,
+{$ENDIF}
+    OverbyteIcsWinsock;
 
 const
   DnsQueryVersion    = 603;

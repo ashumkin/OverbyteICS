@@ -17,6 +17,7 @@ object FtpServerForm: TFtpServerForm
     object File1: TMenuItem
       Width = 50.000000000000000000
       Height = 50.000000000000000000
+      TabOrder = 0
       ShortCut = 0
       Text = 'File'
       object MnuStartServer: TMenuItem
@@ -24,6 +25,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = MnuStartServerClick
+        TabOrder = 0
         ShortCut = 0
         Text = 'Start server'
       end
@@ -32,6 +34,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = MnuStopServerClick
+        TabOrder = 1
         ShortCut = 0
         Text = 'Stop server'
       end
@@ -39,6 +42,7 @@ object FtpServerForm: TFtpServerForm
         Locked = True
         Width = 50.000000000000000000
         Height = 50.000000000000000000
+        TabOrder = 2
         ShortCut = 0
         Text = '-'
       end
@@ -47,6 +51,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = MnuListClientsClick
+        TabOrder = 3
         ShortCut = 0
         Text = 'List clients'
       end
@@ -55,6 +60,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = DisconnectAllMnuClick
+        TabOrder = 4
         ShortCut = 0
         Text = 'Disconnect all'
       end
@@ -62,6 +68,7 @@ object FtpServerForm: TFtpServerForm
         Locked = True
         Width = 50.000000000000000000
         Height = 50.000000000000000000
+        TabOrder = 5
         ShortCut = 0
         Text = '-'
       end
@@ -70,6 +77,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = MnuQuitClick
+        TabOrder = 6
         ShortCut = 0
         Text = 'Quit'
       end
@@ -77,6 +85,7 @@ object FtpServerForm: TFtpServerForm
     object Tools1: TMenuItem
       Width = 50.000000000000000000
       Height = 50.000000000000000000
+      TabOrder = 1
       ShortCut = 0
       Text = 'Tools'
       object Cleardisplay1: TMenuItem
@@ -84,6 +93,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = Cleardisplay1Click
+        TabOrder = 0
         ShortCut = 0
         Text = 'Clear display'
       end
@@ -92,6 +102,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = DisplayDirectories1Click
+        TabOrder = 1
         ShortCut = 0
         Text = 'Display Directories'
       end
@@ -99,18 +110,21 @@ object FtpServerForm: TFtpServerForm
     object About1: TMenuItem
       Width = 50.000000000000000000
       Height = 50.000000000000000000
+      TabOrder = 2
       ShortCut = 0
       Text = 'About'
     end
     object Options1: TMenuItem
       Width = 50.000000000000000000
       Height = 50.000000000000000000
+      TabOrder = 3
       ShortCut = 0
       Text = 'Options'
       object BindFtpData: TMenuItem
         Locked = True
         Width = 50.000000000000000000
         Height = 50.000000000000000000
+        TabOrder = 0
         AutoCheck = True
         ShortCut = 0
         Text = 'Bind FTP data channel (usually port 20)'
@@ -120,6 +134,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = ForceHomeDirClick
+        TabOrder = 1
         AutoCheck = True
         ShortCut = 0
         Text = 'ForceHomeDir'
@@ -129,6 +144,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = HidePhysicalPathClick
+        TabOrder = 2
         AutoCheck = True
         ShortCut = 0
         Text = 'HidePhysicalPath'
@@ -138,6 +154,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = Authenticateotpmd5Click
+        TabOrder = 3
         ShortCut = 0
         Text = 'Authenticate otp-md5'
       end
@@ -146,6 +163,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = Authenticateotpmd4Click
+        TabOrder = 4
         ShortCut = 0
         Text = 'Authenticate otp-md4'
       end
@@ -154,6 +172,7 @@ object FtpServerForm: TFtpServerForm
         Width = 50.000000000000000000
         Height = 50.000000000000000000
         OnClick = Authenticateotpsha1Click
+        TabOrder = 5
         ShortCut = 0
         Text = 'Authenticate otp-sha1'
       end
@@ -173,10 +192,12 @@ object FtpServerForm: TFtpServerForm
     Align = alTop
     Width = 376.000000000000000000
     Height = 89.000000000000000000
+    TabOrder = 1
     object ClientCountLabel: TLabel
       Position.Point = '(48,8)'
       Width = 89.427238464355470000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'ClientCountLabel'
       WordWrap = False
@@ -187,6 +208,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(4,62)'
       Width = 75.408683776855470000
       Height = 18.630859375000000000
+      TabOrder = 1
       AutoSize = True
       Text = 'Root directory'
       WordWrap = False
@@ -197,6 +219,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(244,10)'
       Width = 61.363277435302730000
       Height = 18.630859375000000000
+      TabOrder = 2
       AutoSize = True
       Text = 'Max KBytes'
       WordWrap = False
@@ -207,7 +230,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(136,8)'
       Width = 105.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 0
+      TabOrder = 3
       Text = 'Start Minimized'
       Left = 136
       Top = 12
@@ -216,7 +239,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(85,59)'
       Width = 276.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 1
+      TabOrder = 4
       KeyboardType = vktDefault
       Password = False
       Text = 'c:\temp'
@@ -227,7 +250,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(304,8)'
       Width = 57.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 2
+      TabOrder = 5
       KeyboardType = vktDefault
       Password = False
       Text = 'MaxKB'
@@ -289,7 +312,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(85,32)'
       Width = 36.000000000000000000
       Height = 22.000000000000000000
-      TabOrder = 3
+      TabOrder = 8
       KeyboardType = vktDefault
       Password = False
       Text = 'ftp'
@@ -298,6 +321,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(24,35)'
       Width = 57.243648529052730000
       Height = 18.630859375000000000
+      TabOrder = 9
       AutoSize = True
       Text = 'Listen port'
       WordWrap = False
@@ -306,6 +330,7 @@ object FtpServerForm: TFtpServerForm
       Position.Point = '(136,28)'
       Width = 217.000000000000000000
       Height = 33.000000000000000000
+      TabOrder = 10
       Text = 'OS X port numbers < 1024 require the app being started as root  '
     end
   end

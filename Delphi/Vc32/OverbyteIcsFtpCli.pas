@@ -1047,7 +1047,9 @@ Jan 20, 2012 V7.28 Arno - If the control connection closes with error code
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsFtpCli;
+{$ENDIF}
 
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
@@ -1119,11 +1121,17 @@ uses
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWndControl,
+    OverbyteIcsWSocket,
+{$ENDIF}
     OverbyteIcsStreams,
     OverbyteIcsUtils,
-    OverbyteIcsLibrary,
     OverbyteIcsOneTimePw,  { V2.113 }
-    OverbyteIcsWSocket, OverbyteIcsWndControl, OverByteIcsFtpSrvT;
+    OverByteIcsFtpSrvT;
 
 const
   FtpCliVersion      = 728;
@@ -3176,8 +3184,8 @@ begin
     end;
     FFctPrv := ftpFctUser;
     if FConnectionType = ftpProxy then begin
-        if (_CompareText(FPort, AnsiString('ftp')) = 0) or
-           (_CompareText(FPort, AnsiString('21')) = 0) then
+        if (IcsCompareText(FPort, 'ftp') = 0) or
+           (IcsCompareText(FPort, '21') = 0) then
             CmdBuf := 'USER ' + FUserName + '@' + FHostName
         else
             CmdBuf := 'USER ' + FUserName + '@' + FHostName + ':' + FPort;
@@ -5231,7 +5239,7 @@ begin
             Delete(Temp, 1, Pos(',', Temp));
             TargetPort := TargetPort + StrToInt(Copy(Temp, 1, Pos(')', Temp) - 1));
 
-            DataSocketGetInit(_IntToStr(TargetPort), TargetIP);
+            DataSocketGetInit(IntToStr(TargetPort), TargetIP);
         end
         else begin  { EPSV IPv6 }
             { Response like: "Entering Extended Passive Mode (|||6446|)" }
@@ -5548,7 +5556,7 @@ begin
         Delete(Temp, 1, Pos(',', Temp));
         TargetPort := TargetPort + StrToInt(Copy(Temp, 1, Pos(')', Temp) - 1));
 
-        DataSocketPutAppendInit(_IntToStr(TargetPort), TargetIP);
+        DataSocketPutAppendInit(IntToStr(TargetPort), TargetIP);
         try
             FDataSocket.Connect;
         except
@@ -5737,7 +5745,7 @@ begin
             DataPort      := FLastDataPort;
             StartDataPort := DataPort;
             while TRUE do begin
-                FDataSocket.Port := _IntToStr(DataPort);
+                FDataSocket.Port := IntToStr(DataPort);
                 try
                     FDataSocket.Listen;
                     break;                { Found a free port }
@@ -5895,10 +5903,10 @@ begin
             FLastResponse  := '500 Connect error - ' + GetWinsockErr(ErrCode)
         else if WSocketIsProxyErrorCode(ErrCode) then
             FLastResponse  := '500 Connect error - ' + FLastResponse +
-                              ' (#' + _IntToStr(ErrCode) + ')'
+                              ' (#' + IntToStr(ErrCode) + ')'
         else
             FLastResponse  := '500 Connect Unknown Error (#' +
-                              _IntToStr(ErrCode) + ')';
+                              IntToStr(ErrCode) + ')';
         FStatusCode    := 500;
         FRequestResult := FStatusCode;  { Heedong Lim, 05/14/1999 }
         SetErrorMessage; { Heedong Lim, 05/14/1999 }

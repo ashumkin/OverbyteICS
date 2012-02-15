@@ -75,7 +75,7 @@ uses
 {$IFDEF MSWINDOWS}
     Windows,
 {$ENDIF}
-    OverbyteIcsUtils, OverbyteIcsLibrary;
+    OverbyteIcsUtils;
 
 const
     IcsUrlVersion        = 605;
@@ -219,7 +219,7 @@ begin
     p := pos('://', url);
     q := p;
     if p <> 0 then begin
-        S := _LowerCase(Copy(url, 1, p - 1));
+        S := IcsLowerCase(Copy(url, 1, p - 1));
         for i := 1 to Length(S) do begin
             if not (AnsiChar(S[i]) in UriProtocolSchemeAllowedChars) then begin
                 q := i;
@@ -250,7 +250,7 @@ begin
                 Exit;         { V6.05 }
             end;
         end
-        else if _LowerCase(Copy(url, 1, 5)) = 'http:' then begin
+        else if IcsLowerCase(Copy(url, 1, 5)) = 'http:' then begin
             proto := 'http';
             p     := 6;
             if (Length(url) > 6) and (url[7] <> '/') then begin
@@ -259,13 +259,13 @@ begin
                 Exit;
             end;
         end
-        else if _LowerCase(Copy(url, 1, 7)) = 'mailto:' then begin
+        else if IcsLowerCase(Copy(url, 1, 7)) = 'mailto:' then begin
             proto := 'mailto';
             p := pos(':', url);
         end;
     end
     else begin
-        proto := _LowerCase(Copy(url, 1, p - 1));
+        proto := IcsLowerCase(Copy(url, 1, p - 1));
         inc(p, 2);
     end;
     s := Copy(url, p + 1, Length(url));

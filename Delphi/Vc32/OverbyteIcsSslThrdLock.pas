@@ -58,7 +58,10 @@ May 05, 2010 V1.02 A.Garrels changed synchronisation to use TRTLCriticalSection
 May 06, 2011 V1.03 Arno - Make use of new CRYPTO_THREADID_set_callback.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsSslThrdLock;
+{$ENDIF}
+
 {$B-}              { Enable partial boolean evaluation   }
 {$T-}              { Untyped pointers                    }
 {$X+}              { Enable extended syntax              }
@@ -84,12 +87,19 @@ uses
 {$IFDEF MSWINDOWS}
     Windows,
 {$ENDIF}
-    Classes,
-    SysUtils,
+{$IFDEF POSIX}
+    Posix.SysTypes,
+    Posix.Pthread,
+{$ENDIF}
+    SysUtils, Classes, SysConst,
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWSocket,
+{$ENDIF}
     OverbyteIcsUtils,
     OverbyteIcsLIBEAY,
-    OverbyteIcsSSLEAY,
-    OverbyteIcsWSocket;
+    OverbyteIcsSSLEAY;
 
 type
     ESslLockException = class(Exception);
@@ -200,7 +210,7 @@ end;
 {$IFDEF MSWINDOWS}
 function IDCallback : Longword; cdecl;
 begin
-    Result := GetCurrentThreadID;
+    Result := IcsGetCurrentThreadID;
 end;
 
 
@@ -208,7 +218,7 @@ end;
 {$ELSE}
 procedure ThreadIdCallback(ID : PCRYPTO_THREADID); cdecl;
 begin
-    f_CRYPTO_THREADID_set_pointer(ID, Pointer(GetCurrentThreadID));  // ToCheck
+    f_CRYPTO_THREADID_set_pointer(ID, Pointer(IcsGetCurrentThreadID));  // ToCheck
 end;
 {$ENDIF}
 

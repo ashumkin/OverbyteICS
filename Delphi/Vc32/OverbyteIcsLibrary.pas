@@ -79,10 +79,16 @@ Apr 15, 2011 V1.17 Arno prepared for 64-bit.
 Aug 26, 2011 V1.18 Arno added 64-bit overloaded versions of _IntToHex.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-unit OverbyteIcsLibrary;
+unit OverbyteIcsLibrary deprecated;
+{ Do no longer use this unit instead include Windows, SysUtils, Classes and }
+{ OverbyteIcsUtils in your uses clause. ICS IPv6 doesn't use it anymore.    }
+{ Search for "deprecated" to find the replacement routines. Those not       }
+{ explicitly marked as deprecated are to be replaced by the original Delphi }
+{ RTL rounines which means that in your code just remove the underscore     }
+{ prefix.                                                                   }
 
 interface
-
+{$WARNINGS ON}
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
 {$X+}             { Enable extended syntax              }
@@ -199,8 +205,10 @@ function  _IntToStr(const N : Int64) : String; overload;
   function  _IntToStr(const N : Cardinal) : String; overload;
 {$ENDIF}
 
-function IcsIntToStrA(N : Integer): AnsiString;
-function IcsIntToHexA(N : Integer; Digits: Byte) : AnsiString;
+function IcsIntToStrA(N : Integer): AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsIntToStrA'{$ENDIF};
+function IcsIntToHexA(N : Integer; Digits: Byte) : AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsIntToHexA'{$ENDIF};
 function  _IntToHex(Value: Integer; Digits: Integer): String; overload;
 function  _IntToHex(Value: Int64; Digits: Integer): String; overload;
 
@@ -221,8 +229,11 @@ function  _StrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar; {$IFDEF
 function  _StrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar; overload;
                 {$ENDIF}
 function  _FloatToStr(Value: Extended): String;
-function _Trim(const Str : AnsiString) : AnsiString; {$IFDEF COMPILER12_UP} overload;
-function _Trim(const Str : UnicodeString) : UnicodeString; overload;
+function _Trim(const Str : AnsiString) : AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsTrim'{$ENDIF};
+          {$IFDEF COMPILER12_UP} overload;
+function _Trim(const Str : UnicodeString) : UnicodeString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsTrim'{$ENDIF}; overload;
                 {$ENDIF}
 function _StrLower(Str: PAnsiChar): PAnsiChar; {$IFDEF COMPILER12_UP} overload;
 function _StrLower(Str: PWideChar): PWideChar; overload;
@@ -244,22 +255,39 @@ function  _StrLIComp(const Str1, Str2: PWideChar; MaxLen: Cardinal): Integer;  o
                 {$ENDIF}
 function _StrToDateTime(const S: String): TDateTime; overload;
 function _StrToDateTime(const S: String; const FormatSettings: TFormatSettings): TDateTime; overload;
-function  _LowerCase(const S: AnsiString): AnsiString; {$IFDEF COMPILER12_UP} overload;
-function  _LowerCase(const S: UnicodeString): UnicodeString; overload;
+function  _LowerCase(const S: AnsiString): AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsLowerCase'{$ENDIF};
+           {$IFDEF COMPILER12_UP} overload;
+function  _LowerCase(const S: UnicodeString): UnicodeString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsLowerCase'{$ENDIF}; overload;
                 {$ENDIF}
-function  _UpperCase(const S: AnsiString): AnsiString; {$IFDEF COMPILER12_UP} overload;
-function  _UpperCase(const S: UnicodeString): UnicodeString; overload;
+function  _UpperCase(const S: AnsiString): AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsUpperCase'{$ENDIF};
+          {$IFDEF COMPILER12_UP} overload;
+function  _UpperCase(const S: UnicodeString): UnicodeString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsUpperCase'{$ENDIF}; overload;
                 {$ENDIF}
-function IcsUpperCaseA(const S: AnsiString): AnsiString;
-function IcsLowerCaseA(const S: AnsiString): AnsiString;
-function IcsCompareTextA(const S1, S2: AnsiString): Integer;
-function IcsTrimA(const Str: AnsiString): AnsiString;
-function IcsSameTextA(const S1, S2: AnsiString): Boolean;
-function  _CompareStr(const S1, S2: AnsiString): Integer; {$IFDEF COMPILER12_UP} overload;
-function  _CompareStr(const S1, S2: UnicodeString): Integer; overload;
+function IcsUpperCaseA(const S: AnsiString): AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsUpperCaseA'{$ENDIF};
+function IcsLowerCaseA(const S: AnsiString): AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsUpperCaseA'{$ENDIF};
+function IcsCompareTextA(const S1, S2: AnsiString): Integer; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsCompareTextA'{$ENDIF};
+function IcsTrimA(const Str: AnsiString): AnsiString; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsTrimA'{$ENDIF};
+function IcsSameTextA(const S1, S2: AnsiString): Boolean; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsSameTextA'{$ENDIF};
+function  _CompareStr(const S1, S2: AnsiString): Integer; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsCompareStr'{$ENDIF};
+          {$IFDEF COMPILER12_UP} overload;
+function  _CompareStr(const S1, S2: UnicodeString): Integer; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsCompareStr'{$ENDIF}; overload;
                 {$ENDIF}
-function  _CompareText(const S1, S2: AnsiString): Integer;{$IFDEF COMPILER12_UP} overload;
-function  _CompareText(const S1, S2: UnicodeString): Integer; overload;
+function  _CompareText(const S1, S2: AnsiString): Integer; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsCompareText'{$ENDIF};
+          {$IFDEF COMPILER12_UP} overload;
+function  _CompareText(const S1, S2: UnicodeString): Integer; deprecated
+          {$IFDEF COMPILER12_UP}'Use OverbyteIcsUtils.IcsCompareText'{$ENDIF}; overload;
                 {$ENDIF}
 function _AnsiStrComp(S1, S2: PAnsiChar): Integer;
 function  _FileExists(const FileName: String): Boolean;

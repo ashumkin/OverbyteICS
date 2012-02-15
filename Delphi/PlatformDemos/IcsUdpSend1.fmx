@@ -14,6 +14,7 @@ object MainForm: TMainForm
     Position.Point = '(20,55)'
     Width = 85.253898620605470000
     Height = 18.630859375000000000
+    TabOrder = 0
     AutoSize = True
     Text = 'Destination port'
     WordWrap = False
@@ -22,8 +23,9 @@ object MainForm: TMainForm
   end
   object Label2: TLabel
     Position.Point = '(191,56)'
-    Width = 54.000000000000000000
-    Height = 19.000000000000000000
+    Width = 53.575191497802730000
+    Height = 18.630859375000000000
+    TabOrder = 1
     AutoSize = True
     Text = 'Local Port'
     WordWrap = False
@@ -35,7 +37,7 @@ object MainForm: TMainForm
     Width = 75.000000000000000000
     Height = 22.000000000000000000
     OnClick = SendButtonClick
-    TabOrder = 0
+    TabOrder = 2
     Text = 'Send'
     Default = True
     Left = 240
@@ -45,7 +47,7 @@ object MainForm: TMainForm
     Position.Point = '(16,16)'
     Width = 217.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 1
+    TabOrder = 3
     KeyboardType = vktDefault
     Password = False
     Text = 'MessageEdit'
@@ -56,7 +58,7 @@ object MainForm: TMainForm
     Position.Point = '(120,52)'
     Width = 41.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 2
+    TabOrder = 4
     KeyboardType = vktDefault
     Password = False
     Text = 'PortEdit'
@@ -67,7 +69,7 @@ object MainForm: TMainForm
     Position.Point = '(272,52)'
     Width = 41.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 3
+    TabOrder = 5
     KeyboardType = vktDefault
     OnChange = LocalPortEditChange
     Password = False
@@ -80,7 +82,7 @@ object MainForm: TMainForm
     Width = 128.000000000000000000
     Height = 17.000000000000000000
     OnClick = AnyPortCheckBoxClick
-    TabOrder = 4
+    TabOrder = 6
     Text = 'System choose port'
     Left = 200
     Top = 80
@@ -89,7 +91,7 @@ object MainForm: TMainForm
     Position.Point = '(190,94)'
     Width = 57.000000000000000000
     Height = 17.000000000000000000
-    TabOrder = 5
+    TabOrder = 7
     Text = 'IPv6'
     Left = 256
     Top = 100

@@ -1,0 +1,79 @@
+package IcsCommonDXE2Run;
+
+{$R *.res}
+{$R 'OverbyteIcsLogger.dcr'}
+{$R 'OverbyteIcsTimeList.dcr'}
+{$R 'OverbyteIcsPing.dcr'}
+{$R 'OverbyteIcsMimeDec.dcr'}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$DEFINE USE_SSL}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'Overbyte ICS Common Run-Time Package for Delphi XE2'}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  rtl;
+
+contains
+  OverbyteIcsAvlTrees in 'OverbyteIcsAvlTrees.pas',
+  OverbyteIcsCharsetUtils in 'OverbyteIcsCharsetUtils.pas',
+  OverbyteIcsCRC in 'OverbyteIcsCRC.pas',
+  OverbyteIcsCsc in 'OverbyteIcsCsc.pas',
+  OverbyteIcsDES in 'OverbyteIcsDES.pas',
+  OverbyteIcsIconv in 'OverbyteIcsIconv.pas',
+  OverbyteIcsLIBEAY in 'OverbyteIcsLIBEAY.pas',
+  OverbyteIcsMD4 in 'OverbyteIcsMD4.pas',
+  OverbyteIcsMD5 in 'OverbyteIcsMD5.pas',
+  OverbyteIcsMLang in 'OverbyteIcsMLang.pas',
+  OverbyteIcsOneTimePw in 'OverbyteIcsOneTimePw.pas',
+  OverbyteIcsSha1 in 'OverbyteIcsSha1.pas',
+  OverbyteIcsSSLEAY in 'OverbyteIcsSSLEAY.pas',
+  OverbyteIcsSspi in 'OverbyteIcsSspi.pas',
+  OverbyteIcsStreams in 'OverbyteIcsStreams.pas',
+  OverbyteIcsTypes in 'OverbyteIcsTypes.pas',
+  OverbyteIcsUtils in 'OverbyteIcsUtils.pas',
+  OverbyteIcsWinnls in 'OverbyteIcsWinnls.pas',
+  OverbyteIcsZLibDll in 'OverbyteIcsZLibDll.pas',
+  OverbyteIcsZlibHigh in 'OverbyteIcsZlibHigh.pas',
+  OverbyteIcsZLibObj in 'OverbyteIcsZLibObj.pas',
+  OverByteIcsFtpSrvT in 'OverByteIcsFtpSrvT.pas',
+  OverbyteIcsHttpContCod in 'OverbyteIcsHttpContCod.pas',
+  OverbyteIcsWinsock in 'OverbyteIcsWinsock.pas',
+  OverbyteIcsWebSession in 'OverbyteIcsWebSession.pas',
+  OverbyteIcsIcmp in 'OverbyteIcsIcmp.pas',
+  OverbyteIcsTimeList in 'OverbyteIcsTimeList.pas',
+  OverbyteIcsLogger in 'OverbyteIcsLogger.pas',
+  OverbyteIcsDigestAuth in 'OverbyteIcsDigestAuth.pas',
+  Ics.Posix.WinTypes in 'Ics.Posix.WinTypes.pas',
+  OverbyteIcsMimeUtils in 'OverbyteIcsMimeUtils.pas',
+  OverbyteIcsUrl in 'OverbyteIcsUrl.pas',
+  OverbyteIcsWSockBuf in 'OverbyteIcsWSockBuf.pas',
+  OverbyteIcsMimeDec in 'OverbyteIcsMimeDec.pas',
+  OverbyteIcsNtlmMsgs in 'OverbyteIcsNtlmMsgs.pas',
+  OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas';
+
+end.
+

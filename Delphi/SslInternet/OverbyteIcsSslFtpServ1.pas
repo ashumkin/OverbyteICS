@@ -100,7 +100,7 @@ uses
   Dialogs, OverbyteIcsIniFiles, OverbyteIcsFtpSrv, {OverbyteIcsFtpSrvC,} OverbyteIcsWSocket,
   StdCtrls, ExtCtrls, Menus,
   OverbyteIcsWinsock, OverbyteIcsLibeay, OverbyteIcsLogger,
-  OverbyteIcsWndControl, OverbyteIcsLibrary, OverbyteIcsOneTimePw;
+  OverbyteIcsWndControl, OverbyteIcsOneTimePw;
 
 const
   FtpServVersion      = 115;
@@ -582,8 +582,8 @@ begin
     InfoMemo.Lines.Add('        Version ' +
             Format('%d.%d', [WinsockInfo.wHighVersion shr 8,
                              WinsockInfo.wHighVersion and 15]));
-    InfoMemo.Lines.Add('        ' + String(_StrPas(wsi.szDescription)));
-    InfoMemo.Lines.Add('        ' + String(_StrPas(wsi.szSystemStatus)));
+    InfoMemo.Lines.Add('        ' + String(StrPas(wsi.szDescription)));
+    InfoMemo.Lines.Add('        ' + String(StrPas(wsi.szSystemStatus)));
 {$IFNDEF VER100}
     { A bug in Delphi 3 makes lpVendorInfo invalid }
     if wsi.lpVendorInfo <> nil then

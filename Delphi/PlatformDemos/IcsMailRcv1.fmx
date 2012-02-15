@@ -24,10 +24,12 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
     Align = alTop
     Width = 525.000000000000000000
     Height = 233.000000000000000000
+    TabOrder = 1
     object InfoLabel: TLabel
       Position.Point = '(32,156)'
       Width = 50.035640716552730000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'InfoLabel'
       WordWrap = False
@@ -38,6 +40,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(20,11)'
       Width = 57.770015716552730000
       Height = 18.630859375000000000
+      TabOrder = 1
       AutoSize = True
       Text = 'POP3 Host'
       WordWrap = False
@@ -48,6 +51,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(184,11)'
       Width = 56.373531341552730000
       Height = 18.630859375000000000
+      TabOrder = 2
       AutoSize = True
       Text = 'UserName'
       WordWrap = False
@@ -58,6 +62,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(188,35)'
       Width = 51.152828216552730000
       Height = 18.630859375000000000
+      TabOrder = 3
       AutoSize = True
       Text = 'Password'
       WordWrap = False
@@ -68,6 +73,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(416,11)'
       Width = 50.298824310302730000
       Height = 18.630859375000000000
+      TabOrder = 4
       AutoSize = True
       Text = 'MsgNum'
       WordWrap = False
@@ -78,6 +84,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(432,35)'
       Width = 29.222654342651370000
       Height = 18.630859375000000000
+      TabOrder = 5
       AutoSize = True
       Text = 'Lines'
       WordWrap = False
@@ -88,6 +95,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(23,35)'
       Width = 55.197261810302730000
       Height = 18.630859375000000000
+      TabOrder = 6
       AutoSize = True
       Text = 'POP3 Port'
       WordWrap = False
@@ -98,6 +106,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(8,183)'
       Width = 43.289546966552730000
       Height = 18.630859375000000000
+      TabOrder = 7
       AutoSize = True
       Text = 'Subject:'
       WordWrap = False
@@ -108,6 +117,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(8,207)'
       Width = 35.426265716552730000
       Height = 18.630859375000000000
+      TabOrder = 8
       AutoSize = True
       Text = 'From :'
       WordWrap = False
@@ -118,6 +128,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(288,207)'
       Width = 19.028318405151370000
       Height = 18.630859375000000000
+      TabOrder = 9
       AutoSize = True
       Text = 'To:'
       WordWrap = False
@@ -128,6 +139,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(5,60)'
       Width = 77.530265808105470000
       Height = 18.630859375000000000
+      TabOrder = 10
       AutoSize = True
       Text = 'Authentication'
       WordWrap = False
@@ -139,7 +151,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = ConnectButtonClick
-      TabOrder = 0
+      TabOrder = 11
       Text = 'Connect'
       Left = 8
       Top = 80
@@ -149,7 +161,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = QuittButtonClick
-      TabOrder = 1
+      TabOrder = 12
       Text = 'Quit'
       Left = 264
       Top = 80
@@ -159,7 +171,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = UserButtonClick
-      TabOrder = 2
+      TabOrder = 13
       Text = 'User'
       Left = 72
       Top = 80
@@ -168,7 +180,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(80,8)'
       Width = 97.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 3
+      TabOrder = 14
       KeyboardType = vktDefault
       Password = False
       Text = 'HostEdit'
@@ -179,7 +191,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(244,8)'
       Width = 89.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 4
+      TabOrder = 15
       KeyboardType = vktDefault
       Password = False
       Text = 'UserNameEdit'
@@ -190,7 +202,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(244,32)'
       Width = 89.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 5
+      TabOrder = 16
       KeyboardType = vktDefault
       Password = False
       Text = 'PassWordEdit'
@@ -202,7 +214,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = PassButtonClick
-      TabOrder = 6
+      TabOrder = 17
       Text = 'Pass'
       Left = 136
       Top = 80
@@ -211,7 +223,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(464,8)'
       Width = 33.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 7
+      TabOrder = 18
       KeyboardType = vktDefault
       Password = False
       Text = '1'
@@ -223,7 +235,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = RetrButtonClick
-      TabOrder = 8
+      TabOrder = 19
       Text = 'Retr'
       Left = 200
       Top = 80
@@ -233,7 +245,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = StatButtonClick
-      TabOrder = 9
+      TabOrder = 20
       Text = 'Stat'
       Left = 8
       Top = 104
@@ -243,7 +255,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = ListAllButtonClick
-      TabOrder = 10
+      TabOrder = 21
       Text = 'List All'
       Left = 72
       Top = 104
@@ -253,7 +265,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = ListButtonClick
-      TabOrder = 11
+      TabOrder = 22
       Text = 'List'
       Left = 136
       Top = 104
@@ -263,7 +275,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = DeleteButtonClick
-      TabOrder = 12
+      TabOrder = 23
       Text = 'Delete'
       Left = 200
       Top = 104
@@ -273,7 +285,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = NoopButtonClick
-      TabOrder = 13
+      TabOrder = 24
       Text = 'Noop'
       Left = 264
       Top = 104
@@ -283,7 +295,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = LastButtonClick
-      TabOrder = 14
+      TabOrder = 25
       Text = 'Last'
       Left = 328
       Top = 104
@@ -293,7 +305,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = ResetButtonClick
-      TabOrder = 15
+      TabOrder = 26
       Text = 'Reset'
       Left = 392
       Top = 104
@@ -303,7 +315,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = TopButtonClick
-      TabOrder = 16
+      TabOrder = 27
       Text = 'Top'
       Left = 328
       Top = 80
@@ -312,7 +324,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(464,32)'
       Width = 33.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 17
+      TabOrder = 28
       KeyboardType = vktDefault
       Password = False
       Text = '0'
@@ -324,7 +336,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = RpopButtonClick
-      TabOrder = 18
+      TabOrder = 29
       Text = 'Rpop'
       Left = 392
       Top = 80
@@ -334,7 +346,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = UidlButtonClick
-      TabOrder = 19
+      TabOrder = 30
       Text = 'Uidl'
       Left = 328
       Top = 128
@@ -344,7 +356,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = ApopButtonClick
-      TabOrder = 20
+      TabOrder = 31
       Text = 'Apop'
       Left = 392
       Top = 128
@@ -354,7 +366,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = NextButtonClick
-      TabOrder = 21
+      TabOrder = 32
       Text = 'Next'
       Default = True
       Left = 456
@@ -365,7 +377,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = GetAllButtonClick
-      TabOrder = 22
+      TabOrder = 33
       Text = 'Get All'
       Left = 456
       Top = 80
@@ -374,7 +386,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(80,32)'
       Width = 97.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 23
+      TabOrder = 34
       KeyboardType = vktDefault
       Password = False
       Text = 'PortEdit'
@@ -386,7 +398,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = OpenButtonClick
-      TabOrder = 24
+      TabOrder = 35
       Text = 'Open'
       Left = 456
       Top = 104
@@ -396,7 +408,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = AbortButtonClick
-      TabOrder = 25
+      TabOrder = 36
       Text = 'Abort'
       Left = 264
       Top = 128
@@ -405,7 +417,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(56,180)'
       Width = 457.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 26
+      TabOrder = 37
       ReadOnly = True
       KeyboardType = vktDefault
       Password = False
@@ -417,7 +429,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(56,204)'
       Width = 225.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 27
+      TabOrder = 38
       ReadOnly = True
       KeyboardType = vktDefault
       Password = False
@@ -429,7 +441,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(312,204)'
       Width = 201.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 28
+      TabOrder = 39
       ReadOnly = True
       KeyboardType = vktDefault
       Password = False
@@ -441,7 +453,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Position.Point = '(80,56)'
       Width = 97.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 29
+      TabOrder = 40
       ItemIndex = -1
       Left = 80
       Top = 56
@@ -450,6 +462,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
+        TabOrder = 0
         Text = 'None'
       end
       object ListBoxItem2: TListBoxItem
@@ -457,6 +470,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
+        TabOrder = 1
         Text = 'Login'
       end
       object ListBoxItem3: TListBoxItem
@@ -464,6 +478,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
+        TabOrder = 2
         Text = 'CramMD5'
       end
       object ListBoxItem4: TListBoxItem
@@ -471,6 +486,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
+        TabOrder = 3
         Text = 'CramSHA1'
       end
       object ListBoxItem5: TListBoxItem
@@ -478,6 +494,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
         Width = 19.000000000000000000
         Height = 19.000000000000000000
         HitTest = False
+        TabOrder = 4
         Text = 'NTLM'
       end
     end
@@ -486,7 +503,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60.000000000000000000
       Height = 21.000000000000000000
       OnClick = AuthButtonClick
-      TabOrder = 30
+      TabOrder = 41
       Text = 'Auth'
       Left = 200
       Top = 128

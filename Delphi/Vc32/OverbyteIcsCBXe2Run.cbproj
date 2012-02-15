@@ -221,10 +221,6 @@
 				<BuildOrder>50</BuildOrder>
 				<BuildOrder>3</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="OverbyteIcsLibrary.pas">
-				<BuildOrder>6</BuildOrder>
-				<BuildOrder>59</BuildOrder>
-			</DelphiCompile>
 			<ResFiles Include="OverbyteIcsLogger.dcr">
 				<BuildOrder>-1</BuildOrder>
 				<BuildOrder>5</BuildOrder>
@@ -328,6 +324,10 @@
 				<BuildOrder>45</BuildOrder>
 				<BuildOrder>18</BuildOrder>
 			</DelphiCompile>
+			<DelphiCompile Include="OverbyteIcsSocketUtils.pas">
+				<BuildOrder>67</BuildOrder>
+				<BuildOrder>37</BuildOrder>
+			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsSSLEAY.pas">
 				<BuildOrder>51</BuildOrder>
 				<BuildOrder>4</BuildOrder>
@@ -414,10 +414,6 @@
 			<DelphiCompile Include="OverbyteIcsWinsock.pas">
 				<BuildOrder>8</BuildOrder>
 				<BuildOrder>55</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="OverbyteIcsSocketUtils.pas">
-				<BuildOrder>67</BuildOrder>
-				<BuildOrder>37</BuildOrder>
 			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsWndControl.pas">
 				<BuildOrder>9</BuildOrder>
@@ -530,7 +526,7 @@
 					</ProjectProperties>
 					<VersionControl>
 						<VersionControl Name="VersionControlID"/>
-					</VersionControl>					
+					</VersionControl>
 				</CPlusPlusBuilder.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

@@ -104,7 +104,9 @@ Nov 08, 2010  V6.04 Arno improved final exception handling, more details
               in OverbyteIcsWndControl.pas (V1.14 comments).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsNntpCli;
+{$ENDIF}
 
 {.DEFINE DUMP}
 
@@ -159,8 +161,16 @@ uses
 {$IFDEF USE_SSL}
     OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
 {$ENDIF}
-    OverbyteIcsMimeUtils, OverbyteIcsLibrary, OverbyteIcsUtils,
-    OverbyteIcsWndControl, OverbyteIcsWinSock, OverbyteIcsWSocket;
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWndControl,
+    OverbyteIcsWSocket,
+{$ENDIF}
+     OverbyteIcsMimeUtils,
+     OverbyteIcsUtils,
+     OverbyteIcsWinSock;
 
 const
     NntpCliVersion     = 603;

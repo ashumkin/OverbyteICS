@@ -52,9 +52,9 @@
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DCC_UnitSearchPath>..\Vc32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-			<DCC_Define>FMX;BUILTIN_TIMEOUT;USE_SSL;$(DCC_Define)</DCC_Define>
+			<DCC_Define>BUILTIN_TIMEOUT;USE_SSL;$(DCC_Define)</DCC_Define>
 			<DCC_UsePackage>bindcompfmx;fmx;rtl;dbrtl;IndySystem;DbxClientDriver;bindcomp;inetdb;DBXInterBaseDriver;DataSnapClient;DataSnapCommon;DataSnapServer;DataSnapProviderClient;xmlrtl;ibxpress;DbxCommonDriver;IndyProtocols;DBXMySQLDriver;dbxcds;bindengine;soaprtl;DBXOracleDriver;dsnap;DBXInformixDriver;IndyCore;fmxase;CloudService;DBXFirebirdDriver;inet;fmxobj;inetdbxpress;DBXSybaseASADriver;fmxdae;dbexpress;DataSnapIndy10ServerTransport;IPIndyImpl;$(DCC_UsePackage)</DCC_UsePackage>
-			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Ics.Fmx;$(DCC_Namespace)</DCC_Namespace>
 			<Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
 			<Manifest_File>None</Manifest_File>
 			<VerInfo_Locale>1031</VerInfo_Locale>
@@ -113,7 +113,6 @@
 				<Form>WebAppSrvForm</Form>
 			</DCCReference>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerConfig.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerCounter.pas"/>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerCounterView.pas"/>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerDataModule.pas">
 				<Form>WebAppSrvDataModule</Form>
@@ -124,9 +123,10 @@
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerHomePage.pas"/>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerHttpHandlerBase.pas"/>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerLogin.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerMailer.pas"/>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerSessionData.pas"/>
 			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerUrlDefs.pas"/>
+			<DCCReference Include="..\Internet\Ics.Fmx.OverbyteIcsWebAppServerCounter.pas"/>
+			<DCCReference Include="..\Internet\Ics.Fmx.OverbyteIcsWebAppServerMailer.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
@@ -176,8 +176,10 @@
 					</VersionInfoKeys>
 				</Delphi.Personality>
 				<Deployment>
-					<DeployFile Class="ProjectOSXResource" Configuration="Debug" LocalName="OSX32\Debug\IcsWebAppServ.icns">
-						<Platform Name="OSX32"/>
+					<DeployFile Class="ProjectOSXInfoPList" Configuration="Debug" LocalName="OSX32\Debug\IcsWebAppServ.info.plist">
+						<Platform Name="OSX32">
+							<RemoteName>Info.plist</RemoteName>
+						</Platform>
 					</DeployFile>
 					<DeployFile Class="DebugSymbols" Configuration="Debug" LocalName="OSX32\Debug\IcsWebAppServ.rsm">
 						<Platform Name="OSX32">
@@ -196,10 +198,8 @@
 							<Enabled>false</Enabled>
 						</Platform>
 					</DeployFile>
-					<DeployFile Class="ProjectOSXInfoPList" Configuration="Debug" LocalName="OSX32\Debug\IcsWebAppServ.info.plist">
-						<Platform Name="OSX32">
-							<RemoteName>Info.plist</RemoteName>
-						</Platform>
+					<DeployFile Class="ProjectOSXResource" Configuration="Debug" LocalName="OSX32\Debug\IcsWebAppServ.icns">
+						<Platform Name="OSX32"/>
 					</DeployFile>
 					<DeployClass Name="ProjectOutput" Required="true">
 						<Platform Name="OSX32">

@@ -97,7 +97,9 @@ May 13, 2011 V7.04 Anton S. found a small issue with CliId.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsWSocketS;
+{$ENDIF}
 
 interface
 
@@ -145,13 +147,16 @@ uses
     Ics.Posix.WinTypes,
     Ics.Posix.Messages,
 {$ENDIF}
-    Classes,
+    SysUtils, Classes,
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
-
-    OverbyteIcsUtils, OverbyteIcsTypes, OverbyteIcsLibrary,
-    OverbyteIcsWSocket;
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWSocket,
+{$ENDIF}
+    OverbyteIcsUtils, OverbyteIcsTypes;
 
 const
     WSocketServerVersion     = 704;
@@ -656,7 +661,7 @@ begin
         end;                                             { FPiette V7.01 }
         raise;                                           { FPiette V7.01 }
     end;                                                 { FPiette V7.01 }
-    Client.Name            := Name + 'Client' + _IntToStr(FClientNum);
+    Client.Name            := Name + 'Client' + IntToStr(FClientNum);
     Client.Banner          := FBanner;
     Client.Server          := Self;
 {$IFNDEF NO_DEBUG_LOG}
@@ -1003,8 +1008,8 @@ begin
             ErrCode := WSocket_WSAGetLastError
         else
             ErrCode := ALastError;
-        Line  := 'Listening socket index #' + _IntToStr(FMultiListenIndex) + ' ' +
-                  WSocketErrorDesc(ErrCode) + ' (#' + _IntToStr(ErrCode) +
+        Line  := 'Listening socket index #' + IntToStr(FMultiListenIndex) + ' ' +
+                  WSocketErrorDesc(ErrCode) + ' (#' + IntToStr(ErrCode) +
                   ' in ' + ASockFunc + ')' ;
 
         if (ErrCode = WSAECONNRESET) or
@@ -1056,7 +1061,7 @@ begin
             Exit;
         end;
 
-        if _LowerCase(FProtoStr) <> 'tcp' then begin
+        if IcsLowerCase(FProtoStr) <> 'tcp' then begin
             WSocket_WSASetLastError(WSAEINVAL);
             MlSocketError(AItem, 'listen: protocol unsupported');
             Exit;
@@ -1208,7 +1213,7 @@ procedure TCustomMultiListenWSocketServer.MlSetAddr(
 var
     LSocketFamily: TSocketFamily;
 begin
-    FldAddr := _Trim(NewValue);
+    FldAddr := IcsTrim(NewValue);
     if FldAddr = '' then
         Exit;
     { If the address is either a valid IPv4 or IPv6 address }
@@ -1701,7 +1706,7 @@ begin
                                         @Fsin, SizeOfAddr(Fsin), nil, 0, LBytesRcvd,
                                         nil, nil) <> SOCKET_ERROR) or
                       (WSocket_WSAGetLastError = WSAEWOULDBLOCK);
-        end
+    end
     else
         Result := False;
 {$ENDIF}

@@ -346,7 +346,9 @@ Feb 08, 2012 V7.45 Arno - If we receive an unknown method/request we have to
                    cannot handle properly.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsHttpSrv;
+{$ENDIF}
 
 {$B-}                 { Enable partial boolean evaluation   }
 {$T-}                 { Untyped pointers                    }
@@ -415,9 +417,17 @@ uses
     OverbyteIcsLogger,
 {$ENDIF}
     OverbyteIcsStreams,   { V7.40 }
-    OverbyteIcsMD5, OverbyteIcsMimeUtils,
-    OverbyteIcsTypes, OverbyteIcsLibrary,
-    OverbyteIcsUtils,
+    OverbyteIcsMD5,
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+    Ics.Fmx.OverbyteIcsWSocketS,
+{$ELSE}
+    OverbyteIcsWndControl,
+    OverbyteIcsWSocket,
+    OverbyteIcsWSocketS,
+{$ENDIF FMX}
+
 {$IFDEF USE_NTLM_AUTH}
     OverbyteIcsSspi,
     OverbyteIcsNtlmSsp,
@@ -425,8 +435,11 @@ uses
 {$IFNDEF NO_DIGEST_AUTH}
     OverbyteIcsDigestAuth,
 {$ENDIF}
-    OverbyteIcsWSockBuf, OverbyteIcsWinsock,
-    OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
+    OverbyteIcsWSockBuf,
+    OverbyteIcsMimeUtils,
+    OverbyteIcsTypes,
+    OverbyteIcsUtils,
+    OverbyteIcsWinsock;
 
 const
     THttpServerVersion = 745;
@@ -2303,7 +2316,7 @@ begin
         FRequestRangeValues := nil;
     end;
 {$IFDEF USE_NTLM_AUTH}
-    _FreeAndNil(FAuthNtlmSession);
+    FreeAndNil(FAuthNtlmSession);
 {$ENDIF}
     inherited Destroy;
 end;
@@ -2387,7 +2400,7 @@ begin
                            AnsiString(FAuthDigestCnonce),
                            AnsiString(FAuthDigestQop), AnsiString(FMethod),
                            AnsiString(FAuthDigestUri), HEntity, MyResponse);
-    Result := _CompareText(AnsiString(FAuthDigestResponse), MyResponse) = 0;
+    Result := IcsCompareText(AnsiString(FAuthDigestResponse), MyResponse) = 0;
 
     if Result then begin
         { Check whether we have to force a new nonce in which case we set    }
@@ -2400,7 +2413,7 @@ begin
         else
             NonceLifeTime := FAuthDigestNonceLifeTimeMin;
 
-        if (((FAuthDigestNonceTimeStamp * 1440) + NonceLifeTime) / 1440) < _Now then
+        if (((FAuthDigestNonceTimeStamp * 1440) + NonceLifeTime) / 1440) < Now then
         begin
             { The nonce is stale, respond a 401 }
             FAuthDigestStale := TRUE;
@@ -2942,7 +2955,7 @@ begin
     if ProtoNumber = 200 then
         Result := Version + ' 200 OK' + #13#10 +
                   'Content-Type: ' + AnswerContentType + #13#10 +
-                  'Content-Length: ' + _IntToStr(DocSize) + #13#10 +
+                  'Content-Length: ' + IntToStr(DocSize) + #13#10 +
                   'Accept-Ranges: bytes' + #13#10
     {else if ProtoNumber = 416 then
         Result := Version + ' 416 Request range not satisfiable' + #13#10}
@@ -2950,7 +2963,7 @@ begin
         if RangeList.Count = 1 then begin
             Result := Version + ' 206 Partial Content' + #13#10 +
                       'Content-Type: ' + AnswerContentType + #13#10 +
-                      'Content-Length: ' + _IntToStr(DocSize) + #13#10 +
+                      'Content-Length: ' + IntToStr(DocSize) + #13#10 +
                       'Content-Range: bytes ' +
                       RangeList.Items[0].GetContentRangeString(CompleteDocSize) +
                       #13#10;
@@ -2959,7 +2972,7 @@ begin
             Result := Version + ' 206 Partial Content' + #13#10 +
                       'Content-Type: multipart/byteranges; boundary=' +
                       ByteRangeSeparator + #13#10 +
-                      'Content-Length: ' + _IntToStr(DocSize) + #13#10;
+                      'Content-Length: ' + IntToStr(DocSize) + #13#10;
         end;
     end
     else
@@ -3270,7 +3283,7 @@ begin
             '<BODY><H1>416 Requested range not satisfiable</H1><P></BODY></HTML>' + #13#10;
     SendHeader(FVersion + ' 416 Requested range not satisfiable' + #13#10 +
                'Content-Type: text/html' + #13#10 +
-               'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+               'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
                GetKeepAliveHdrLines +
                #13#10);
     FAnswerStatus := 416;  { V7.19 }
@@ -3292,7 +3305,7 @@ begin
             ' was not found on this server.<P></BODY></HTML>' + #13#10;
     SendHeader(FVersion + ' 404 Not Found' + #13#10 +
                'Content-Type: text/html' + #13#10 +
-               'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+               'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
                GetKeepAliveHdrLines +
                #13#10);
     FAnswerStatus := 404;   { V7.19 }
@@ -3314,7 +3327,7 @@ begin
             'syntax.<P></BODY></HTML>' + #13#10;
     SendHeader(FVersion + ' 400 Bad Request' + #13#10 +
                'Content-Type: text/html' + #13#10 +
-               'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+               'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
                GetKeepAliveHdrLines +
                #13#10);
     FAnswerStatus := 400;
@@ -3356,7 +3369,7 @@ begin
             ' is Forbidden on this server.<P></BODY></HTML>' + #13#10;
     SendHeader(FVersion + ' 403 Forbidden' + #13#10 +
                'Content-Type: text/html' + #13#10 +
-               'Content-Length: ' + _IntToStr(Length(Body)) + #13#10 +
+               'Content-Length: ' + IntToStr(Length(Body)) + #13#10 +
                GetKeepAliveHdrLines +
                #13#10);
     FAnswerStatus := 403;   { V7.19 }

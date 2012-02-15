@@ -46,7 +46,9 @@ Nov 08, 2010 0.99c Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsMultipartHttpDownloader;
+{$ENDIF}
 
 {$B-}                  { Enable partial boolean evaluation   }
 {$T-}                  { Untyped pointers                    }
@@ -82,8 +84,15 @@ uses
     Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes, IniFiles,
-    OverbyteIcsUtils,
-    OverbyteIcsHttpProt, OverbyteIcsUrl, OverbyteIcsWndControl;
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsHttpProt,
+    Ics.Fmx.OverbyteIcsWndControl,
+{$ELSE}
+    OverbyteIcsHttpProt,
+    OverbyteIcsWndControl,
+{$ENDIF}
+    OverbyteIcsUrl,
+    OverbyteIcsUtils;
 
 const
     MultipartHttpDownloaderVersion = 600;

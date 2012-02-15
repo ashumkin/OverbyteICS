@@ -45,7 +45,9 @@ History:
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsWebAppServerCounter;
+{$ENDIF}
 
 interface
 

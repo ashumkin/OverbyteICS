@@ -153,9 +153,6 @@
     <DelphiCompile Include="OverbyteIcsLIBEAY.pas">
       <BuildOrder>32</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="OverbyteIcsLibrary.pas">
-      <BuildOrder>33</BuildOrder>
-    </DelphiCompile>
     <DelphiCompile Include="OverbyteIcsLogger.pas">
       <BuildOrder>35</BuildOrder>
     </DelphiCompile>

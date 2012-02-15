@@ -50,7 +50,9 @@ History:
                     is achieved by setting this property to TRUE.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsThreadTimer;
+{$ENDIF}
 
 interface
 
@@ -81,8 +83,12 @@ uses
   Ics.Posix.Messages,
 {$ENDIF}
   SysUtils, Classes, SyncObjs, SysConst,
-  OverbyteIcsUtils,
-  OverbyteIcsWndControl;
+{$IFDEF FMX}
+  Ics.Fmx.OverbyteIcsWndControl,
+{$ELSE}
+  OverbyteIcsWndControl,
+{$ENDIF}
+  OverbyteIcsUtils;
 
 type
   TIcsClock = class;

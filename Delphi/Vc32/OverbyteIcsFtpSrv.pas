@@ -411,7 +411,9 @@ test app - cache zlib files and CRCs and lock updates
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsFtpSrv;
+{$ENDIF}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -485,17 +487,24 @@ uses
     {$ENDIF}
     OverbyteIcsTypes,
     OverbyteIcsUtils,
+  {$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsSocketUtils,
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+    Ics.Fmx.OverbyteIcsWSocketS,
+  {$ELSE}
     OverbyteIcsWndControl,
     { AG V1.51 }
     OverbyteIcsWSocket,
     OverbyteIcsSocketUtils,
     OverbyteIcsWSocketS, { angus V7.00 }
+  {$ENDIF}
     OverbyteIcsFtpSrvT,
     OverbyteIcsOneTimePw,  { angus V1.54 }
     OverbyteIcsCRC,        { angus V1.54 }
     OverbyteIcsMD5,
-    OverbyteIcsWSockBuf,   { AG V6.02 }
-    OverbyteIcsLibrary;    { AG V6.04 }
+    OverbyteIcsWSockBuf;   { AG V6.02 }
+
 
 
 const
@@ -5362,7 +5371,7 @@ begin
                 TablePtr^ := TRUE;
                 NewPort   := FPasvPortRangeStart + FPasvNextNr;          { angus V1.56 }
                 Inc(FPasvNextNr);                                        { angus V1.56 }
-                Result    := _IntToStr(NewPort);
+                Result    := IntToStr(NewPort);
                 break;
             end;
             Inc(FPasvNextNr);                                            { angus V1.56 }

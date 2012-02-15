@@ -96,10 +96,6 @@
 				<BuildOrder>8</BuildOrder>
 				<BuildOrder>55</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="OverbyteIcsLibrary.pas">
-				<BuildOrder>6</BuildOrder>
-				<BuildOrder>59</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsMimeUtils.pas">
 				<BuildOrder>68</BuildOrder>
 				<BuildOrder>35</BuildOrder>

@@ -51,7 +51,9 @@ Apr 20, 2011 V6.03 Arno - LineEnd property converts to and from ANSI,
                    compiler directives. 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF FMX}
 unit OverByteIcsWSocketE;
+{$ENDIF}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -71,32 +73,21 @@ unit OverByteIcsWSocketE;
 interface
 
 uses
-{$IFDEF CLR}
-    Borland.Vcl.Classes;
-{$ENDIF}
-{$IFDEF WIN32}
-{$IFDEF USEWINDOWS}
-    Windows,
-{$ELSE}
-    WinTypes, WinProcs,
-{$ENDIF}
-    SysUtils, Classes,
+    Windows, SysUtils, Classes,
 {$IFDEF COMPILER12_UP}
     AnsiStrings,
-{$ENDIF}  
+{$ENDIF}
+    OverbyteIcsUtils,
 { Delphi 6/7: Add $(DELPHI)\Source\ToolsAPI to your library path }
 { and add designide.dcp to ICS package.                          }
 { BCB6 6: Add $(BCB)\Source\ToolsAPI to your library path        }
 { and add designide.bpi to ICS package.                          }
-  DesignIntf, DesignEditors,
-  OverbyteIcsLibrary;
-{$ENDIF}
+  DesignIntf, DesignEditors;
 
 const
     WSocketEVersion          = 603;
     CopyRight : String       = ' WSocketE (c) 2002-2011 F. Piette V6.03 ';
 
-{$IFDEF WIN32}
 type
     TWSocketLineEndProperty = class(TStringProperty)
     public
@@ -105,14 +96,12 @@ type
         function  GetValue: String; override;
         procedure SetValue(const Value: String); override;
     end;
-{$ENDIF}
 
 implementation
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {                         LineEnd Property Editor                           }
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF WIN32}
 function TWSocketLineEndProperty.SetLineEnd(const Value: AnsiString): AnsiString;
 var
     Offset : Integer;
@@ -170,6 +159,5 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$ENDIF}
 
 end.

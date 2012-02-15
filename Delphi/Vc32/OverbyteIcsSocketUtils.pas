@@ -38,7 +38,9 @@ Jan 04, 2012 Moved code from unit OverbyteIcsWinsock2 here and made some
              breaking changes to support OSX and IPv6.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsSocketUtils;
+{$ENDIF}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -130,7 +132,12 @@ type
 implementation
 
 uses
-  OverbyteIcsWSocket;
+{$IFDEF FMX}
+  Ics.Fmx.OverbyteIcsWSocket
+{$ELSE}
+  OverbyteIcsWSocket
+{$ENDIF}  
+  ;
 
 {$IFDEF MSWINDOWS}
 type

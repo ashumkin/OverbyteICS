@@ -59,9 +59,6 @@ interface
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
-{$IFNDEF FMX}
-  {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
-{$ENDIF}
 
 {$WARN SYMBOL_PLATFORM OFF}
 
@@ -79,8 +76,7 @@ uses
   FMX.Platform, System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit,
   OverbyteIcsUtils, OverbyteIcsIniFiles,
-  OverbyteIcsWSocket, OverbyteIcsWSocketS,
-  OverbyteIcsWndControl;
+  OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
   TcpSrvVersion = 703;
@@ -131,6 +127,7 @@ type
       var CanClose: Boolean);
     procedure WSocketServer1SessionClosed(Sender: TObject; ErrCode: Word);
     procedure WSocketServer1SessionAvailable(Sender: TObject; ErrCode: Word);
+    procedure WSocketServer1AddressListChanged(Sender: TObject; ErrCode: Word);
     procedure FormDestroy(Sender: TObject);
   private
     FIniFileName : String;
@@ -309,7 +306,8 @@ begin
     WSocketServer1.Addr        := '0.0.0.0';
     WSocketServer1.Port        := '1024';
     WSocketServer1.ClientClass := TTcpSrvClient;
-
+    WSocketServer1.OnAddressListChanged      := WSocketServer1AddressListChanged;
+    WSocketServer1.OnRoutingInterfaceChanged := WSocketServer1AddressListChanged;
     WSocketServer1.Listen;
 
     WSocketServer1.MultiListenSockets.Clear;
@@ -581,6 +579,18 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TTcpSrvForm.WSocketServer1AddressListChanged(Sender: TObject;
+  ErrCode: Word);
+begin
+    with Sender as TWSocketServer do begin
+        if MultiListenIndex = -1 then
+            Display('Main listening socket AddressListChanged')
+        else begin
+            Display('Multi-listen socket index #' + IntToStr(MultiListenIndex) +
+                   ' AddressListChanged');
+        end;
+    end;
+end;
 
 end.
 

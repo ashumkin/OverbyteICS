@@ -54,6 +54,8 @@ unit OverbyteIcsZLibObj;
 
 interface
 
+{$IFDEF MSWINDOWS}
+
 {$ALIGN ON}
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
@@ -71,10 +73,8 @@ interface
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
 
-{$IFDEF MSWINDOWS}
 uses
     Windows;
-{$ENDIF}
 
 {xlb constants and variables}
 const
@@ -317,7 +317,12 @@ var
     Z_DS_NiceMatch   : integer;
 
 {==============================================================================}
+
+{$ENDIF MSWINDOWS}
+
 implementation
+
+{$IFDEF MSWINDOWS}
 
 uses SysUtils;
 
@@ -672,4 +677,5 @@ initialization
 
 finalization
 {==============================================================================}
+{$ENDIF MSWINDOWS}
 end.

@@ -48,7 +48,10 @@ Sep 03, 2009 V1.04 Arno exchanged TThread.Resume by TThread.Start for D2010 and 
 May 06, 2011 V1.05 Small change to prepare for 64-bit.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsSslSessionCache;
+{$ENDIF}
+
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
@@ -87,7 +90,12 @@ uses
 {$IFNDEF COMPILER15_UP}
     OverbyteIcsTypes,
 {$ENDIF}
-    OverbyteIcsSSLEAY, OverbyteIcsLIBEAY, OverbyteIcsWSocket,
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWSocket,
+{$ENDIF}
+    OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
     OverbyteIcsAvlTrees, OverbyteIcsUtils;
 
 type

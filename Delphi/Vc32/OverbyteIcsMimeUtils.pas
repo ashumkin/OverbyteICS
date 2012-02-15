@@ -145,9 +145,8 @@ interface
 {$R-}
 
 uses
-{$IFDEF CLR}
-    System.Text,
-    System.IO,
+{$IFDEF MSWINDOWS}
+  Windows,
 {$ENDIF}
 {$IFDEF USE_BUFFERED_STREAM}
     OverbyteIcsStreams,
@@ -156,7 +155,6 @@ uses
     Classes,
     Math,
     OverbyteIcsUtils,
-    OverbyteIcsLibrary,
     OverbyteIcsCsc,
     OverbyteIcsCharsetUtils;
 
@@ -414,10 +412,10 @@ begin
         end;
 {$IFDEF COMPILER12_UP}
         Result := Result + UsAsciiToUnicode(Copy(S, J, I - J)) + '=' +
-                  _UpperCase(_IntToHex(Ord(S[I]), 2));
+                  IcsUpperCase(IntToHex(Ord(S[I]), 2));
 {$ELSE}
         Result := Result + Copy(S, J, I - J) + '=' +
-                  _UpperCase(_IntToHex(Ord(S[I]), 2));
+                  IcsUpperCase(IntToHex(Ord(S[I]), 2));
 {$ENDIF}
         Inc(I);
     end;
@@ -462,7 +460,7 @@ begin
         if S[I + 1] = #13 then  { Could also check for #10 }
             { Soft line break, nothing to do except continuing }
         else
-            Result := Result + AnsiChar(_StrToInt('$' + Copy(S, I + 1, 2)));
+            Result := Result + AnsiChar(StrToInt('$' + Copy(S, I + 1, 2)));
         Inc(I, 3);
     end;
 end;
@@ -489,7 +487,7 @@ begin
         if S[I + 1] = #13 then  { Could also check for #10 }
             { Soft line break, nothing to do except continuing }
         else
-            Buf := Buf + AnsiChar(_StrToInt('$' + Copy(S, I + 1, 2)));
+            Buf := Buf + AnsiChar(StrToInt('$' + Copy(S, I + 1, 2)));
         Inc(I, 3);
     end;
     Result := AnsiToUnicode(Buf, ACodePage);
@@ -562,7 +560,7 @@ var
     Ext : String;
 begin
     { We probably should the registry to find MIME type for known file types }
-    Ext := _LowerCase(_ExtractFileExt(FileName));
+    Ext := IcsLowerCase(ExtractFileExt(FileName));
     if Length(Ext) > 1 then
         Ext := Copy(Ext, 2, Length(Ext));
     if (Ext = 'htm') or (Ext = 'html') then
@@ -909,7 +907,7 @@ begin
         SB[I] := Char(DataOut[I]);
     Result := SB.ToString;
 {$ELSE}
-    Result := _StrPas(PAnsiChar(@DataOut[0]));
+    Result := StrPas(PAnsiChar(@DataOut[0]));
 {$ENDIF}
 end;
 
@@ -1396,7 +1394,7 @@ begin
         //else begin
             if CurChar = BreakStr[1] then begin
                 if QuoteChar = #0 then begin
-                    ExistingBreak := _StrLComp(PAnsiChar(BreakStr),
+                    ExistingBreak := StrLComp(PAnsiChar(BreakStr),
                                               PAnsiChar(@Line[cPos]),
                                               BreakLen) = 0;
                     if ExistingBreak then begin
@@ -1440,7 +1438,7 @@ begin
             if (not IsCharInSysCharSet(CurChar, QuoteChars)) or
                (ExistingBreak) then begin
                 if (cPos <= LineLen) and (BreakPos + 1 = cPos) then begin
-                    if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
+                    if StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
                         if not ExistingBreak then begin
                             { Break due to one of the breaking chars found and CRLF follows }
                             Inc(cPos, 2);
@@ -1500,7 +1498,7 @@ begin
         //else begin
             if CurChar = BreakStr[1] then begin
                 if QuoteChar = #0 then begin
-                    ExistingBreak := _StrLComp(PChar(BreakStr),
+                    ExistingBreak := StrLComp(PChar(BreakStr),
                                               PChar(@Line[cPos]),
                                               BreakLen) = 0;
                     if ExistingBreak then begin
@@ -1544,7 +1542,7 @@ begin
             if (not IsCharInSysCharSet(CurChar, QuoteChars)) or
                ExistingBreak then begin
                 if (cPos <= LineLen) and (BreakPos + 1 = cPos) then begin
-                    if _StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
+                    if StrLComp(PChar(@Line[cPos]), #13#10, 2) = 0 then begin
                         if not ExistingBreak then begin
                             { Break due to one of the breaking chars found and CRLF follows }
                             Inc(cPos, 2);
@@ -1686,7 +1684,7 @@ begin
         raise Exception.Create('Function ''HdrEncodeInLine'', invalid EncType: ' +
                                 '' + EncType + '');
     Res    := '';
-    Prefix := '=?' + _LowerCase(CharSet) + '?' + EncType + '?';
+    Prefix := '=?' + IcsLowerCase(CharSet) + '?' + EncType + '?';
     Len    := Length(Input);
     lPos   := 1;
 
@@ -2029,10 +2027,10 @@ var
 begin
     rPos := 1;
     if rPos <= Length(HdrLine) then
-        HdrLines.Add(_Trim(IcsWrapTextEx(HdrLine, #13#10#09,
+        HdrLines.Add(IcsTrim(IcsWrapTextEx(HdrLine, #13#10#09,
                           BreakCharsSet, SmtpDefaultLineLength, [], rPos)));
     while rPos <= Length(HdrLine) do
-        HdrLines.Add(#09 + _Trim(IcsWrapTextEx(HdrLine, #13#10#09,
+        HdrLines.Add(#09 + IcsTrim(IcsWrapTextEx(HdrLine, #13#10#09,
                                 BreakCharsSet, SmtpDefaultLineLength, [], rPos)))
 end;
 {$ENDIF}
@@ -2049,11 +2047,11 @@ var
 begin
     rPos := 1;
     if rPos <= Length(HdrLine) then
-        HdrLines.Add(_Trim(IcsWrapTextEx(HdrLine, #13#10#09,
+        HdrLines.Add(IcsTrim(IcsWrapTextEx(HdrLine, #13#10#09,
                     BreakCharsSet, SmtpDefaultLineLength, [], rPos,
                     FALSE, ACodePage, IsMultiByteCP)));
     while rPos <= Length(HdrLine) do
-        HdrLines.Add(#09 + _Trim(IcsWrapTextEx(HdrLine, #13#10#09,
+        HdrLines.Add(#09 + IcsTrim(IcsWrapTextEx(HdrLine, #13#10#09,
                     BreakCharsSet, SmtpDefaultLineLength, [], rPos,
                     FALSE, ACodePage, IsMultiByteCP)));
 end;
@@ -2069,12 +2067,12 @@ var
 begin
     rPos := 1;
     if rPos <= Length(Input) then
-        Result := _Trim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
+        Result := IcsTrim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
                        BreakCharsSet, MaxCol, [], rPos,
                        False, ACodePage, IsMultiByteCP));
     while rPos <= Length(Input) do
         Result := Result + AnsiString(#13#10#09) +
-                  _Trim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
+                  IcsTrim(IcsWrapTextEx(Input, AnsiString(#13#10#09),
                                       BreakCharsSet, MaxCol, [], rPos,
                                       False, ACodePage, IsMultiByteCP));
 end;
@@ -2090,10 +2088,10 @@ var
 begin
     rPos := 1;
     if rPos <= Length(Input) then
-        Result := _Trim(IcsWrapTextEx(Input, #13#10#09,
+        Result := IcsTrim(IcsWrapTextEx(Input, #13#10#09,
                        BreakCharsSet, MaxCol, [], rPos));
     while rPos <= Length(Input) do
-        Result := Result + #13#10#09 + _Trim(IcsWrapTextEx(Input, #13#10#09,
+        Result := Result + #13#10#09 + IcsTrim(IcsWrapTextEx(Input, #13#10#09,
                                                           BreakCharsSet,
                                                           MaxCol,
                                                           [], rPos))
@@ -2289,7 +2287,7 @@ var
 
 begin
     Suffix  := '?=';
-    Prefix  := '=?' + _LowerCase(AnsiString(CharSet)) + '?' + AnsiChar(EncType) + '?';
+    Prefix  := '=?' + IcsLowerCase(AnsiString(CharSet)) + '?' + AnsiChar(EncType) + '?';
     DecoLen := Length(Prefix) + Length(Suffix);
     BodyLen := Len;
     P       := Body;

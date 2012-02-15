@@ -280,7 +280,7 @@ uses
 {$IFDEF POSIX}
     Posix.SysTypes, Posix.Iconv, Posix.Errno,
 {$ENDIF}
-    Sysutils, Classes, Contnrs,
+    SysUtils, Classes, Contnrs,
     OverbyteIcsUtils;
 
 const

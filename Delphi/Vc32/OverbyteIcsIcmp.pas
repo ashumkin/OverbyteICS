@@ -66,6 +66,7 @@ Jul 25, 2011 V7.01 Added directive "EXTERNALSYM"
 unit OverbyteIcsIcmp;
 
 interface
+{$IFDEF MSWINDOWS}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -94,12 +95,7 @@ interface
 {$ENDIF}
 
 uses
-{$IFDEF USEWINDOWS}
-    Windows,
-{$ELSE}
-    WinTypes, WinProcs,
-{$ENDIF}
-    SysUtils, Classes, WinSock;
+    Windows, SysUtils, Classes, OverbyteIcsWinSock;
 
 const
   IcmpVersion = 7.01;
@@ -321,9 +317,11 @@ type
   end;
 
   TICMPException = class(Exception);
+{$ENDIF MSWINDOWS}
 
 implementation
 
+{$IFDEF MSWINDOWS}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TICMP.Create;
 var
@@ -515,6 +513,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
+{$ENDIF MSWINDOWS}
 end.
 

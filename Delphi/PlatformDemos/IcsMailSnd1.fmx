@@ -35,10 +35,12 @@ object SmtpTestForm: TSmtpTestForm
     Align = alTop
     Width = 582.000000000000000000
     Height = 235.000000000000000000
+    TabOrder = 2
     object Label5: TLabel
       Position.Point = '(12,219)'
       Width = 72.433097839355470000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'Message text:'
       WordWrap = False
@@ -50,7 +52,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = ClearDisplayButtonClick
-      TabOrder = 0
+      TabOrder = 1
       Text = 'Clear &Info'
       Left = 480
       Top = 102
@@ -60,7 +62,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = ConnectButtonClick
-      TabOrder = 1
+      TabOrder = 2
       Text = 'Connect'
       Left = 400
       Top = 24
@@ -70,7 +72,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = HeloButtonClick
-      TabOrder = 2
+      TabOrder = 3
       Text = 'Helo'
       Left = 400
       Top = 43
@@ -80,7 +82,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = MailFromButtonClick
-      TabOrder = 3
+      TabOrder = 4
       Text = 'MailFrom'
       Left = 400
       Top = 102
@@ -90,7 +92,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = RcptToButtonClick
-      TabOrder = 4
+      TabOrder = 5
       Text = 'RcptTo'
       Left = 400
       Top = 142
@@ -100,7 +102,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = DataButtonClick
-      TabOrder = 5
+      TabOrder = 6
       Text = 'Data'
       Left = 400
       Top = 162
@@ -110,7 +112,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = AbortButtonClick
-      TabOrder = 6
+      TabOrder = 7
       Text = 'Abort'
       Left = 480
       Top = 82
@@ -120,7 +122,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = QuitButtonClick
-      TabOrder = 7
+      TabOrder = 8
       Text = 'Quit'
       Left = 480
       Top = 63
@@ -130,7 +132,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = MailButtonClick
-      TabOrder = 8
+      TabOrder = 9
       Text = 'Mail'
       Left = 480
       Top = 43
@@ -140,7 +142,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = OpenButtonClick
-      TabOrder = 9
+      TabOrder = 10
       Text = 'Open'
       Left = 480
       Top = 24
@@ -150,7 +152,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = EhloButtonClick
-      TabOrder = 10
+      TabOrder = 11
       Text = 'Ehlo'
       Left = 400
       Top = 63
@@ -160,7 +162,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = AuthButtonClick
-      TabOrder = 11
+      TabOrder = 12
       Text = 'Auth'
       Left = 400
       Top = 82
@@ -170,7 +172,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = AllInOneButtonClick
-      TabOrder = 12
+      TabOrder = 13
       Text = 'All In One'
       Left = 480
       Top = 142
@@ -180,7 +182,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = SendToFileButtonClick
-      TabOrder = 13
+      TabOrder = 14
       Text = 'Send To File'
       Left = 400
       Top = 198
@@ -190,7 +192,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = MsgSizeButtonClick
-      TabOrder = 14
+      TabOrder = 15
       Text = 'CalcMsgSize'
       Left = 480
       Top = 198
@@ -200,7 +202,7 @@ object SmtpTestForm: TSmtpTestForm
       Width = 77.000000000000000000
       Height = 17.000000000000000000
       OnClick = MailFromSIZEButtonClick
-      TabOrder = 15
+      TabOrder = 16
       Text = 'MailFromSIZE'
       Left = 400
       Top = 122
@@ -208,6 +210,7 @@ object SmtpTestForm: TSmtpTestForm
     object SettingsPageControl: TTabControl
       Width = 385.000000000000000000
       Height = 211.000000000000000000
+      TabOrder = 17
       TabIndex = 0
       TabHeight = 20.000000000000000000
       Left = 4
@@ -215,6 +218,7 @@ object SmtpTestForm: TSmtpTestForm
       object BasicSettingsTabSheet: TTabItem
         Width = 80.000000000000000000
         Height = 20.000000000000000000
+        TabOrder = 0
         Index = 0
         TextAlign = taCenter
         Text = 'Basic Settings'
@@ -223,6 +227,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(21,11)'
           Width = 57.000000000000000000
           Height = 15.000000000000000000
+          TabOrder = 0
           Text = 'SMTP Host'
           WordWrap = False
           Left = 25
@@ -232,6 +237,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(222,11)'
           Width = 23.500000000000000000
           Height = 15.500000000000000000
+          TabOrder = 1
           Text = 'Port'
           WordWrap = False
           Left = 222
@@ -241,6 +247,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(48,36)'
           Width = 28.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 2
           Text = 'From'
           WordWrap = False
           Left = 52
@@ -250,6 +257,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(230,36)'
           Width = 14.500000000000000000
           Height = 15.500000000000000000
+          TabOrder = 3
           Text = 'To'
           WordWrap = False
           Left = 230
@@ -259,6 +267,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(60,60)'
           Width = 14.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 4
           Text = 'Cc'
           WordWrap = False
           Left = 64
@@ -268,6 +277,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(226,60)'
           Width = 18.500000000000000000
           Height = 15.500000000000000000
+          TabOrder = 5
           Text = 'Bcc'
           WordWrap = False
           Left = 226
@@ -277,6 +287,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(36,156)'
           Width = 40.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 6
           Text = 'Subject'
           WordWrap = False
           Left = 40
@@ -286,6 +297,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(218,84)'
           Width = 24.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 7
           Text = 'Sign'
           WordWrap = False
           Left = 222
@@ -295,6 +307,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(24,108)'
           Width = 54.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 8
           Text = 'Username'
           WordWrap = False
           Left = 28
@@ -304,6 +317,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(220,108)'
           Width = 24.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 9
           Text = 'Pass'
           WordWrap = False
           Left = 220
@@ -313,6 +327,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(50,132)'
           Width = 26.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 10
           Text = 'Auth'
           WordWrap = False
           Left = 6
@@ -322,6 +337,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(204,132)'
           Width = 38.000000000000000000
           Height = 16.000000000000000000
+          TabOrder = 11
           Text = 'Priority'
           WordWrap = False
           Left = 208
@@ -331,7 +347,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,8)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 0
+          TabOrder = 12
           KeyboardType = vktDefault
           Password = False
           Text = 'HostEdit'
@@ -342,7 +358,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(246,8)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 1
+          TabOrder = 13
           KeyboardType = vktDefault
           Password = False
           Text = 'PortEdit'
@@ -353,7 +369,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,32)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 2
+          TabOrder = 14
           KeyboardType = vktDefault
           Password = False
           Text = 'FromEdit'
@@ -364,7 +380,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(246,32)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 3
+          TabOrder = 15
           KeyboardType = vktDefault
           Password = False
           Text = 'ToEdit'
@@ -375,7 +391,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,56)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 4
+          TabOrder = 16
           KeyboardType = vktDefault
           Password = False
           Text = 'CcEdit'
@@ -386,7 +402,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(246,56)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 5
+          TabOrder = 17
           KeyboardType = vktDefault
           Password = False
           Text = 'BccEdit'
@@ -397,7 +413,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,152)'
           Width = 287.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 6
+          TabOrder = 18
           KeyboardType = vktDefault
           Password = False
           Text = 'SubjectEdit'
@@ -408,7 +424,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(246,80)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 7
+          TabOrder = 19
           KeyboardType = vktDefault
           Password = False
           Text = 'SignOnEdit'
@@ -419,7 +435,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,104)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 8
+          TabOrder = 20
           KeyboardType = vktDefault
           Password = False
           Text = 'UsernameEdit'
@@ -430,7 +446,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(246,104)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 9
+          TabOrder = 21
           KeyboardType = vktDefault
           Password = False
           Text = 'PasswordEdit'
@@ -441,13 +457,14 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,128)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 10
+          TabOrder = 22
           ItemIndex = 0
           object ListBoxItem1: TListBoxItem
             Position.Point = '(5000,5000)'
             Width = 96.000000000000000000
             Height = 17.000000000000000000
             HitTest = False
+            TabOrder = 0
             IsSelected = True
             Text = 'None'
           end
@@ -456,6 +473,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 1
             Text = 'Plain'
           end
           object ListBoxItem3: TListBoxItem
@@ -463,6 +481,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 2
             Text = 'Login'
           end
           object ListBoxItem4: TListBoxItem
@@ -470,6 +489,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 3
             Text = 'CramMD5'
           end
           object ListBoxItem5: TListBoxItem
@@ -477,6 +497,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 4
             Text = 'CramSHA1'
           end
           object ListBoxItem6: TListBoxItem
@@ -484,6 +505,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 5
             Text = 'NTLM'
           end
           object ListBoxItem7: TListBoxItem
@@ -491,6 +513,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 6
             Text = 'AutoSelect'
           end
         end
@@ -498,13 +521,14 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(246,128)'
           Width = 121.000000000000000000
           Height = 21.000000000000000000
-          TabOrder = 11
+          TabOrder = 23
           ItemIndex = 0
           object ListBoxItem8: TListBoxItem
             Position.Point = '(5000,5000)'
             Width = 96.000000000000000000
             Height = 17.000000000000000000
             HitTest = False
+            TabOrder = 0
             IsSelected = True
             Text = 'Not specified'
           end
@@ -513,6 +537,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 1
             Text = 'Highest'
           end
           object ListBoxItem10: TListBoxItem
@@ -520,6 +545,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 2
             Text = 'High'
           end
           object ListBoxItem11: TListBoxItem
@@ -527,6 +553,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 3
             Text = 'Normal'
           end
           object ListBoxItem12: TListBoxItem
@@ -534,6 +561,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 4
             Text = 'Low'
           end
           object ListBoxItem13: TListBoxItem
@@ -541,6 +569,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 19.000000000000000000
             Height = 19.000000000000000000
             HitTest = False
+            TabOrder = 5
             Text = 'Lowest'
           end
         end
@@ -548,7 +577,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(80,80)'
           Width = 121.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 12
+          TabOrder = 24
           Text = 'Confirm Receipt'
           Top = 80
         end
@@ -557,6 +586,7 @@ object SmtpTestForm: TSmtpTestForm
         Position.Point = '(80,0)'
         Width = 140.000000000000000000
         Height = 20.000000000000000000
+        TabOrder = 1
         Index = 1
         TextAlign = taCenter
         Text = 'Charset & MIME Settings'
@@ -565,6 +595,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(239,119)'
           Width = 142.000000000000000000
           Height = 17.000000000000000000
+          TabOrder = 0
           Text = 'WrapMailMessageText'
           Left = 208
           Top = 72
@@ -573,6 +604,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(241,155)'
           Width = 39.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 1
           KeyboardType = vktDefault
           Password = False
           Text = 'WrapAtEdit'
@@ -583,6 +615,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(33,15)'
           Width = 356.000000000000000000
           Height = 17.000000000000000000
+          TabOrder = 2
           Text = 'Use property MailMessage (required for some properties below).'
           Left = 19
           Top = 6
@@ -592,6 +625,7 @@ object SmtpTestForm: TSmtpTestForm
           Width = 73.000000000000000000
           Height = 21.000000000000000000
           OnClick = ToggleCsViewButtonClick
+          TabOrder = 3
           Text = 'Toggle View'
           Left = 177
           Top = 16
@@ -600,6 +634,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(298,156)'
           Width = 71.917472839355470000
           Height = 18.630859375000000000
+          TabOrder = 4
           AutoSize = True
           Text = '(default = 76)'
           WordWrap = False
@@ -610,6 +645,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(238,140)'
           Width = 142.778305053710900000
           Height = 18.630859375000000000
+          TabOrder = 5
           AutoSize = True
           Text = 'Wrap text at (bytes per line)'
           WordWrap = False
@@ -620,6 +656,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(35,40)'
           Width = 41.699703216552730000
           Height = 18.630859375000000000
+          TabOrder = 6
           AutoSize = True
           Text = 'Charset'
           WordWrap = False
@@ -630,6 +667,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(34,111)'
           Width = 87.000000000000000000
           Height = 17.000000000000000000
+          TabOrder = 7
           Text = 'FoldHeaders'
           Left = 6
           Top = 72
@@ -638,6 +676,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(39,147)'
           Width = 125.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 8
           ItemIndex = 0
           ItemHeight = 13.000000000000000000
           Left = 6
@@ -647,6 +686,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 100.000000000000000000
             Height = 17.000000000000000000
             HitTest = False
+            TabOrder = 0
             IsSelected = True
             Text = 'smtpEnc7bit'
           end
@@ -655,6 +695,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 105.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
+            TabOrder = 1
             Text = 'smtpEnc8bit'
           end
           object ListBoxItem16: TListBoxItem
@@ -662,6 +703,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 105.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
+            TabOrder = 2
             Text = 'smtpEncQuotedPrintable'
           end
           object ListBoxItem17: TListBoxItem
@@ -669,6 +711,7 @@ object SmtpTestForm: TSmtpTestForm
             Width = 105.000000000000000000
             Height = 13.000000000000000000
             HitTest = False
+            TabOrder = 3
             Text = 'smtpEncBase64'
           end
         end
@@ -676,6 +719,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(36,132)'
           Width = 133.792465209960900000
           Height = 18.630859375000000000
+          TabOrder = 9
           AutoSize = True
           Text = 'Default(Transfer)Encoding'
           WordWrap = False
@@ -687,6 +731,7 @@ object SmtpTestForm: TSmtpTestForm
           Width = 73.000000000000000000
           Height = 21.000000000000000000
           OnClick = CharsetTestButtonClick
+          TabOrder = 10
           Text = 'Test Charset'
           Left = 249
           Top = 16
@@ -695,6 +740,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(84,40)'
           Width = 93.842277526855470000
           Height = 18.630859375000000000
+          TabOrder = 11
           AutoSize = True
           Text = 'CharsetInfoLabel1'
           WordWrap = False
@@ -705,6 +751,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(35,58)'
           Width = 153.000000000000000000
           Height = 22.000000000000000000
+          TabOrder = 12
           KeyboardType = vktDefault
           Password = False
           Text = 'UTF-8'
@@ -713,6 +760,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(34,91)'
           Width = 107.000000000000000000
           Height = 17.000000000000000000
+          TabOrder = 13
           Text = 'Allow8BitChars'
           Left = 6
           Top = 56
@@ -722,6 +770,7 @@ object SmtpTestForm: TSmtpTestForm
         Position.Point = '(220,0)'
         Width = 100.000000000000000000
         Height = 20.000000000000000000
+        TabOrder = 2
         Index = 2
         TextAlign = taCenter
         Text = 'Transparent Proxy'
@@ -730,6 +779,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(43,73)'
           Width = 58.860347747802730000
           Height = 18.630859375000000000
+          TabOrder = 0
           AutoSize = True
           Text = 'Proxy host:'
           WordWrap = False
@@ -740,6 +790,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(44,99)'
           Width = 58.237300872802730000
           Height = 18.630859375000000000
+          TabOrder = 1
           AutoSize = True
           Text = 'Proxy port:'
           WordWrap = False
@@ -750,6 +801,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(43,125)'
           Width = 58.242671966552730000
           Height = 18.630859375000000000
+          TabOrder = 2
           AutoSize = True
           Text = 'Proxy user:'
           WordWrap = False
@@ -760,6 +812,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(18,153)'
           Width = 84.630851745605470000
           Height = 18.630859375000000000
+          TabOrder = 3
           AutoSize = True
           Text = 'Proxy password:'
           WordWrap = False
@@ -770,6 +823,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(42,16)'
           Width = 59.069820404052730000
           Height = 18.630859375000000000
+          TabOrder = 4
           AutoSize = True
           Text = 'Proxy type:'
           WordWrap = False
@@ -780,6 +834,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(10,43)'
           Width = 91.726066589355470000
           Height = 18.630859375000000000
+          TabOrder = 5
           AutoSize = True
           Text = 'HTTP proxy auth.:'
           WordWrap = False
@@ -790,6 +845,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(105,70)'
           Width = 145.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 6
           KeyboardType = vktDefault
           Password = False
           Text = 'ProxyHostEdit'
@@ -800,6 +856,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(105,97)'
           Width = 56.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 7
           KeyboardType = vktDefault
           Password = False
           Text = 'ProxyPortEdit'
@@ -810,6 +867,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(105,151)'
           Width = 145.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 8
           KeyboardType = vktDefault
           Password = False
           Text = 'ProxyPasswordEdit'
@@ -820,6 +878,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(105,124)'
           Width = 145.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 9
           KeyboardType = vktDefault
           Password = False
           Text = 'ProxyUserEdit'
@@ -830,6 +889,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(105,13)'
           Width = 145.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 10
           ItemIndex = -1
           OnChange = ProxyTypeComboBoxCloseUp
           Left = 97
@@ -839,6 +899,7 @@ object SmtpTestForm: TSmtpTestForm
           Position.Point = '(105,40)'
           Width = 145.000000000000000000
           Height = 21.000000000000000000
+          TabOrder = 11
           ItemIndex = -1
           OnChange = ProxyHttpAuthTypeComboBoxCloseUp
           Left = 97
@@ -852,11 +913,13 @@ object SmtpTestForm: TSmtpTestForm
     Position.Point = '(0,355)'
     Width = 582.000000000000000000
     Height = 17.000000000000000000
+    TabOrder = 3
     Top = 355
     object Label6: TLabel
       Position.Point = '(12,2)'
       Width = 74.318351745605470000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'Attached files:'
       WordWrap = False
@@ -869,7 +932,7 @@ object SmtpTestForm: TSmtpTestForm
     Position.Point = '(0,372)'
     Width = 582.000000000000000000
     Height = 49.000000000000000000
-    TabOrder = 2
+    TabOrder = 4
     Lines.Strings = (
       'FileAttachMemo')
     KeyboardType = vktDefault
@@ -879,11 +942,13 @@ object SmtpTestForm: TSmtpTestForm
     Position.Point = '(0,421)'
     Width = 582.000000000000000000
     Height = 20.000000000000000000
+    TabOrder = 5
     Top = 421
     object Label7: TLabel
       Position.Point = '(16,2)'
       Width = 77.632316589355470000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'Info messages:'
       WordWrap = False
@@ -895,6 +960,7 @@ object SmtpTestForm: TSmtpTestForm
       Position.Point = '(220,0)'
       Width = 362.000000000000000000
       Height = 20.000000000000000000
+      TabOrder = 1
       Max = 100.000000000000000000
       Orientation = orHorizontal
       Value = 13.000000000000000000
@@ -905,7 +971,7 @@ object SmtpTestForm: TSmtpTestForm
       Position.Point = '(120,1)'
       Width = 81.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 0
+      TabOrder = 2
       Text = 'Progress'
       Left = 120
       Top = 1

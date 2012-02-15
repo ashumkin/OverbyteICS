@@ -102,9 +102,6 @@ interface
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
-{$IFNDEF FMX}
-  {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
-{$ENDIF}
 
 uses
 {$IFDEF MSWINDOWS}

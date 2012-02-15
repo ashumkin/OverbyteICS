@@ -394,7 +394,9 @@ Jun 18, 2011 V7.37  aguser removed one compiler hint.
 Jul 22, 2011 V7.38  Arno - OEM NTLM changes.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsSmtpProt;
+{$ENDIF}
 
 interface
 
@@ -454,20 +456,25 @@ uses
     Macapi.Corefoundation,
   {$ENDIF}
 {$ENDIF}
-    OverbyteIcsWSocket, OverbyteIcsWndControl,
-    OverbyteIcsMD5,
-    OverbyteIcsSha1,
-    OverbyteIcsNtlmMsgs,
-    OverbyteIcsUtils,
-    OverbyteIcsCharsetUtils,
-    OverbyteIcsLibrary,
 {$IFDEF USE_BUFFERED_STREAM}
     OverbyteIcsStreams,
 {$ENDIF}
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY, OverByteIcsLIBEAY,  {AG/SSL}
 {$ENDIF}
-    OverbyteIcsMimeUtils;
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWndControl,
+    OverbyteIcsWSocket,
+{$ENDIF}
+    OverbyteIcsNtlmMsgs,
+    OverbyteIcsMimeUtils,
+    OverbyteIcsMD5,
+    OverbyteIcsSha1,
+    OverbyteIcsUtils,
+    OverbyteIcsCharsetUtils;
 
 const
   SmtpCliVersion     = 738;
@@ -1637,7 +1644,7 @@ begin
     if Result > 0 then begin
         FCurrentIdx     := 1;
         FWrapText       := WrapText;
-        NeedsEnc        := OverbyteIcsMimeUtils.NeedsEncoding(FText);
+        NeedsEnc        := NeedsEncoding(FText);
 
         if (not NeedsEnc) and (DefaultEncoding = smtpEnc8bit) then
             FTransferEncoding := smtpEnc7bit
@@ -1672,11 +1679,11 @@ begin
             { of the breaking chars were found.                          }
             { UTF-8 and other multi-byte codepoints are preserved.       }
             if FWrapText then
-                Result := _Trim(IcsWrapTextEx(FText, CRLF,
+                Result := IcsTrim(IcsWrapTextEx(FText, CRLF,
                                [#09, #32, '.', ',', '-'], FMaxLineLength, [],
                                FCurrentIdx, FALSE, FCodePage, FIsMultiByteCP))
             else  { Force line break before max. line buffer = 1022 }
-                Result := _Trim(IcsWrapTextEx(FText, CRLF,
+                Result := IcsTrim(IcsWrapTextEx(FText, CRLF,
                                [#09, #32, '.', ',', '-'], 1022, [],
                                FCurrentIdx, TRUE, FCodepage, FIsMultiByteCP));
 
@@ -3052,7 +3059,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomSmtpClient.SetCharset(const Value: String);
 begin
-    FCharSet := _LowerCase(Trim(Value));
+    FCharSet := IcsLowerCase(Trim(Value));
     { If empty set the default system codepage }
     if Length(FCharSet) = 0 then begin
         FCodePage   := IcsSystemCodePage;
@@ -4722,7 +4729,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
 begin
-    FHtmlCharSet := _LowerCase(Trim(Value));
+    FHtmlCharSet := IcsLowerCase(Trim(Value));
     { If empty set the default system codepage }
     if Length(FHtmlCharSet) = 0 then begin
         FHtmlCodePage := IcsSystemCodePage;

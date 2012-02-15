@@ -46,7 +46,9 @@ Mar 26, 2006 V6.00 Started new version 6
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsFingCli;
+{$ENDIF}
 
 interface
 
@@ -81,7 +83,13 @@ uses
     Ics.Posix.WinTypes,
     Ics.Posix.Messages,
 {$ENDIF}
-    SysUtils, Classes, OverbyteIcsWSocket;
+    SysUtils, Classes,
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWSocket
+{$ELSE}
+    OverbyteIcsWSocket
+{$ENDIF}
+     ;
 
 const
     FingCliVersion            = 600;

@@ -37,7 +37,7 @@ History:
 unit Ics.Posix.WinTypes;
 
 interface
-
+{$IFDEF POSIX}
 uses
   Posix.Errno, Posix.SysTypes;
 
@@ -73,7 +73,7 @@ const
 
   MaxWord                         = $FFFF;
   MaxDWord                        = $FFFFFFFF;
-
+{$ENDIF POSIX}
 implementation
 
 end.

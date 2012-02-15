@@ -69,10 +69,13 @@ unit OverbyteIcsNtlmSsp;
 
 interface
 
-uses
-    Windows, SysUtils, OverbyteIcsSspi, OverbyteIcsMimeUtils,
-    OverbyteIcsNtlmMsgs;
+{$IFDEF MSWINDOWS}
 
+uses
+    Windows, SysUtils,
+    OverbyteIcsMimeUtils,
+    OverbyteIcsNtlmMsgs,
+    OverbyteIcsSspi;
 const
     {$EXTERNALSYM WC_NO_BEST_FIT_CHARS}
     WC_NO_BEST_FIT_CHARS = $00000400; // do not use best fit chars
@@ -127,7 +130,11 @@ type
 //procedure LoadSecPackage;
 //procedure UnloadSecPackage;
 
+{$ENDIF MSWINDOWS}
+
 implementation
+
+{$IFDEF MSWINDOWS}
 
 var
     SecPackageLock      : TRtlCriticalSection;
@@ -669,5 +676,6 @@ finalization
     DeleteCriticalSection(SecPackageLock);
 
 
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}    
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$ENDIF MSWINDOWS}
 end.

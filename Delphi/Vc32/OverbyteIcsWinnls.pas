@@ -12,6 +12,8 @@ unit OverbyteIcsWinnls;
 
 interface
 
+{$IFDEF MSWINDOWS}
+
 uses
   Windows;
 
@@ -39,7 +41,11 @@ function NormalizeString(NormForm: TNormForm; lpSrcString: LPCWSTR;
 
 function LoadNormalizeLib: Boolean;
 
+{$ENDIF MSWINDOWS}
+
 implementation
+
+{$IFDEF MSWINDOWS}
 
 const
   LibNormaliz = 'Normaliz.dll';
@@ -84,5 +90,5 @@ begin
                              cwDstLength);
 end;
 
-
+{$ENDIF MSWINDOWS}
 end.

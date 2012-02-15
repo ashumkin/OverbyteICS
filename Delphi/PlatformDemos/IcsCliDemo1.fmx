@@ -25,10 +25,12 @@ object ClientForm: TClientForm
     Align = alTop
     Width = 452.000000000000000000
     Height = 73.000000000000000000
+    TabOrder = 1
     object Label1: TLabel
       Position.Point = '(8,12)'
       Width = 24.759275436401370000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'Port'
       WordWrap = False
@@ -39,6 +41,7 @@ object ClientForm: TClientForm
       Position.Point = '(104,12)'
       Width = 35.168453216552730000
       Height = 18.630859375000000000
+      TabOrder = 1
       AutoSize = True
       Text = 'Server'
       WordWrap = False
@@ -49,6 +52,7 @@ object ClientForm: TClientForm
       Position.Point = '(6,43)'
       Width = 27.310544967651370000
       Height = 18.630859375000000000
+      TabOrder = 2
       AutoSize = True
       Text = 'Data'
       WordWrap = False
@@ -59,7 +63,7 @@ object ClientForm: TClientForm
       Position.Point = '(32,40)'
       Width = 185.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 0
+      TabOrder = 3
       KeyboardType = vktDefault
       Password = False
       Text = 'SendEdit'
@@ -71,7 +75,7 @@ object ClientForm: TClientForm
       Width = 75.000000000000000000
       Height = 21.000000000000000000
       OnClick = SendButtonClick
-      TabOrder = 1
+      TabOrder = 4
       Text = 'Send'
       Default = True
       Left = 230
@@ -83,7 +87,7 @@ object ClientForm: TClientForm
       Width = 75.000000000000000000
       Height = 21.000000000000000000
       OnClick = DisconnectButtonClick
-      TabOrder = 2
+      TabOrder = 5
       Text = 'Disconnect'
       Left = 214
       Top = 8
@@ -92,7 +96,7 @@ object ClientForm: TClientForm
       Position.Point = '(32,8)'
       Width = 65.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 3
+      TabOrder = 6
       KeyboardType = vktDefault
       Password = False
       Text = 'telnet'
@@ -103,7 +107,7 @@ object ClientForm: TClientForm
       Position.Point = '(144,8)'
       Width = 65.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 4
+      TabOrder = 7
       KeyboardType = vktDefault
       Password = False
       Text = 'localhost'
@@ -114,7 +118,7 @@ object ClientForm: TClientForm
       Position.Point = '(320,44)'
       Width = 85.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 5
+      TabOrder = 8
       Text = 'Allow Binary'
       Left = 320
       Top = 44
@@ -123,7 +127,7 @@ object ClientForm: TClientForm
       Position.Point = '(320,24)'
       Width = 97.000000000000000000
       Height = 17.000000000000000000
-      TabOrder = 6
+      TabOrder = 9
       IsChecked = True
       Text = 'Add CR/LF'
       Left = 320

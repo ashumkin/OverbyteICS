@@ -472,6 +472,32 @@ const
     function IcsLoByte(W: Word): Byte; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function IcsLoWord(LW: LongWord): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
     procedure IcsCheckOSError(ALastError: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
+
+{ Moved from OverbyteIcsLibrary.pas prefix "_" replaced by "Ics" }
+    function IcsIntToStrA(N : Integer): AnsiString;
+    function IcsIntToHexA(N : Integer; Digits: Byte) : AnsiString;
+    function IcsTrim(const Str : AnsiString) : AnsiString; {$IFDEF COMPILER12_UP} overload;
+    function IcsTrim(const Str : UnicodeString) : UnicodeString; overload;
+                    {$ENDIF}
+    function IcsLowerCase(const S: AnsiString): AnsiString; {$IFDEF COMPILER12_UP} overload;
+    function IcsLowerCase(const S: UnicodeString): UnicodeString; overload;
+                    {$ENDIF}
+    function IcsUpperCase(const S: AnsiString): AnsiString; {$IFDEF COMPILER12_UP} overload;
+    function IcsUpperCase(const S: UnicodeString): UnicodeString; overload;
+                    {$ENDIF}
+    function IcsUpperCaseA(const S: AnsiString): AnsiString;
+    function IcsLowerCaseA(const S: AnsiString): AnsiString;
+    function IcsCompareTextA(const S1, S2: AnsiString): Integer;
+    function IcsTrimA(const Str: AnsiString): AnsiString;
+    function IcsSameTextA(const S1, S2: AnsiString): Boolean;
+    function IcsCompareStr(const S1, S2: AnsiString): Integer; {$IFDEF COMPILER12_UP} overload;
+    function IcsCompareStr(const S1, S2: UnicodeString): Integer; overload;
+                    {$ENDIF}
+    function IcsCompareText(const S1, S2: AnsiString): Integer;{$IFDEF COMPILER12_UP} overload;
+    function IcsCompareText(const S1, S2: UnicodeString): Integer; overload;
+                    {$ENDIF}
+{ end Moved from OverbyteIcsLibrary.pas }
+
 {$IFDEF MSWINDOWS}
     // NT4 and better
     function IcsStrCompOrdinalW(Str1: PWideChar; Str1Length: Integer; Str2: PWideChar; Str2Length: Integer; IgnoreCase: Boolean): Integer;
@@ -3605,6 +3631,379 @@ begin
         raise Error;
     end;
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Author Arno Garrels - Needs optimization!      }
+{ It's a bit slower that the RTL routine.        }
+{ We should realy use a FastCode function here.  }
+function IntToStrA(N : Integer) : AnsiString;
+var
+    I : Integer;
+    Buf : array [0..11] of AnsiChar;
+    Sign : Boolean;
+begin
+    if N >= 0 then
+        Sign := FALSE
+    else begin
+        Sign := TRUE;
+        if N = Low(Integer) then
+        begin
+            Result := '-2147483648';
+            Exit;
+        end
+        else
+            N := Abs(N);
+    end;
+    I := Length(Buf);
+    repeat
+        Dec(I);
+        Buf[I] := AnsiChar(N mod 10 + $30);
+        N := N div 10;
+    until N = 0;
+    if Sign then begin
+        Dec(I);
+        Buf[I] := '-';
+    end;
+    SetLength(Result, Length(Buf) - I);
+    Move(Buf[I], Pointer(Result)^, Length(Buf) - I);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIntToStrA(N : Integer) : AnsiString;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IntToStrA(N);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.IntToStr(N);
+{$ELSE}
+    Result := IntToStrA(N);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Author Arno Garrels - Feel free to optimize!                }
+{ It's anyway faster than the RTL routine.                    }
+function IntToHexA(N : Integer; Digits: Byte) : AnsiString;
+var
+    Buf : array [0..7] of Byte;
+    V : Cardinal;
+    I : Integer;
+begin
+    V := Cardinal(N);
+    I := Length(Buf);
+    if Digits > I then Digits := I;
+    repeat
+        Dec(I);
+        Buf[I] := V mod 16;
+        if Buf[I] < 10 then
+            Inc(Buf[I], $30)
+        else
+            Inc(Buf[I], $37);
+        V := V div 16;
+    until V = 0;
+    while Digits > Length(Buf) - I do begin
+       Dec(I);
+       Buf[I] := $30;
+    end;
+    SetLength(Result, Length(Buf) - I);
+    Move(Buf[I], Pointer(Result)^, Length(Buf) - I);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsIntToHexA(N : Integer; Digits: Byte) : AnsiString;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IntToHexA(N, Digits);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.IntToHex(N, Digits);
+{$ELSE}
+    Result := IntToHexA(N, Digits);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Author Arno Garrels - Feel free to optimize!                }
+{ It's a bit faster than the RTL routine.                     }
+function IcsTrimA(const Str: AnsiString): AnsiString;
+var
+    I, L : Integer;
+begin
+    L := Length(Str);
+    I := 1;
+    while (I <= L) and (Str[I] <= ' ') do
+        Inc(I);
+    if I > L then
+        Result := ''
+    else begin
+        while Str[L] <= ' ' do
+            Dec(L);
+        SetLength(Result, L - I + 1);
+        Move(Str[I], Pointer(Result)^, L - I + 1);
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsTrim(const Str: AnsiString): AnsiString;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IcsTrimA(Str);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.Trim(Str);
+{$ELSE}
+    Result := IcsTrimA(Str);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function IcsTrim(const Str : UnicodeString) : UnicodeString;
+begin
+    Result := SysUtils.Trim(Str);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Author Arno Garrels - Feel free to optimize!                }
+{ It's anyway faster than the RTL routine.                    }
+function IcsLowerCaseA(const S: AnsiString): AnsiString;
+var
+    Ch : AnsiChar;
+    L, I  : Integer;
+    Source, Dest: PAnsiChar;
+begin
+    L := Length(S);
+    if L = 0  then
+        Result := ''
+    else begin
+        SetLength(Result, L);
+        Source := Pointer(S);
+        Dest := Pointer(Result);
+        for I := 1 to L do begin
+            Ch := Source^;
+            if Ch in ['A'..'Z'] then Inc(Ch, 32);
+            Dest^ := Ch;
+            Inc(Source);
+            Inc(Dest);
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsLowerCase(const S: AnsiString): AnsiString;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IcsLowerCaseA(S);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.LowerCase(S);
+{$ELSE}
+    Result := IcsLowerCaseA(S);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function IcsLowerCase(const S: UnicodeString): UnicodeString;
+begin
+    Result := SysUtils.LowerCase(S);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Author Arno Garrels - Feel free to optimize!                }
+{ It's anyway faster than the RTL routine.                    }
+function IcsUpperCaseA(const S: AnsiString): AnsiString;
+var
+    Ch : AnsiChar;
+    L, I : Integer;
+    Source, Dest: PAnsiChar;
+begin
+    L := Length(S);
+    if L = 0  then
+        Result := ''
+    else begin
+        SetLength(Result, L);
+        Source := Pointer(S);
+        Dest := Pointer(Result);
+        for I := 1 to L do begin
+            Ch := Source^;
+            if Ch in ['a'..'z'] then Dec(Ch, 32);
+            Dest^ := Ch;
+            Inc(Source);
+            Inc(Dest);
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsUpperCase(const S: AnsiString): AnsiString;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IcsUpperCaseA(S);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.UpperCase(S);
+{$ELSE}
+    Result := IcsUpperCaseA(S);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function IcsUpperCase(const S: UnicodeString): UnicodeString;
+begin
+    Result := SysUtils.UpperCase(S);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsSameTextA(const S1, S2: AnsiString): Boolean;
+begin
+    Result := (IcsCompareTextA(S1, S2) = 0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Author Arno Garrels - Feel free to optimize!                }
+{ It's anyway faster than the RTL routine.                    }
+function IcsCompareTextA(const S1, S2: AnsiString): Integer;
+var
+    L1, L2, I : Integer;
+    MinLen : Integer;
+    Ch1, Ch2 : AnsiChar;
+    P1, P2 : PAnsiChar;
+begin
+    L1 := Length(S1);
+    L2 := Length(S2);
+    if L1 > L2 then
+        MinLen := L2
+    else
+        MinLen := L1;
+    P1 := Pointer(S1);
+    P2 := Pointer(S2);
+    for I := 1 to MinLen do
+    begin
+        Ch1 := P1[I];
+        Ch2 := P2[I];
+        if (Ch1 <> Ch2) then
+        begin
+            { Strange, but this is how the original works, }
+            { for instance, "a" is smaller than "[" .      }
+            if (Ch1 > Ch2) then
+            begin
+                if Ch1 in ['a'..'z'] then
+                    Dec(Byte(Ch1), 32);
+            end
+            else begin
+                if Ch2 in ['a'..'z'] then
+                    Dec(Byte(Ch2), 32);
+            end;
+        end;
+        if (Ch1 <> Ch2) then
+        begin
+            Result := Byte(Ch1) - Byte(Ch2);
+            Exit;
+        end;
+    end;
+    Result := L1 - L2;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCompareText(const S1, S2: AnsiString): Integer;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IcsCompareTextA(S1, S2);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.CompareText(S1, S2);
+{$ELSE}
+    Result := IcsCompareTextA(S1, S2);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function IcsCompareText(const S1, S2: UnicodeString): Integer;
+begin
+    Result := SysUtils.CompareText(S1, S2);
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCompareStrA(const S1, S2: AnsiString): Integer;
+var
+    L1, L2, I : Integer;
+    MinLen    : Integer;
+    P1, P2    : PAnsiChar;
+begin
+    L1 := Length(S1);
+    L2 := Length(S2);
+    if L1 > L2 then
+        MinLen := L2
+    else
+        MinLen := L1;
+    P1 := Pointer(S1);
+    P2 := Pointer(S2);
+    for I := 1 to MinLen do
+    begin
+        if (P1[I] <> P2[I]) then
+        begin
+            Result := Ord(P1[I]) - Ord(P2[I]);
+            Exit;
+        end;
+    end;
+    Result := L1 - L2;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsCompareStr(const S1, S2: AnsiString): Integer;
+begin
+{$IFDEF USE_ICS_RTL}
+    Result := IcsCompareStrA(S1, S2);
+{$ELSE}
+{$IFNDEF COMPILER12_UP}
+    Result := SysUtils.CompareStr(S1, S2);
+{$ELSE}
+    Result := IcsCompareStrA(S1, S2);
+{$ENDIF}
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
+function IcsCompareStr(const S1, S2: UnicodeString): Integer;
+begin
+    Result := SysUtils.CompareStr(S1, S2);
+end;
+{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

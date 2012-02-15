@@ -35,14 +35,14 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Base)'!=''">			
+		<PropertyGroup Condition="'$(Base)'!=''">
 			<Debugger_LoadAllSymbols>false</Debugger_LoadAllSymbols>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<DCC_Define>USE_SSL;$(DCC_Define)</DCC_Define>
-			<Defines>USE_SSL;$(Defines)</Defines>
+			<Defines>VCL;USE_SSL;$(Defines)</Defines>
 			<LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
 			<ILINK_Description>Overbyte ICS Design-Time Package for C++ Builder XE</ILINK_Description>
 			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
@@ -206,9 +206,7 @@
 					<VersionControl>
 						<VersionControl Name="VersionControlID"/>
 					</VersionControl>
-					<Excluded_Packages>
-						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\9.0\Bpl\OverbyteIcsDXe2Design.bpl">File C:\Users\Public\Documents\RAD Studio\9.0\Bpl\OverbyteIcsDXe2Design.bpl not found</Excluded_Packages>
-					</Excluded_Packages>
+					<Excluded_Packages/>
 				</CPlusPlusBuilder.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

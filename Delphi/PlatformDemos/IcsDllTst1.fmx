@@ -15,10 +15,12 @@ object DllTestForm: TDllTestForm
     Align = alTop
     Width = 371.000000000000000000
     Height = 57.000000000000000000
+    TabOrder = 0
     object Label1: TLabel
       Position.Point = '(12,12)'
       Width = 55.191890716552730000
       Height = 18.630859375000000000
+      TabOrder = 0
       AutoSize = True
       Text = 'Hostname'
       WordWrap = False
@@ -29,6 +31,7 @@ object DllTestForm: TDllTestForm
       Position.Point = '(152,12)'
       Width = 24.759275436401370000
       Height = 18.630859375000000000
+      TabOrder = 1
       AutoSize = True
       Text = 'Port'
       WordWrap = False
@@ -39,6 +42,7 @@ object DllTestForm: TDllTestForm
       Position.Point = '(44,36)'
       Width = 18.464353561401370000
       Height = 18.630859375000000000
+      TabOrder = 2
       AutoSize = True
       Text = 'Url'
       WordWrap = False
@@ -49,7 +53,7 @@ object DllTestForm: TDllTestForm
       Position.Point = '(64,8)'
       Width = 73.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 0
+      TabOrder = 3
       KeyboardType = vktDefault
       Password = False
       Text = 'localhost'
@@ -60,7 +64,7 @@ object DllTestForm: TDllTestForm
       Position.Point = '(184,8)'
       Width = 45.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 1
+      TabOrder = 4
       KeyboardType = vktDefault
       Password = False
       Text = 'telnet'
@@ -72,7 +76,7 @@ object DllTestForm: TDllTestForm
       Width = 75.000000000000000000
       Height = 21.000000000000000000
       OnClick = CallDll1ButtonClick
-      TabOrder = 2
+      TabOrder = 5
       Text = 'Call DLL1'
       Default = True
       Left = 236
@@ -83,7 +87,7 @@ object DllTestForm: TDllTestForm
       Width = 75.000000000000000000
       Height = 21.000000000000000000
       OnClick = CallDll2ButtonClick
-      TabOrder = 3
+      TabOrder = 6
       Text = 'Call DLL2'
       Left = 236
       Top = 32
@@ -92,7 +96,7 @@ object DllTestForm: TDllTestForm
       Position.Point = '(64,32)'
       Width = 165.000000000000000000
       Height = 21.000000000000000000
-      TabOrder = 4
+      TabOrder = 7
       KeyboardType = vktDefault
       Password = False
       Text = 'http://ipv6.google.com'
@@ -105,7 +109,7 @@ object DllTestForm: TDllTestForm
     Position.Point = '(0,57)'
     Width = 371.000000000000000000
     Height = 156.000000000000000000
-    TabOrder = 0
+    TabOrder = 1
     Lines.Strings = (
       'DisplayMemo')
     KeyboardType = vktDefault

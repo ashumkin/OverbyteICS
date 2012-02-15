@@ -36,8 +36,10 @@ History:
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit Ics.Posix.KEventTypes;
 
-interface
+{.$DEFINE HAS_EVFILT_NETDEV}
 
+interface
+{$IFDEF POSIX}
   {$HPPEMIT '#include <event.h>' } // ToBeChecked
 
 type  { should be defined in types.h }
@@ -71,13 +73,18 @@ const
   {$EXTERNALSYM EVFILT_SIGNAL}
   EVFILT_TIMER    = -7;  { timers }
   {$EXTERNALSYM EVFILT_TIMER}
-  EVFILT_MACHPORT = -8;  { Mach portsets }
+{$IFNDEF HAS_EVFILT_NETDEV}
+  EVFILT_MACHPORT = -8;  { Mach portsets } // MacOS
   {$EXTERNALSYM EVFILT_MACHPORT}
+{$ELSE}
+  EVFILT_NETDEV   = -8; { network devices }
+  {$EXTERNALSYM EVFILT_NETDEV}
+{$ENDIF HAS_EVFILT_NETDEV}
   EVFILT_FS       = -9;  { filesystem events }
   {$EXTERNALSYM EVFILT_FS}
   EVFILT_USER     = -10; { User events }
   {$EXTERNALSYM EVFILT_USER}
-  EVFILT_SESSION	= -11; { Audit session events }
+  EVFILT_SESSION  = -11; { Audit session events }
   {$EXTERNALSYM EVFILT_SESSION}
 
   EVFILT_SYSCOUNT = 11;
@@ -170,7 +177,7 @@ const
   {$EXTERNALSYM NOTE_FFCOPY}
   NOTE_FFCTRLMASK = $c0000000;              { mask for operations }
   {$EXTERNALSYM NOTE_FFCTRLMASK}
-  NOTE_FFLAGSMASK	= $00ffffff;
+  NOTE_FFLAGSMASK = $00ffffff;
   {$EXTERNALSYM NOTE_FFLAGSMASK}
 
 { data/hint flags for EVFILT_READ|WRITE, shared with userspace   }
@@ -283,11 +290,12 @@ const
   NOTE_CHILD      = $00000004;  { am a child process  }
   {$EXTERNALSYM NOTE_CHILD}
 
+{$IFDEF HAS_EVFILT_NETDEV}
 { data/hint flags for EVFILT_NETDEV, shared with userspace  }
-(*  NOTE_LINKUP     = $0001;  { link is up  }
+  NOTE_LINKUP     = $0001;  { link is up  }
   NOTE_LINKDOWN   = $0002;  { link is down  }
   NOTE_LINKINV    = $0004;  { link state is invalid  }
-*)
+{$ENDIF HAS_EVFILT_NETDEV}
 
 type
   //#pragma pack(4)
@@ -332,9 +340,11 @@ procedure EV_SET64(kevp: PKEvent64_s; const aIdent: UInt64; const aFilter: Int16
                    const aFlags: UInt16; const aFFlags: UInt32; const aData: Int64;
                    const auData: UInt64; ext0, ext1: UInt64); inline;
 {$EXTERNALSYM EV_SET64}
+{$ENDIF POSIX}
 
 implementation
 
+{$IFDEF POSIX}
 procedure EV_SET(kevp: PKEvent; const aIdent: UIntPtr; const aFilter: Int16;
                  const aFlags: UInt16; const aFFlags: UInt32;
                  const aData: IntPtr; const auData: Pointer);
@@ -360,6 +370,6 @@ begin
   kevp^.ext[0] := Ext0;
   kevp^.ext[1] := Ext1;
 end;
-
+{$ENDIF POSIX}
 end.
 

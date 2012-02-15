@@ -84,7 +84,6 @@
     <DCCReference Include="OverbyteIcsIcmp.pas" />
     <DCCReference Include="OverbyteIcsIconv.pas" />
     <DCCReference Include="OverbyteIcsLIBEAY.pas" />
-    <DCCReference Include="OverbyteIcsLibrary.pas" />
     <DCCReference Include="OverbyteIcsLogger.dcr" />
     <DCCReference Include="OverbyteIcsLogger.dcr" />
     <DCCReference Include="OverbyteIcsLogger.pas" />

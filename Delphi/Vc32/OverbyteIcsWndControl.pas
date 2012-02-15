@@ -100,7 +100,9 @@ Historique:
 16/08/2011 V1.17 Arno TIcsTimer prepared for x64.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsWndControl;
+{$ENDIF}
 
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
@@ -349,7 +351,12 @@ var
 implementation
 
 uses
-  OverbyteIcsUtils, OverbyteIcsThreadTimer;
+{$IFDEF FMX}
+  Ics.Fmx.OverbyteIcsThreadTimer,
+{$ELSE}
+  OverbyteIcsThreadTimer,
+{$ENDIF}
+  OverbyteIcsUtils;
 
 var
   GUIDOffSet   : Integer;

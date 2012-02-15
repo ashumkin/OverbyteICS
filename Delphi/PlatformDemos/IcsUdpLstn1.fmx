@@ -14,6 +14,7 @@ object MainForm: TMainForm
     Position.Point = '(16,72)'
     Width = 98.815910339355470000
     Height = 18.630859375000000000
+    TabOrder = 0
     AutoSize = True
     Text = 'DataAvailableLabel'
     WordWrap = False
@@ -24,6 +25,7 @@ object MainForm: TMainForm
     Position.Point = '(16,48)'
     Width = 50.035640716552730000
     Height = 18.630859375000000000
+    TabOrder = 1
     AutoSize = True
     Text = 'InfoLabel'
     WordWrap = False
@@ -34,6 +36,7 @@ object MainForm: TMainForm
     Position.Point = '(176,11)'
     Width = 50.250484466552730000
     Height = 18.630859375000000000
+    TabOrder = 2
     AutoSize = True
     Text = 'UDP port'
     WordWrap = False
@@ -44,6 +47,7 @@ object MainForm: TMainForm
     Position.Point = '(173,35)'
     Width = 51.351558685302730000
     Height = 18.630859375000000000
+    TabOrder = 3
     AutoSize = True
     Text = 'Sender IP'
     WordWrap = False
@@ -55,7 +59,7 @@ object MainForm: TMainForm
     Width = 75.000000000000000000
     Height = 22.000000000000000000
     OnClick = StartButtonClick
-    TabOrder = 0
+    TabOrder = 4
     Text = 'Start'
     Default = True
     Left = 8
@@ -66,7 +70,7 @@ object MainForm: TMainForm
     Width = 75.000000000000000000
     Height = 22.000000000000000000
     OnClick = StopButtonClick
-    TabOrder = 1
+    TabOrder = 5
     Text = 'Stop'
     Left = 88
     Top = 8
@@ -75,7 +79,7 @@ object MainForm: TMainForm
     Position.Point = '(228,8)'
     Width = 57.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 2
+    TabOrder = 6
     KeyboardType = vktDefault
     Password = False
     Text = 'PortEdit'
@@ -86,7 +90,7 @@ object MainForm: TMainForm
     Position.Point = '(228,32)'
     Width = 57.000000000000000000
     Height = 21.000000000000000000
-    TabOrder = 3
+    TabOrder = 7
     KeyboardType = vktDefault
     Password = False
     Text = 'SenderEdit'

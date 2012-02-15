@@ -472,7 +472,9 @@ Jan 23, 2012 V7.23 Arno added httperrNoStatusCode, passed to OnRequestDone and
              exceptions.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsHttpProt;
+{$ENDIF}
 
 interface
 
@@ -532,21 +534,27 @@ uses
 {$IFDEF USE_SSL}
     OverbyteIcsSSLEAY, OverbyteIcsLIBEAY,
 {$ENDIF}
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWndControl,
+    OverbyteIcsWSocket,
+{$ENDIF FMX}
 {$IFDEF UseNTLMAuthentication}
     OverbyteIcsNtlmMsgs,
 {$ENDIF}
+{$IFDEF UseDigestAuthentication}
+    OverbyteIcsDigestAuth,
+{$ENDIF}
+    OverbyteIcsUrl,
 {$IFDEF UseContentCoding}
     OverbyteIcsHttpContCod,
 {$ENDIF}
 {$IFNDEF NO_DEBUG_LOG}
     OverbyteIcsLogger,
 {$ENDIF}
-    OverbyteIcsUrl, OverbyteIcsTypes,
-    OverbyteIcsUtils,
-{$IFDEF UseDigestAuthentication}
-    OverbyteIcsDigestAuth,
-{$ENDIF}
-    OverbyteIcsWndControl, OverbyteIcsWSocket;
+    OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
     HttpCliVersion       = 723;
@@ -3423,9 +3431,6 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.DoRequestSync(Rq : THttpRequest);  { V7.04 Timeout added }
 var
-  {$IFDEF MSWINDOWS}
-    DummyHandle     : THandle;
-  {$ENDIF}
     TimeOutMsec     : UINT;
     bFlag           : Boolean;
 begin
@@ -3433,13 +3438,10 @@ begin
     if not Assigned(FCtrlSocket.Counter) then
         FCtrlSocket.CreateCounter;
     FCtrlSocket.Counter.LastSendTick := IcsGetTickCount; // Reset counter
-  {$IFDEF MSWINDOWS}
-    DummyHandle := INVALID_HANDLE_VALUE;
-  {$ENDIF}
     TimeOutMsec := FTimeOut * 1000;
     while FState <> httpReady do begin
       {$IFDEF MSWINDOWS}
-        if MsgWaitForMultipleObjects(0, DummyHandle, FALSE, 1000,
+        if MsgWaitForMultipleObjects(0, Pointer(nil)^, FALSE, 1000,
                                      QS_ALLINPUT) = WAIT_OBJECT_0 then
       {$ENDIF}
             MessagePump;

@@ -328,10 +328,6 @@
 				<BuildOrder>-1</BuildOrder>
 				<BuildOrder>5</BuildOrder>
 			</ResFiles>
-			<DelphiCompile Include="OverbyteIcsLibrary.pas">
-				<BuildOrder>6</BuildOrder>
-				<BuildOrder>59</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsUrl.pas">
 				<BuildOrder>60</BuildOrder>
 				<BuildOrder>33</BuildOrder>

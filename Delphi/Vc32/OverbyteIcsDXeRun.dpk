@@ -98,7 +98,6 @@ contains
   OverbyteIcsAvlTrees in 'OverbyteIcsAvlTrees.pas',
   OverbyteIcsSslSessionCache in 'OverbyteIcsSslSessionCache.pas',
   OverbyteIcsSslThrdLock in 'OverbyteIcsSslThrdLock.pas',
-  OverbyteIcsLibrary in 'OverbyteIcsLibrary.pas',
   OverbyteIcsHttpSrv in 'OverbyteIcsHttpSrv.pas',
   OverbyteIcsSspi in 'OverbyteIcsSspi.pas',
   OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas',

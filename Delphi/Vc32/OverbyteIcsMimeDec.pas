@@ -343,7 +343,6 @@ uses
 {$ELSE}
     StrUtils,  { for PosEx }
 {$ENDIF}
-    OverByteIcsLibrary,
     OverbyteIcsUtils,
     OverbyteIcsMimeUtils,
     OverbyteIcsCharsetUtils;
@@ -1204,8 +1203,8 @@ begin
         exit;
     s := StrPas(FCurrentData);
 
-    if _LowerCase(copy(s, 1, 6)) = 'begin ' then begin
-        out1:=_lowercase(s);
+    if IcsLowerCase(copy(s, 1, 6)) = 'begin ' then begin
+        out1:=IcsLowerCase(s);
         if (Pos(AnsiString('--'), out1) > 0) and (Pos(AnsiString('cut here'), out1) > 0) then
             Exit;
         pos1 := Pos(AnsiString(' '), s);
@@ -1215,8 +1214,8 @@ begin
         cUUFilename := s;
         exit;
     end
-    else if _LowerCase(Copy(s, 1, 3)) = 'end' then begin
-        out1 := _LowerCase(s);
+    else if IcsLowerCase(Copy(s, 1, 3)) = 'end' then begin
+        out1 := IcsLowerCase(s);
         if (Pos(AnsiString('--'), out1) > 0) and (Pos(AnsiString('cut here'), out1) > 0) then
             Exit;
         cUUFilename := '';
@@ -1332,7 +1331,7 @@ var
 begin
     Result := TRUE;
     S := StrPas(FCurrentData); { AS }
-    if _Trim(S) = '' then begin
+    if IcsTrim(S) = '' then begin
         Result := FALSE;
         Exit;
     end;
@@ -1340,7 +1339,7 @@ begin
     if (not FUUProcessFlag) and UUSectionBegin(S, chName) then begin { AS }
         if chName <> '' then                                         { AS }
             cUUFilename := chName;                                   { AS }
-        out1 := _LowerCase(S);
+        out1 := IcsLowerCase(S);
         if (Pos(AnsiString('--'), out1) > 0) and (Pos(AnsiString('cut here'), out1) > 0) then
             Exit;
         FUUProcessFlag := TRUE;
@@ -1363,8 +1362,8 @@ begin
         Exit;
     end;
 
-    if _CompareText(Copy(S, 1, 3), AnsiString('end')) = 0 then begin
-        out1 := _LowerCase(S);
+    if IcsCompareText(Copy(S, 1, 3), AnsiString('end')) = 0 then begin
+        out1 := IcsLowerCase(S);
         if (Pos(AnsiString('--'), out1) > 0) and (Pos(AnsiString('cut here'), out1) > 0) then
             Exit;
         FUUProcessFlag := FALSE;
@@ -1376,7 +1375,7 @@ begin
     end;
 
     { AS: Handle YEnc }
-    if _CompareText(Copy(S, 1, 6), AnsiString('=yend ')) = 0 then begin
+    if IcsCompareText(Copy(S, 1, 6), AnsiString('=yend ')) = 0 then begin
         FUUProcessFlag := FALSE;
         FProcessFlagYBegin := false;
         { I also use the filename here in case the client prefer to save   }
@@ -1386,7 +1385,7 @@ begin
         Exit;
     end;
 
-    if _CompareText(Copy(S, 1, 7), AnsiString('=ypart ')) = 0 then begin
+    if IcsCompareText(Copy(S, 1, 7), AnsiString('=ypart ')) = 0 then begin
         { The message is in several parts. Something to do ? }
         Exit;
     end;
@@ -1489,7 +1488,7 @@ begin
             Delim  := Result^;
             if IsCharInSysCharSet(Delim, [':', ' ', ';', '=', #9, #0]) then
                 break;
-            Dst := Dst + _LowerCase(Result^);
+            Dst := Dst + IcsLowerCase(Result^);
             Inc(Result);
         end;
     end;
@@ -1513,7 +1512,7 @@ begin
         Delim := Result^;
         if IsCharInSysCharSet(Delim, [':', ' ', ';', '=', #9, #0]) then
                 break;
-        Dst := Dst + _LowerCase(Result^);
+        Dst := Dst + IcsLowerCase(Result^);
         Inc(Result);
     end;
     if IsSpace(Delim) then begin
@@ -1556,7 +1555,7 @@ begin
         else if (Comment = 0) and
                 IsCharInSysCharSet(Delim, [':', ' ', ';', '=', #9]) then
             break;
-        Dst := Dst + _LowerCase(Result^);
+        Dst := Dst + IcsLowerCase(Result^);
         Inc(Result);
     end;
     if IsSpace(Delim) then begin
@@ -1609,7 +1608,7 @@ var
     T : Integer;
     S : AnsiString;
 begin
-    S := _LowerCase(StrPas(FCurrentData));
+    S := IcsLowerCase(StrPas(FCurrentData));
     if S = FBoundary then begin
         PreparePart;
         Exit;
@@ -1633,7 +1632,7 @@ end;
 procedure TMimeDecode.SetDefaultCodePage(const Value: LongWord);
 begin
     if not IcsIsValidAnsiCodePage(Value) then
-        raise Exception.Create('Code page "' + _IntToStr(Value) + '"' +
+        raise Exception.Create('Code page "' + IntToStr(Value) + '"' +
             'is not a valid ANSI code page or currently not installed');
     FDefaultCodePage := Value;
 end;
@@ -1692,7 +1691,7 @@ var
 begin
     { Check if end of part (boundary line found) }
     if (FCurrentData <> nil) and (FCurrentData^ <> #0) then begin
-        s := _LowerCase(StrPas(FCurrentData));
+        s := IcsLowerCase(StrPas(FCurrentData));
         if (s = FBoundary) then begin
             PreparePart;
             exit;
@@ -1810,7 +1809,7 @@ begin
                     FPartFormat := Value
                 else if Token = 'boundary' then begin
                     { we have an embedded boundary }
-                    FEmbeddedBoundary.Add('--' + _LowerCase(String(Value)));
+                    FEmbeddedBoundary.Add('--' + IcsLowerCase(String(Value)));
 {                   Value := Value + #0;  }{ NUL terminate AnsiString for Delphi 1 }
 {                   GetQuoted(@Value[1], Value1);}                    { ##ERIC }
 {                   FEmbeddedBoundary.Add('--' + LowerCase(Value1));} { ##ERIC }
@@ -1924,7 +1923,7 @@ begin
                     else if Token = 'format' then
                         FFormat := Value
                     else if Token = 'boundary' then begin
-                        FBoundary := '--' + _LowerCase(Value);
+                        FBoundary := '--' + IcsLowerCase(Value);
                         FIsMultipart := TRUE;
                     end;             { ##ERIC }
                 end;
@@ -2257,7 +2256,7 @@ begin
         PSize := PartStream.Size ;
         if FDecodeW.PartNumber = 0 then  // main body
         begin
-            if FSkipBlankParts and (Pos (AnsiString('multipart'), _LowerCase (FDecodeW.ContentType)) = 1) then exit ;
+            if FSkipBlankParts and (Pos (AnsiString('multipart'), IcsLowerCase (FDecodeW.ContentType)) = 1) then exit ;
             PContentType := FDecodeW.ContentType ;
             PCharset     := FDecodeW.Charset ;
             PCodePage    := FDecodeW.CodePage;

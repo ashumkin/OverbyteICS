@@ -124,7 +124,7 @@ implementation
 
 {$R *.DFM}
 uses
-    OverbyteIcsLibrary;
+    OverbyteIcsUtils;
 
 const
     SectionWindow   = 'RecvForm';

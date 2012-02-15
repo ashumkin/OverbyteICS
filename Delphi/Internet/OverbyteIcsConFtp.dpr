@@ -57,8 +57,8 @@ Bomb('Sorry, Delphi 1 does not support console mode programs');
 {$ENDIF}
 
 uses
+  Windows, Messages, SysUtils,
   OverbyteIcsTypes,
-  OverbyteIcsLibrary,
   OverbyteIcsFtpCli,
   OverbyteIcsWinsock;
 
@@ -122,7 +122,7 @@ begin
     FFtpCli.OnRequestDone := FtpRequestDone;
 
     { Delete existing file }
-    _DeleteFile(FFtpCli.LocalFileName);
+    DeleteFile(FFtpCli.LocalFileName);
 
     { Start FTP transfert by connecting to the server }
     WriteLn('Connecting to ', FFtpCli.HostName, '/', FFtpCli.Port);
@@ -157,7 +157,7 @@ begin
 
     { Check status }
     if ErrorCode <> 0 then begin
-        WriteLn('Failed, error #' + _IntToStr(ErrorCode));
+        WriteLn('Failed, error #' + IntToStr(ErrorCode));
         FFtpCli.Abort;
         EndFlag := TRUE;
     end
@@ -194,7 +194,7 @@ begin
             end;
         else
             begin
-                WriteLn('Unknown FtpRequest ' + _IntToStr(Ord(RqType)));
+                WriteLn('Unknown FtpRequest ' + IntToStr(Ord(RqType)));
                 EndFlag := TRUE;
             end;
         end;
@@ -210,7 +210,7 @@ begin
         WriteLn('Hit ENTER key to return quit program...');
         ReadLn;
         { Break message loop we called from the execute method }
-        _PostMessage(FFtpCli.ControlSocket.Handle, WM_QUIT, 0, 0);
+        FFtpCli.ControlSocket.PostQuitMessage;
     end;
 end;
 

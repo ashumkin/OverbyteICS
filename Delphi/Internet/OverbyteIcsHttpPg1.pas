@@ -54,9 +54,9 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, OverbyteIcsIniFiles,
-  OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsHttpProt,
-  OverbyteIcsLibrary;
+  Dialogs, StdCtrls, ExtCtrls,
+  OverbyteIcsIniFiles, OverbyteIcsUtils, OverbyteIcsWndControl,
+  OverbyteIcsWSocket, OverbyteIcsHttpProt;
 
 const
     HttpPgVersion = 101;

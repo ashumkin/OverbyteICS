@@ -54,6 +54,27 @@ Delphi\Vc32\OverbyteIcsDXe2Design.dproj
 Delphi\Vc32\OverbyteIcsDXe2Design.dpk
 Delphi\Vc32\OverbyteIcsDXe2Design.res
 
+Delphi\Vc32\IcsCommonDXE2Run.dpk
+Delphi\Vc32\IcsCommonDXE2Run.dproj
+Delphi\Vc32\IcsCommonDXE2Run.res
+Delphi\Vc32\IcsCommonDXE2Design.dpk
+Delphi\Vc32\IcsCommonDXE2Design.dproj
+Delphi\Vc32\IcsCommonDXE2Design.res
+
+Delphi\Vc32\IcsFmxDXE2Run.dpk
+Delphi\Vc32\IcsFmxDXE2Run.dproj
+Delphi\Vc32\IcsFmxDXE2Run.res
+Delphi\Vc32\IcsFmxDXE2Design.dpk
+Delphi\Vc32\IcsFmxDXE2Design.dproj
+Delphi\Vc32\IcsFmxDXE2Design.res
+
+Delphi\Vc32\IcsVclDXE2Run.dpk
+Delphi\Vc32\IcsVclDXE2Run.dproj
+Delphi\Vc32\IcsVclDXE2Run.res
+Delphi\Vc32\IcsVclDXE2Design.dpk
+Delphi\Vc32\IcsVclDXE2Design.dproj
+Delphi\Vc32\IcsVclDXE2Design.res
+
 Delphi\Vc32\OverbyteIcsCB2006Run.bdsproj
 Delphi\Vc32\OverbyteIcsCB2006Run.cpp
 Delphi\Vc32\OverbyteIcsCB2006Run.res
@@ -216,6 +237,30 @@ Delphi\vc32\Ics.Posix.KEventApi.pas
 Delphi\vc32\Ics.Posix.KEventTypes.pas
 Delphi\vc32\Ics.Posix.Messages.pas
 Delphi\vc32\Ics.Posix.WinTypes.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsWndControl.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsWSocket.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsFtpCli.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsFtpSrv.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsHttpProt.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsWSocketS.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsSmtpProt.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsPop3Prot.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsNntpCli.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsPing.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsDnsQuery.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsFingCli.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsSslSessionCache.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsSslThrdLock.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsHttpSrv.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsSocketUtils.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsMultipartFtpDownloader.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsMultipartHttpDownloader.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsHttpAppServer.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsThreadTimer.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsCharsetComboBox.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsReg.pas
+Delphi\vc32\Ics.Vcl.OverbyteIcsReg.pas
+Delphi\vc32\Ics.Fmx.OverByteIcsWSocketE.pas
 
 Delphi\vc32\OverbyteIcsDotNetSockImpl.inc
 Delphi\vc32\OverbyteIcsDotNetSockTypes.inc
@@ -264,6 +309,7 @@ Install\CB2009Install.groupproj
 Install\CB2010Install.groupproj
 Install\CBXeInstall.groupproj
 Install\CBXe2Install.groupproj
+Install\DXe2InstallVclFmx.groupproj
 
 cpp\Internet\OverbyteIcsHttpTst1.cpp
 cpp\Internet\OverbyteIcsHttpTst1.dfm
@@ -1105,6 +1151,7 @@ Delphi\Internet\OverbyteIcsWebAppServerLogin.pas
 Delphi\Internet\OverbyteIcsWebAppServerHomePage.pas
 Delphi\Internet\OverbyteIcsWebAppServerHelloWorld.pas
 Delphi\Internet\OverbyteIcsWebAppServerCounter.pas
+Delphi\Internet\Ics.Fmx.OverbyteIcsWebAppServerCounter.pas
 Delphi\Internet\OverbyteIcsWebAppServerCounterView.pas
 Delphi\Internet\OverbyteIcsWebAppServerConfig.pas
 Delphi\Internet\OverbyteIcsWebAppServerHttpHandlerBase.pas
@@ -1113,6 +1160,7 @@ Delphi\Internet\OverbyteIcsWebAppServerUrlDefs.pas
 Delphi\Internet\OverbyteIcsWebAppServerDataModule.pas
 Delphi\Internet\OverbyteIcsWebAppServerDataModule.dfm
 Delphi\Internet\OverbyteIcsWebAppServerMailer.pas
+Delphi\Internet\Ics.Fmx.OverbyteIcsWebAppServerMailer.pas
 Delphi\Internet\OverbyteIcsWebAppServerHead.pas
 Delphi\Internet\WebAppServerData\Templates\Config.html
 Delphi\Internet\WebAppServerData\Templates\ConfigConfirm.html

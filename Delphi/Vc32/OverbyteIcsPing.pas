@@ -66,7 +66,9 @@ Nov 08, 2010 V6.01 Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).                      
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsPing;
+{$ENDIF}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -96,19 +98,20 @@ unit OverbyteIcsPing;
 
 interface
 
+{$IFDEF MSWINDOWS}
+
 uses
-    Messages,
-{$IFDEF USEWINDOWS}
-    Windows,
-{$ELSE}
-    WinTypes, WinProcs,
-{$ENDIF}
-    SysUtils, Classes,
-    OverbyteIcsIcmp, OverbyteIcsWndControl,
+    Windows, Messages, SysUtils, Classes,
+  {$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+  {$ELSE}
+    OverbyteIcsWndControl,
+  {$ENDIF}
+    OverbyteIcsIcmp,
     // Here we use Winsock directly. If we use OverbyteIcsWinsock, then
     // we must also use OverbyteIcsWSocket and make the comopnent a lot
     // bigger. The drawback is that winsock.dll is loaded statically.
-    Winsock;
+    OverbyteIcsWinsock;
 
 const
   PingVersion           = 601;
@@ -119,6 +122,9 @@ type
   TPingDisplay   = procedure(Sender: TObject; Icmp: TObject; Msg : String) of object;
   TPingReply     = procedure(Sender: TObject; Icmp: TObject; Status : Integer) of object;
   TPingRequest   = procedure(Sender: TObject; Icmp: TObject) of object;
+{$IFDEF COMPILER16_UP}
+  [ComponentPlatformsAttribute(pidWin32 or pidWin64)]
+{$ENDIF}
   TPing = class(TIcsWndControl)
   protected
     FIcmp             : TICMP;
@@ -198,8 +204,11 @@ type
     property    OnBgException;               { V6.01 }
   end;
 
+{$ENDIF MSWINDOWS}
+
 implementation
 
+{$IFDEF MSWINDOWS}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This function is a callback function. It means that it is called by       }
@@ -682,6 +691,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
+{$ENDIF MSWINDOWS}
 end.
 

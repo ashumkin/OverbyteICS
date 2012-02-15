@@ -50,7 +50,9 @@ Nov 08, 2010 0.99d Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsMultipartFtpDownloader;
+{$ENDIF}
 
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER14_UP}
@@ -71,7 +73,15 @@ uses
     Ics.Posix.Messages,
 {$ENDIF}
     SysUtils, Classes, IniFiles,
-    OverbyteIcsUtils, OverbyteIcsWndControl, OverbyteIcsFtpCli;
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsFtpCli,
+    Ics.Fmx.OverbyteIcsWndControl,
+{$ELSE}
+    OverbyteIcsFtpCli,
+    OverbyteIcsWndControl,
+{$ENDIF}
+    OverbyteIcsUrl,
+    OverbyteIcsUtils;
 
 type
     TFtpBigInt                = int64;

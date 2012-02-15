@@ -83,7 +83,9 @@ Dec 18, 2011 V7.09 F. Piette fixed THttpAppSrv.GetDispatchVirtualDocument so
                    the time the answer is sent.
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsHttpAppServer;
+{$ENDIF}
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -119,11 +121,15 @@ uses
 {$ENDIF}
 {$IFDEF FMX}
     FMX.Types,
+    Ics.Fmx.OverbyteIcsWSocket,
+    Ics.Fmx.OverbyteIcsHttpSrv,
 {$ELSE}
     ExtCtrls,
+    OverbyteIcsWSocket,
+    OverbyteIcsHttpSrv,
 {$ENDIF}
     Classes,
-    OverbyteIcsHttpSrv, OverbyteIcsWebSession, OverbyteIcsWSocket,
+    OverbyteIcsWebSession,
     OverbyteIcsUtils;
 
 type

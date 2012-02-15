@@ -37,14 +37,20 @@ History:
 
 unit Ics.Posix.Messages;
 
-interface
-
+{$B-}           { Enable partial boolean evaluation   }
+{$T-}           { Untyped pointers                    }
+{$X+}           { Enable extended syntax              }
+{$H+}           { Use long strings                    }
+{$J+}           { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
 
+interface
+
+{$IFDEF POSIX}
 {.$DEFINE MSGQ_DEBUG}
 
 uses
-  System.SysUtils,  System.Classes,  System.SyncObjs, System.Generics.Collections,
+  System.SysUtils, System.Classes, System.SyncObjs, System.Generics.Collections,
   System.SysConst,
   Posix.SysTypes,
   Posix.PThread,
@@ -316,7 +322,11 @@ type
   function KillTimer(AHwnd: HWND; nIDEvent: NativeUInt): Boolean;
   function IcsClearMessages(AHWnd: HWND; AMsg: UINT; AWParam: WParam): Boolean;
 
+{$ENDIF POSIX}
+
 implementation
+
+{$IFDEF POSIX}
 
 {$I Ics.InterlockedApi.inc}
 
@@ -2052,5 +2062,5 @@ finalization
   FreeAndNil(GLWindowTree);
   FreeAndNil(GLMessagePumps);
   FreeAndNil(GlobalSync);
-
+{$ENDIF POSIX}
 end.

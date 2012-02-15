@@ -190,7 +190,9 @@ Jun 18, 2011 V6.11 aguser removed one compiler hint.
 Jul 22, 2011 V6.12 Arno - OEM NTLM changes.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFNDEF ICS_INCLUDE_MODE}
 unit OverbyteIcsPop3Prot;
+{$ENDIF}
 
 interface
 {$H+}           { Use long strings                    }
@@ -217,6 +219,7 @@ uses
 {$IFDEF MSWINDOWS}
     Messages,
     Windows,
+    OverbyteIcsWinSock,
 {$ENDIF}
 {$IFDEF POSIX}
     Ics.Posix.WinTypes,
@@ -233,12 +236,18 @@ uses
 {$IFDEF COMPILER12_UP}
     AnsiStrings, // For Trim and LowerCase
 {$ENDIF}
-    OverbyteIcsMimeUtils, OverbyteIcsUtils,
-    OverbyteIcsWSocket, OverbyteIcsWndControl,OverbyteIcsWinSock,
+{$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsWndControl,
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
+    OverbyteIcsWndControl,
+    OverbyteIcsWSocket,
+{$ENDIF}
+    OverbyteIcsNtlmMsgs,
+    OverbyteIcsMimeUtils,
+    OverbyteIcsUtils,
     OverbyteIcsSha1,
-    OverbyteIcsLibrary,
-    OverbyteIcsMD5,
-    OverbyteIcsNtlmMsgs;      {V6.06}
+    OverbyteIcsMD5;
 
 { This resolves a name conflict with Win API GetUserName() defined in MS headers }
 (*$HPPEMIT '#pragma alias "@Overbyteicspop3prot@TCustomPop3Cli@GetUserNameA$qqrv"="@Overbyteicspop3prot@TCustomPop3Cli@GetUserName$qqrv"' *)

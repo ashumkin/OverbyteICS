@@ -70,9 +70,6 @@ interface
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
-{$IFNDEF FMX}
-  {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
-{$ENDIF}
 {$IFNDEF USE_SSL}
   {$MESSAGE FATAL 'Please add "USE_SSL" to project option''s defines'};
 {$ENDIF}

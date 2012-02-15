@@ -106,9 +106,7 @@ unit IcsWebServ1;
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
-{$IFNDEF FMX}
-  {$MESSAGE FATAL 'Please add "FMX" to project option''s defines'};
-{$ENDIF}
+
 {$B-}                 { Enable partial boolean evaluation   }
 {$T-}                 { Untyped pointers                    }
 {$X+}                 { Enable extended syntax              }
@@ -428,16 +426,16 @@ begin
                                         (ScreenWidth  - Width)  div 2);
     DocDirEdit.Text     := IniFile.ReadString(SectionData, KeyDocDir,
                                  ExtractFilePath(ParamStr(0)) +
-                                 'WebServData\wwwRoot\');
+                                 'WebServData' + PathDelim + 'wwwRoot' + PathDelim);
     DefaultDocEdit.Text := IniFile.ReadString(SectionData, KeyDefaultDoc,
                                               'index.html');
     TemplateDirEdit.Text := IniFile.ReadString(SectionData, KeyTemplateDir,
                                  ExtractFilePath(ParamStr(0)) +
-                                 'WebServData\Template\');
+                                 'WebServData' + PathDelim + 'Template' + PathDelim);
     PortEdit.Text       := IniFile.ReadString(SectionData, KeyPort,
                                               '80');
     RedirUrlEdit.Text   := IniFile.ReadString(SectionData, KeyRedirUrl,
-                                 '/time.html');
+                                  PathDelim + 'time.html');
     KeepAliveTimeSecEdit.Text := IniFile.ReadString(SectionData,
                                  KeyKeepAliveSec, '10');
     MaxRequestsKeepAliveEdit.Text := IniFile.ReadString(SectionData,
@@ -722,7 +720,7 @@ begin
     Inc(FCountRequests);
     Display('[' + FormatDateTime('HH:NN:SS', Now) + ' ' +
             ClientCnx.GetPeerAddr + '] ' + IntToStr(FCountRequests) +
-            ': ' + ClientCnx.Version + ' GET ' + ClientCnx.Path);
+            ': ' + ClientCnx.Version + ' ' + ClientCnx.Method + ' ' + ClientCnx.Path);
     DisplayHeader(ClientCnx);
 
     { Instead of the long if/then/else below, we could use a lookup table  }
@@ -781,7 +779,7 @@ begin
     Inc(FCountRequests);
     Display('[' + FormatDateTime('HH:NN:SS', Now) + ' ' +
             ClientCnx.GetPeerAddr + '] ' + IntToStr(FCountRequests) +
-            ': ' + ClientCnx.Version + ' HEAD ' + ClientCnx.Path);
+            ': ' + ClientCnx.Version + ' ' + ClientCnx.Method + ' ' + ClientCnx.Path);
 end;
 
 

@@ -64,14 +64,6 @@ unit OverbyteIcsWebSession;
 interface
 
 uses
-{$IFDEF MSWINDOWS}
-    Windows,
-    Messages,
-{$ENDIF}
-{$IFDEF POSIX}
-    Ics.Posix.WinTypes,
-    Ics.Posix.Messages,
-{$ENDIF}
     SysUtils, Classes, SyncObjs,
     OverbyteIcsTimeList,
     OverbyteIcsUtils;

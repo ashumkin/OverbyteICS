@@ -172,7 +172,6 @@
 			<DCCReference Include="OverbyteIcsAvlTrees.pas"/>
 			<DCCReference Include="OverbyteIcsSslSessionCache.pas"/>
 			<DCCReference Include="OverbyteIcsSslThrdLock.pas"/>
-			<DCCReference Include="OverbyteIcsLibrary.pas"/>
 			<DCCReference Include="OverbyteIcsHttpSrv.pas"/>
 			<DCCReference Include="OverbyteIcsSspi.pas"/>
 			<DCCReference Include="OverbyteIcsNtlmSsp.pas"/>

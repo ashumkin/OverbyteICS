@@ -200,10 +200,6 @@
 				<BuildOrder>50</BuildOrder>
 				<BuildOrder>3</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="OverbyteIcsLibrary.pas">
-				<BuildOrder>6</BuildOrder>
-				<BuildOrder>59</BuildOrder>
-			</DelphiCompile>
 			<ResFiles Include="OverbyteIcsLogger.dcr">
 				<BuildOrder>-1</BuildOrder>
 				<BuildOrder>5</BuildOrder>
