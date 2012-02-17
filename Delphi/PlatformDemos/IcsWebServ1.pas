@@ -143,7 +143,7 @@ uses
   FMX.Layouts, FMX.Memo, FMX.Edit,
   OverbyteIcsIniFiles, OverbyteIcsUtils,
   OverbyteIcsWSocket, OverbyteIcsWndControl,
-  OverbyteIcsHttpSrv,  OverbyteIcsFormDataDecoder;
+  OverbyteIcsHttpSrv,  OverbyteIcsFormDataDecoder, OverbyteIcsMimeUtils;
 
 const
   WebServVersion     = 721;
@@ -205,6 +205,7 @@ type
     Label9: TLabel;
     BandwidthLimitEdit: TEdit;
     DisableDisplayCheckBox: TCheckBox;
+    MimeTypesList1: TMimeTypesList;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
