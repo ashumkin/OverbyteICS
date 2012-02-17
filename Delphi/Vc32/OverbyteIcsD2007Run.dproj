@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{2CFDB419-9695-49CA-99F1-C35D791360AF}</ProjectGuid>
@@ -92,6 +92,7 @@
     <DCCReference Include="OverbyteIcsMimeDec.dcr" />
     <DCCReference Include="OverbyteIcsMimeDec.dcr" />
     <DCCReference Include="OverbyteIcsMimeDec.pas" />
+    <DCCReference Include="OverbyteIcsMimeUtils.dcr" />
     <DCCReference Include="OverbyteIcsMimeUtils.pas" />
     <DCCReference Include="OverbyteIcsMLang.pas" />
     <DCCReference Include="OverbyteIcsMultipartFtpDownloader.dcr" />

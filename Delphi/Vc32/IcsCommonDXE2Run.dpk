@@ -5,6 +5,7 @@ package IcsCommonDXE2Run;
 {$R 'OverbyteIcsTimeList.dcr'}
 {$R 'OverbyteIcsPing.dcr'}
 {$R 'OverbyteIcsMimeDec.dcr'}
+{$R 'OverbyteIcsMimeUtils.dcr'}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
 {$ALIGN 8}
 {$ASSERTIONS ON}

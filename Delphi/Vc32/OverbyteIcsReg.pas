@@ -3,6 +3,8 @@ unit OverbyteIcsReg;
   {$DEFINE ICS_COMMON}
 {$ENDIF}
 
+{ Feb 15, 2012 Angus - added OverbyteIcsMimeUtils }
+
 {$I OverbyteIcsDefs.inc}
 {$IFDEF USE_SSL}
     {$I OverbyteIcsSslDefs.inc}
@@ -93,6 +95,7 @@ uses
   {$ENDIF VCL}
   {$IFDEF ICS_COMMON}
     OverbyteIcsMimeDec,
+    OverbyteIcsMimeUtils,
     OverbyteIcsTimeList,
     OverbyteIcsLogger,
   {$ENDIF}
@@ -157,8 +160,8 @@ begin
 {$ENDIF VCL}
 {$IFDEF ICS_COMMON}
     RegisterComponents('Overbyte ICS', [
-      { Components neither depending on the FMX nor the VCL package }
-      TMimeDecode, TMimeDecodeEx, TMimeDecodeW, TTimeList, TIcsLogger
+      { Components neither depending on the FMX nor on the VCL package }
+      TMimeDecode, TMimeDecodeEx, TMimeDecodeW, TMimeTypesList, TTimeList, TIcsLogger
     ]);
 {$ENDIF}
 
