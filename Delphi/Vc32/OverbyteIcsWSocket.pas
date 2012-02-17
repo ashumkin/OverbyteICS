@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.84
+Version:      7.86
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -915,7 +915,8 @@ May 21, 2011 V7.82 Arno - Make sure receipt of a SSL shutdown notification
 Jul 22, 2011 V7.83 Arno - OEM NTLM changes.
 Sep 26, 2011 V7.84 Angus - Set SocketSndBufSize and SocketRcvBufSize for
                    Listen sockets, note only worth increasing sizes for UDP
-
+Feb 17, 2012 V7.86 Arno added NTLMv2 and NTLMv2 session security (basics),
+                   read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
 }
 
 {
@@ -1062,8 +1063,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 784;
-  CopyRight    : String     = ' TWSocket (c) 1996-2011 Francois Piette V7.84 ';
+  WSocketVersion            = 786;
+  CopyRight    : String     = ' TWSocket (c) 1996-2011 Francois Piette V7.86 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -1772,6 +1773,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
       FHttpTunnelCurAuthType      : THttpTunnelAuthType;
       FHttpTunnelKeepsAlive       : Boolean;
       FHttpTunnelLastResponse     : AnsiString; // Also hijacked for internal error messages
+      FHttpTunnelLmCompatLevel    : LongWord;   { V7.86 }
       FHttpTunnelReconnectRequest : THttpTunnelReconnectRequest;
       FHttpTunnelPassword         : String;
       FHttpTunnelPort             : AnsiString;
@@ -1836,6 +1838,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
       property  HttpTunnelBufferSize : Integer      read  FHttpTunnelBufSize
                                                     write SetHttpTunnelBufferSize;
       property  HttpTunnelLastResponse : String     read  GetHttpTunnelLastResponse;
+      property  HttpTunnelLmCompatLevel : LongWord  read  FHttpTunnelLmCompatLevel   { V7.86 }
+                                                    write FHttpTunnelLmCompatLevel;  { V7.86 }
       property  HttpTunnelPassword   : String       read  FHttpTunnelPassword
                                                     write SetHttpTunnelPassword;
       property  HttpTunnelPort       : String       read  GetHttpTunnelPort
@@ -3052,6 +3056,7 @@ type
     property HttpTunnelCurrentAuthType;
     property HttpTunnelBufferSize;
     property HttpTunnelLastResponse;
+    property HttpTunnelLmCompatLevel;  { V7.86 }
     property OnAddressListChanged;
     property OnRoutingInterfaceChanged;
   published
@@ -18208,9 +18213,9 @@ begin
                               Hostname,
                               LUser,
                               FHttpTunnelPassword,
-                              NtlmInfo.Challenge,
+                              NtlmInfo,                  { V7.86 }
                               CP_ACP,
-                              NtlmInfo.Unicode);
+                              FHttpTunnelLmCompatLevel); { V7.86 }
 end;
 
 
@@ -18282,7 +18287,7 @@ begin
     FHttpTunnelCurAuthType := htatNtlm;
     FHttpTunnelState       := htsWaitResp1;
     LAuthHdr := sCrLf + sHttpProxyAuthorization + 'NTLM ' +
-                NtlmGetMessage1('', '');
+                NtlmGetMessage1('', '', FHttpTunnelLmCompatLevel); { V7.86 }
     if not (wsoNoHttp10Tunnel in FComponentOptions) then
         { Make some HTTP/1.0 proxies happy, i.e MSP 2.0 }
         LAuthHdr := LAuthHdr + sCrLf + sHttpProxyKeepAlive;
