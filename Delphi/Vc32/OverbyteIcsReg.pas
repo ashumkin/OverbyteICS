@@ -124,8 +124,6 @@ begin
 
 {$IFDEF COMPILER16_UP}
   {$IFDEF VCL}
-    // StartClassGroup(TControl);
-    // ActivateClassGroup(TControl);
     GroupDescendentsWith(TIcsWndControl, TControl);
     GroupDescendentsWith(TDnsQuery, TControl);
     GroupDescendentsWith(TFingerCli, TControl);
@@ -201,9 +199,15 @@ begin
     RegisterPropertyEditor(TypeInfo(AnsiString), TWSocket, 'LineEnd',
       TWSocketLineEndProperty);
 {$ENDIF}
-  //{$IFDEF COMPILER10_UP}
-    //ForceDemandLoadState(dlDisable); // Required to show our product icon on splash screen
-  //{$ENDIF}
+
+{$IFDEF COMPILER10_UP}
+  {$IFNDEF COMPILER16_UP}
+    {$IFDEF ICS_COMMON}
+      ForceDemandLoadState(dlDisable); // Required to show our product icon on splash screen
+    {$ENDIF}
+  {$ENDIF}
+{$ENDIF}
+
 end;
 
 
