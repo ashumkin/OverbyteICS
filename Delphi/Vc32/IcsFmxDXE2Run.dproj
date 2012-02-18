@@ -56,7 +56,8 @@
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 			<DCC_Namespace>System;$(DCC_Namespace)</DCC_Namespace>
-			<DCC_DcuOutput>.\$(Config)\$(Platform)</DCC_DcuOutput>
+			<DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
+			<DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<VerInfo_Locale>1033</VerInfo_Locale>
