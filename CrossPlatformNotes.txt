@@ -11,8 +11,10 @@ project manager. Note that the new packaging is still beta/alpha,
 both package names and included units might change in a future beta
 drop. The old VCL packages are still there however they do no longer
 support FireMonkey and of course only one set of packages can be 
-installed in the IDE at the same time, if you want all VCL and FMX
-install DXe2InstallVclFmx.groupproj only.
+installed in the IDE at the same time, if you want both VCL and FMX
+install DXe2InstallVclFmx.groupproj only. Currently the XE2 package
+cache is buggy and should be disabled by adding the -nocache parameter
+to the shortcut that starts bds.exe. 
  
 Conditional define "FMX" is *no longer required* in the project options.
 Instead in your existing ICS FireMonkey app. add either "Ics.Fmx" to the
@@ -45,10 +47,12 @@ OverbyteIcsWebAppServerCounter     -> Ics.Fmx.OverbyteIcsWebAppServerCounter
 OverbyteIcsWebAppServerMailer      -> Ics.Fmx.OverbyteIcsWebAppServerMailer
 
 The list above is also the list of units that now have different names in 
-the FireMonkey framework however they all share the same single source. 
+the FireMonkey framework however most of them share the same source source
+file. 
 
 Dropping a ICS component on the form will add the correct unit name for
-each framework automatically.         
+each framework automatically (don't forget to disable the package cache
+as discribed above).         
 
 Unit OverbyteIcsLibrary.pas has been *deprecated* and ICS IPv6 doesn't
 use it anymore. If you used it in your own code read the comment in 
