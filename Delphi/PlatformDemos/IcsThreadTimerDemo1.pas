@@ -237,7 +237,9 @@ begin
     begin
       FreeAllButtonClick(nil);
       StartButtonClick(nil);
-    end;
+    end
+    else
+        Msg.Result := DefWindowProc(FNotifyWindow, Msg.Msg, Msg.WParam, Msg.LParam);
 end;
 
 

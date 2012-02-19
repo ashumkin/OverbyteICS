@@ -702,7 +702,9 @@ begin
         { We have to handle all exceptions }
         if Msg.Msg = WM_APPSTARTUP then  begin
             WMAppStartup(Msg);
-        end;
+        end
+        else
+            Msg.Result := DefWindowProc(FNotifyWindow, Msg.Msg, Msg.WParam, Msg.LParam);
     except
         Application.HandleException(Self);
     end;

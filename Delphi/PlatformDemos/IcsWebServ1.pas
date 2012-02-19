@@ -363,7 +363,9 @@ begin
         if Msg.Msg = WM_APPSTARTUP then
             FormShow(Self)
         else if Msg.Msg = WM_CLIENT_COUNT then
-            ClientCountLabel.Text := IntToStr(HttpServer1.ClientCount);
+            ClientCountLabel.Text := IntToStr(HttpServer1.ClientCount)
+        else
+            Msg.Result := DefWindowProc(FNotifyWindow, Msg.Msg, Msg.WParam, Msg.LParam);
     except
         Application.HandleException(Self);
     end;

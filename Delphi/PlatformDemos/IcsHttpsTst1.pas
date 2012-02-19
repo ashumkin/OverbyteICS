@@ -566,7 +566,9 @@ begin
                 SslHttpCli1.GetAsync
             else
                 HeadButtonClick(HeadButton);
-        end;
+        end
+        else
+            Msg.Result := DefWindowProc(FNotifyWindow, Msg.Msg, Msg.WParam, Msg.LParam);
     except
         Application.HandleException(Self);
     end;

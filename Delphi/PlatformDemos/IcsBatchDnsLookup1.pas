@@ -121,7 +121,9 @@ begin
             end
             else
                 WSocket.Free;
-        end;
+        end
+        else
+            AMsg.Result := DefWindowProc(FNotifyWindow, AMsg.Msg, AMsg.WParam, AMsg.LParam);
     except
         Application.HandleException(Self);
     end;

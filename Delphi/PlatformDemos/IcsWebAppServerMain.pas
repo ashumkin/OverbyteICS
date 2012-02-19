@@ -503,7 +503,9 @@ procedure TWebAppSrvForm.WndProc(var Msg: TMessage);
 begin
     try
         if Msg.Msg = WM_APPSTARTUP then
-            WMAppStartup(Msg)        
+            WMAppStartup(Msg)
+        else
+            Msg.Result := DefWindowProc(FNotifyWindow, Msg.Msg, Msg.WParam, Msg.LParam);
     except
         Application.HandleException(Self);
     end;

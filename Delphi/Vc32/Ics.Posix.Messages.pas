@@ -321,6 +321,8 @@ type
   function SetTimer(AHwnd: HWND; nIDEvent: NativeUInt; uElapse: UINT; lpTimerFunc: Pointer): NativeUInt;
   function KillTimer(AHwnd: HWND; nIDEvent: NativeUInt): Boolean;
   function IcsClearMessages(AHWnd: HWND; AMsg: UINT; AWParam: WParam): Boolean;
+  function DefWindowProc(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT; //dummy
+    {$IFDEF USE_INLINE} inline; {$ENDIF}
 
 {$ENDIF POSIX}
 
@@ -1359,6 +1361,13 @@ begin
   finally
     GlobalSync.EndWrite;
   end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function DefWindowProc(hWnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT;
+begin
+  Result := 0;
 end;
 
 
