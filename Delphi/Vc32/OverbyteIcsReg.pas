@@ -120,18 +120,26 @@ uses
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure Register;
+{$IFDEF VCL_OR_FMX}
+var
+    LClassGroup: TPersistentClass;
+{$ENDIF}
 begin
-
 {$IFDEF COMPILER16_UP}
-  {$IFDEF VCL}
-    GroupDescendentsWith(TIcsWndControl, TControl);
-    GroupDescendentsWith(TDnsQuery, TControl);
-    GroupDescendentsWith(TFingerCli, TControl);
-    GroupDescendentsWith(THttpAppSrv, TControl);
-    GroupDescendentsWith(TFtpClient, TControl);
-    GroupDescendentsWith(TPop3Cli, TControl);
-    GroupDescendentsWith(TSmtpCli, TControl);
-  {$ENDIF VCL}
+  {$IFDEF VCL_OR_FMX}
+    {$IFDEF FMX}
+      LClassGroup := TFmxObject;
+    {$ELSE}
+      LClassGroup := TControl;
+    {$ENDIF}
+    GroupDescendentsWith(TIcsWndControl, LClassGroup);
+    GroupDescendentsWith(TDnsQuery, LClassGroup);
+    GroupDescendentsWith(TFingerCli, LClassGroup);
+    GroupDescendentsWith(THttpAppSrv, LClassGroup);
+    GroupDescendentsWith(TFtpClient, LClassGroup);
+    GroupDescendentsWith(TPop3Cli, LClassGroup);
+    GroupDescendentsWith(TSmtpCli, LClassGroup);
+  {$ENDIF VCL_OR_FMX}
 {$ENDIF COMPILER16_UP}
 
 {$IFDEF VCL_OR_FMX}
@@ -165,11 +173,12 @@ begin
 
 {$IFDEF USE_SSL}
   {$IFDEF COMPILER16_UP}
-  {$IFDEF VCL}
-    GroupDescendentsWith(TSslBaseComponent, TControl);
-    GroupDescendentsWith(TSslStaticLock, TControl);
-  {$ENDIF VCL}
+    {$IFDEF VCL_OR_FMX}
+      GroupDescendentsWith(TSslBaseComponent, LClassGroup);
+      GroupDescendentsWith(TSslStaticLock, LClassGroup);
+    {$ENDIF VCL_OR_FMX}
   {$ENDIF COMPILER16_UP}
+
   {$IFDEF VCL_OR_FMX}
     RegisterComponents('Overbyte ICS SSL', [
       TSslWSocket, TSslWSocketServer,
@@ -195,7 +204,8 @@ begin
     ]);
   {$ENDIF VCL_OR_FMX}
 {$ENDIF USE_SSL}
-{$IFNDEF ICS_COMMON}
+
+{$IFDEF VCL_OR_FMX}
     RegisterPropertyEditor(TypeInfo(AnsiString), TWSocket, 'LineEnd',
       TWSocketLineEndProperty);
 {$ENDIF}
