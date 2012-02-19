@@ -120,9 +120,11 @@ uses
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure Register;
+{$IFDEF COMPILER16_UP}
 {$IFDEF VCL_OR_FMX}
 var
     LClassGroup: TPersistentClass;
+{$ENDIF}
 {$ENDIF}
 begin
 {$IFDEF COMPILER16_UP}
