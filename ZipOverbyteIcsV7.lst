@@ -262,6 +262,8 @@ Delphi\vc32\Ics.Fmx.OverbyteIcsCharsetComboBox.pas
 Delphi\vc32\Ics.Fmx.OverbyteIcsReg.pas
 Delphi\vc32\Ics.Vcl.OverbyteIcsReg.pas
 Delphi\vc32\Ics.Fmx.OverByteIcsWSocketE.pas
+Delphi\vc32\OverbyteIcsSslHtmlSmtpProt.pas
+Delphi\vc32\Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas
 
 Delphi\vc32\OverbyteIcsDotNetSockImpl.inc
 Delphi\vc32\OverbyteIcsDotNetSockTypes.inc

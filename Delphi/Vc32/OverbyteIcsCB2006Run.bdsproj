@@ -215,7 +215,6 @@
         <FILE FILENAME="OverbyteIcsCB2006Run.res" CONTAINERID="ResTool" LOCALCOMMAND="" UNITNAME="OverbyteIcsCB2006Run.res" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsLogger.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsLogger" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsLogger.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="OverbyteIcsLibrary.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsLibrary" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsTypes.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsTypes" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsWinsock.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsWinsock" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsWndControl.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsWndControl" FORMNAME="" DESIGNCLASS=""/>
@@ -258,6 +257,8 @@
         <FILE FILENAME="OverbyteIcsSmtpProt.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSmtpProt" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSmtpProt.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSha1.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSha1" FORMNAME="" DESIGNCLASS=""/>
+		<FILE FILENAME="OverbyteIcsSocketUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSocketUtils" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsSslHtmlSmtpProt.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSslHtmlSmtpProt" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSslSessionCache.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSslSessionCache" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSslSessionCache.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsLIBEAY.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsLIBEAY" FORMNAME="" DESIGNCLASS=""/>

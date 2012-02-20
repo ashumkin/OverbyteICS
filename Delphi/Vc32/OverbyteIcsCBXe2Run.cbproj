@@ -334,6 +334,9 @@
 				<BuildOrder>51</BuildOrder>
 				<BuildOrder>4</BuildOrder>
 			</DelphiCompile>
+			<DelphiCompile Include="OverbyteIcsSslHtmlSmtpProt.pas">
+				<BuildOrder>93</BuildOrder>
+			</DelphiCompile>
 			<ResFiles Include="OverbyteIcsSslSessionCache.dcr">
 				<BuildOrder>-1</BuildOrder>
 				<BuildOrder>49</BuildOrder>

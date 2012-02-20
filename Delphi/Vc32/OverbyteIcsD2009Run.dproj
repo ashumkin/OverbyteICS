@@ -181,6 +181,7 @@
             <DCCReference Include="OverbyteIcsTimeList.dcr"/>
             <DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
             <DCCReference Include="OverbyteIcsWSocketTS.dcr"/>
+            <DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
             <BuildConfiguration Include="Base">
                 <Key>Base</Key>
             </BuildConfiguration>

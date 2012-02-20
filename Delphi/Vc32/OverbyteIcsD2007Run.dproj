@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{2CFDB419-9695-49CA-99F1-C35D791360AF}</ProjectGuid>
@@ -93,6 +93,7 @@
     <DCCReference Include="OverbyteIcsMimeDec.dcr" />
     <DCCReference Include="OverbyteIcsMimeDec.pas" />
     <DCCReference Include="OverbyteIcsMimeUtils.dcr" />
+    <DCCReference Include="OverbyteIcsMimeUtils.dcr" />
     <DCCReference Include="OverbyteIcsMimeUtils.pas" />
     <DCCReference Include="OverbyteIcsMLang.pas" />
     <DCCReference Include="OverbyteIcsMultipartFtpDownloader.dcr" />
@@ -120,7 +121,9 @@
     <DCCReference Include="OverbyteIcsSmtpProt.dcr" />
     <DCCReference Include="OverbyteIcsSmtpProt.dcr" />
     <DCCReference Include="OverbyteIcsSmtpProt.pas" />
+    <DCCReference Include="OverbyteIcsSocketUtils.pas" />
     <DCCReference Include="OverbyteIcsSSLEAY.pas" />
+    <DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas" />
     <DCCReference Include="OverbyteIcsSslSessionCache.dcr" />
     <DCCReference Include="OverbyteIcsSslSessionCache.dcr" />
     <DCCReference Include="OverbyteIcsSslSessionCache.pas" />
@@ -149,7 +152,6 @@
     <DCCReference Include="OverbyteIcsWebSession.pas" />
     <DCCReference Include="OverbyteIcsWinnls.pas" />
     <DCCReference Include="OverbyteIcsWinsock.pas" />
-    <DCCReference Include="OverbyteIcsSocketUtils.pas" />
     <DCCReference Include="OverbyteIcsWndControl.pas" />
     <DCCReference Include="OverbyteIcsWSockBuf.pas" />
     <DCCReference Include="OverbyteIcsWSocket.dcr" />

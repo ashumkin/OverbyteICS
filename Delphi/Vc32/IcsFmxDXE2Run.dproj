@@ -156,6 +156,7 @@
 			<DCCReference Include="Ics.Posix.KEventApi.pas"/>
 			<DCCReference Include="Ics.Posix.KEventTypes.pas"/>
 			<DCCReference Include="Ics.Posix.Messages.pas"/>
+			<DCCReference Include="Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>

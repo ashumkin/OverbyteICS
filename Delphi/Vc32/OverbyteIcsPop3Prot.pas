@@ -320,6 +320,7 @@ type
         FStatusCodeSave     : Integer;
         FRestartFlag        : Boolean;
         FDoneAsync          : TPop3NextProc;
+        FMultiLineBegin     : TNotifyEvent;
         FMultiLineLine      : TNotifyEvent;
         FMultiLineEnd       : TNotifyEvent;
         FMultiLineProcess   : TNotifyEvent;
@@ -425,7 +426,7 @@ type
         function    ExtractNumbers(var N1 : Integer; var N2 : Integer) : Boolean;
         function    ExtractUidl(var N1 : Integer; var N2 : AnsiString) : Boolean;
         procedure   ProcessUidl(Sender : TObject);
-        procedure   ProcessList(Sender : TObject);
+        procedure   ProcessList(Sender : TObject); virtual;
         procedure   CheckReady;
         procedure   DoHighLevelAsync; virtual;
         procedure   AuthLoginNext;
@@ -438,6 +439,10 @@ type
         procedure   SetTerminated(const Value: Boolean); override;
         procedure   SetOnMessagePump(const Value: TNotifyEvent); override;
         procedure   SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V6.10 }
+        procedure   TriggerMultiLineBegin; virtual;
+        procedure   TriggerMultiLineLine; virtual;
+        procedure   TriggerMultiLineEnd; virtual;
+        property    RequestType: TPop3Request read FRequestType;
     public
         constructor Create(AOwner : TComponent); override;
         destructor  Destroy; override;
@@ -1144,6 +1149,30 @@ procedure TCustomPop3Cli.TriggerDisplay(const Msg : String);
 begin
     if Assigned(FOnDisplay) then
         FOnDisplay(Self, Msg);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.TriggerMultiLineBegin;
+begin
+    if Assigned(FMultiLineBegin) then
+        FMultiLineBegin(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.TriggerMultiLineEnd;
+begin
+    if Assigned(FMultiLineEnd) then
+        FMultiLineEnd(Self);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.TriggerMultiLineLine;
+begin
+    if Assigned(FMultiLineLine) then
+        FMultiLineLine(Self);
 end;
 
 
@@ -2047,10 +2076,9 @@ begin
     FMultiLineLine    := aOnLine;
     FMultiLineEnd     := aOnEnd;
     FMultiLineProcess := aProcess;
-
+    FMultiLineBegin   := aOnBegin;
     { Let the application know that the message is beginning }
-    if Assigned(aOnBegin) then
-        aOnBegin(Self);
+    TriggerMultiLineBegin;
 
     FNext := GetALine;
 end;
@@ -2063,7 +2091,7 @@ var
 begin
     { Check if we are still connected }
     if not FConnected then begin
-        FErrorMessage  := '-ERR Disconneced unexpectedly';
+        FErrorMessage  := '-ERR Disconnected unexpectedly';
         FRequestResult := 500;
         Display(FErrorMessage);
         TriggerRequestDone(FRequestResult);
@@ -2073,8 +2101,7 @@ begin
     { Check if end of message }
     if FLastResponse = '.' then begin
         { Let the application know that the message is finished }
-        if Assigned(FMultiLineEnd) then
-            FMultiLineEnd(Self);
+        TriggerMultiLineEnd;
         FLastResponse := '';
         FNext         := nil;
         TriggerRequestDone(0);
@@ -2154,8 +2181,7 @@ begin
         FMultiLineProcess(Self);
 
     { Let the application process the message line }
-    if Assigned(FMultiLineLine) then
-        FMultiLineLine(Self);
+    TriggerMultiLineLine;
 
     { To process next line }
     FNext := GetALine;

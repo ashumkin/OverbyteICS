@@ -440,6 +440,7 @@ uses
     OverbyteIcsWinsock,
 {$ENDIF}
     SysUtils, Classes,
+{$IFNDEF TSslHtmlSmtpCli_ONLY}
 {$IFNDEF NOFORMS}
   {$IFDEF FMX}
     FMX.Forms,
@@ -464,6 +465,7 @@ uses
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY, OverByteIcsLIBEAY,  {AG/SSL}
 {$ENDIF}
+{$ENDIF !TSslHtmlSmtpCli_ONLY}
 {$IFDEF FMX}
     Ics.Fmx.OverbyteIcsWndControl,
     Ics.Fmx.OverbyteIcsWSocket,
@@ -471,6 +473,13 @@ uses
     OverbyteIcsWndControl,
     OverbyteIcsWSocket,
 {$ENDIF}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+  {$IFDEF FMX}
+    Ics.Fmx.OverbyteIcsSmtpProt,
+  {$ELSE}
+    OverbyteIcsSmtpProt,
+  {$ENDIF FMX}
+{$ENDIF TSslHtmlSmtpCli_ONLY}
     OverbyteIcsNtlmMsgs,
     OverbyteIcsMimeUtils,
     OverbyteIcsMD5,
@@ -487,6 +496,7 @@ const
   SmtpDefEncArray : array [0..3] of AnsiString = ('7bit',             '8bit',
                                                   'quoted-printable', 'base64'); {AG}
 type
+{$IFNDEF TSslHtmlSmtpCli_ONLY}
     TCustomSmtpClient = class;
     TSmtpDefaultEncoding      = (smtpEnc7bit,            smtpEnc8bit,
                                  smtpEncQuotedPrintable, smtpEncBase64);   {AG}
@@ -1266,8 +1276,12 @@ type
                                                       write SetSslCliCertRequest;
     end;
 {$ENDIF} // USE_SSL
-
+{$ENDIF !TSslHtmlSmtpCli_ONLY}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+    TSslHtmlSmtpCli = class(TSslSmtpCli)
+{$ELSE}
     THtmlSmtpCli = class(TSmtpCli)
+{$ENDIF}
     private
         FPlainText              : TStrings;
         FEmailImages            : TStrings;
@@ -1333,6 +1347,7 @@ type
                                               write FHtmlImageCidSuffix;
     end;
 
+{$IFNDEF TSslHtmlSmtpCli_ONLY}
 { Function to convert a TDateTime to an RFC822 timestamp string }
 function Rfc822DateTime(t : TDateTime) : String;
 { Function to parse a friendly email and extract friendly name and email }
@@ -1354,13 +1369,14 @@ function SmtpCliErrorMsgFromErrorCode(ErrCode: Word): String;
 { List of separators accepted between email addresses }
 const
     SmtpEMailSeparators = [';', ','];
-
+{$ENDIF !TSslHtmlSmtpCli_ONLY}
 
 implementation
 
 const
     CRLF = AnsiString(#13#10);
-
+    
+{$IFNDEF TSslHtmlSmtpCli_ONLY}
 var
     GL_En_US_FormatSettings : TFormatSettings;
 
@@ -1418,7 +1434,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpHeaderLines.SetCodePage(const Value: LongWord);
 begin
-    { Currently we do not support UTF-7 header lines!! } 
+    { Currently we do not support UTF-7 header lines!! }
     {if Value = CP_UTF7 then begin
         FCodePage := CP_UTF8;
         FCharSet  := 'utf-8';
@@ -4611,9 +4627,13 @@ begin
         FTimeStop := Integer(IcsGetTickCount) + FTimeout * 1000;
 end;
 
-
+{$ENDIF !TSslHtmlSmtpCli_ONLY}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+constructor TSslHtmlSmtpCli.Create(AOwner : TComponent);
+{$ELSE}
 constructor THtmlSmtpCli.Create(AOwner : TComponent);
+{$ENDIF}
 begin
     inherited Create(AOwner);
     FPlainText    := TStringList.Create;
@@ -4629,7 +4649,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+destructor TSslHtmlSmtpCli.Destroy;
+{$ELSE}
 destructor THtmlSmtpCli.Destroy;
+{$ENDIF}
 begin
     ClearImageStreamArray;
     if Assigned(FPlainText) then begin
@@ -4649,7 +4673,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.SetHtmlConvertToCharset(const Value: Boolean);
+{$ELSE}
 procedure THtmlSmtpCli.SetHtmlConvertToCharset(const Value: Boolean);
+{$ENDIF}
 begin
 {$IFDEF UNICODE}
     FHtmlConvertToCharset := TRUE; // We have to convert to ANSI or ANSI-UTF anyway!!
@@ -4665,7 +4693,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.SetEMailImages(newValue : TStrings);
+{$ELSE}
 procedure THtmlSmtpCli.SetEMailImages(newValue : TStrings);
+{$ENDIF}
 var
     I        : Integer;
     FilePath : String;
@@ -4686,7 +4718,11 @@ begin
     end;
 end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+function TSslHtmlSmtpCli.GetImageStreamCount: Integer;
+{$ELSE}
 function THtmlSmtpCli.GetImageStreamCount: Integer;
+{$ENDIF}
 begin
     if not Assigned(FStreamArray) then
         Result := 0
@@ -4696,7 +4732,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.ClearImageStreamArray;
+{$ELSE}
 procedure THtmlSmtpCli.ClearImageStreamArray;
+{$ENDIF}
 begin
     if Assigned(FStreamArray) then begin
         FStreamArray.Destroy;
@@ -4706,7 +4746,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+function TSslHtmlSmtpCli.GetImageStream(Index: Integer): TStream;
+{$ELSE}
 function THtmlSmtpCli.GetImageStream(Index: Integer): TStream;
+{$ENDIF}
 begin
     if not Assigned(FStreamArray) then
         Result := nil
@@ -4718,9 +4762,15 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.SetImageStream(
+    Index       : Integer;
+    const Value : TStream);
+{$ELSE}
 procedure THtmlSmtpCli.SetImageStream(
     Index       : Integer;
     const Value : TStream);
+{$ENDIF}
 begin
     if not Assigned(Value) then
         Exit;
@@ -4733,7 +4783,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.SetHtmlCharset(const Value: String);
+{$ELSE}
 procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
+{$ENDIF}
 begin
     FHtmlCharSet := IcsLowerCase(Trim(Value));
     { If empty set the default system codepage }
@@ -4758,7 +4812,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.SetHtmlText(const newValue: TStrings);
+{$ELSE}
 procedure THtmlSmtpCli.SetHtmlText(const newValue: TStrings);
+{$ENDIF}
 var
     I : Integer;
 begin
@@ -4770,7 +4828,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.SetPlainText(const newValue: TStrings);
+{$ELSE}
 procedure THtmlSmtpCli.SetPlainText(const newValue: TStrings);
+{$ENDIF}
 var
     I : Integer;
 begin
@@ -4782,11 +4844,19 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.TriggerGetData(
+    LineNum  : Integer;
+    MsgLine  : Pointer;
+    MaxLen   : Integer; // Must not be > 1022
+    var More : Boolean);
+{$ELSE}
 procedure THtmlSmtpCli.TriggerGetData(
     LineNum  : Integer;
     MsgLine  : Pointer;
     MaxLen   : Integer; // Must not be > 1022
     var More : Boolean);
+{$ENDIF}
 var
     LineBuf  : AnsiString;
     BAction  : TSmtpBeforeOpenFileAction;
@@ -5188,7 +5258,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.TriggerProcessHeader(HdrLines: TStrings);
+{$ELSE}
 procedure THtmlSmtpCli.TriggerProcessHeader(HdrLines: TStrings);
+{$ENDIF}
 var
     I : Integer;
 begin
@@ -5218,7 +5292,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.GenerateBoundaries;
+{$ELSE}
 procedure THtmlSmtpCli.GenerateBoundaries;
+{$ENDIF}
 var
     TickPart : AnsiString;
     RandPart : AnsiString;
@@ -5232,7 +5310,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF TSslHtmlSmtpCli_ONLY}
+procedure TSslHtmlSmtpCli.PrepareEMail;
+{$ELSE}
 procedure THtmlSmtpCli.PrepareEMail;
+{$ENDIF}
 begin
     if FContentType = smtpPlainText then begin
         // FLineOffset was not reset properly after a mail with    {AG 07/11/07}
@@ -5252,6 +5334,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
+{$IFNDEF TSslHtmlSmtpCli_ONLY}
 {$IFDEF USE_SSL}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslSmtpCli.CreateSocket;
@@ -5739,10 +5822,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$ENDIF} // USE_SSL
 
-
 initialization
   PrepareGlobalSmtpFormatSettings;
 
+{$ENDIF !TSslHtmlSmtpCli_ONLY}
 
 end.
 

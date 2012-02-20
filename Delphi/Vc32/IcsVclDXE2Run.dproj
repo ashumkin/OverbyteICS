@@ -160,6 +160,7 @@
 			<DCCReference Include="OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="OverbyteIcsThreadTimer.pas"/>
 			<DCCReference Include="OverbyteIcsWSocketTS.pas"/>
+			<DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>

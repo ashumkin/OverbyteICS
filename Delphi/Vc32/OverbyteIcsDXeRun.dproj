@@ -158,6 +158,7 @@
             <DCCReference Include="OverbyteIcsIconv.pas"/>
             <DCCReference Include="OverbyteIcsMLang.pas"/>
             <DCCReference Include="OverbyteIcsWinnls.pas"/>
+            <DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
             <BuildConfiguration Include="Release">
                 <Key>Cfg_Release</Key>
                 <CfgParent>Base</CfgParent>

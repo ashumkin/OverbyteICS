@@ -95,7 +95,7 @@ interface
 {$ENDIF}
 
 uses
-    Windows, SysUtils, Classes, OverbyteIcsWinSock;
+    Windows, SysUtils, Classes, OverbyteIcsWinsock;
 
 const
   IcmpVersion = 7.01;
@@ -333,7 +333,7 @@ begin
     FTimeOut := 4000;
 
     // initialise winsock
-    if WSAStartup($101, WSAData) <> 0 then
+    if WSAStartup($0202, WSAData) <> 0 then
         raise TICMPException.Create('Error initialising Winsock');
 
     // register the icmp.dll stuff

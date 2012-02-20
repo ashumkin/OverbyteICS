@@ -553,17 +553,17 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSAStartup(
-    wVersionRequired: word;
-    var WSData: TWSAData): Integer;
+    wVersionRequested: WORD;
+    var lpWSAData: TWSAData): Integer; stdcall;
 begin
     if @FWSAStartup = nil then
         @FWSAStartup := GetProc('WSAStartup');
-    Result := FWSAStartup(wVersionRequired, WSData);
+    Result := FWSAStartup(wVersionRequested, lpWSAData);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSACleanup : Integer;
+function WSACleanup : Integer; stdcall;
 begin
     if @FWSACleanup = nil then
         @FWSACleanup := GetProc('WSACleanup');
@@ -572,7 +572,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure WSASetLastError(iError: Integer);
+procedure WSASetLastError(iError: Integer); stdcall;
 begin
     if @FWSASetLastError = nil then
         @FWSASetLastError := GetProc('WSASetLastError');
@@ -581,7 +581,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSAGetLastError: Integer;
+function WSAGetLastError: Integer; stdcall;
 begin
     if @FWSAGetLastError = nil then
         @FWSAGetLastError := GetProc('WSAGetLastError');
@@ -590,7 +590,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function WSACancelAsyncRequest(hAsyncTaskHandle: THandle): Integer;
+function WSACancelAsyncRequest(hAsyncTaskHandle: THandle): Integer; stdcall;
 begin
     if @FWSACancelAsyncRequest = nil then
         @FWSACancelAsyncRequest := GetProc('WSACancelAsyncRequest');
@@ -602,7 +602,7 @@ end;
 function WSAAsyncGetHostByName(
     HWindow: HWND; wMsg: u_int;
     name, buf: PAnsiChar;
-    buflen: Integer): THandle;
+    buflen: Integer): THandle; stdcall;
 begin
     if @FWSAAsyncGetHostByName = nil then
         @FWSAAsyncGetHostByName := GetProc('WSAAsyncGetHostByName');
@@ -616,7 +616,7 @@ function WSAAsyncGetHostByAddr(
     wMsg: u_int; addr: PAnsiChar;
     len, Struct: Integer;
     buf: PAnsiChar;
-    buflen: Integer): THandle;
+    buflen: Integer): THandle; stdcall;
 begin
     if @FWSAAsyncGetHostByAddr = nil then
         @FWSAAsyncGetHostByAddr := GetProc('WSAAsyncGetHostByAddr');
@@ -629,7 +629,7 @@ function WSAAsyncSelect(
     s: TSocket;
     HWindow: HWND;
     wMsg: u_int;
-    lEvent: Longint): Integer;
+    lEvent: Longint): Integer; stdcall;
 begin
     if @FWSAAsyncSelect = nil then
         @FWSAAsyncSelect := GetProc('WSAAsyncSelect');
@@ -638,7 +638,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function getservbyname(name, proto: PAnsiChar): PServEnt;
+function getservbyname(name, proto: PAnsiChar): PServEnt; stdcall;
 begin
     if @Fgetservbyname = nil then
         @Fgetservbyname := GetProc('getservbyname');
@@ -647,7 +647,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function getprotobyname(name: PAnsiChar): PProtoEnt;
+function getprotobyname(name: PAnsiChar): PProtoEnt; stdcall;
 begin
     if @Fgetprotobyname = nil then
         @Fgetprotobyname := GetProc('getprotobyname');
@@ -656,7 +656,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function gethostbyname(name: PAnsiChar): PHostEnt;
+function gethostbyname(name: PAnsiChar): PHostEnt; stdcall;
 begin
     if @Fgethostbyname = nil then
         @Fgethostbyname := GetProc('gethostbyname');
@@ -665,7 +665,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function gethostbyaddr(addr: Pointer; len, Struct: Integer): PHostEnt;
+function gethostbyaddr(addr: Pointer; len, Struct: Integer): PHostEnt; stdcall;
 begin
     if @Fgethostbyaddr = nil then
         @Fgethostbyaddr := GetProc('gethostbyaddr');
@@ -674,7 +674,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function gethostname(name: PAnsiChar; len: Integer): Integer;
+function gethostname(name: PAnsiChar; len: Integer): Integer; stdcall;
 begin
     if @Fgethostname = nil then
         @Fgethostname := GetProc('gethostname');
@@ -683,7 +683,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function socket(af, Struct, protocol: Integer): TSocket;
+function socket(af, Struct, protocol: Integer): TSocket; stdcall;
 begin
     if @FOpenSocket= nil then
         @FOpenSocket := GetProc('socket');
@@ -692,7 +692,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function shutdown(s: TSocket; how: Integer): Integer;
+function shutdown(s: TSocket; how: Integer): Integer; stdcall;
 begin
     if @FShutdown = nil then
         @FShutdown := GetProc('shutdown');
@@ -702,7 +702,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function setsockopt(s: TSocket; level, optname: Integer;
-  optval: PAnsiChar; optlen: Integer): Integer; overload;
+  optval: PAnsiChar; optlen: Integer): Integer; stdcall;
 begin
     if @FSetSockOpt = nil then
         @FSetSockOpt := GetProc('setsockopt');
@@ -713,7 +713,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function getsockopt(
     s: TSocket; level, optname: Integer;
-    optval: PAnsiChar; var optlen: Integer): Integer;
+    optval: PAnsiChar; var optlen: Integer): Integer; stdcall;
 begin
     if @FGetSockOpt = nil then
         @FGetSockOpt := GetProc('getsockopt');
@@ -727,7 +727,7 @@ function sendto(
     var Buf;
     len, flags : Integer;
     var addrto : TSockAddr;
-    tolen      : Integer): Integer;
+    tolen      : Integer): Integer; stdcall;
 begin
     if @FSendTo = nil then
         @FSendTo := GetProc('sendto');
@@ -737,7 +737,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function send(s: TSocket; var Buf;
-  len, flags: Integer): Integer;
+  len, flags: Integer): Integer; stdcall;
 begin
     if @FSend = nil then
         @FSend := GetProc('send');
@@ -746,7 +746,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ntohs(netshort: u_short): u_short;
+function ntohs(netshort: u_short): u_short; stdcall;
 begin
     if @Fntohs = nil then
         @Fntohs := GetProc('ntohs');
@@ -755,7 +755,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ntohl(netlong: u_long): u_long;
+function ntohl(netlong: u_long): u_long; stdcall;
 begin
     if @Fntohl = nil then
         @Fntohl := GetProc('ntohl');
@@ -764,7 +764,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function listen(s: TSocket; backlog: Integer): Integer;
+function listen(s: TSocket; backlog: Integer): Integer; stdcall;
 begin
     if @FListen = nil then
         @FListen := GetProc('listen');
@@ -773,7 +773,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ioctlsocket(s: TSocket; cmd: DWORD; var arg: u_long): Integer;
+function ioctlsocket(s: TSocket; cmd: DWORD; var arg: u_long): Integer; stdcall;
 begin
     if @FIoctlSocket = nil then
         @FIoctlSocket := GetProc('ioctlsocket');
@@ -787,7 +787,7 @@ function WSAIoctl(
     InBuffer          : Pointer; InBufferSize  : DWORD;
     OutBuffer         : Pointer; OutBufferSize : DWORD;
     var BytesReturned : DWORD; Overlapped      : POverlapped;
-    CompletionRoutine : FARPROC): Integer;
+    CompletionRoutine : FARPROC): Integer; stdcall;
 begin
     if @FWSAIoctl = nil then
         @FWSAIoctl := GetProc2('WSAIoctl');
@@ -797,7 +797,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function inet_ntoa(inaddr: TInAddr): PAnsiChar;
+function inet_ntoa(inaddr: TInAddr): PAnsiChar; stdcall;
 begin
     if @FInet_ntoa = nil then
         @FInet_ntoa := GetProc('inet_ntoa');
@@ -806,7 +806,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function inet_addr(cp: PAnsiChar): u_long;
+function inet_addr(cp: PAnsiChar): u_long; stdcall;
 begin
     if @FInet_addr = nil then
         @FInet_addr := GetProc('inet_addr');
@@ -815,7 +815,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function htons(hostshort: u_short): u_short;
+function htons(hostshort: u_short): u_short; stdcall;
 begin
     if @Fhtons = nil then
         @Fhtons := GetProc('htons');
@@ -824,7 +824,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function htonl(hostlong: u_long): u_long;
+function htonl(hostlong: u_long): u_long; stdcall;
 begin
     if @Fhtonl = nil then
         @Fhtonl := GetProc('htonl');
@@ -836,7 +836,7 @@ end;
 function getsockname(
     s           : TSocket;
     var name    : TSockAddr;
-    var namelen : Integer): Integer;
+    var namelen : Integer): Integer; stdcall;
 begin
     if @FGetSockName = nil then
         @FGetSockName := GetProc('getsockname');
@@ -848,7 +848,7 @@ end;
 function getpeername(
     s           : TSocket;
     var name    : TSockAddr;
-    var namelen : Integer): Integer;
+    var namelen : Integer): Integer; stdcall;
 begin
     if @FGetPeerName = nil then
         @FGetPeerName := GetProc('getpeername');
@@ -860,7 +860,7 @@ end;
 function connect(
     s        : TSocket;
     var name : TSockAddr;
-    namelen  : Integer): Integer;
+    namelen  : Integer): Integer; stdcall;
 begin
     if @FConnect= nil then
         @FConnect := GetProc('connect');
@@ -869,7 +869,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function closesocket(s: TSocket): Integer;
+function closesocket(s: TSocket): Integer; stdcall;
 begin
     if @FCloseSocket = nil then
         @FCloseSocket := GetProc('closesocket');
@@ -881,7 +881,7 @@ end;
 function bind(
     s: TSocket;
     var addr: TSockAddr;
-    namelen: Integer): Integer;
+    namelen: Integer): Integer; stdcall;
 begin
     if @FBind = nil then
         @FBind := GetProc('bind');
@@ -893,7 +893,7 @@ end;
 function accept(
     s: TSocket;
     addr: PSockAddr;
-    addrlen: PInteger): TSocket;
+    addrlen: PInteger): TSocket; stdcall;
 begin
     if @FAccept = nil then
         @FAccept := GetProc('accept');
@@ -903,7 +903,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function recv(s: TSocket; var Buf;
-  len, flags: Integer): Integer;
+  len, flags: Integer): Integer; stdcall;
 begin
     if @FRecv= nil then
         @FRecv := GetProc('recv');
@@ -916,7 +916,7 @@ function recvfrom(
     s: TSocket;
     var Buf; len, flags: Integer;
     var from: TSockAddr;
-    var fromlen: Integer): Integer;
+    var fromlen: Integer): Integer; stdcall;
 begin
     if @FRecvFrom = nil then
         @FRecvFrom := GetProc('recvfrom');
@@ -929,7 +929,7 @@ function GetAddrInfoA(
     NodeName    : PAnsiChar;
     ServName    : PAnsiChar;
     Hints       : PAddrInfoA;
-    var Addrinfo: PAddrInfoA): Integer;
+    var Addrinfo: PAddrInfoA): Integer; stdcall;
 begin
     if @FGetAddrInfoA = nil then
         @FGetAddrInfoA := GetProc3('getaddrinfo');
@@ -942,7 +942,7 @@ function GetAddrInfoW(
     NodeName    : PWideChar;
     ServName    : PWideChar;
     Hints       : PAddrInfoW;
-    var Addrinfo: PAddrInfoW): Integer;
+    var Addrinfo: PAddrInfoW): Integer; stdcall;
 begin
     if @FGetAddrInfoW = nil then
         @FGetAddrInfoW := GetProc3('GetAddrInfoW');
@@ -955,7 +955,7 @@ function GetAddrInfo(
     NodeName    : PChar;
     ServName    : PChar;
     Hints       : PAddrInfo;
-    var Addrinfo: PAddrInfo): Integer;
+    var Addrinfo: PAddrInfo): Integer; stdcall;
 begin
 {$IFDEF UNICODE}
     if @FGetAddrInfoW = nil then
@@ -970,7 +970,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure FreeAddrInfoA(ai: PAddrInfoA);
+procedure FreeAddrInfoA(ai: PAddrInfoA); stdcall;
 begin
     if @FFreeAddrInfoA = nil then
         @FFreeAddrInfoA := GetProc3('freeaddrinfo');
@@ -979,7 +979,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure FreeAddrInfoW(ai: PAddrInfoW);
+procedure FreeAddrInfoW(ai: PAddrInfoW); stdcall;
 begin
     if @FFreeAddrInfoW = nil then
         @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
@@ -988,7 +988,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure FreeAddrInfo(ai: PAddrInfo);
+procedure FreeAddrInfo(ai: PAddrInfo); stdcall;
 begin
 {$IFDEF UNICODE}
     if @FFreeAddrInfoW = nil then
@@ -1010,7 +1010,7 @@ function GetNameInfoA(
     hostlen : LongWord;
     serv    : PAnsiChar;
     servlen : LongWord;
-    flags   : Integer): Integer;
+    flags   : Integer): Integer; stdcall;
 begin
     if @FGetNameInfoA = nil then
         @FGetNameInfoA := GetProc3('getnameinfo');
@@ -1026,7 +1026,7 @@ function GetNameInfoW(
     hostlen : LongWord;
     serv    : PWideChar;
     servlen : LongWord;
-    flags   : Integer): Integer;
+    flags   : Integer): Integer; stdcall;
 begin
     if @FGetNameInfoW = nil then
         @FGetNameInfoW := GetProc3('GetNameInfoW');
@@ -1042,7 +1042,7 @@ function GetNameInfo(
     hostlen : LongWord;
     serv    : PChar;
     servlen : LongWord;
-    flags   : Integer): Integer;
+    flags   : Integer): Integer; stdcall;
 begin
 {$IFDEF UNICODE}
     if @FGetNameInfoW = nil then
