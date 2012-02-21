@@ -81,9 +81,6 @@ type
   PTimeRec = ^TTimeRec;
 
   TTimeListDeleteEvent = procedure (Sender: TObject; PItem : PTimeRec) of object;
-{$IFDEF COMPILER16_UP}
-  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidOSX32)]
-{$ENDIF}
   TTimeList = class(TComponent)
   private
     FData     : TList;

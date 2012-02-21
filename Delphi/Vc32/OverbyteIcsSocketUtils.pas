@@ -409,7 +409,7 @@ begin
         try
             v6info := PSocketAddressList(PBuf);
 
-            Err := WSAIoctl(s,
+            Err := WSocket_WSAIoctl(s,
                             SIO_ADDRESS_LIST_QUERY,
                             nil,
                             0,

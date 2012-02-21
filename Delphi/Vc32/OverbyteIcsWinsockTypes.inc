@@ -26,6 +26,10 @@
 {.$DEFINE INCL_WINSOCK_API_PROTOTYPES}
 {.$DEFINE INCL_WINSOCK_API_TYPEDEFS}
 
+const
+  WINSOCK_VERSION = $0202;
+  {$EXTERNALSYM WINSOCK_VERSION}
+
 type
   u_char = AnsiChar;
   {$EXTERNALSYM u_char}
@@ -1126,8 +1130,9 @@ type
   TIPv6MReq = ipv6_mreq;
   PIPv6MReq = PIPV6_MREQ;
 
-  PAddrInfoA = ^TAddrInfoA;
-  TAddrInfoA = record
+  PADDRINFOA = ^addrinfo;
+  {$EXTERNALSYM PADDRINFOA}
+  addrinfo = record
     ai_flags        : Integer;      // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
     ai_family       : Integer;      // PF_xxx
     ai_socktype     : Integer;      // SOCK_xxx
@@ -1135,11 +1140,16 @@ type
     ai_addrlen      : u_int;        // Length of ai_addr
     ai_canonname    : PAnsiChar;    // Canonical name for nodename
     ai_addr         : PSOCKADDR;    // Binary address
-    ai_next         : PAddrInfoA;    // Next structure in linked list
+    ai_next         : PADDRINFOA;   // Next structure in linked list
   end;
+  {$EXTERNALSYM addrinfo}
+  ADDRINFOA = addrinfo;
+  {$EXTERNALSYM ADDRINFOA}
+  TAddrInfoA = ADDRINFOA;
 
-  PAddrInfoW = ^TAddrInfoW;
-  TAddrInfoW  = record
+  PADDRINFOW = ^addrinfoW;
+  {$EXTERNALSYM PADDRINFOW}
+  addrinfoW  = record
     ai_flags        : Integer;      // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
     ai_family       : Integer;      // PF_xxx
     ai_socktype     : Integer;      // SOCK_xxx
@@ -1147,14 +1157,16 @@ type
     ai_addrlen      : u_int;        // Length of ai_addr
     ai_canonname    : PWideChar;    // Canonical name for nodename
     ai_addr         : PSOCKADDR;    // Binary address
-    ai_next         : PAddrInfoW;   // Next structure in linked list
+    ai_next         : PADDRINFOW;   // Next structure in linked list
   end;
+  {$EXTERNALSYM addrinfoW}
+  TAddrInfoW = addrinfoW;
 
 {$IFDEF UNICODE}
-  PAddrInfo = PAddrInfoW;
+  PAddrInfo = PADDRINFOW;
   TAddrInfo = TAddrInfoW;
 {$ELSE}
-  PAddrInfo = PAddrInfoA;
+  PAddrInfo = PADDRINFOA;
   TAddrInfo = TAddrInfoA;
 {$ENDIF}
 
@@ -1567,35 +1579,131 @@ function bind(s: TSocket; var addr: TSockAddr; namelen: Integer): Integer; stdca
 function accept(s: TSocket; addr: PSockAddr; addrlen: PInteger): TSocket; stdcall;
 {$EXTERNALSYM accept}
 
-function GetAddrInfoA(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PAddrInfoA;
-                     var AddrInfo: PAddrInfoA): Integer; stdcall;
-function GetAddrInfoW(NodeName: PWideChar; ServName: PWideChar; Hints: PAddrInfoW;
-                     var AddrInfo: PAddrInfoW): Integer; stdcall;
-{$IFDEF UNICODE}
-function GetAddrInfo(NodeName: PWideChar; ServName: PWideChar; Hints: PAddrInfoW;
-                     var AddrInfo: PAddrInfoW): Integer; stdcall;
+//#if (NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502)
+function GetAddrInfoA(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PADDRINFOA;
+                     var AddrInfo: PADDRINFOA): Integer; stdcall;
+{$EXTERNALSYM GetAddrInfoA}
 
-{$ELSE}
-function GetAddrInfo(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PAddrInfoA;
-                     var AddrInfo: PAddrInfoA): Integer; stdcall;
-{$ENDIF}
-procedure FreeAddrInfoA(ai: PAddrInfoA); stdcall;
-procedure FreeAddrInfoW(ai: PAddrInfoW); stdcall;
+function GetAddrInfoW(NodeName: PWideChar; ServName: PWideChar; Hints: PADDRINFOW;
+                     var AddrInfo: PADDRINFOW): Integer; stdcall;
 {$IFDEF UNICODE}
-procedure FreeAddrInfo(ai: PAddrInfoW); stdcall;
+function GetAddrInfo(NodeName: PWideChar; ServName: PWideChar; Hints: PADDRINFOW;
+                     var AddrInfo: PADDRINFOW): Integer; stdcall;
 {$ELSE}
-procedure FreeAddrInfo(ai: PAddrInfo); stdcall;
+function GetAddrInfo(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PADDRINFOA;
+                     var AddrInfo: PADDRINFOA): Integer; stdcall;
 {$ENDIF}
+{$EXTERNALSYM GetAddrInfo}
+
+procedure FreeAddrInfoA(ai: PADDRINFOA); stdcall;
+{$EXTERNALSYM FreeAddrInfoA}
+procedure FreeAddrInfoW(ai: PADDRINFOW); stdcall;
+{$EXTERNALSYM FreeAddrInfoW}
+{$IFDEF UNICODE}
+procedure FreeAddrInfo(ai: PADDRINFOW); stdcall;
+{$ELSE}
+procedure FreeAddrInfo(ai: PADDRINFOA); stdcall;
+{$ENDIF}
+{$EXTERNALSYM FreeAddrInfo}
+
 function GetNameInfoA(addr: PSockAddr; namelen: Integer; host: PAnsiChar;
    hostlen: DWORD; serv: PAnsiChar; servlen: DWORD; flags: Integer): Integer; stdcall;
+{$EXTERNALSYM GetNameInfoA}
 function GetNameInfoW(addr: PSockAddr; namelen: Integer; host: PWideChar;
    hostlen: DWORD; serv: PWideChar; servlen: DWORD; flags: Integer): Integer; stdcall;
+{$EXTERNALSYM GetNameInfoW}
 {$IFDEF UNICODE}
 function GetNameInfo(addr: PSockAddr; namelen: Integer; host: PWideChar;
    hostlen: DWORD; serv: PWideChar; servlen: DWORD; flags: Integer): Integer; stdcall;
 {$ELSE}
 function GetNameInfo(addr: PSockAddr; namelen: Integer; host: PAnsiChar;
    hostlen: DWORD; serv: PAnsiChar; servlen: DWORD; flags: Integer): Integer; stdcall;
+{$ENDIF}
+{$EXTERNALSYM GetNameInfo}
+
+{ Called by OverbyteIcsWSocket.pas in order to enable dynamic DLL loading with }
+{ BCB as well as in previous ICS versions.                                     }
+function Ics_WSAStartup(wVersionRequested: WORD; var lpWSAData: TWSAData): Integer;
+function Ics_WSACleanup: Integer;
+procedure Ics_WSASetLastError(iError: Integer);
+function Ics_WSAGetLastError: Integer;
+function Ics_WSACancelAsyncRequest(hAsyncTaskHandle: THandle): Integer;
+function Ics_WSAAsyncGetHostByName(HWindow: HWND; wMsg: u_int; name, buf: PAnsiChar;
+                               buflen: Integer): THandle;
+function Ics_WSAAsyncGetHostByAddr(HWindow: HWND; wMsg: u_int; addr: PAnsiChar;
+               len, Struct: Integer; buf: PAnsiChar; buflen: Integer): THandle;
+function Ics_WSAAsyncSelect(s: TSocket; HWindow: HWND; wMsg: u_int; lEvent: Longint): Integer;
+function Ics_getservbyname(name, proto: PAnsiChar): PServEnt;
+function Ics_getprotobyname(name: PAnsiChar): PProtoEnt;
+function Ics_gethostbyname(name: PAnsiChar): PHostEnt;
+function Ics_gethostbyaddr(addr: Pointer; len, Struct: Integer): PHostEnt;
+function Ics_gethostName(name: PAnsiChar; len: Integer): Integer;
+function Ics_socket(af, Struct, protocol: Integer): TSocket;
+function Ics_shutdown(s: TSocket; how: Integer): Integer;
+function Ics_setsockopt(s: TSocket; level, optname: Integer; optval: PAnsiChar;
+                    optlen: Integer): Integer;
+function Ics_getsockopt(s: TSocket; level, optname: Integer; optval: PAnsiChar;
+                    var optlen: Integer): Integer;
+function Ics_sendto(s: TSocket; var Buf; len, flags: Integer; var addrto: TSockAddr;
+                tolen: Integer): Integer;
+function Ics_send(s: TSocket; var Buf; len, flags: Integer): Integer;
+function Ics_recv(s: TSocket; var Buf; len, flags: Integer): Integer;
+function Ics_recvfrom(s: TSocket; var Buf; len, flags: Integer; var from: TSockAddr;
+                  var fromlen: Integer): Integer;
+function Ics_ntohs(netshort: u_short): u_short;
+function Ics_ntohl(netlong: u_long): u_long;
+function Ics_listen(s: TSocket; backlog: Integer): Integer;
+function Ics_ioctlsocket(s: TSocket; cmd: DWORD; var arg: u_long): Integer;
+function Ics_WSAIoctl(s                 : TSocket;
+                  IoControlCode     : DWORD;
+                  InBuffer          : Pointer;
+                  InBufferSize      : DWORD;
+                  OutBuffer         : Pointer;
+                  OutBufferSize     : DWORD;
+                  var BytesReturned : DWORD;
+                  Overlapped        : POverlapped;
+                  CompletionRoutine : FARPROC): Integer;
+
+function Ics_inet_ntoa(inaddr: TInAddr): PAnsiChar;
+function Ics_inet_addr(cp: PAnsiChar): u_long;
+function Ics_htons(hostshort: u_short): u_short;
+function Ics_htonl(hostlong: u_long): u_long;
+function Ics_getsockname(s: TSocket; var name: TSockAddr; var namelen: Integer): Integer;
+function Ics_getpeername(s: TSocket; var name: TSockAddr; var namelen: Integer): Integer;
+function Ics_connect(s: TSocket; var name: TSockAddr; namelen: Integer): Integer;
+function Ics_closesocket(s: TSocket): Integer;
+function Ics_bind(s: TSocket; var addr: TSockAddr; namelen: Integer): Integer;
+function Ics_accept(s: TSocket; addr: PSockAddr; addrlen: PInteger): TSocket;
+
+function Ics_GetAddrInfoA(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PADDRINFOA;
+                     var AddrInfo: PADDRINFOA): Integer;
+function Ics_GetAddrInfoW(NodeName: PWideChar; ServName: PWideChar; Hints: PADDRINFOW;
+                     var AddrInfo: PADDRINFOW): Integer;
+{$IFDEF UNICODE}
+function Ics_GetAddrInfo(NodeName: PWideChar; ServName: PWideChar; Hints: PADDRINFOW;
+                     var AddrInfo: PADDRINFOW): Integer;
+
+{$ELSE}
+function Ics_GetAddrInfo(NodeName: PAnsiChar; ServName: PAnsiChar; Hints: PADDRINFOA;
+                     var AddrInfo: PADDRINFOA): Integer;
+{$ENDIF}
+procedure Ics_FreeAddrInfoA(ai: PADDRINFOA);
+procedure Ics_FreeAddrInfoW(ai: PADDRINFOW);
+{$IFDEF UNICODE}
+procedure Ics_FreeAddrInfo(ai: PADDRINFOW);
+{$ELSE}
+procedure Ics_FreeAddrInfo(ai: PAddrInfo);
+{$ENDIF}
+function Ics_GetNameInfoA(addr: PSockAddr; namelen: Integer; host: PAnsiChar;
+   hostlen: DWORD; serv: PAnsiChar; servlen: DWORD; flags: Integer): Integer;
+function Ics_GetNameInfoW(addr: PSockAddr; namelen: Integer; host: PWideChar;
+   hostlen: DWORD; serv: PWideChar; servlen: DWORD; flags: Integer): Integer;
+{$IFDEF UNICODE}
+function Ics_GetNameInfo(addr: PSockAddr; namelen: Integer; host: PWideChar;
+   hostlen: DWORD; serv: PWideChar; servlen: DWORD; flags: Integer): Integer;
+{$ELSE}
+function Ics_GetNameInfo(addr: PSockAddr; namelen: Integer; host: PAnsiChar;
+   hostlen: DWORD; serv: PAnsiChar; servlen: DWORD; flags: Integer): Integer;
 {$ENDIF}
 
 { ICS Helpers }

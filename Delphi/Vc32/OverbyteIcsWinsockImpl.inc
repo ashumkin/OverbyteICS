@@ -285,7 +285,7 @@ begin
             if GWsDLLHandle = 0 then
                 raise Exception.Create('Unable to load ' + GWsDLLName +
                               ' - ' + SysErrorMessage(GetLastError));
-            LastError := WSAStartup(MAKEWORD(GReqVerLow, GReqVerHigh), GInitData);
+            LastError := Ics_WSAStartup(MAKEWORD(GReqVerLow, GReqVerHigh), GInitData);
             if LastError <> 0 then
                 raise ESocketAPIException.Create('Winsock startup error ' +
                                GWs2DLLName + ' - ' + GetWinsockErr (LastError));
@@ -406,10 +406,10 @@ begin
     else begin
         EnterCriticalSection(GWSockCritSect);
         try
-            s := socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+            s := Ics_socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
             Result := s <> INVALID_SOCKET;
             if Result then begin
-                CloseSocket(s);
+                Ics_closesocket(s);
                 GIPv6Available := 1;
             end
             else
@@ -471,7 +471,7 @@ begin
     EnterCriticalSection(GWSockCritSect);
     try
         if (GWsDLLHandle <> 0) and (WSocketGCount = 0) then begin
-            WSACleanup;
+            Ics_WSACleanup;
             if GWs2DLLHandle <> 0 then begin
                 FreeLibrary(GWs2DLLHandle);
                 GWs2DLLHandle      := 0;
@@ -556,45 +556,35 @@ function WSAStartup(
     wVersionRequested: WORD;
     var lpWSAData: TWSAData): Integer; stdcall;
 begin
-    if @FWSAStartup = nil then
-        @FWSAStartup := GetProc('WSAStartup');
-    Result := FWSAStartup(wVersionRequested, lpWSAData);
+    Result := Ics_WSAStartup(wVersionRequested, lpWSAData);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSACleanup : Integer; stdcall;
 begin
-    if @FWSACleanup = nil then
-        @FWSACleanup := GetProc('WSACleanup');
-    Result := FWSACleanup;
+    Result := Ics_WSACleanup;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure WSASetLastError(iError: Integer); stdcall;
 begin
-    if @FWSASetLastError = nil then
-        @FWSASetLastError := GetProc('WSASetLastError');
-    FWSASetLastError(iError);
+    Ics_WSASetLastError(iError);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSAGetLastError: Integer; stdcall;
 begin
-    if @FWSAGetLastError = nil then
-        @FWSAGetLastError := GetProc('WSAGetLastError');
-    Result := FWSAGetLastError;
+    Result := Ics_WSAGetLastError;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function WSACancelAsyncRequest(hAsyncTaskHandle: THandle): Integer; stdcall;
 begin
-    if @FWSACancelAsyncRequest = nil then
-        @FWSACancelAsyncRequest := GetProc('WSACancelAsyncRequest');
-    Result := FWSACancelAsyncRequest(hAsyncTaskHandle);
+    Result := Ics_WSACancelAsyncRequest(hAsyncTaskHandle);
 end;
 
 
@@ -604,9 +594,7 @@ function WSAAsyncGetHostByName(
     name, buf: PAnsiChar;
     buflen: Integer): THandle; stdcall;
 begin
-    if @FWSAAsyncGetHostByName = nil then
-        @FWSAAsyncGetHostByName := GetProc('WSAAsyncGetHostByName');
-    Result := FWSAAsyncGetHostByName(HWindow, wMsg, name, buf, buflen);
+    Result := Ics_WSAAsyncGetHostByName(HWindow, wMsg, name, buf, buflen);
 end;
 
 
@@ -618,9 +606,7 @@ function WSAAsyncGetHostByAddr(
     buf: PAnsiChar;
     buflen: Integer): THandle; stdcall;
 begin
-    if @FWSAAsyncGetHostByAddr = nil then
-        @FWSAAsyncGetHostByAddr := GetProc('WSAAsyncGetHostByAddr');
-    Result := FWSAAsyncGetHostByAddr(HWindow, wMsg, addr, len, struct, buf, buflen);
+    Result := Ics_WSAAsyncGetHostByAddr(HWindow, wMsg, addr, len, struct, buf, buflen);
 end;
 
 
@@ -631,72 +617,56 @@ function WSAAsyncSelect(
     wMsg: u_int;
     lEvent: Longint): Integer; stdcall;
 begin
-    if @FWSAAsyncSelect = nil then
-        @FWSAAsyncSelect := GetProc('WSAAsyncSelect');
-    Result := FWSAAsyncSelect(s, HWindow, wMsg, lEvent);
+    Result := Ics_WSAAsyncSelect(s, HWindow, wMsg, lEvent);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function getservbyname(name, proto: PAnsiChar): PServEnt; stdcall;
 begin
-    if @Fgetservbyname = nil then
-        @Fgetservbyname := GetProc('getservbyname');
-    Result := Fgetservbyname(name, proto);
+    Result := Ics_getservbyname(name, proto);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function getprotobyname(name: PAnsiChar): PProtoEnt; stdcall;
 begin
-    if @Fgetprotobyname = nil then
-        @Fgetprotobyname := GetProc('getprotobyname');
-    Result := Fgetprotobyname(PAnsiChar(Name));
+    Result := Ics_getprotobyname(PAnsiChar(Name));
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function gethostbyname(name: PAnsiChar): PHostEnt; stdcall;
 begin
-    if @Fgethostbyname = nil then
-        @Fgethostbyname := GetProc('gethostbyname');
-    Result := Fgethostbyname(name);
+    Result := Ics_gethostbyname(name);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function gethostbyaddr(addr: Pointer; len, Struct: Integer): PHostEnt; stdcall;
 begin
-    if @Fgethostbyaddr = nil then
-        @Fgethostbyaddr := GetProc('gethostbyaddr');
-    Result := Fgethostbyaddr(addr, len, Struct);
+    Result := Ics_gethostbyaddr(addr, len, Struct);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function gethostname(name: PAnsiChar; len: Integer): Integer; stdcall;
 begin
-    if @Fgethostname = nil then
-        @Fgethostname := GetProc('gethostname');
-    Result := Fgethostname(name, len);
+    Result := Ics_gethostname(name, len);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function socket(af, Struct, protocol: Integer): TSocket; stdcall;
 begin
-    if @FOpenSocket= nil then
-        @FOpenSocket := GetProc('socket');
-    Result := FOpenSocket(af, Struct, protocol);
+    Result := Ics_socket(af, Struct, protocol);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function shutdown(s: TSocket; how: Integer): Integer; stdcall;
 begin
-    if @FShutdown = nil then
-        @FShutdown := GetProc('shutdown');
-    Result := FShutdown(s, how);
+    Result := Ics_shutdown(s, how);
 end;
 
 
@@ -704,9 +674,7 @@ end;
 function setsockopt(s: TSocket; level, optname: Integer;
   optval: PAnsiChar; optlen: Integer): Integer; stdcall;
 begin
-    if @FSetSockOpt = nil then
-        @FSetSockOpt := GetProc('setsockopt');
-    Result := FSetSockOpt(s, level, optname, optval, optlen);
+    Result := Ics_setsockopt(s, level, optname, optval, optlen);
 end;
 
 
@@ -715,9 +683,7 @@ function getsockopt(
     s: TSocket; level, optname: Integer;
     optval: PAnsiChar; var optlen: Integer): Integer; stdcall;
 begin
-    if @FGetSockOpt = nil then
-        @FGetSockOpt := GetProc('getsockopt');
-    Result := FGetSockOpt(s, level, optname, optval, optlen);
+    Result := Ics_getsockopt(s, level, optname, optval, optlen);
 end;
 
 
@@ -729,9 +695,7 @@ function sendto(
     var addrto : TSockAddr;
     tolen      : Integer): Integer; stdcall;
 begin
-    if @FSendTo = nil then
-        @FSendTo := GetProc('sendto');
-    Result := FSendTo(s, Buf, len, flags, addrto, tolen);
+    Result := Ics_sendto(s, Buf, len, flags, addrto, tolen);
 end;
 
 
@@ -739,45 +703,35 @@ end;
 function send(s: TSocket; var Buf;
   len, flags: Integer): Integer; stdcall;
 begin
-    if @FSend = nil then
-        @FSend := GetProc('send');
-    Result := FSend(s, Buf, len, flags);
+    Result := Ics_send(s, Buf, len, flags);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ntohs(netshort: u_short): u_short; stdcall;
 begin
-    if @Fntohs = nil then
-        @Fntohs := GetProc('ntohs');
-    Result := Fntohs(netshort);
+    Result := Ics_ntohs(netshort);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ntohl(netlong: u_long): u_long; stdcall;
 begin
-    if @Fntohl = nil then
-        @Fntohl := GetProc('ntohl');
-    Result := Fntohl(netlong);
+    Result := Ics_ntohl(netlong);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function listen(s: TSocket; backlog: Integer): Integer; stdcall;
 begin
-    if @FListen = nil then
-        @FListen := GetProc('listen');
-    Result := FListen(s, backlog);
+    Result := Ics_listen(s, backlog);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ioctlsocket(s: TSocket; cmd: DWORD; var arg: u_long): Integer; stdcall;
 begin
-    if @FIoctlSocket = nil then
-        @FIoctlSocket := GetProc('ioctlsocket');
-    Result := FIoctlSocket(s, cmd, arg);
+    Result := Ics_ioctlsocket(s, cmd, arg);
 end;
 
 
@@ -789,46 +743,36 @@ function WSAIoctl(
     var BytesReturned : DWORD; Overlapped      : POverlapped;
     CompletionRoutine : FARPROC): Integer; stdcall;
 begin
-    if @FWSAIoctl = nil then
-        @FWSAIoctl := GetProc2('WSAIoctl');
-    Result := FWSAIoctl(s, IoControlCode, InBuffer, InBufferSize, OutBuffer,
-                        OutBufferSize, BytesReturned, Overlapped, CompletionRoutine);
+    Result := Ics_WSAIoctl(s, IoControlCode, InBuffer, InBufferSize, OutBuffer,
+                   OutBufferSize, BytesReturned, Overlapped, CompletionRoutine);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function inet_ntoa(inaddr: TInAddr): PAnsiChar; stdcall;
 begin
-    if @FInet_ntoa = nil then
-        @FInet_ntoa := GetProc('inet_ntoa');
-    Result := FInet_ntoa(inaddr);
+    Result := Ics_inet_ntoa(inaddr);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function inet_addr(cp: PAnsiChar): u_long; stdcall;
 begin
-    if @FInet_addr = nil then
-        @FInet_addr := GetProc('inet_addr');
-    Result := FInet_addr(cp);
+    Result := Ics_inet_addr(cp);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function htons(hostshort: u_short): u_short; stdcall;
 begin
-    if @Fhtons = nil then
-        @Fhtons := GetProc('htons');
-    Result := Fhtons(hostshort);
+    Result := Ics_htons(hostshort);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function htonl(hostlong: u_long): u_long; stdcall;
 begin
-    if @Fhtonl = nil then
-        @Fhtonl := GetProc('htonl');
-    Result := Fhtonl(hostlong);
+    Result := Ics_htonl(hostlong);
 end;
 
 
@@ -838,9 +782,7 @@ function getsockname(
     var name    : TSockAddr;
     var namelen : Integer): Integer; stdcall;
 begin
-    if @FGetSockName = nil then
-        @FGetSockName := GetProc('getsockname');
-    Result := FGetSockName(s, name, namelen);
+    Result := Ics_getsockname(s, name, namelen);
 end;
 
 
@@ -850,9 +792,7 @@ function getpeername(
     var name    : TSockAddr;
     var namelen : Integer): Integer; stdcall;
 begin
-    if @FGetPeerName = nil then
-        @FGetPeerName := GetProc('getpeername');
-    Result := FGetPeerName(s, name, namelen);
+    Result := Ics_getpeername(s, name, namelen);
 end;
 
 
@@ -862,18 +802,14 @@ function connect(
     var name : TSockAddr;
     namelen  : Integer): Integer; stdcall;
 begin
-    if @FConnect= nil then
-        @FConnect := GetProc('connect');
-    Result := FConnect(s, name, namelen);
+    Result := Ics_connect(s, name, namelen);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function closesocket(s: TSocket): Integer; stdcall;
 begin
-    if @FCloseSocket = nil then
-        @FCloseSocket := GetProc('closesocket');
-    Result := FCloseSocket(s);
+    Result := Ics_closesocket(s);
 end;
 
 
@@ -883,9 +819,7 @@ function bind(
     var addr: TSockAddr;
     namelen: Integer): Integer; stdcall;
 begin
-    if @FBind = nil then
-        @FBind := GetProc('bind');
-    Result := FBind(s, addr, namelen);
+    Result := Ics_bind(s, addr, namelen);
 end;
 
 
@@ -895,9 +829,7 @@ function accept(
     addr: PSockAddr;
     addrlen: PInteger): TSocket; stdcall;
 begin
-    if @FAccept = nil then
-        @FAccept := GetProc('accept');
-    Result := FAccept(s, addr, addrlen);
+    Result := Ics_accept(s, addr, addrlen);
 end;
 
 
@@ -905,9 +837,7 @@ end;
 function recv(s: TSocket; var Buf;
   len, flags: Integer): Integer; stdcall;
 begin
-    if @FRecv= nil then
-        @FRecv := GetProc('recv');
-    Result := FRecv(s, Buf, len, flags);
+    Result := Ics_recv(s, Buf, len, flags);
 end;
 
 
@@ -918,9 +848,7 @@ function recvfrom(
     var from: TSockAddr;
     var fromlen: Integer): Integer; stdcall;
 begin
-    if @FRecvFrom = nil then
-        @FRecvFrom := GetProc('recvfrom');
-    Result := FRecvFrom(s, Buf, len, flags, from, fromlen);
+    Result := Ics_recvfrom(s, Buf, len, flags, from, fromlen);
 end;
 
 
@@ -928,12 +856,10 @@ end;
 function GetAddrInfoA(
     NodeName    : PAnsiChar;
     ServName    : PAnsiChar;
-    Hints       : PAddrInfoA;
-    var Addrinfo: PAddrInfoA): Integer; stdcall;
+    Hints       : PADDRINFOA;
+    var Addrinfo: PADDRINFOA): Integer; stdcall;
 begin
-    if @FGetAddrInfoA = nil then
-        @FGetAddrInfoA := GetProc3('getaddrinfo');
-    Result := FGetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
+    Result := Ics_GetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
 end;
 
 
@@ -941,12 +867,10 @@ end;
 function GetAddrInfoW(
     NodeName    : PWideChar;
     ServName    : PWideChar;
-    Hints       : PAddrInfoW;
-    var Addrinfo: PAddrInfoW): Integer; stdcall;
+    Hints       : PADDRINFOW;
+    var Addrinfo: PADDRINFOW): Integer; stdcall;
 begin
-    if @FGetAddrInfoW = nil then
-        @FGetAddrInfoW := GetProc3('GetAddrInfoW');
-    Result := FGetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
+    Result := Ics_GetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
 end;
 
 
@@ -957,48 +881,28 @@ function GetAddrInfo(
     Hints       : PAddrInfo;
     var Addrinfo: PAddrInfo): Integer; stdcall;
 begin
-{$IFDEF UNICODE}
-    if @FGetAddrInfoW = nil then
-        @FGetAddrInfoW := GetProc3('GetAddrInfoW');
-    Result := FGetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
-{$ELSE}
-    if @FGetAddrInfoA = nil then
-        @FGetAddrInfoA := GetProc3('getaddrinfo');
-    Result := FGetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
-{$ENDIF}
+    Result := Ics_GetAddrInfo(NodeName, ServName, Hints, Addrinfo);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure FreeAddrInfoA(ai: PAddrInfoA); stdcall;
+procedure FreeAddrInfoA(ai: PADDRINFOA); stdcall;
 begin
-    if @FFreeAddrInfoA = nil then
-        @FFreeAddrInfoA := GetProc3('freeaddrinfo');
-    FFreeAddrInfoA(ai);
+    Ics_FreeAddrInfoA(ai);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure FreeAddrInfoW(ai: PAddrInfoW); stdcall;
+procedure FreeAddrInfoW(ai: PADDRINFOW); stdcall;
 begin
-    if @FFreeAddrInfoW = nil then
-        @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
-    FFreeAddrInfoW(ai);
+    Ics_FreeAddrInfoW(ai);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure FreeAddrInfo(ai: PAddrInfo); stdcall;
 begin
-{$IFDEF UNICODE}
-    if @FFreeAddrInfoW = nil then
-        @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
-    FFreeAddrInfoW(ai);
-{$ELSE}
-    if @FFreeAddrInfoA = nil then
-        @FFreeAddrInfoA := GetProc3('freeaddrinfo');
-    FFreeAddrInfoA(ai);
-{$ENDIF}
+    Ics_FreeAddrInfo(ai);
 end;
 
 
@@ -1012,9 +916,7 @@ function GetNameInfoA(
     servlen : LongWord;
     flags   : Integer): Integer; stdcall;
 begin
-    if @FGetNameInfoA = nil then
-        @FGetNameInfoA := GetProc3('getnameinfo');
-    Result := FGetNameInfoA(addr, namelen, host, hostlen, serv, servlen, flags);
+    Result := Ics_GetNameInfoA(addr, namelen, host, hostlen, serv, servlen, flags);
 end;
 
 
@@ -1028,9 +930,7 @@ function GetNameInfoW(
     servlen : LongWord;
     flags   : Integer): Integer; stdcall;
 begin
-    if @FGetNameInfoW = nil then
-        @FGetNameInfoW := GetProc3('GetNameInfoW');
-    Result := FGetNameInfoW(addr, namelen, host, hostlen, serv, servlen, flags);
+    Result := Ics_GetNameInfoW(addr, namelen, host, hostlen, serv, servlen, flags);
 end;
 
 
@@ -1043,6 +943,503 @@ function GetNameInfo(
     serv    : PChar;
     servlen : LongWord;
     flags   : Integer): Integer; stdcall;
+begin
+    Result := Ics_GetNameInfo(addr, namelen, host, hostlen, serv, servlen, flags);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSAStartup(
+    wVersionRequested: WORD;
+    var lpWSAData: TWSAData): Integer;
+begin
+    if @FWSAStartup = nil then
+        @FWSAStartup := GetProc('WSAStartup');
+    Result := FWSAStartup(wVersionRequested, lpWSAData);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSACleanup : Integer;
+begin
+    if @FWSACleanup = nil then
+        @FWSACleanup := GetProc('WSACleanup');
+    Result := FWSACleanup;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure Ics_WSASetLastError(iError: Integer);
+begin
+    if @FWSASetLastError = nil then
+        @FWSASetLastError := GetProc('WSASetLastError');
+    FWSASetLastError(iError);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSAGetLastError: Integer;
+begin
+    if @FWSAGetLastError = nil then
+        @FWSAGetLastError := GetProc('WSAGetLastError');
+    Result := FWSAGetLastError;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSACancelAsyncRequest(hAsyncTaskHandle: THandle): Integer;
+begin
+    if @FWSACancelAsyncRequest = nil then
+        @FWSACancelAsyncRequest := GetProc('WSACancelAsyncRequest');
+    Result := FWSACancelAsyncRequest(hAsyncTaskHandle);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSAAsyncGetHostByName(
+    HWindow: HWND; wMsg: u_int;
+    name, buf: PAnsiChar;
+    buflen: Integer): THandle;
+begin
+    if @FWSAAsyncGetHostByName = nil then
+        @FWSAAsyncGetHostByName := GetProc('WSAAsyncGetHostByName');
+    Result := FWSAAsyncGetHostByName(HWindow, wMsg, name, buf, buflen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSAAsyncGetHostByAddr(
+    HWindow: HWND;
+    wMsg: u_int; addr: PAnsiChar;
+    len, Struct: Integer;
+    buf: PAnsiChar;
+    buflen: Integer): THandle;
+begin
+    if @FWSAAsyncGetHostByAddr = nil then
+        @FWSAAsyncGetHostByAddr := GetProc('WSAAsyncGetHostByAddr');
+    Result := FWSAAsyncGetHostByAddr(HWindow, wMsg, addr, len, struct, buf, buflen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSAAsyncSelect(
+    s: TSocket;
+    HWindow: HWND;
+    wMsg: u_int;
+    lEvent: Longint): Integer;
+begin
+    if @FWSAAsyncSelect = nil then
+        @FWSAAsyncSelect := GetProc('WSAAsyncSelect');
+    Result := FWSAAsyncSelect(s, HWindow, wMsg, lEvent);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_getservbyname(name, proto: PAnsiChar): PServEnt;
+begin
+    if @Fgetservbyname = nil then
+        @Fgetservbyname := GetProc('getservbyname');
+    Result := Fgetservbyname(name, proto);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_getprotobyname(name: PAnsiChar): PProtoEnt;
+begin
+    if @Fgetprotobyname = nil then
+        @Fgetprotobyname := GetProc('getprotobyname');
+    Result := Fgetprotobyname(PAnsiChar(Name));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_gethostbyname(name: PAnsiChar): PHostEnt;
+begin
+    if @Fgethostbyname = nil then
+        @Fgethostbyname := GetProc('gethostbyname');
+    Result := Fgethostbyname(name);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_gethostbyaddr(addr: Pointer; len, Struct: Integer): PHostEnt;
+begin
+    if @Fgethostbyaddr = nil then
+        @Fgethostbyaddr := GetProc('gethostbyaddr');
+    Result := Fgethostbyaddr(addr, len, Struct);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_gethostname(name: PAnsiChar; len: Integer): Integer;
+begin
+    if @Fgethostname = nil then
+        @Fgethostname := GetProc('gethostname');
+    Result := Fgethostname(name, len);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_socket(af, Struct, protocol: Integer): TSocket;
+begin
+    if @FOpenSocket= nil then
+        @FOpenSocket := GetProc('socket');
+    Result := FOpenSocket(af, Struct, protocol);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_shutdown(s: TSocket; how: Integer): Integer;
+begin
+    if @FShutdown = nil then
+        @FShutdown := GetProc('shutdown');
+    Result := FShutdown(s, how);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_setsockopt(s: TSocket; level, optname: Integer;
+  optval: PAnsiChar; optlen: Integer): Integer;
+begin
+    if @FSetSockOpt = nil then
+        @FSetSockOpt := GetProc('setsockopt');
+    Result := FSetSockOpt(s, level, optname, optval, optlen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_getsockopt(
+    s: TSocket; level, optname: Integer;
+    optval: PAnsiChar; var optlen: Integer): Integer;
+begin
+    if @FGetSockOpt = nil then
+        @FGetSockOpt := GetProc('getsockopt');
+    Result := FGetSockOpt(s, level, optname, optval, optlen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_sendto(
+    s          : TSocket;
+    var Buf;
+    len, flags : Integer;
+    var addrto : TSockAddr;
+    tolen      : Integer): Integer;
+begin
+    if @FSendTo = nil then
+        @FSendTo := GetProc('sendto');
+    Result := FSendTo(s, Buf, len, flags, addrto, tolen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_send(s: TSocket; var Buf;
+  len, flags: Integer): Integer;
+begin
+    if @FSend = nil then
+        @FSend := GetProc('send');
+    Result := FSend(s, Buf, len, flags);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_ntohs(netshort: u_short): u_short;
+begin
+    if @Fntohs = nil then
+        @Fntohs := GetProc('ntohs');
+    Result := Fntohs(netshort);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_ntohl(netlong: u_long): u_long;
+begin
+    if @Fntohl = nil then
+        @Fntohl := GetProc('ntohl');
+    Result := Fntohl(netlong);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_listen(s: TSocket; backlog: Integer): Integer;
+begin
+    if @FListen = nil then
+        @FListen := GetProc('listen');
+    Result := FListen(s, backlog);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_ioctlsocket(s: TSocket; cmd: DWORD; var arg: u_long): Integer;
+begin
+    if @FIoctlSocket = nil then
+        @FIoctlSocket := GetProc('ioctlsocket');
+    Result := FIoctlSocket(s, cmd, arg);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_WSAIoctl(
+    s                 : TSocket; IoControlCode : DWORD;
+    InBuffer          : Pointer; InBufferSize  : DWORD;
+    OutBuffer         : Pointer; OutBufferSize : DWORD;
+    var BytesReturned : DWORD; Overlapped      : POverlapped;
+    CompletionRoutine : FARPROC): Integer;
+begin
+    if @FWSAIoctl = nil then
+        @FWSAIoctl := GetProc2('WSAIoctl');
+    Result := FWSAIoctl(s, IoControlCode, InBuffer, InBufferSize, OutBuffer,
+                        OutBufferSize, BytesReturned, Overlapped, CompletionRoutine);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_inet_ntoa(inaddr: TInAddr): PAnsiChar;
+begin
+    if @FInet_ntoa = nil then
+        @FInet_ntoa := GetProc('inet_ntoa');
+    Result := FInet_ntoa(inaddr);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_inet_addr(cp: PAnsiChar): u_long;
+begin
+    if @FInet_addr = nil then
+        @FInet_addr := GetProc('inet_addr');
+    Result := FInet_addr(cp);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_htons(hostshort: u_short): u_short;
+begin
+    if @Fhtons = nil then
+        @Fhtons := GetProc('htons');
+    Result := Fhtons(hostshort);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_htonl(hostlong: u_long): u_long;
+begin
+    if @Fhtonl = nil then
+        @Fhtonl := GetProc('htonl');
+    Result := Fhtonl(hostlong);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_getsockname(
+    s           : TSocket;
+    var name    : TSockAddr;
+    var namelen : Integer): Integer;
+begin
+    if @FGetSockName = nil then
+        @FGetSockName := GetProc('getsockname');
+    Result := FGetSockName(s, name, namelen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_getpeername(
+    s           : TSocket;
+    var name    : TSockAddr;
+    var namelen : Integer): Integer;
+begin
+    if @FGetPeerName = nil then
+        @FGetPeerName := GetProc('getpeername');
+    Result := FGetPeerName(s, name, namelen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_connect(
+    s        : TSocket;
+    var name : TSockAddr;
+    namelen  : Integer): Integer;
+begin
+    if @FConnect= nil then
+        @FConnect := GetProc('connect');
+    Result := FConnect(s, name, namelen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_closesocket(s: TSocket): Integer;
+begin
+    if @FCloseSocket = nil then
+        @FCloseSocket := GetProc('closesocket');
+    Result := FCloseSocket(s);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_bind(
+    s: TSocket;
+    var addr: TSockAddr;
+    namelen: Integer): Integer;
+begin
+    if @FBind = nil then
+        @FBind := GetProc('bind');
+    Result := FBind(s, addr, namelen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_accept(
+    s: TSocket;
+    addr: PSockAddr;
+    addrlen: PInteger): TSocket;
+begin
+    if @FAccept = nil then
+        @FAccept := GetProc('accept');
+    Result := FAccept(s, addr, addrlen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_recv(s: TSocket; var Buf;
+  len, flags: Integer): Integer;
+begin
+    if @FRecv= nil then
+        @FRecv := GetProc('recv');
+    Result := FRecv(s, Buf, len, flags);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_recvfrom(
+    s: TSocket;
+    var Buf; len, flags: Integer;
+    var from: TSockAddr;
+    var fromlen: Integer): Integer;
+begin
+    if @FRecvFrom = nil then
+        @FRecvFrom := GetProc('recvfrom');
+    Result := FRecvFrom(s, Buf, len, flags, from, fromlen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_GetAddrInfoA(
+    NodeName    : PAnsiChar;
+    ServName    : PAnsiChar;
+    Hints       : PADDRINFOA;
+    var Addrinfo: PADDRINFOA): Integer;
+begin
+    if @FGetAddrInfoA = nil then
+        @FGetAddrInfoA := GetProc3('getaddrinfo');
+    Result := FGetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_GetAddrInfoW(
+    NodeName    : PWideChar;
+    ServName    : PWideChar;
+    Hints       : PADDRINFOW;
+    var Addrinfo: PADDRINFOW): Integer;
+begin
+    if @FGetAddrInfoW = nil then
+        @FGetAddrInfoW := GetProc3('GetAddrInfoW');
+    Result := FGetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_GetAddrInfo(
+    NodeName    : PChar;
+    ServName    : PChar;
+    Hints       : PAddrInfo;
+    var Addrinfo: PAddrInfo): Integer;
+begin
+{$IFDEF UNICODE}
+    if @FGetAddrInfoW = nil then
+        @FGetAddrInfoW := GetProc3('GetAddrInfoW');
+    Result := FGetAddrInfoW(NodeName, ServName, Hints, Addrinfo);
+{$ELSE}
+    if @FGetAddrInfoA = nil then
+        @FGetAddrInfoA := GetProc3('getaddrinfo');
+    Result := FGetAddrInfoA(NodeName, ServName, Hints, Addrinfo);
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure Ics_FreeAddrInfoA(ai: PADDRINFOA);
+begin
+    if @FFreeAddrInfoA = nil then
+        @FFreeAddrInfoA := GetProc3('freeaddrinfo');
+    FFreeAddrInfoA(ai);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure Ics_FreeAddrInfoW(ai: PADDRINFOW);
+begin
+    if @FFreeAddrInfoW = nil then
+        @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
+    FFreeAddrInfoW(ai);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure Ics_FreeAddrInfo(ai: PAddrInfo);
+begin
+{$IFDEF UNICODE}
+    if @FFreeAddrInfoW = nil then
+        @FFreeAddrInfoW := GetProc3('FreeAddrInfoW');
+    FFreeAddrInfoW(ai);
+{$ELSE}
+    if @FFreeAddrInfoA = nil then
+        @FFreeAddrInfoA := GetProc3('freeaddrinfo');
+    FFreeAddrInfoA(ai);
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_GetNameInfoA(
+    addr    : PSockAddr;
+    namelen : Integer;
+    host    : PAnsiChar;
+    hostlen : LongWord;
+    serv    : PAnsiChar;
+    servlen : LongWord;
+    flags   : Integer): Integer;
+begin
+    if @FGetNameInfoA = nil then
+        @FGetNameInfoA := GetProc3('getnameinfo');
+    Result := FGetNameInfoA(addr, namelen, host, hostlen, serv, servlen, flags);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_GetNameInfoW(
+    addr    : PSockAddr;
+    namelen : Integer;
+    host    : PWideChar;
+    hostlen : LongWord;
+    serv    : PWideChar;
+    servlen : LongWord;
+    flags   : Integer): Integer;
+begin
+    if @FGetNameInfoW = nil then
+        @FGetNameInfoW := GetProc3('GetNameInfoW');
+    Result := FGetNameInfoW(addr, namelen, host, hostlen, serv, servlen, flags);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Ics_GetNameInfo(
+    addr    : PSockAddr;
+    namelen : Integer;
+    host    : PChar;
+    hostlen : LongWord;
+    serv    : PChar;
+    servlen : LongWord;
+    flags   : Integer): Integer;
 begin
 {$IFDEF UNICODE}
     if @FGetNameInfoW = nil then

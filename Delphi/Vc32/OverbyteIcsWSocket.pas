@@ -4152,7 +4152,7 @@ function WSocket_Synchronized_WSAStartup(
     wVersionRequired: word;
     var WSData: TWSAData): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSAStartup(wVersionRequired, WSData)
+    Result := Ics_WSAStartup(wVersionRequired, WSData)
    (*
     if @FWSAStartup = nil then
         @FWSAStartup := WSocketGetProc('WSAStartup');
@@ -4165,7 +4165,7 @@ end;
 function WSocket_Synchronized_WSACleanup : Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSACleanup;
+    Result := Ics_WSACleanup;
     (*
     if @FWSACleanup = nil then
         @FWSACleanup := WSocketGetProc('WSACleanup');
@@ -4180,7 +4180,7 @@ procedure WSocket_Synchronized_WSASetLastError(iError: Integer);
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    OverbyteIcsWinsock.WSASetLastError(iError);
+    Ics_WSASetLastError(iError);
   {$ENDIF}
   {$IFDEF POSIX}
     SetLastError(IError);
@@ -4198,7 +4198,7 @@ function WSocket_Synchronized_WSAGetLastError: Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.WSAGetLastError;
+    Result := Ics_WSAGetLastError;
   {$ELSE}
     Result := GetLastError;
     {$IFDEF MACOS} // Likely more mappings are required, add them here for now
@@ -4215,7 +4215,7 @@ end;
 function WSocket_Synchronized_WSACancelAsyncRequest(hAsyncTaskHandle: THandle): Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSACancelAsyncRequest(hAsyncTaskHandle);
+    Result := Ics_WSACancelAsyncRequest(hAsyncTaskHandle);
     (*
     if @FWSACancelAsyncRequest = nil then
         @FWSACancelAsyncRequest := WSocketGetProc('WSACancelAsyncRequest');
@@ -4230,7 +4230,7 @@ function WSocket_Synchronized_WSAAsyncGetHostByName(
     name, buf: PAnsiChar;
     buflen: Integer): THandle; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSAAsyncGetHostByName(HWindow, wMsg, name, buf, buflen);
+    Result := Ics_WSAAsyncGetHostByName(HWindow, wMsg, name, buf, buflen);
     (*
     if @FWSAAsyncGetHostByName = nil then
         @FWSAAsyncGetHostByName := WSocketGetProc('WSAAsyncGetHostByName');
@@ -4247,7 +4247,7 @@ function WSocket_Synchronized_WSAAsyncGetHostByAddr(
     buf: PAnsiChar;
     buflen: Integer): THandle; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSAAsyncGetHostByAddr(HWindow, wMsg, addr,
+    Result := Ics_WSAAsyncGetHostByAddr(HWindow, wMsg, addr,
                                                       len, struct, buf, buflen);
     (*
     if @FWSAAsyncGetHostByAddr = nil then
@@ -4264,7 +4264,7 @@ function WSocket_Synchronized_WSAAsyncSelect(
     wMsg: u_int;
     lEvent: Longint): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSAAsyncSelect(s, HWindow, wMsg, lEvent);
+    Result := Ics_WSAAsyncSelect(s, HWindow, wMsg, lEvent);
     (*
     if @FWSAAsyncSelect = nil then
         @FWSAAsyncSelect := WSocketGetProc('WSAAsyncSelect');
@@ -4277,7 +4277,11 @@ end;
 function WSocket_Synchronized_getservbyname(name, proto: PAnsiChar): PServEnt;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_getservbyname(name, proto);
+  {$ELSE}
     Result := getservbyname(name, proto);
+  {$ENDIF}
     (*
     if @Fgetservbyname = nil then
         @Fgetservbyname := WSocketGetProc('getservbyname');
@@ -4290,7 +4294,11 @@ end;
 function WSocket_Synchronized_getprotobyname(const Name: AnsiString): PProtoEnt;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_getprotobyname(PAnsiChar(Name));
+  {$ELSE}
     Result := getprotobyname(PAnsiChar(Name));
+  {$ENDIF}
     (*
     if @Fgetprotobyname = nil then
         @Fgetprotobyname := WSocketGetProc('getprotobyname');
@@ -4309,7 +4317,7 @@ function WSocket_Synchronized_gethostbyname(name: PAnsiChar): PHostEnt;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.gethostbyname(name);
+    Result := Ics_gethostbyname(name);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := internal_gethostbyname(name);
@@ -4332,7 +4340,7 @@ function WSocket_Synchronized_gethostbyaddr(addr: Pointer; len, Struct: Integer)
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.gethostbyaddr(addr, len, Struct);
+    Result := Ics_gethostbyaddr(addr, len, Struct);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := internal_gethostbyaddr(addr, len, Struct);
@@ -4349,7 +4357,12 @@ end;
 function WSocket_Synchronized_gethostname(name: PAnsiChar; len: Integer): Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_gethostname(name, len);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := gethostname(name, len);
+  {$ENDIF}
     (*
     if @Fgethostname = nil then
         @Fgethostname := WSocketGetProc('gethostname');
@@ -4362,7 +4375,12 @@ end;
 function WSocket_Synchronized_socket(af, Struct, protocol: Integer): TSocket;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_socket(af, Struct, protocol);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := socket(af, Struct, protocol);
+  {$ENDIF}
     (*
     if @FOpenSocket= nil then
         @FOpenSocket := WSocketGetProc('socket');
@@ -4375,7 +4393,12 @@ end;
 function WSocket_Synchronized_shutdown(s: TSocket; how: Integer): Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_shutdown(s, how);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := shutdown(s, how);
+  {$ENDIF}
     (*
     if @FShutdown = nil then
         @FShutdown := WSocketGetProc('shutdown');
@@ -4390,7 +4413,7 @@ function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := setsockopt(s, level, optname, optval, optlen);
+    Result := Ics_setsockopt(s, level, optname, optval, optlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := setsockopt(s, level, optname, optval^, optlen);
@@ -4409,7 +4432,7 @@ function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
+    Result := Ics_setsockopt(s, level, optname, @optval, optlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := setsockopt(s, level, optname, optval, optlen);
@@ -4428,7 +4451,7 @@ function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
+    Result := Ics_setsockopt(s, level, optname, @optval, optlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := setsockopt(s, level, optname, optval, optlen);
@@ -4447,7 +4470,7 @@ function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
+    Result := Ics_setsockopt(s, level, optname, @optval, optlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := setsockopt(s, level, optname, optval, optlen);
@@ -4466,7 +4489,7 @@ function WSocket_Synchronized_setsockopt(s: TSocket; level, optname: Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.setsockopt(s, level, optname, @optval, optlen);
+    Result := Ics_setsockopt(s, level, optname, @optval, optlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := setsockopt(s, level, optname, optval, optlen);
@@ -4491,7 +4514,7 @@ function WSocket_Synchronized_getsockopt(
     {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.getsockopt(s, level, optname, optval, optlen);
+    Result := Ics_getsockopt(s, level, optname, optval, optlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := internal_getsockopt(s, level, optname, optval, optlen);
@@ -4512,10 +4535,11 @@ function WSocket_Synchronized_sendto(
     var addrto : TSockAddr;
     tolen      : Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_sendto(s, Buf^, len, flags, addrto, tolen);
+  {$ENDIF}
   {$IFDEF POSIX}
     Result := sendto(s, Buf^, len, flags, Posix.SysSocket.psockaddr(@addrto)^, tolen);
-  {$ELSE}
-    Result := sendto(s, Buf^, len, flags, addrto, tolen);
   {$ENDIF}
     (*
     if @FSendTo = nil then
@@ -4529,7 +4553,12 @@ end;
 function WSocket_Synchronized_send(s: TSocket; var Buf : TWSocketData;
   len, flags: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_send(s, Buf^, len, flags);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := send(s, Buf^, len, flags);
+  {$ENDIF}
     (*
     if @FSend = nil then
         @FSend := WSocketGetProc('send');
@@ -4542,7 +4571,12 @@ end;
 function WSocket_Synchronized_ntohs(netshort: u_short): u_short;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_ntohs(netshort);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := ntohs(netshort);
+  {$ENDIF}
     (*
     if @Fntohs = nil then
         @Fntohs := WSocketGetProc('ntohs');
@@ -4555,7 +4589,12 @@ end;
 function WSocket_Synchronized_ntohl(netlong: u_long): u_long;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_ntohl(netlong);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := ntohl(netlong);
+  {$ENDIF}
     (*
     if @Fntohl = nil then
         @Fntohl := WSocketGetProc('ntohl');
@@ -4568,7 +4607,12 @@ end;
 function WSocket_Synchronized_listen(s: TSocket; backlog: Integer): Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_listen(s, backlog);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := listen(s, backlog);
+  {$ENDIF}
     (*
     if @FListen = nil then
         @FListen := WSocketGetProc('listen');
@@ -4582,7 +4626,7 @@ function WSocket_Synchronized_ioctlsocket(s: TSocket; cmd: LongWord; var arg: u_
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.ioctlsocket(s, cmd, arg);
+    Result := Ics_ioctlsocket(s, cmd, arg);
   {$ENDIF}
   {$IFDEF POSIX}
     Result :=  Posix.StrOpts.ioctl(s, cmd, @arg);
@@ -4605,7 +4649,7 @@ function WSocket_Synchronized_WSAIoctl(
     CompletionRoutine : FARPROC): Integer;
     {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.WSAIoctl(s, IoControlCode, InBuffer,
+    Result := Ics_WSAIoctl(s, IoControlCode, InBuffer,
                         InBufferSize, OutBuffer, OutBufferSize, BytesReturned,
                         Overlapped, CompletionRoutine);
     (*
@@ -4621,7 +4665,12 @@ end;
 function WSocket_Synchronized_inet_ntoa(inaddr: TInAddr): PAnsiChar;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_inet_ntoa(inaddr);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := inet_ntoa(inaddr);
+  {$ENDIF}
     (*
     if @FInet_ntoa = nil then
         @FInet_ntoa := WSocketGetProc('inet_ntoa');
@@ -4634,7 +4683,12 @@ end;
 function WSocket_Synchronized_inet_addr(const cp: AnsiString): u_long;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_inet_addr(PAnsiChar(cp));
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := inet_addr(PAnsiChar(cp));
+  {$ENDIF}
     (*
     if @FInet_addr = nil then
         @FInet_addr := WSocketGetProc('inet_addr');
@@ -4647,7 +4701,12 @@ end;
 function WSocket_Synchronized_htons(hostshort: u_short): u_short;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_htons(hostshort);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := htons(hostshort);
+  {$ENDIF}
     (*
     if @Fhtons = nil then
         @Fhtons := WSocketGetProc('htons');
@@ -4660,7 +4719,12 @@ end;
 function WSocket_Synchronized_htonl(hostlong: u_long): u_long;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_htonl(hostlong);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := htonl(hostlong);
+  {$ENDIF}
     (*
     if @Fhtonl = nil then
         @Fhtonl := WSocketGetProc('htonl');
@@ -4676,7 +4740,7 @@ function WSocket_Synchronized_getsockname(
     var namelen : Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := getsockname(s, name, namelen);
+    Result := Ics_getsockname(s, name, namelen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := getsockname(s, Posix.SysSocket.psockaddr(@name)^, LongWord(namelen));
@@ -4696,7 +4760,7 @@ function WSocket_Synchronized_getpeername(
     var namelen : Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.getpeername(s, name, namelen);
+    Result := Ics_getpeername(s, name, namelen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := getpeername(s, Posix.SysSocket.psockaddr(@name)^, LongWord(namelen));
@@ -4715,10 +4779,11 @@ function WSocket_Synchronized_connect(
     var name : TSockAddr;
     namelen  : Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_connect(s, name, namelen);
+  {$ENDIF}
   {$IFDEF POSIX}
     Result := connect(s, Posix.SysSocket.psockaddr(@name)^, namelen);
-  {$ELSE}
-    Result := connect(s, name, namelen);
   {$ENDIF}
     (*
     if @FConnect= nil then
@@ -4733,7 +4798,7 @@ function WSocket_Synchronized_closesocket(s: TSocket): Integer;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.closesocket(s);
+    Result := Ics_closesocket(s);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := Posix.UniStd.__close(s);
@@ -4755,7 +4820,7 @@ begin
   {$IFDEF POSIX}
     Result := bind(s, Posix.SysSocket.psockaddr(@addr)^, namelen);
   {$ELSE}
-    Result := bind(s, addr, namelen);
+    Result := Ics_bind(s, addr, namelen);
   {$ENDIF}
     (*
     if @FBind = nil then
@@ -4778,7 +4843,7 @@ function WSocket_Synchronized_accept(
     addrlen: PInteger): TSocket; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.accept(s, addr, addrlen);
+    Result := Ics_accept(s, addr, addrlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := internal_accept(s, addr, addrlen);
@@ -4795,7 +4860,12 @@ end;
 function WSocket_Synchronized_recv(s: TSocket; var Buf: TWSocketData;
   len, flags: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  {$IFDEF MSWINDOWS}
+    Result := Ics_recv(s, Buf^, len, flags);
+  {$ENDIF}
+  {$IFDEF POSIX}
     Result := recv(s, Buf^, len, flags);
+  {$ENDIF}
     (*
     if @FRecv= nil then
         @FRecv := WSocketGetProc('recv');
@@ -4812,7 +4882,7 @@ function WSocket_Synchronized_recvfrom(
     var fromlen: Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
-    Result := OverbyteIcsWinsock.recvfrom(s, Buf^, len, flags, from, fromlen);
+    Result := Ics_recvfrom(s, Buf^, len, flags, from, fromlen);
   {$ENDIF}
   {$IFDEF POSIX}
     Result := recvfrom(s, Buf^, len, flags, Posix.SysSocket.psockaddr(@from)^, LongWord(fromlen));
@@ -4833,7 +4903,7 @@ function WSocket_Synchronized_GetAddrInfo(
     Hints       : PAddrInfo;
     var Addrinfo: PAddrInfo): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := GetAddrInfo(NodeName, ServName, Hints, Addrinfo);
+    Result := Ics_GetAddrInfo(NodeName, ServName, Hints, Addrinfo);
     (*
     if @FGetAddrInfo = nil then
         @FGetAddrInfo := WSocket2GetProc(
@@ -4861,7 +4931,7 @@ begin
     FreeAddrInfo(ai^);
   {$ENDIF}
   {$IFDEF MSWINDOWS}
-    FreeAddrInfo(ai);
+    Ics_FreeAddrInfo(ai);
   {$ENDIF}
     (*
     if @FFreeAddrInfo = nil then
@@ -4883,7 +4953,7 @@ function WSocket_Synchronized_GetNameInfo(
     servlen : LongWord;
     flags   : Integer): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-    Result := OverbyteIcsWinsock.GetNameInfo(addr, namelen, host, hostlen, serv,
+    Result := Ics_GetNameInfo(addr, namelen, host, hostlen, serv,
                                              servlen, flags);
     (*
     if @FGetNameInfo = nil then
@@ -19952,7 +20022,7 @@ begin
     AddrInfo := nil;
     Hints.ai_protocol := AProtocol;
   {$IFNDEF POSIX}
-    Result   := GetAddrInfo(PChar(AName), nil, @Hints, AddrInfo);
+    Result   := Ics_GetAddrInfo(PChar(AName), nil, @Hints, AddrInfo);
   {$ELSE}
     Result   := GetAddrInfo(PAnsiChar(AnsiString(AName)), nil, Hints, AddrInfo);
   {$ENDIF}
@@ -19967,8 +20037,8 @@ begin
                 if AReverse then
                 begin
                     SetLength(LHost, NI_MAXHOST);
-                  {$IFNDEF POSIX}
-                    RetVal := GetNameInfo(NextInfo^.ai_addr,
+                  {$IFDEF MSWINDOWS}
+                    RetVal := Ics_GetNameInfo(NextInfo^.ai_addr,
                                           NextInfo^.ai_addrlen,
                                           PChar(LHost), NI_MAXHOST, nil, 0, 0);
                   {$ELSE}
@@ -20018,8 +20088,8 @@ begin
             NextInfo := NextInfo.ai_next;
         end;
     finally
-      {$IFNDEF POSIX}
-        FreeAddrInfo(AddrInfo);
+      {$IFDEF MSWINDOWS}
+        Ics_FreeAddrInfo(AddrInfo);
       {$ELSE}
         FreeAddrInfo(AddrInfo^);
       {$ENDIF}
