@@ -3,12 +3,6 @@
 			<ProjectGuid>{F4B79EC7-7D12-443A-9444-4949733F2450}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
-			<Projects Include="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Run.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Design.cbproj">
-				<Dependencies/>
-			</Projects>
 			<Projects Include="OverbyteIcsHttpTst.cbproj">
 				<Dependencies/>
 			</Projects>
@@ -110,24 +104,6 @@
 				<Default.Personality/>
 			</BorlandProject>
 		</ProjectExtensions>
-		<Target Name="OverbyteIcsCBXe2Run">
-			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Run.cbproj"/>
-		</Target>
-		<Target Name="OverbyteIcsCBXe2Run:Clean">
-			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Run.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="OverbyteIcsCBXe2Run:Make">
-			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Run.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="OverbyteIcsCBXe2Design">
-			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Design.cbproj"/>
-		</Target>
-		<Target Name="OverbyteIcsCBXe2Design:Clean">
-			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Design.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="OverbyteIcsCBXe2Design:Make">
-			<MSBuild Projects="..\..\..\Delphi\Vc32\OverbyteIcsCBXe2Design.cbproj" Targets="Make"/>
-		</Target>
 		<Target Name="OverbyteIcsHttpTst">
 			<MSBuild Projects="OverbyteIcsHttpTst.cbproj"/>
 		</Target>
@@ -408,13 +384,13 @@
 			<MSBuild Projects="OverbyteIcsWebServ.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="OverbyteIcsCBXe2Run;OverbyteIcsCBXe2Design;OverbyteIcsHttpTst;OverbyteIcsHttpsTst;OverbyteIcsBasNntp;OverbyteIcsCliDemo;OverbyteIcsClient5;OverbyteIcsClient7;OverbyteIcsDllTst;OverbyteIcsFinger;OverbyteIcsFtpServ;OverbyteIcsFtpTst;OverbyteIcsHttpPg;OverbyteIcsMailRcv;OverbyteIcsMailSnd;OverbyteIcsMtSrv;OverbyteIcsNewsRdr;OverbyteIcsNsLook;OverbyteIcsPingTst;OverbyteIcsRecv;OverbyteIcsReverseDnsSync;OverbyteIcsSender;OverbyteIcsServer5;OverbyteIcsSocks;OverbyteIcsSrvDemo;OverbyteIcsTcpSrv;OverbyteIcsTnCli;OverbyteIcsTnDemo;OverbyteIcsTnSrv;OverbyteIcsTwsChat;OverbyteIcsUdpLstn;OverbyteIcsUdpSend;OverbyteIcsWebServ"/>
+			<CallTarget Targets="OverbyteIcsHttpTst;OverbyteIcsHttpsTst;OverbyteIcsBasNntp;OverbyteIcsCliDemo;OverbyteIcsClient5;OverbyteIcsClient7;OverbyteIcsDllTst;OverbyteIcsFinger;OverbyteIcsFtpServ;OverbyteIcsFtpTst;OverbyteIcsHttpPg;OverbyteIcsMailRcv;OverbyteIcsMailSnd;OverbyteIcsMtSrv;OverbyteIcsNewsRdr;OverbyteIcsNsLook;OverbyteIcsPingTst;OverbyteIcsRecv;OverbyteIcsReverseDnsSync;OverbyteIcsSender;OverbyteIcsServer5;OverbyteIcsSocks;OverbyteIcsSrvDemo;OverbyteIcsTcpSrv;OverbyteIcsTnCli;OverbyteIcsTnDemo;OverbyteIcsTnSrv;OverbyteIcsTwsChat;OverbyteIcsUdpLstn;OverbyteIcsUdpSend;OverbyteIcsWebServ"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="OverbyteIcsCBXe2Run:Clean;OverbyteIcsCBXe2Design:Clean;OverbyteIcsHttpTst:Clean;OverbyteIcsHttpsTst:Clean;OverbyteIcsBasNntp:Clean;OverbyteIcsCliDemo:Clean;OverbyteIcsClient5:Clean;OverbyteIcsClient7:Clean;OverbyteIcsDllTst:Clean;OverbyteIcsFinger:Clean;OverbyteIcsFtpServ:Clean;OverbyteIcsFtpTst:Clean;OverbyteIcsHttpPg:Clean;OverbyteIcsMailRcv:Clean;OverbyteIcsMailSnd:Clean;OverbyteIcsMtSrv:Clean;OverbyteIcsNewsRdr:Clean;OverbyteIcsNsLook:Clean;OverbyteIcsPingTst:Clean;OverbyteIcsRecv:Clean;OverbyteIcsReverseDnsSync:Clean;OverbyteIcsSender:Clean;OverbyteIcsServer5:Clean;OverbyteIcsSocks:Clean;OverbyteIcsSrvDemo:Clean;OverbyteIcsTcpSrv:Clean;OverbyteIcsTnCli:Clean;OverbyteIcsTnDemo:Clean;OverbyteIcsTnSrv:Clean;OverbyteIcsTwsChat:Clean;OverbyteIcsUdpLstn:Clean;OverbyteIcsUdpSend:Clean;OverbyteIcsWebServ:Clean"/>
+			<CallTarget Targets="OverbyteIcsHttpTst:Clean;OverbyteIcsHttpsTst:Clean;OverbyteIcsBasNntp:Clean;OverbyteIcsCliDemo:Clean;OverbyteIcsClient5:Clean;OverbyteIcsClient7:Clean;OverbyteIcsDllTst:Clean;OverbyteIcsFinger:Clean;OverbyteIcsFtpServ:Clean;OverbyteIcsFtpTst:Clean;OverbyteIcsHttpPg:Clean;OverbyteIcsMailRcv:Clean;OverbyteIcsMailSnd:Clean;OverbyteIcsMtSrv:Clean;OverbyteIcsNewsRdr:Clean;OverbyteIcsNsLook:Clean;OverbyteIcsPingTst:Clean;OverbyteIcsRecv:Clean;OverbyteIcsReverseDnsSync:Clean;OverbyteIcsSender:Clean;OverbyteIcsServer5:Clean;OverbyteIcsSocks:Clean;OverbyteIcsSrvDemo:Clean;OverbyteIcsTcpSrv:Clean;OverbyteIcsTnCli:Clean;OverbyteIcsTnDemo:Clean;OverbyteIcsTnSrv:Clean;OverbyteIcsTwsChat:Clean;OverbyteIcsUdpLstn:Clean;OverbyteIcsUdpSend:Clean;OverbyteIcsWebServ:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="OverbyteIcsCBXe2Run:Make;OverbyteIcsCBXe2Design:Make;OverbyteIcsHttpTst:Make;OverbyteIcsHttpsTst:Make;OverbyteIcsBasNntp:Make;OverbyteIcsCliDemo:Make;OverbyteIcsClient5:Make;OverbyteIcsClient7:Make;OverbyteIcsDllTst:Make;OverbyteIcsFinger:Make;OverbyteIcsFtpServ:Make;OverbyteIcsFtpTst:Make;OverbyteIcsHttpPg:Make;OverbyteIcsMailRcv:Make;OverbyteIcsMailSnd:Make;OverbyteIcsMtSrv:Make;OverbyteIcsNewsRdr:Make;OverbyteIcsNsLook:Make;OverbyteIcsPingTst:Make;OverbyteIcsRecv:Make;OverbyteIcsReverseDnsSync:Make;OverbyteIcsSender:Make;OverbyteIcsServer5:Make;OverbyteIcsSocks:Make;OverbyteIcsSrvDemo:Make;OverbyteIcsTcpSrv:Make;OverbyteIcsTnCli:Make;OverbyteIcsTnDemo:Make;OverbyteIcsTnSrv:Make;OverbyteIcsTwsChat:Make;OverbyteIcsUdpLstn:Make;OverbyteIcsUdpSend:Make;OverbyteIcsWebServ:Make"/>
+			<CallTarget Targets="OverbyteIcsHttpTst:Make;OverbyteIcsHttpsTst:Make;OverbyteIcsBasNntp:Make;OverbyteIcsCliDemo:Make;OverbyteIcsClient5:Make;OverbyteIcsClient7:Make;OverbyteIcsDllTst:Make;OverbyteIcsFinger:Make;OverbyteIcsFtpServ:Make;OverbyteIcsFtpTst:Make;OverbyteIcsHttpPg:Make;OverbyteIcsMailRcv:Make;OverbyteIcsMailSnd:Make;OverbyteIcsMtSrv:Make;OverbyteIcsNewsRdr:Make;OverbyteIcsNsLook:Make;OverbyteIcsPingTst:Make;OverbyteIcsRecv:Make;OverbyteIcsReverseDnsSync:Make;OverbyteIcsSender:Make;OverbyteIcsServer5:Make;OverbyteIcsSocks:Make;OverbyteIcsSrvDemo:Make;OverbyteIcsTcpSrv:Make;OverbyteIcsTnCli:Make;OverbyteIcsTnDemo:Make;OverbyteIcsTnSrv:Make;OverbyteIcsTwsChat:Make;OverbyteIcsUdpLstn:Make;OverbyteIcsUdpSend:Make;OverbyteIcsWebServ:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>

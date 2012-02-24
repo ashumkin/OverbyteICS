@@ -8,7 +8,8 @@
 #include <Forms.hpp>
 #include "OverbyteIcsWSocket.hpp"
 #include <ExtCtrls.hpp>
-#include <dbtables.hpp>
+#include <DBTables.hpp>
+#include <DB.hpp>
 #include "OverbyteIcsWndControl.hpp"
 //---------------------------------------------------------------------------
 class TCliForm : public TForm

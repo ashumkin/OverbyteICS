@@ -1,4 +1,11 @@
-﻿15/02/2012
+﻿24/02/2012
+----------
+Added Install\CBXE2InstallVclFmx.groupproj, note that building 
+the C++ packages for OSX still triggers an ILINK32 error, this 
+is a bug in C++ Builder reported as QC #103668 the Win32 packages
+should build without errors.  
+
+15/02/2012
 ----------
 New alternate packages in order to support FireMonkey better,
 both in the IDE and at run-time with run-time packages.

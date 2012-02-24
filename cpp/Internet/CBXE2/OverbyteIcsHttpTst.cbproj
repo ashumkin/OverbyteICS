@@ -34,24 +34,30 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+			<Cfg_2_Win32>true</Cfg_2_Win32>
+			<CfgParent>Cfg_2</CfgParent>
+			<Cfg_2>true</Cfg_2>
+			<Base>true</Base>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<AllPackageLibs>vcl.lib;rtl.lib</AllPackageLibs>
+			<ILINK_LibraryPath>..\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<FinalOutputDir>.\$(Platform)\$(Config)</FinalOutputDir>
+			<IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
+			<UsingDelphiRTL>true</UsingDelphiRTL>
 			<Manifest_File>None</Manifest_File>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-			<OutputExt>exe</OutputExt>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<Defines>NO_STRICT;$(Defines)</Defines>
 			<DynamicRTL>true</DynamicRTL>
 			<ILINK_ObjectSearchPath>..\..\Internet;$(ILINK_ObjectSearchPath)</ILINK_ObjectSearchPath>
-			<ProjectType>CppVCLApplication</ProjectType>
 			<BCC_wpar>false</BCC_wpar>
-			<IncludePath>..\;..\CBXe2;$(BDS)\include;$(BDS)\include\dinkumware;$(BDSINCLUDE)\windows\vcl;..\..\Internet;..\..\..\Delphi\Vc32;$(IncludePath)</IncludePath>
-			<AllPackageLibs>rtl.lib;vcl.lib</AllPackageLibs>
-			<ILINK_LibraryPath>..\;..\CBXe2;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IncludePath>..\;..\CBXe2;..\..\Internet;..\..\..\Delphi\Vc32;$(BDS)\include;$(BDS)\include\dinkumware;$(BDSINCLUDE)\windows\vcl;$(IncludePath)</IncludePath>
 			<Multithreaded>true</Multithreaded>
 			<_TCHARMapping>wchar_t</_TCHARMapping>
 		</PropertyGroup>
@@ -69,23 +75,40 @@
 			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-			<IntermediateOutputDir>Debug</IntermediateOutputDir>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 			<BCC_StackFrames>true</BCC_StackFrames>
 			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-			<ILINK_LibraryPath>$(BDS)\lib\debug;..\..\..\Delphi\Vc32\Debug_Build;..\..\..\Delphi\Vc32\Debug_Build;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>$(BDSLIB)\$(PLATFORM)\debug;..\..\..\Delphi\Vc32\$(PLATFORM)\Debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-			<Manifest_File>None</Manifest_File>
+			<LinkPackageStatics>rtl.lib;vcl.lib;IcsVclCBXE2Run.lib;IcsCommonCBXE2Run.lib</LinkPackageStatics>
+			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+			<DCC_Optimize>false</DCC_Optimize>
+			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+			<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
+			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+			<BCC_StackFrames>true</BCC_StackFrames>
+			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+			<TASM_Debugging>Full</TASM_Debugging>
+			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<Defines>NDEBUG;$(Defines)</Defines>
-			<IntermediateOutputDir>Release</IntermediateOutputDir>
-			<ILINK_LibraryPath>$(BDS)\lib\release;..\..\..\Delphi\Vc32\Release_Build;..\..\..\Delphi\Vc32\Release_Build;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>$(BDSLIB)\$(PLATFORM)\release;..\..\..\Delphi\Vc32\$(PLATFORM)\Release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+			<ILINK_LibraryPath>..\..\..\Delphi\Vc32\Win32\Release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		</PropertyGroup>
+		<Import Condition="'$(Base)'!='' And Exists('DemosAllConfigXE2.optset')" Project="DemosAllConfigXE2.optset"/>
+		<Import Condition="'$(Cfg_2)'!='' And Exists('DemosReleaseConfigXE2.optset')" Project="DemosReleaseConfigXE2.optset"/>
+		<Import Condition="'$(Cfg_1)'!='' And Exists('DemosDebugConfigXE2.optset')" Project="DemosDebugConfigXE2.optset"/>
 		<ProjectExtensions>
 			<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
 			<Borland.ProjectType>CppVCLApplication</Borland.ProjectType>
@@ -143,64 +166,8 @@
 						<ProjectProperties Name="ManagePaths">True</ProjectProperties>
 						<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
 					</ProjectProperties>
-					<HistoryLists_hlIncludePath>
-						<HistoryLists_hlIncludePath Name="Count">2</HistoryLists_hlIncludePath>
-						<HistoryLists_hlIncludePath Name="Item0">$(BDS)\include;$(BDS)\include\dinkumware;$(BDSINCLUDE)\windows\vcl;..\..\Internet\CBXe2;..\..\Internet</HistoryLists_hlIncludePath>
-						<HistoryLists_hlIncludePath Name="Item1">$(BDS)\include;$(BDS)\include\dinkumware;$(BDSINCLUDE)\windows\vcl;..\..\Internet\CBXe2;..\..\Internet;..\..\..\Delphi\vc32</HistoryLists_hlIncludePath>
-					</HistoryLists_hlIncludePath>
-					<HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Count">2</HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Item0">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CBXe2;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Item1">$(BDS)\lib\debug;..\..\..\Delphi\Vc32\Debug_Build;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CBXe2;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
-						<HistoryLists_hlILINK_LibraryPath Name="Item2">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet\CBXe2;..\..\Internet</HistoryLists_hlILINK_LibraryPath>
-					</HistoryLists_hlILINK_LibraryPath>
-					<HistoryLists_hlDefines>
-						<HistoryLists_hlDefines Name="Count">2</HistoryLists_hlDefines>
-						<HistoryLists_hlDefines Name="Item0">NO_STRICT;NO_ADVANCED_HTTP_CLIENT_FEATURES</HistoryLists_hlDefines>
-						<HistoryLists_hlDefines Name="Item1">_DEBUG;NO_STRICT</HistoryLists_hlDefines>
-					</HistoryLists_hlDefines>
-					<HistoryLists_hlILINK_MaxErrors>
-						<HistoryLists_hlILINK_MaxErrors Name="Count">1</HistoryLists_hlILINK_MaxErrors>
-						<HistoryLists_hlILINK_MaxErrors Name="Item0">0</HistoryLists_hlILINK_MaxErrors>
-					</HistoryLists_hlILINK_MaxErrors>
-					<HistoryLists_hlILINK_FileAlignment>
-						<HistoryLists_hlILINK_FileAlignment Name="Count">1</HistoryLists_hlILINK_FileAlignment>
-						<HistoryLists_hlILINK_FileAlignment Name="Item0">0x200</HistoryLists_hlILINK_FileAlignment>
-					</HistoryLists_hlILINK_FileAlignment>
-					<HistoryLists_hlILINK_ObjectAlignment>
-						<HistoryLists_hlILINK_ObjectAlignment Name="Count">1</HistoryLists_hlILINK_ObjectAlignment>
-						<HistoryLists_hlILINK_ObjectAlignment Name="Item0">4096</HistoryLists_hlILINK_ObjectAlignment>
-					</HistoryLists_hlILINK_ObjectAlignment>
-					<HistoryLists_hlILINK_BaseAddress>
-						<HistoryLists_hlILINK_BaseAddress Name="Count">1</HistoryLists_hlILINK_BaseAddress>
-						<HistoryLists_hlILINK_BaseAddress Name="Item0">0x00400000</HistoryLists_hlILINK_BaseAddress>
-					</HistoryLists_hlILINK_BaseAddress>
-					<HistoryLists_hlILINK_HeapCommitSize>
-						<HistoryLists_hlILINK_HeapCommitSize Name="Count">1</HistoryLists_hlILINK_HeapCommitSize>
-						<HistoryLists_hlILINK_HeapCommitSize Name="Item0">0x00001000</HistoryLists_hlILINK_HeapCommitSize>
-					</HistoryLists_hlILINK_HeapCommitSize>
-					<HistoryLists_hlILINK_HeapReserveSize>
-						<HistoryLists_hlILINK_HeapReserveSize Name="Count">1</HistoryLists_hlILINK_HeapReserveSize>
-						<HistoryLists_hlILINK_HeapReserveSize Name="Item0">0x00100000</HistoryLists_hlILINK_HeapReserveSize>
-					</HistoryLists_hlILINK_HeapReserveSize>
-					<HistoryLists_hlILINK_StackCommitSize>
-						<HistoryLists_hlILINK_StackCommitSize Name="Count">1</HistoryLists_hlILINK_StackCommitSize>
-						<HistoryLists_hlILINK_StackCommitSize Name="Item0">0x00002000</HistoryLists_hlILINK_StackCommitSize>
-					</HistoryLists_hlILINK_StackCommitSize>
-					<HistoryLists_hlILINK_StackReserveSize>
-						<HistoryLists_hlILINK_StackReserveSize Name="Count">1</HistoryLists_hlILINK_StackReserveSize>
-						<HistoryLists_hlILINK_StackReserveSize Name="Item0">0x00100000</HistoryLists_hlILINK_StackReserveSize>
-					</HistoryLists_hlILINK_StackReserveSize>
-					<HistoryLists_hlIntermediateOutputDir>
-						<HistoryLists_hlIntermediateOutputDir Name="Count">1</HistoryLists_hlIntermediateOutputDir>
-						<HistoryLists_hlIntermediateOutputDir Name="Item0">Debug</HistoryLists_hlIntermediateOutputDir>
-					</HistoryLists_hlIntermediateOutputDir>
-					<HistoryLists_hlDCC_Define>
-						<HistoryLists_hlDCC_Define Name="Count">1</HistoryLists_hlDCC_Define>
-						<HistoryLists_hlDCC_Define Name="Item0">DEBUG</HistoryLists_hlDCC_Define>
-					</HistoryLists_hlDCC_Define>
 					<Excluded_Packages>
-						<Excluded_Packages Name="C:\Users\Public\Documents\RAD Studio\9.0\Bpl\OverbyteIcsDXe2Design.bpl">File C:\Users\Public\Documents\RAD Studio\9.0\Bpl\OverbyteIcsDXe2Design.bpl not found</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\fmidesigner160.bpl">FMI Form designer and property and component editors</Excluded_Packages>
 					</Excluded_Packages>
 				</CPlusPlusBuilder.Personality>
 				<Platforms>

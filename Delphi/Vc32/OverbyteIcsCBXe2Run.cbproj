@@ -24,12 +24,19 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+			<Cfg_1_Win32>true</Cfg_1_Win32>
+			<CfgParent>Cfg_1</CfgParent>
+			<Cfg_1>true</Cfg_1>
+			<Base>true</Base>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 			<Cfg_2>true</Cfg_2>
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
 			<BCC_UserSuppliedOptions> -CX256</BCC_UserSuppliedOptions>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Winapi;$(DCC_Namespace)</DCC_Namespace>
@@ -64,7 +71,6 @@
 			<DCC_UnitSearchPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\source\toolsapi;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<BCC_GenerateDLL>true</BCC_GenerateDLL>
 			<Multithreaded>true</Multithreaded>
-			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_Win32)'!=''">
 			<DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
@@ -75,7 +81,6 @@
 			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath);$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<DCC_Define>DEBUG;$(DCC_Define);$(DCC_Define)</DCC_Define>
 			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-			<IntermediateOutputDir>Debug_Build</IntermediateOutputDir>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
 			<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
 			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
@@ -85,9 +90,12 @@
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<Defines>_DEBUG;$(Defines)</Defines>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<Defines>NDEBUG;$(Defines)</Defines>
 			<BCC_Defines>NDEBUG;$(BCC_Defines);$(BCC_Defines)</BCC_Defines>
-			<IntermediateOutputDir>Release_Build</IntermediateOutputDir>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
 			<BCC_UserSuppliedOptions> -r</BCC_UserSuppliedOptions>
 			<TASM_Debugging>None</TASM_Debugging>
@@ -523,6 +531,9 @@
 					<VersionControl>
 						<VersionControl Name="VersionControlID"/>
 					</VersionControl>
+					<Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\fmidesigner160.bpl">FMI Form designer and property and component editors</Excluded_Packages>
+					</Excluded_Packages>
 				</CPlusPlusBuilder.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

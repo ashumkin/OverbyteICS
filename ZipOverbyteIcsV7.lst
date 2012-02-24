@@ -115,6 +115,27 @@ Delphi\Vc32\OverbyteIcsCBXe2Run.cpp
 Delphi\Vc32\OverbyteIcsCBXe2Design.cbproj
 Delphi\Vc32\OverbyteIcsCBXe2Design.cpp
 
+Delphi\Vc32\IcsCommonCBXE2Run.dpk
+Delphi\Vc32\IcsCommonCBXE2Run.dproj
+Delphi\Vc32\IcsCommonCBXE2Run.res
+Delphi\Vc32\IcsCommonCBXE2Design.dpk
+Delphi\Vc32\IcsCommonCBXE2Design.dproj
+Delphi\Vc32\IcsCommonCBXE2Design.res
+
+Delphi\Vc32\IcsFmxCBXE2Run.dpk
+Delphi\Vc32\IcsFmxCBXE2Run.dproj
+Delphi\Vc32\IcsFmxCBXE2Run.res
+Delphi\Vc32\IcsFmxCBXE2Design.dpk
+Delphi\Vc32\IcsFmxCBXE2Design.dproj
+Delphi\Vc32\IcsFmxCBXE2Design.res
+
+Delphi\Vc32\IcsVclCBXE2Run.dpk
+Delphi\Vc32\IcsVclCBXE2Run.dproj
+Delphi\Vc32\IcsVclCBXE2Run.res
+Delphi\Vc32\IcsVclCBXE2Design.dpk
+Delphi\Vc32\IcsVclCBXE2Design.dproj
+Delphi\Vc32\IcsVclCBXE2Design.res
+
 Delphi\Vc32\OverbyteIcsProductIcon.res
 Delphi\Vc32\OverbyteIcsDprUpdFix.pas
 Delphi\Vc32\OverbyteIcsCharsetUtils.pas
@@ -306,13 +327,15 @@ Install\D2009Install.groupproj
 Install\D2010Install.groupproj
 Install\DXeInstall.groupproj
 Install\DXe2Install.groupproj
+Install\DXe2InstallVclFmx.groupproj
+
 Install\CB2006Install.bdsgroup
 Install\CB2007Install.groupproj
 Install\CB2009Install.groupproj
 Install\CB2010Install.groupproj
 Install\CBXeInstall.groupproj
 Install\CBXe2Install.groupproj
-Install\DXe2InstallVclFmx.groupproj
+Install\CBXe2InstallVclFmx.groupproj
 
 cpp\Internet\OverbyteIcsHttpTst1.cpp
 cpp\Internet\OverbyteIcsHttpTst1.dfm

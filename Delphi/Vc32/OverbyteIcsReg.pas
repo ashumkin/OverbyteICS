@@ -9,7 +9,7 @@ unit OverbyteIcsReg;
 {$IFDEF USE_SSL}
     {$I OverbyteIcsSslDefs.inc}
 {$ENDIF}
-
+(*
 {$IFDEF BCB}
   { So far no FMX support for C++ Builder, to be removed later }
   {$DEFINE VCL}
@@ -17,7 +17,7 @@ unit OverbyteIcsReg;
     {$UNDEF FMX}
   {$ENDIF}
 {$ENDIF}
-
+*)
 {$IFNDEF COMPILER16_UP}
   {$DEFINE VCL}
   {$IFDEF FMX}

@@ -23,29 +23,35 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+			<Cfg_1_Win32>true</Cfg_1_Win32>
+			<CfgParent>Cfg_1</CfgParent>
+			<Cfg_1>true</Cfg_1>
+			<Base>true</Base>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 			<Cfg_2>true</Cfg_2>
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<VerInfo_Locale>1031</VerInfo_Locale>
+			<AllPackageLibs>vcl.lib;rtl.lib</AllPackageLibs>
+			<ILINK_LibraryPath>..\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<FinalOutputDir>.\$(Platform)\$(Config)</FinalOutputDir>
+			<IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
+			<UsingDelphiRTL>true</UsingDelphiRTL>
+			<Manifest_File>None</Manifest_File>
+			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-			<LinkPackageImports>rtl.bpi;vcl.bpi;OverbyteIcsCBXe2Run.bpi</LinkPackageImports>
+			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-			<OutputExt>exe</OutputExt>
-			<Defines>NO_STRICT;SECURITY_WIN32</Defines>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+			<Defines>NO_STRICT;SECURITY_WIN32;$(Defines)</Defines>
 			<DynamicRTL>true</DynamicRTL>
-			<UsePackages>true</UsePackages>
-			<ILINK_ObjectSearchPath>..\..\Internet</ILINK_ObjectSearchPath>
-			<ProjectType>CppVCLApplication</ProjectType>
-			<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;vclactnband.bpi;dbrtl.bpi;vcldb.bpi;vcldbx.bpi;bdertl.bpi;dsnap.bpi;dsnapcon.bpi;vclib.bpi;ibxpress.bpi;adortl.bpi;dbxcds.bpi;dbexpress.bpi;DbxCommonDriver.bpi;VclSmp.bpi;vclie.bpi;webdsnap.bpi;xmlrtl.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;soaprtl.bpi;bcbie.bpi;bcbsmp.bpi;IndyProtocols.bpi;OverbyteIcsCBXe2Run.bpi</PackageImports>
+			<ILINK_ObjectSearchPath>..\..\Internet;$(ILINK_ObjectSearchPath)</ILINK_ObjectSearchPath>
 			<BCC_wpar>false</BCC_wpar>
-			<IncludePath>..\;..\CBXe2;$(BDS)\include;$(BDS)\include\dinkumware;$(BDSINCLUDE)\windows\vcl;..\..\Internet;..\..\..\Delphi\Vc32</IncludePath>
-			<AllPackageLibs>rtl.lib;vcl.lib</AllPackageLibs>
-			<ILINK_LibraryPath>..\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..\..\Internet</ILINK_LibraryPath>
+			<IncludePath>..\;..\CBXe2;..\..\Internet;..\..\..\Delphi\Vc32;$(BDS)\include;$(BDS)\include\dinkumware;$(BDSINCLUDE)\windows\vcl;$(IncludePath)</IncludePath>
 			<Multithreaded>true</Multithreaded>
 			<_TCHARMapping>wchar_t</_TCHARMapping>
 		</PropertyGroup>
@@ -53,28 +59,29 @@
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
-			<DCC_Optimize>false</DCC_Optimize>
 			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-			<Defines>_DEBUG;$(Defines)</Defines>
+			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+			<Defines>_DEBUG;$(Defines)</Defines>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
 			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
 			<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
 			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-			<IntermediateOutputDir>Debug</IntermediateOutputDir>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 			<BCC_StackFrames>true</BCC_StackFrames>
-			<ILINK_LibraryPath>$(BDS)\lib\debug;..\..\..\Delphi\Vc32\Debug_Build;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+			<ILINK_LibraryPath>$(BDSLIB)\$(PLATFORM)\debug;..\..\..\Delphi\Vc32\$(PLATFORM)\Debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
 		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<LinkPackageStatics>vcl.lib;rtl.lib</LinkPackageStatics>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<Defines>NDEBUG;$(Defines)</Defines>
-			<IntermediateOutputDir>Release</IntermediateOutputDir>
-			<ILINK_LibraryPath>$(BDS)\lib\release;..\..\..\Delphi\Vc32\Release_Build;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>$(BDSLIB)\$(PLATFORM)\release;..\..\..\Delphi\Vc32\$(PLATFORM)\Release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
 		<ProjectExtensions>
@@ -165,6 +172,9 @@
 						<HistoryLists_hlIntermediateOutputDir Name="Count">1</HistoryLists_hlIntermediateOutputDir>
 						<HistoryLists_hlIntermediateOutputDir Name="Item0">Debug</HistoryLists_hlIntermediateOutputDir>
 					</HistoryLists_hlIntermediateOutputDir>
+					<Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\fmidesigner160.bpl">FMI Form designer and property and component editors</Excluded_Packages>
+					</Excluded_Packages>
 				</CPlusPlusBuilder.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>
