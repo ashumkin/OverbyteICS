@@ -423,12 +423,10 @@ interface
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-    {$DEFINE USE_BUFFERED_STREAM}
-{$ENDIF}
+{$WARN SYMBOL_PLATFORM   OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
+{$DEFINE USE_BUFFERED_STREAM}
 {$IFDEF BCB}
     {$ObjExportAll On}
 {$ENDIF}
@@ -3749,21 +3747,25 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure PrepareGlobalSmtpFormatSettings;
-{$IFDEF POSIX}
+{$IFDEF MACOS}
 var
     LocaleRef: CFLocaleRef;
     CFStrRef : CFStringRef;
 begin
     CFStrRef := TCFString('en_US').Value;
     LocaleRef := CFLocaleCreate(kCFAllocatorDefault, CFStrRef);
-    GetLocaleFormatSettings(LocaleRef, GL_En_US_FormatSettings);
+    GL_En_US_FormatSettings := TFormatSettings.Create(LocaleRef);
     CFRelease(CFStrRef);
     CFRelease(LocaleRef);
 end;
 {$ENDIF}
 {$IFDEF MSWINDOWS}
 begin
-    GetLocaleFormatSettings(1033, GL_En_US_FormatSettings);
+  {$IFDEF COMPILER16_UP}
+    GL_En_US_FormatSettings := TFormatSettings.Create(1033);
+  {$ELSE}
+    GetLocaleFormatSettings(1033, GL_En_US_FormatSettings); // deprecated
+  {$ENDIF}
 end;
 {$ENDIF}
 
