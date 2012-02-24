@@ -7,7 +7,7 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.21
+Version:      7.22
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -65,6 +65,7 @@ Oct 9, 2009   V7.21 Angus - more content headers shown
 Feb 14, 2012  V7.22 Angus - test TMimeTypesList1 component
 
 
+
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDemo1;
 
@@ -118,6 +119,11 @@ type
     DecodeFileExButton: TButton;
     MimeDecodeEx1: TMimeDecodeEx;
     IgnoreBlankParts: TCheckBox;
+    doCreateMimeList: TButton;
+    doMimefromReg: TButton;
+    doMimeFromTypes: TButton;
+    doMimeTestExtn: TButton;
+    doMimeTestContent: TButton;
     MimeTypesList1: TMimeTypesList;
     procedure DecodeButtonClick(Sender: TObject);
     procedure MimeDecode1PartBegin(Sender: TObject);
@@ -153,6 +159,11 @@ type
     procedure DecOneHeaderButtonClick(Sender: TObject);
     procedure EncodeOneHdrButtonClick(Sender: TObject);
     procedure DecodeFileExButtonClick(Sender: TObject);
+    procedure doCreateMimeListClick(Sender: TObject);
+    procedure doMimefromRegClick(Sender: TObject);
+    procedure doMimeFromTypesClick(Sender: TObject);
+    procedure doMimeTestExtnClick(Sender: TObject);
+    procedure doMimeTestContentClick(Sender: TObject);
   private
     Memo1          : TCurrentMemo;
     FInitialized   : Boolean;
@@ -163,6 +174,7 @@ type
     FFileName      : String;
     procedure Display(Msg: UnicodeString);
     procedure DisplayBuffer;
+    procedure ListMimeTypes;
   end;
 
 var
