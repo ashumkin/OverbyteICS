@@ -54,9 +54,9 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-  Windows, Messages,
+  Windows,
 {$ENDIF}
-  Classes, SysUtils;
+  SysUtils;
 
 const
   OverbyteIcsTypesVersion = 107;
@@ -119,70 +119,6 @@ type
   {$EXTERNALSYM PUINT_PTR}
   PUINT_PTR                 = ^UINT_PTR;
 {$ENDIF MSWINDOWS}
-
-  {$EXTERNALSYM Exception}
-  Exception                 = SysUtils.Exception;
-  {$EXTERNALSYM ExceptClass}
-  ExceptClass               = SysUtils.ExceptClass;
-  {$EXTERNALSYM EAbort}
-  EAbort                    = SysUtils.EAbort;
-  {$EXTERNALSYM TSearchRec}
-  TSearchRec                = SysUtils.TSearchRec;
-  {$EXTERNALSYM TReplaceFlags}
-  TReplaceFlags             = SysUtils.TReplaceFlags;
-  {$EXTERNALSYM TComponent}
-  TComponent                = Classes.TComponent;
-  {$EXTERNALSYM TPersistent}
-  TPersistent               = Classes.TPersistent;
-  {$EXTERNALSYM TNotifyEvent}
-  TNotifyEvent              = Classes.TNotifyEvent;
-  {$EXTERNALSYM TList}
-  TList                     = Classes.TList;
-  {$EXTERNALSYM TStrings}
-  TStrings                  = Classes.TStrings;
-  {$EXTERNALSYM TStringList}
-  TStringList               = Classes.TStringList;
-  {$EXTERNALSYM TThread}
-  TThread                   = Classes.TThread;
-  {$EXTERNALSYM TOperation}
-  TOperation                = Classes.TOperation;
-  {$EXTERNALSYM TListNotification}
-  TListNotification         = Classes.TListNotification;
-
-{$IFDEF MSWINDOWS}
-  {$EXTERNALSYM TMessage}
-  TMessage                  = Messages.TMessage;
-  {$EXTERNALSYM TTimeZoneInformation}
-  TTimeZoneInformation      = Windows.TTimeZoneInformation;
-  {$EXTERNALSYM HWND}
-  HWND                      = Windows.HWND;
-  {$EXTERNALSYM DWORD}
-  DWORD                     = Windows.DWORD;
-  {$EXTERNALSYM UINT}
-  UINT                      = Windows.UINT;
-  {$EXTERNALSYM TRTLCriticalSection}
-  TRTLCriticalSection       = Windows.TRTLCriticalSection;
-  {$EXTERNALSYM TWndClass}
-  TWndClass                 = Windows.TWndClass;
-  {$EXTERNALSYM TMsg}
-  TMsg                      = Windows.TMsg;
-  {$EXTERNALSYM WPARAM}
-  WPARAM                    = Windows.WPARAM;
-  {$EXTERNALSYM LPARAM}
-  LPARAM                    = Windows.LPARAM;
-  {$EXTERNALSYM POverlapped}
-  POverlapped               = Windows.POverlapped;
-  {$EXTERNALSYM FARPROC}
-  FARPROC                   = Windows.FARPROC;
-  {$EXTERNALSYM LRESULT}
-  LRESULT                   = Windows.LRESULT;
-  {$EXTERNALSYM short}
-  Short                     = Windows.Short;
-  {$EXTERNALSYM TSystemInfo}
-  TSystemInfo               = Windows.TSystemInfo;
-{$ENDIF}
-
-  LOWORD = Word;
 
 implementation
 

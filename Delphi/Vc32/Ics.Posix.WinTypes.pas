@@ -37,17 +37,19 @@ History:
 unit Ics.Posix.WinTypes;
 
 interface
+
 {$IFDEF POSIX}
 uses
-  Posix.Errno, Posix.SysTypes;
+  Posix.Errno;
 
 type
-  DWORD                     = LongWord;
-  UINT                      = LongWord;
-  INT_PTR                   = NativeInt;
-  PINT_PTR                  = ^INT_PTR;
-  UINT_PTR                  = NativeUInt;
-  PUINT_PTR                 = ^UINT_PTR;
+  DWORD                           = LongWord;
+  UINT                            = LongWord;
+  INT_PTR                         = NativeInt;
+  PINT_PTR                        = ^INT_PTR;
+  UINT_PTR                        = NativeUInt;
+  PUINT_PTR                       = ^UINT_PTR;
+  LOWORD                          = Word;
 
 const
   { Error consts }
@@ -74,6 +76,7 @@ const
   MaxWord                         = $FFFF;
   MaxDWord                        = $FFFFFFFF;
 {$ENDIF POSIX}
+
 implementation
 
 end.

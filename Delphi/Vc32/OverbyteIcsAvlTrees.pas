@@ -40,18 +40,23 @@ Dez  06, 2011  Made TCacheNode Data and Len writable.
 
 interface
 
+{$B-}           { Enable partial boolean evaluation   }
+{$T-}           { Untyped pointers                    }
+{$X+}           { Enable extended syntax              }
+{$H+}           { Use long strings                    }
 {$I OverbyteIcsDefs.inc}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
     {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
   {$ENDIF}
 {$ENDIF}
+{$IFDEF BCB}
+  {$ObjExportAll On}
+{$ENDIF}
 
 uses
   {$IFDEF MSWINDOWS}
     Windows,
-  {$ELSE}
-    System.SyncObjs,
   {$ENDIF}
   {$IFDEF POSIX}
     Posix.Pthread,

@@ -153,8 +153,6 @@
 			<DCCReference Include="Ics.Fmx.OverbyteIcsHttpAppServer.pas"/>
 			<DCCReference Include="Ics.Fmx.OverbyteIcsThreadTimer.pas"/>
 			<DCCReference Include="Ics.Fmx.OverbyteIcsCharsetComboBox.pas"/>
-			<DCCReference Include="Ics.Posix.KEventApi.pas"/>
-			<DCCReference Include="Ics.Posix.KEventTypes.pas"/>
 			<DCCReference Include="Ics.Posix.Messages.pas"/>
 			<DCCReference Include="Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas"/>
 			<BuildConfiguration Include="Release">

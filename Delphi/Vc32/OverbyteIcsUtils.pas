@@ -142,13 +142,11 @@ interface
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
-{$IFDEF BCB3_UP}
-    {$ObjExportAll On}
+{$WARN SYMBOL_PLATFORM   OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
+{$IFDEF BCB}
+  {$ObjExportAll On}
 {$ENDIF}
 {$IFDEF CPUX64}
   {.$DEFINE PUREPASCAL}
@@ -167,20 +165,16 @@ uses
     Posix.Unistd, Posix.Stdio, Posix.SysStatvfs,
     Posix.PThread,
     Ics.Posix.WinTypes,
-{$ENDIF}
-{$IFDEF MACOS}
+  {$IFDEF MACOS}
     Macapi.CoreFoundation,
     MacApi.CoreServices,
+  {$ENDIF}
 {$ENDIF}
-    Classes,
-    SysUtils,
-    RtlConsts,
-    SysConst, SyncObjs,
+    Classes, SysUtils, RtlConsts, SysConst,
     OverbyteIcsTypes; // for TBytes and TThreadID
 
 type
 {$IFNDEF COMPILER12_UP}
-   { Should move to OverbyteIcsTypes.pas }
     UnicodeString = WideString;
     RawByteString = AnsiString;
 
@@ -217,7 +211,6 @@ const
     ICS_LEAD_BYTES_20936 : TIcsDbcsLeadBytes = [#$A1..#$A9, #$B0..#$F7];              // (Simplified Chinese GB2312) DBCS Lead Bytes: A1..A9 B0..F7
     ICS_LEAD_BYTES_51949 : TIcsDbcsLeadBytes = [#$A1..#$AC, #$B0..#$C8, #$CA..#$FD];  // (EUC-Korean) DBCS Lead Bytes: A1..AC B0..C8 CA..FD
 
-const
 {$IFDEF MSWINDOWS}
   {$IFNDEF COMPILER12_UP}
     {$EXTERNALSYM MB_ERR_INVALID_CHARS}

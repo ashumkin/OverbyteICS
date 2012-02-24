@@ -57,8 +57,7 @@ Bomb('Sorry, Delphi 1 does not support console mode programs');
 {$ENDIF}
 
 uses
-  Windows, Messages, SysUtils,
-  OverbyteIcsTypes,
+  Windows, Messages, SysUtils, Classes,
   OverbyteIcsFtpCli,
   OverbyteIcsWinsock;
 

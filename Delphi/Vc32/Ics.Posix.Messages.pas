@@ -43,6 +43,9 @@ unit Ics.Posix.Messages;
 {$H+}           { Use long strings                    }
 {$J+}           { Allow typed constant to be modified }
 {$I OverbyteIcsDefs.inc}
+{$IFDEF BCB}
+  {$ObjExportAll On}
+{$ENDIF}
 
 interface
 

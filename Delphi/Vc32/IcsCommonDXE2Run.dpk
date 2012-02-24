@@ -74,7 +74,9 @@ contains
   OverbyteIcsWSockBuf in 'OverbyteIcsWSockBuf.pas',
   OverbyteIcsMimeDec in 'OverbyteIcsMimeDec.pas',
   OverbyteIcsNtlmMsgs in 'OverbyteIcsNtlmMsgs.pas',
-  OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas';
+  OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas',
+  Ics.Posix.KEventApi in 'Ics.Posix.KEventApi.pas',
+  Ics.Posix.KEventTypes in 'Ics.Posix.KEventTypes.pas';
 
 end.
 

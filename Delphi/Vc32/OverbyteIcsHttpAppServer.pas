@@ -116,7 +116,7 @@ uses
     Ics.Posix.Messages,
 {$ENDIF}
     SysUtils,
-{$IFDEF DELPHI7_UP}
+{$IFDEF COMPILER7_UP}
     StrUtils,
 {$ENDIF}
 {$IFDEF FMX}
@@ -642,7 +642,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFNDEF DELPHI7_UP}
+{$IFNDEF COMPILER7_UP}
 function AnsiStartsText(const ASubText, AText: string): Boolean;
 var
   P: PChar;

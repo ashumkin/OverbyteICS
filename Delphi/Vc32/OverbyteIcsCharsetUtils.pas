@@ -255,11 +255,9 @@ unit OverbyteIcsCharsetUtils;
     {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
   {$ENDIF}
 {$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
+{$WARN SYMBOL_PLATFORM   OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
 {$B-}             { Enable partial boolean evaluation   }
 {$T-}             { Untyped pointers                    }
 {$X+}             { Enable extended syntax              }

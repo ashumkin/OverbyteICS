@@ -987,12 +987,10 @@ unit OverbyteIcsWSocket;
     {$WARN EXPLICIT_STRING_CAST       OFF}
     {$WARN EXPLICIT_STRING_CAST_LOSS  OFF}
 {$ENDIF}
-{$IFDEF DELPHI6_UP}
-    {$WARN SYMBOL_PLATFORM   OFF}
-    {$WARN SYMBOL_LIBRARY    OFF}
-    {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
-{$IFDEF BCB3_UP}
+{$WARN SYMBOL_PLATFORM   OFF}
+{$WARN SYMBOL_LIBRARY    OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
+{$IFDEF BCB}
     {$ObjExportAll On}
 {$ENDIF}
 {$IFDEF CPUX64}
@@ -1003,7 +1001,7 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-  Windows, OverbyteIcsWinsock,
+  Windows, Messages, OverbyteIcsWinsock,
 {$ENDIF}
   SysUtils, Classes, Contnrs, SyncObjs, SysConst,
 {$IFDEF POSIX}

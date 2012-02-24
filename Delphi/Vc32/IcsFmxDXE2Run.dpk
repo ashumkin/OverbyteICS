@@ -75,8 +75,6 @@ contains
   Ics.Fmx.OverbyteIcsHttpAppServer in 'Ics.Fmx.OverbyteIcsHttpAppServer.pas',
   Ics.Fmx.OverbyteIcsThreadTimer in 'Ics.Fmx.OverbyteIcsThreadTimer.pas',
   Ics.Fmx.OverbyteIcsCharsetComboBox in 'Ics.Fmx.OverbyteIcsCharsetComboBox.pas',
-  Ics.Posix.KEventApi in 'Ics.Posix.KEventApi.pas',
-  Ics.Posix.KEventTypes in 'Ics.Posix.KEventTypes.pas',
   Ics.Posix.Messages in 'Ics.Posix.Messages.pas',
   Ics.Fmx.OverbyteIcsSslHtmlSmtpProt in 'Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas';
 
