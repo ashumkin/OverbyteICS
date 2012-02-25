@@ -64,7 +64,7 @@ program IcsConSmtp;
 uses
   System.SysUtils,
   System.Classes,
-  OverbyteIcsSmtpProt;
+  Ics.Fmx.OverbyteIcsSmtpProt;
 
 const
   ConSmtpVersion = 104;

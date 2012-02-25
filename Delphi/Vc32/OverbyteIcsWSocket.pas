@@ -1039,7 +1039,6 @@ uses
   OverbyteIcsDigestAuth,
 {$ENDIF}
 {$IFDEF FMX}
-   Fmx.Types,
   {$IF DEFINED(BUILTIN_THROTTLE) or DEFINED(BUILTIN_TIMEOUT)}
     Ics.Fmx.OverbyteIcsThreadTimer,
   {$IFEND}
