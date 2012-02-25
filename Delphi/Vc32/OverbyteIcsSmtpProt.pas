@@ -1136,6 +1136,7 @@ type
                                                      read  FOnAfterFileOpen
                                                      write FOnAfterFileOpen;
         {AG end}
+        property SocketFamily;
     end;
 
     { TSyncSmtpCli add synchronous functions. You should avoid using this   }
