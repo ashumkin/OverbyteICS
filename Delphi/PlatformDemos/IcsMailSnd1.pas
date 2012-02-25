@@ -112,7 +112,7 @@ uses
   OverbyteIcsCharsetUtils,
   OverbyteIcsWndControl,
   OverbyteIcsWSocket,
-  OverbyteIcsSmtpProt;
+  OverbyteIcsSmtpProt, Ics.Fmx.OverbyteIcsCharsetComboBox;
 
 const
     SmtpTestVersion    = 6.09;
@@ -202,7 +202,7 @@ type
     Label21: TLabel;
     Label22: TLabel;
     Label23: TLabel;
-    CharSetEdit: TEdit;
+    IcsCharsetComboBox1: TIcsCharsetComboBox;
     procedure FormCreate(Sender: TObject);
     procedure ClearDisplayButtonClick(Sender: TObject);
     procedure ConnectButtonClick(Sender: TObject);
@@ -374,7 +374,7 @@ begin
     DisplayMemo.Lines.Clear;
     FIniFileName := GetIcsIniFileName;
     IcsNameThreadForDebugging('Main');
-    //IcsCharsetComboBox1.IncludeList := IcsCharsetComboBox1.IncludeList + [UTF_7];
+    IcsCharsetComboBox1.IncludeList := IcsCharsetComboBox1.IncludeList + [UTF_7];
     ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
     FormShow(Self);
 end;
@@ -434,8 +434,7 @@ begin
     FoldHeadersCheckBox.IsChecked := IniFile.ReadBool(SectionData, KeyFoldHeaders, False);
     WrapTextCheckBox.IsChecked := IniFile.ReadBool(SectionData, KeyWrapText, False);
     WrapAtEdit.Text := IniFile.ReadString(SectionData, KeyWrapAt, '76');
-    //IcsCharsetComboBox1.Charset := IniFile.ReadString(SectionData, KeyCharset, SmtpClient.CharSet);
-    CharSetEdit.Text := IniFile.ReadString(SectionData, KeyCharset, SmtpClient.CharSet);
+    IcsCharsetComboBox1.Charset := IniFile.ReadString(SectionData, KeyCharset, SmtpClient.CharSet);
     DefEncodingComboBox.ItemIndex := IniFile.ReadInteger(SectionData, KeyDefTransEnc, 0);
     if not IniFile.ReadStrings(SectionFileAttach,
                                KeyFileAttach, FileAttachMemo.Lines) then
@@ -495,8 +494,7 @@ begin
     IniFile.WriteBool(SectionData, KeyFoldHeaders, FoldHeadersCheckBox.IsChecked);
     IniFile.WriteBool(SectionData, KeyWrapText, WrapTextCheckBox.IsChecked);
     IniFile.WriteString(SectionData, KeyWrapAt, WrapAtEdit.Text);
-    //IniFile.WriteString(SectionData, KeyCharset, IcsCharsetComboBox1.CharSet);
-    IniFile.WriteString(SectionData, KeyCharset, CharsetEdit.Text);
+    IniFile.WriteString(SectionData, KeyCharset, IcsCharsetComboBox1.CharSet);
     IniFile.WriteInteger(SectionData, KeyDefTransEnc, DefEncodingComboBox.ItemIndex);
     IniFile.WriteStrings(SectionFileAttach, KeyFileAttach, FileAttachMemo.Lines);
     IniFile.WriteStrings(SectionMsgMemo, KeyMsgMemo, MsgMemo.Lines);
@@ -667,8 +665,7 @@ begin
         SmtpClient.MailMessage.Clear;
     end;
     FAllInOneFlag                 := FALSE;
-    //SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
-    SmtpClient.CharSet            := CharsetEdit.Text;
+    SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
     SmtpClient.DefaultEncoding    := TSmtpDefaultEncoding(DefEncodingComboBox.ItemIndex);
     SmtpClient.Allow8bitChars     := Allow8BitCheckBox.IsChecked;
     SmtpClient.FoldHeaders        := FoldHeadersCheckBox.IsChecked;
@@ -774,8 +771,7 @@ begin
         SmtpClient.MailMessage.Clear;
     end;
     FAllInOneFlag                 := FALSE;
-    //SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
-    SmtpClient.CharSet            := CharsetEdit.Text;
+    SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
     SmtpClient.DefaultEncoding    := TSmtpDefaultEncoding(DefEncodingComboBox.ItemIndex);
     SmtpClient.Allow8bitChars     := Allow8BitCheckBox.IsChecked;
     SmtpClient.FoldHeaders        := FoldHeadersCheckBox.IsChecked;
@@ -810,8 +806,7 @@ begin
         SmtpClient.MailMessage.Clear;
     end;
     FAllInOneFlag                 := FALSE;
-    //SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
-    SmtpClient.CharSet            := CharsetEdit.Text;
+    SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
     SmtpClient.DefaultEncoding    := TSmtpDefaultEncoding(DefEncodingComboBox.ItemIndex);
     SmtpClient.Allow8bitChars     := Allow8BitCheckBox.IsChecked;
     SmtpClient.FoldHeaders        := FoldHeadersCheckBox.IsChecked;
@@ -940,8 +935,7 @@ begin
         SmtpClient.OnGetData   := SmtpClientGetData;
         SmtpClient.MailMessage.Clear;
     end;
-    //SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
-    SmtpClient.CharSet            := CharsetEdit.Text;
+    SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
     SmtpClient.DefaultEncoding    := TSmtpDefaultEncoding(DefEncodingComboBox.ItemIndex);
     SmtpClient.Allow8bitChars     := Allow8BitCheckBox.IsChecked;
     SmtpClient.FoldHeaders        := FoldHeadersCheckBox.IsChecked;
@@ -985,8 +979,7 @@ begin
         SmtpClient.MailMessage.Clear;
     end;
     FAllInOneFlag                 := FALSE;
-    //SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
-    SmtpClient.CharSet            := CharsetEdit.Text;
+    SmtpClient.CharSet            := IcsCharsetComboBox1.Charset;
     SmtpClient.DefaultEncoding    := TSmtpDefaultEncoding(DefEncodingComboBox.ItemIndex);
     SmtpClient.Allow8bitChars     := Allow8BitCheckBox.IsChecked;
     SmtpClient.FoldHeaders        := FoldHeadersCheckBox.IsChecked;
@@ -1013,11 +1006,9 @@ begin
     { assigned. Assigning an empty string however sets the default }
     { system charset silently.                                     }
     OldCharSet := SmtpClient.CharSet;
-    //if IcsCharsetComboBox1.Charset = '' then
-    if CharsetEdit.Text = '' then
+    if IcsCharsetComboBox1.Charset = '' then
         raise Exception.Create('Enter a MIME charset name');
-    //SmtpClient.CharSet := IcsCharsetComboBox1.CharSet; // Sets property CodePage as well
-    SmtpClient.CharSet  := CharsetEdit.Text;
+    SmtpClient.CharSet := IcsCharsetComboBox1.CharSet; // Sets property CodePage as well
     CharsetInfoLabel1.Text := '"' + SmtpClient.CharSet + '" supported. ' +
                               'Code page ID = ' + IntToStr(SmtpClient.CodePage);
     SmtpClient.CharSet := OldCharSet;
@@ -1027,14 +1018,14 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.ToggleCsViewButtonClick(Sender: TObject);
 begin
-    //IcsCharsetComboBox1.UserFriendly := not IcsCharsetComboBox1.UserFriendly;
+    IcsCharsetComboBox1.UserFriendly := not IcsCharsetComboBox1.UserFriendly;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSmtpTestForm.IcsCharsetComboBox1Change(Sender: TObject);
 begin
-    //CharsetInfoLabel1.Text := '"' + IcsCharsetComboBox1.CharSet + '"';
+    CharsetInfoLabel1.Text := '"' + IcsCharsetComboBox1.CharSet + '"';
 end;
 
 

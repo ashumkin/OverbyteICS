@@ -38,7 +38,7 @@ object SmtpTestForm: TSmtpTestForm
     TabOrder = 2
     object Label5: TLabel
       Position.Point = '(12,219)'
-      Width = 72.433097839355470000
+      Width = 74.264640808105470000
       Height = 18.630859375000000000
       TabOrder = 0
       AutoSize = True
@@ -621,7 +621,7 @@ object SmtpTestForm: TSmtpTestForm
           Top = 6
         end
         object ToggleCsViewButton: TButton
-          Position.Point = '(275,59)'
+          Position.Point = '(302,59)'
           Width = 73.000000000000000000
           Height = 21.000000000000000000
           OnClick = ToggleCsViewButtonClick
@@ -632,7 +632,7 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label17: TLabel
           Position.Point = '(298,156)'
-          Width = 71.917472839355470000
+          Width = 73.749015808105470000
           Height = 18.630859375000000000
           TabOrder = 4
           AutoSize = True
@@ -643,7 +643,7 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label16: TLabel
           Position.Point = '(238,140)'
-          Width = 142.778305053710900000
+          Width = 144.609848022460900000
           Height = 18.630859375000000000
           TabOrder = 5
           AutoSize = True
@@ -654,7 +654,7 @@ object SmtpTestForm: TSmtpTestForm
         end
         object Label15: TLabel
           Position.Point = '(35,40)'
-          Width = 41.699703216552730000
+          Width = 43.531246185302730000
           Height = 18.630859375000000000
           TabOrder = 6
           AutoSize = True
@@ -717,7 +717,7 @@ object SmtpTestForm: TSmtpTestForm
         end
         object DefEnc: TLabel
           Position.Point = '(36,132)'
-          Width = 133.792465209960900000
+          Width = 135.624008178710900000
           Height = 18.630859375000000000
           TabOrder = 9
           AutoSize = True
@@ -727,7 +727,7 @@ object SmtpTestForm: TSmtpTestForm
           Top = 92
         end
         object CharsetTestButton: TButton
-          Position.Point = '(195,59)'
+          Position.Point = '(222,59)'
           Width = 73.000000000000000000
           Height = 21.000000000000000000
           OnClick = CharsetTestButtonClick
@@ -738,7 +738,7 @@ object SmtpTestForm: TSmtpTestForm
         end
         object CharsetInfoLabel1: TLabel
           Position.Point = '(84,40)'
-          Width = 93.842277526855470000
+          Width = 95.673820495605470000
           Height = 18.630859375000000000
           TabOrder = 11
           AutoSize = True
@@ -747,23 +747,22 @@ object SmtpTestForm: TSmtpTestForm
           Left = 48
           Top = 2
         end
-        object CharSetEdit: TEdit
-          Position.Point = '(35,58)'
-          Width = 153.000000000000000000
-          Height = 22.000000000000000000
-          TabOrder = 12
-          KeyboardType = vktDefault
-          Password = False
-          Text = 'UTF-8'
-        end
         object Allow8BitCheckBox: TCheckBox
           Position.Point = '(34,91)'
           Width = 107.000000000000000000
           Height = 17.000000000000000000
-          TabOrder = 13
+          TabOrder = 12
           Text = 'Allow8BitChars'
           Left = 6
           Top = 56
+        end
+        object IcsCharsetComboBox1: TIcsCharsetComboBox
+          Position.Point = '(37,59)'
+          Width = 181.000000000000000000
+          Height = 21.000000000000000000
+          TabOrder = 13
+          ItemIndex = 30
+          CharSet = 'windows-1252'
         end
       end
       object ProxyTabsheet: TTabItem
@@ -917,7 +916,7 @@ object SmtpTestForm: TSmtpTestForm
     Top = 355
     object Label6: TLabel
       Position.Point = '(12,2)'
-      Width = 74.318351745605470000
+      Width = 76.149894714355470000
       Height = 18.630859375000000000
       TabOrder = 0
       AutoSize = True
@@ -946,7 +945,7 @@ object SmtpTestForm: TSmtpTestForm
     Top = 421
     object Label7: TLabel
       Position.Point = '(16,2)'
-      Width = 77.632316589355470000
+      Width = 79.463859558105470000
       Height = 18.630859375000000000
       TabOrder = 0
       AutoSize = True
@@ -1005,6 +1004,7 @@ object SmtpTestForm: TSmtpTestForm
     ProxyType = smtpNoProxy
     ProxyHttpAuthType = htatDetect
     OnAttachContentTypeEh = SmtpClientAttachContentTypeEh
+    SocketFamily = sfIPv4
     Left = 32
     Top = 258
   end
