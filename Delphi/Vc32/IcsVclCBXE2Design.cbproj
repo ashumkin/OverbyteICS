@@ -171,7 +171,6 @@
 				</CPlusPlusBuilder.Personality>
 				<Deployment/>
 				<Platforms>
-					<Platform value="OSX32">False</Platform>
 					<Platform value="Win32">True</Platform>
 				</Platforms>
 			</BorlandProject>

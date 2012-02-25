@@ -195,9 +195,6 @@
 			<PackageImport Include="IcsCommonCBXE2Run.bpi">
 				<BuildOrder>3</BuildOrder>
 			</PackageImport>
-			<PackageImport Include="IcsCommonDXE2Run.bpi">
-				<BuildOrder>45</BuildOrder>
-			</PackageImport>
 			<CppCompile Include="IcsFmxCBXE2Run.cpp">
 				<BuildOrder>0</BuildOrder>
 			</CppCompile>
