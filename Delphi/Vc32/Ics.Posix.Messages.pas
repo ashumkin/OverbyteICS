@@ -491,6 +491,10 @@ begin
 {$IFDEF NOFORMS}
   while CFRunLoopRunInMode(kCFRunLoopDefaultMode, MaxDouble, False) <> kCFRunLoopRunStopped do
     {loop};
+{$ELSE} // Allow message loops in non-main threads even though NOFORMS is NOT defined
+  if FThreadID <> MainThreadID then
+    while CFRunLoopRunInMode(kCFRunLoopDefaultMode, MaxDouble, False) <> kCFRunLoopRunStopped do
+    {loop};
 {$ENDIF}
 end;
 
