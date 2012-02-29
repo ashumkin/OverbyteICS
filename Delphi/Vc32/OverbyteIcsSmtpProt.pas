@@ -7,12 +7,12 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.39
+Version:      7.40
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1997-2012 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
               Berlin, Germany, contact: <arno.garrels@gmx.de>
@@ -394,6 +394,7 @@ Jun 18, 2011 V7.37  aguser removed one compiler hint.
 Jul 22, 2011 V7.38  Arno - OEM NTLM changes.
 Feb 17, 2012 V7.39  Arno added NTLMv2 and NTLMv2 session security (basics),
                     read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
+Feb 29, 2012 V7.40  Arno - Use IcsRandomInt
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -486,8 +487,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-  SmtpCliVersion     = 739;
-  CopyRight : String = ' SMTP component (c) 1997-2011 Francois Piette V7.39 ';
+  SmtpCliVersion     = 740;
+  CopyRight : String = ' SMTP component (c) 1997-2012 Francois Piette V7.40 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
   
@@ -1896,7 +1897,6 @@ begin
     FConvertToCharset        := TRUE;
 {$ENDIF}
     FWrapMsgMaxLineLen       := SmtpDefaultLineLength;
-    Randomize;                                                           {AG}
     XMailer                  := 'ICS SMTP Component V%VER%';
 end;
 
@@ -3820,8 +3820,8 @@ end;
 function GenerateMessageID : String;                                     {AG}
 begin
     Result := FormatDateTime('yyyymmddhhnnsszzz', Now + TimeZoneBiasDT) + '.' +
-              IntToHex(Random(32767), 4) + IntToHex(Random(32767), 4) +
-              IntToHex(Random(32767), 4) + IntToHex(Random(32767), 4) +
+              IntToHex(IcsRandomInt(MaxWord), 4) + IntToHex(IcsRandomInt(MaxWord), 4) +
+              IntToHex(IcsRandomInt(MaxWord), 4) + IntToHex(IcsRandomInt(MaxWord), 4) +
               '@' + String(LocalHostName);
 
 end;
@@ -5305,7 +5305,7 @@ var
     RandPart : AnsiString;
 begin
     TickPart := '----=_NextPart_000_' + IcsIntToHexA(LongInt(IcsGetTickCount), 8);
-    RandPart := IcsIntToHexA(Random(High(Integer)), 8);
+    RandPart := IcsIntToHexA(IcsRandomInt(High(Integer)), 8);
     FOutsideBoundary := TickPart + '_0.' + RandPart;
     FInsideBoundary  := TickPart + '_1.' + RandPart;
     FInnerBoundary   := TickPart + '_2.' + RandPart;

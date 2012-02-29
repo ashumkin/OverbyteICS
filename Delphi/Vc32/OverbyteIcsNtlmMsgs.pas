@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Jan 01, 2004
-Version:      6.06
+Version:      6.07
 Description:  This is an implementation of the NTLM authentification
               messages used within HTTP protocol (client side).
               NTLM protocol documentation can be found at:
@@ -59,6 +59,7 @@ Feb 26, 2011 V6.04 Function NtlmGetMessage2 returned garbage WideStrings with
                    some user code.
 Jul 22, 2011 V6.05 Arno - OEM NTLM changes.
 Feb 17, 2012 V6.06 Arno added NTLMv2 and NTLMv2 session security (basics).
+Feb 29, 2012 V6.07 Arno - Use IcsRandomInt, .Net code removed.
 
 
 HowTo NTLMv2:
@@ -141,19 +142,14 @@ uses
     Ics.Posix.Wintypes,
 {$ENDIF}
     SysUtils,
-{$IFDEF CLR}
-    System.Text,
-{$ENDIF}
     OverbyteIcsDES, OverbyteIcsMD4, OverbyteIcsMD5,
-{$IFDEF COMPILER12_UP}
     OverbyteIcsUtils,
-{$ENDIF}
     OverbyteIcsTypes,
     OverbyteIcsMimeUtils;
 
 const
-    IcsNtlmMsgsVersion     = 605;
-    CopyRight : String     = ' IcsNtlmMsgs (c) 2004-2011 F. Piette V6.05 ';
+    IcsNtlmMsgsVersion     = 607;
+    CopyRight : String     = ' IcsNtlmMsgs (c) 2004-2012 F. Piette V6.07 ';
 
 const
     Flags_Negotiate_Unicode               = $00000001;
@@ -213,11 +209,6 @@ type
         Domain        : TNTLM_SecBuff;
         Host          : TNTLM_SecBuff;
         //OSVer         : TNTLM_OSVersion;
-{$IFDEF CLR}
-    public
-        procedure Clear;
-        function  ToString : String; override;
-{$ENDIF}
     end;
 
     // second message
@@ -229,10 +220,6 @@ type
         Challenge     : TArrayOf8Bytes;
         Context       : TArrayOf8Bytes;   // reserved, not used
         TargetInfo    : TNTLM_SecBuff;
-{$IFDEF CLR}
-    public
-        procedure FromStringBuilder(SB : StringBuilder);
-{$ENDIF}
     end;
 
 {$IFNDEF COMPILER12_UP}
@@ -539,10 +526,6 @@ function DesEcbEncrypt(
 var
     i, j, t, bit : Integer;
     XKey         : TArrayOf8Bytes;
-{$IFDEF CLR}
-    ResultArray  : TArrayOf8Bytes;
-    SB           : StringBuilder;
-{$ENDIF}
 begin
     XKey[0] := Byte(AKey[1]);
     XKey[1] := ((Byte(AKey[1]) shl 7) and $FF) or (Byte(AKey[2]) shr 1);
@@ -561,16 +544,8 @@ begin
         end;
         XKey[i] := Byte((XKey[i] and $FE) or bit);
     end;
-{$IFDEF CLR}
-    DES(AData, ResultArray, XKey, TRUE);
-    SB           := StringBuilder.Create(8);
-    for I := 0 to 7 do
-        SB[I] := Char(ResultArray[I]);
-    Result := SB.ToString;
-{$ELSE}
     SetLength(Result, 8);
     DES(AData, PArrayOf8Bytes(@Result[1])^, XKey, TRUE);
-{$ENDIF}
 end;
 
 
@@ -620,31 +595,14 @@ var
     Msg         : TNTLM_Message1;
     Host        : AnsiString;  // Ansi even if unicode is supported by the client
     Domain      : AnsiString;  // Ansi even if unicode is supported by the client
-{$IFDEF CLR}
-    SB          : StringBuilder;
-{$ELSE}
     MessageAux  : AnsiString;
-{$ENDIF}
 begin
     Host   := UpperCase(AHost);
     Domain := UpperCase(ADomain);
 
-{$IFDEF CLR}
-    Msg.Clear;
-    // signature
-    Msg.Protocol[0] := Ord('N');
-    Msg.Protocol[1] := Ord('T');
-    Msg.Protocol[2] := Ord('L');
-    Msg.Protocol[3] := Ord('M');
-    Msg.Protocol[4] := Ord('S');
-    Msg.Protocol[5] := Ord('S');
-    Msg.Protocol[6] := Ord('P');
-    Msg.Protocol[7] := 0;
-{$ELSE}
     FillChar(Msg, SizeOf(Msg), #0);
     // signature
     Move(PAnsiChar('NTLMSSP' + #0)^, Msg.Protocol, 8);
-{$ENDIF}
 
     // message type (negotiate)
     Msg.MsgType := 1;
@@ -681,76 +639,15 @@ begin
 
     //Msg.OSVer := GlobalOSVer;
 
-{$IFDEF CLR}
-    SB := StringBuilder.Create;
-    SB.Append(Msg.ToString);
-    SB.Append(Host);
-    SB.Append(Domain);
-    Result := Base64Encode(SB).ToString;
-    SB.Free;
-{$ELSE}
     SetLength(MessageAux, SizeOf(Msg));
     Move(Msg, MessageAux[1], SizeOf(Msg));
     MessageAux := MessageAux + Host + Domain;
     Result := Base64Encode(MessageAux);
-{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function NtlmGetMessage2(const AServerReply: String): TNTLM_Msg2_Info;
-{$IFDEF CLR}
-var
-    Msg         : TNTLM_Message2;
-    MsgInfo     : TNTLM_Msg2_Info;
-    InfoType    : Word;
-    InfoLength  : Word;
-    InfoStr     : WideString;
-    I           : Integer;
-    NTLMReply   : StringBuilder;
-begin
-    if Length(AServerReply) <= 0 then begin
-        Result.SrvRespOk := FALSE;
-        Exit;
-    end;
-
-    // we have a response
-    NTLMReply         := Base64Decode(StringBuilder.Create(AServerReply));
-    MsgInfo.SrvRespOk := TRUE;
-    Msg.FromStringBuilder(NTLMReply);
-
-    // extract target
-    MsgInfo.Target := Copy(NTLMReply, Msg.TargetName.Offset + 1,
-                           Msg.TargetName.Length);
-    // extract challenge
-    Move(Msg.Challenge, MsgInfo.Challenge, SizeOf(Msg.Challenge));
-    // let's extract the other information
-    I := Msg.TargetInfo.Offset + 1;
-    // loop through target information blocks
-    while I < Length(NTLMReply) do begin
-        // extract type
-        Move(NTLMReply[I], InfoType, SizeOf(InfoType));
-        I := I + SizeOf(InfoType);
-        // extract length
-        Move(NTLMReply[I], InfoLength, SizeOf(InfoLength));
-        I := I + SizeOf(InfoLength);
-        // terminator block ?
-        if (InfoType = 0) and (InfoLength = 0) then
-            break
-        else begin
-            // extract information
-            InfoStr := Copy(NTLMReply, I, InfoLength);
-            if InfoType = TIB_Type_Server then
-                MsgInfo.Server := InfoStr
-            else if InfoType = TIB_Type_Domain then
-                MsgInfo.Domain := InfoStr;
-            // jump to next block
-            I := I + InfoLength;
-        end;
-    end;
-    Result := MsgInfo;
-end;
-{$ELSE}
 var
     Msg         : TNTLM_Message2;
     MsgInfo     : TNTLM_Msg2_Info;
@@ -865,7 +762,6 @@ begin
     end;
     Result := MsgInfo;
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1026,10 +922,10 @@ var
         MD5Digest     : TMD5Digest;
         MD5Context    : TMD5Context;
     begin
-        Nonce[0] := Random(MaxWord);
-        Nonce[1] := Random(MaxWord);
-        Nonce[2] := Random(MaxWord);
-        Nonce[3] := Random(MaxWord);
+        Nonce[0] := IcsRandomInt(MaxWord);
+        Nonce[1] := IcsRandomInt(MaxWord);
+        Nonce[2] := IcsRandomInt(MaxWord);
+        Nonce[3] := IcsRandomInt(MaxWord);
 
         { Ntlm Response }
         SetLength(Buf, 16);
@@ -1099,10 +995,10 @@ var
         Blob.Reserved1      := $0000;
         Blob.Reserved2      := $00000000;
         Blob.TimeStamp      := NtlmGetCurrentTimeStamp;
-        Blob.ClientNonce[0] := Random(MaxWord);
-        Blob.ClientNonce[1] := Random(MaxWord);
-        Blob.ClientNonce[2] := Random(MaxWord);
-        Blob.ClientNonce[3] := Random(MaxWord);
+        Blob.ClientNonce[0] := IcsRandomInt(MaxWord);
+        Blob.ClientNonce[1] := IcsRandomInt(MaxWord);
+        Blob.ClientNonce[2] := IcsRandomInt(MaxWord);
+        Blob.ClientNonce[3] := IcsRandomInt(MaxWord);
         Blob.Reserved3      := $00000000;
 
         SetLength(Buf, SizeOf(Blob) + Length(Msg2Info.TargetInfoBlock) + 4);
@@ -1265,15 +1161,5 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-
-
-{ TNTLM_Message2 }
-{$IFDEF CLR}
-procedure TNTLM_Message2.FromStringBuilder(SB: StringBuilder);
-begin
-    //Move(NTLMReply[1], Msg, SizeOf(Msg));
-
-end;
-{$ENDIF}
 
 end.
