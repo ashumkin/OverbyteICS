@@ -170,17 +170,22 @@ type
 
 implementation
 
-{$IFDEF POSIX}
-procedure OutputDebugString(AMsg: PChar);
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure OutputDebugStr(const AMsg: String); {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-  // ToDo
+  {$IFDEF POSIX}
+    System.WriteLn(AMsg);
+  {$ENDIF}
+  {$IFDEF MSWINDOWS}
+    Windows.OutputDebugString(PChar(AMsg));
+  {$ENDIF}
 end;
-{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TIcsLogger.Create{$IFNDEF CLR}(AOwner: TComponent){$ENDIF};
+constructor TIcsLogger.Create(AOwner: TComponent);
 begin
-    inherited Create{$IFNDEF CLR}(AOwner){$ENDIF};
+    inherited Create(AOwner);
 {$IFNDEF NO_LOGGER_MT}
     FLock := TCriticalSection.Create;
 {$ENDIF}
@@ -353,8 +358,8 @@ begin
                     FOnIcsLogEvent(Sender, LogOption, AddTimeStamp +
                                    FTimeStampSeparator + Msg); {V6.03}
             if loDestOutDebug in FLogOptions then
-                OutputDebugString(PChar(AddTimeStamp +
-                                  FTimeStampSeparator + Msg)); {V6.03}
+                OutputDebugStr(AddTimeStamp +
+                                  FTimeStampSeparator + Msg); {V6.03}
             if loDestFile in FLogOptions then
                 WriteToLogFile(AddTimeStamp + FTimeStampSeparator +
                                Msg + #13#10); {V6.03}
@@ -364,7 +369,7 @@ begin
                 if Assigned(FOnIcsLogEvent) then
                     FOnIcsLogEvent(Sender, LogOption, Msg);
             if loDestOutDebug in FLogOptions then
-                OutputDebugString(PChar(Msg));
+                OutputDebugStr(Msg);
             if loDestFile in FLogOptions then
                 WriteToLogFile(Msg + #13#10);
         end;
