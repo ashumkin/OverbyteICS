@@ -288,6 +288,8 @@ const
     function  IcsGetCurrentThreadID: TThreadID;
     function  IcsGetFreeDiskSpace(const APath: String): Int64;
     function  IcsGetLocalTimeZoneBias: LongInt;
+    function  IcsDateTimeToUTC (dtDT: TDateTime): TDateTime;
+    function  IcsUTCToDateTime (dtDT: TDateTime): TDateTime;
     function  IcsGetTickCount: LongWord;
     function  IcsWcToMb(CodePage: LongWord; Flags: Cardinal;
                         WStr: PWideChar; WStrLen: Integer; MbStr: PAnsiChar;
@@ -838,6 +840,22 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ convert local date/time to UTC/GMT }
+function IcsDateTimeToUTC (dtDT: TDateTime): TDateTime;
+begin
+    Result := dtDT + IcsGetLocalTimeZoneBias / (60.0 * 24.0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ convert UTC/GMT to local date/time }
+function IcsUTCToDateTime (dtDT: TDateTime): TDateTime;
+begin
+    Result := dtDT - IcsGetLocalTimeZoneBias / (60.0 * 24.0);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF MSWINDOWS}
 {$IFNDEF USE_ICONV}
 function  IcsWcToMb(CodePage: LongWord; Flags: Cardinal; WStr: PWideChar;
