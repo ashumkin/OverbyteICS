@@ -100,6 +100,9 @@ uses
     OverbyteIcsMimeUtils,
     OverbyteIcsTimeList,
     OverbyteIcsLogger,
+    {$IFNDEF BCB}
+      OverbyteIcsCookies,
+    {$ENDIF !BCB}
   {$ENDIF}
     SysUtils, Classes;
 
@@ -167,7 +170,11 @@ begin
 {$IFDEF ICS_COMMON}
     RegisterComponents('Overbyte ICS', [
       { Components neither depending on the FMX nor on the VCL package }
-      TMimeDecode, TMimeDecodeEx, TMimeDecodeW, TMimeTypesList, TTimeList, TIcsLogger
+      TMimeDecode, TMimeDecodeEx, TMimeDecodeW, TMimeTypesList,
+   {$IFNDEF BCB}
+      TIcsCookies,
+   {$ENDIF !BCB}
+      TTimeList, TIcsLogger
     ]);
 {$ENDIF}
 

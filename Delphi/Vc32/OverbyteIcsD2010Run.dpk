@@ -29,6 +29,7 @@ package OverbyteIcsD2010Run;
 {$R 'OverbyteIcsCharsetComboBox.dcr'}
 {$R 'OverbyteIcsWSocketTS.dcr'}
 {$R 'OverbyteIcsMimeUtils.dcr'}
+{$R 'OverbyteIcsCookies.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -122,6 +123,7 @@ contains
   OverbyteIcsIconv in 'OverbyteIcsIconv.pas',
   OverbyteIcsMLang in 'OverbyteIcsMLang.pas',
   OverbyteIcsWinnls in 'OverbyteIcsWinnls.pas',
-  OverbyteIcsSslHtmlSmtpProt in 'OverbyteIcsSslHtmlSmtpProt.pas';
+  OverbyteIcsSslHtmlSmtpProt in 'OverbyteIcsSslHtmlSmtpProt.pas',
+  OverbyteIcsCookies in 'OverbyteIcsCookies.pas';
 
 end.

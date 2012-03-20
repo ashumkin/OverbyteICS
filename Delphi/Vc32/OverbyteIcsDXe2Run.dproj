@@ -133,6 +133,7 @@
 			<DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
 			<DCCReference Include="OverbyteIcsWSocketTS.dcr"/>
 			<DCCReference Include="OverbyteIcsMimeUtils.dcr"/>
+			<DCCReference Include="OverbyteIcsCookies.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="OverbyteIcsTypes.pas"/>
@@ -160,6 +161,7 @@
 			<DCCReference Include="OverbyteIcsMD4.pas"/>
 			<DCCReference Include="OverbyteIcsMD5.pas"/>
 			<DCCReference Include="OverbyteIcsMimeUtils.pas"/>
+			<DCCReference Include="OverbyteIcsCookies.pas"/>
 			<DCCReference Include="OverbyteIcsSha1.pas"/>
 			<DCCReference Include="OverbyteIcsUrl.pas"/>
 			<DCCReference Include="OverbyteIcsZlibHigh.pas"/>
