@@ -139,10 +139,6 @@ begin
     GroupDescendentsWith(TIcsWndControl, LClassGroup);
     GroupDescendentsWith(TDnsQuery, LClassGroup);
     GroupDescendentsWith(TFingerCli, LClassGroup);
-    GroupDescendentsWith(THttpAppSrv, LClassGroup);
-    GroupDescendentsWith(TFtpClient, LClassGroup);
-    GroupDescendentsWith(TPop3Cli, LClassGroup);
-    GroupDescendentsWith(TSmtpCli, LClassGroup);
   {$ENDIF VCL_OR_FMX}
 {$ENDIF COMPILER16_UP}
 
