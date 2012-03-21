@@ -299,7 +299,7 @@ function TIcsCookies.Get1Cookie (Idx: integer): TCookie;
 begin
     Result.CName := '';
     if Idx >= FCookieIdx.Count then exit;
-    Result := FCookies [Integer (FCookieIdx [Idx])];
+    Result := FCookies [Integer (FCookieIdx.Objects [Idx])];
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
