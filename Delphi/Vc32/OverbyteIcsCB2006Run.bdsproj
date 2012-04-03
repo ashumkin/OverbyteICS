@@ -257,7 +257,7 @@
         <FILE FILENAME="OverbyteIcsSmtpProt.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSmtpProt" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSmtpProt.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSha1.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSha1" FORMNAME="" DESIGNCLASS=""/>
-		<FILE FILENAME="OverbyteIcsSocketUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSocketUtils" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsSocketUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSocketUtils" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSslHtmlSmtpProt.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSslHtmlSmtpProt" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSslSessionCache.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsSslSessionCache" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsSslSessionCache.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
@@ -304,6 +304,7 @@
         <FILE FILENAME="OverbyteIcsIconv.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsIconv" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsCsc.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsCsc" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="OverbyteIcsWinnls.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsWinnls" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="OverbyteIcsHttpCCodZLib.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="OverbyteIcsHttpCCodZLib" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>

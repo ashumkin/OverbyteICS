@@ -156,6 +156,8 @@
             <DCCReference Include="OverbyteIcsCsc.pas"/>
             <DCCReference Include="OverbyteIcsIconv.pas"/>
             <DCCReference Include="OverbyteIcsWinnls.pas"/>
+            <DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
+            <DCCReference Include="OverbyteIcsHttpCCodZLib.pas"/>
             <DCCReference Include="OverbyteIcsHttpSrv.dcr"/>
             <DCCReference Include="OverbyteIcsFtpSrv.dcr"/>
             <DCCReference Include="OverbyteIcsNntpCli.dcr"/>
@@ -183,7 +185,6 @@
             <DCCReference Include="OverbyteIcsTimeList.dcr"/>
             <DCCReference Include="OverbyteIcsCharsetComboBox.dcr"/>
             <DCCReference Include="OverbyteIcsWSocketTS.dcr"/>
-            <DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
             <BuildConfiguration Include="Base">
                 <Key>Base</Key>
             </BuildConfiguration>

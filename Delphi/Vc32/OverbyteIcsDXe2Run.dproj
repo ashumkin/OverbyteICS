@@ -161,7 +161,6 @@
 			<DCCReference Include="OverbyteIcsMD4.pas"/>
 			<DCCReference Include="OverbyteIcsMD5.pas"/>
 			<DCCReference Include="OverbyteIcsMimeUtils.pas"/>
-			<DCCReference Include="OverbyteIcsCookies.pas"/>
 			<DCCReference Include="OverbyteIcsSha1.pas"/>
 			<DCCReference Include="OverbyteIcsUrl.pas"/>
 			<DCCReference Include="OverbyteIcsZlibHigh.pas"/>
@@ -200,6 +199,8 @@
 			<DCCReference Include="OverbyteIcsMLang.pas"/>
 			<DCCReference Include="OverbyteIcsWinnls.pas"/>
 			<DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
+			<DCCReference Include="OverbyteIcsCookies.pas"/>
+			<DCCReference Include="OverbyteIcsHttpCCodZLib.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>

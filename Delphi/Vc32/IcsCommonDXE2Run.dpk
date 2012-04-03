@@ -78,7 +78,8 @@ contains
   OverbyteIcsNtlmSsp in 'OverbyteIcsNtlmSsp.pas',
   Ics.Posix.KEventApi in 'Ics.Posix.KEventApi.pas',
   Ics.Posix.KEventTypes in 'Ics.Posix.KEventTypes.pas',
-  OverbyteIcsCookies in 'OverbyteIcsCookies.pas';
+  OverbyteIcsCookies in 'OverbyteIcsCookies.pas',
+  OverbyteIcsHttpCCodZLib in 'OverbyteIcsHttpCCodZLib.pas';
 
 end.
 

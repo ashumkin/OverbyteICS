@@ -108,7 +108,7 @@
 			<DCCReference Include="OverbyteIcsPing.dcr"/>
 			<DCCReference Include="OverbyteIcsMimeDec.dcr"/>
 			<DCCReference Include="OverbyteIcsMimeUtils.dcr"/>
-            <DCCReference Include="OverbyteIcsCookies.dcr"/>
+			<DCCReference Include="OverbyteIcsCookies.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="OverbyteIcsAvlTrees.pas"/>
 			<DCCReference Include="OverbyteIcsCharsetUtils.pas"/>
@@ -141,7 +141,6 @@
 			<DCCReference Include="OverbyteIcsDigestAuth.pas"/>
 			<DCCReference Include="Ics.Posix.WinTypes.pas"/>
 			<DCCReference Include="OverbyteIcsMimeUtils.pas"/>
-            <DCCReference Include="OverbyteIcsCookies.pas"/>
 			<DCCReference Include="OverbyteIcsUrl.pas"/>
 			<DCCReference Include="OverbyteIcsWSockBuf.pas"/>
 			<DCCReference Include="OverbyteIcsMimeDec.pas"/>
@@ -149,6 +148,8 @@
 			<DCCReference Include="OverbyteIcsNtlmSsp.pas"/>
 			<DCCReference Include="Ics.Posix.KEventApi.pas"/>
 			<DCCReference Include="Ics.Posix.KEventTypes.pas"/>
+			<DCCReference Include="OverbyteIcsCookies.pas"/>
+			<DCCReference Include="OverbyteIcsHttpCCodZLib.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

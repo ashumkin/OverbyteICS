@@ -148,6 +148,9 @@
 			<DelphiCompile Include="OverbyteIcsDigestAuth.pas">
 				<BuildOrder>10</BuildOrder>
 			</DelphiCompile>
+			<DelphiCompile Include="OverbyteIcsHttpCCodZLib.pas">
+				<BuildOrder>44</BuildOrder>
+			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsHttpContCod.pas">
 				<BuildOrder>11</BuildOrder>
 			</DelphiCompile>
@@ -195,9 +198,6 @@
 			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsOneTimePw.pas">
 				<BuildOrder>26</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="OverbyteIcsRC4.pas">
-				<BuildOrder>27</BuildOrder>
 			</DelphiCompile>
 			<DelphiCompile Include="OverbyteIcsSha1.pas">
 				<BuildOrder>28</BuildOrder>

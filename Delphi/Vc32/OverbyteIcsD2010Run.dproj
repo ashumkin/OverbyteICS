@@ -157,6 +157,7 @@
             <DCCReference Include="OverbyteIcsMLang.pas"/>
             <DCCReference Include="OverbyteIcsWinnls.pas"/>
             <DCCReference Include="OverbyteIcsSslHtmlSmtpProt.pas"/>
+            <DCCReference Include="OverbyteIcsHttpCCodZLib.pas"/>
             <BuildConfiguration Include="Base">
                 <Key>Base</Key>
             </BuildConfiguration>
