@@ -1,4 +1,12 @@
-﻿24/02/2012
+﻿06/04/2012 **** BREAKING CHANGE ****
+------------------------------------
+TFtpClient
+Request type of two methods changed/corrected:
+1) ConnectFeatAsync() from ftpConnectAsync to ftpConnectFeatAsync.
+2) ConnectFeatHostAsync() from ftpConnectHostAsync to ftpConnectFeatHostAsync.
+These changes may require to adjust your OnRequestDone handler.
+
+24/02/2012
 ----------
 Added Install\CBXE2InstallVclFmx.groupproj, note that building 
 the C++ packages for OSX still triggers an ILINK32 error, this 

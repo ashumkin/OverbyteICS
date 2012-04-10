@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V7.28
+Version:      V7.29
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -1044,6 +1044,11 @@ Oct 24, 2011 V7.27 Arno - Set state ftpInternalReady in DoneQuitAsync.
 Jan 20, 2012 V7.28 Arno - If the control connection closes with error code
              after QUIT response has been received OK we may safely ignore this
              error.
+Apr 06, 2012 V7.29 **** BREAKING CHANGE **** 
+             Arno - Request type of two methods changed/corrected:
+             1) ConnectFeatAsync() from ftpConnectAsync to ftpConnectFeatAsync.
+             2) ConnectFeatHostAsync() from ftpConnectHostAsync to ftpConnectFeatHostAsync.
+             These changes might require to adjust your OnRequestDone handler.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1134,9 +1139,9 @@ uses
     OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 728;
-  CopyRight : String = ' TFtpCli (c) 1996-2012 F. Piette V7.28 ';
-  FtpClientId : String = 'ICS FTP Client V7.28 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 729;
+  CopyRight : String = ' TFtpCli (c) 1996-2012 F. Piette V7.29 ';
+  FtpClientId : String = 'ICS FTP Client V7.29 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -3997,7 +4002,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ConnectFeatAsync;           { V7.09 }
 begin
-    HighLevelAsync(ftpConnectAsync,
+    HighLevelAsync(ftpConnectFeatAsync,     { V7.29 }
                    [ftpFctOpen, ftpFctAuth, ftpFctUser, ftpFctPass,
                     ftpFctAcct, ftpFctFeat]);
 end;
@@ -4005,7 +4010,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ConnectFeatHostAsync;       { V7.09 }
 begin
-    HighLevelAsync(ftpConnectHostAsync,
+    HighLevelAsync(ftpConnectFeatHostAsync, { V7.29 }
                    [ftpFctOpen, ftpFctHost, ftpFctAuth, ftpFctUser,
                     ftpFctPass, ftpFctAcct, ftpFctFeat]);
 end;

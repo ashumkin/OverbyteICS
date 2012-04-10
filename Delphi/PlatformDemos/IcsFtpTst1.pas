@@ -271,6 +271,7 @@ type
     Label24: TLabel;
     SleepButton: TButton;
     StyleBook1: TStyleBook;
+    ConnectFeatButton: TButton;
     procedure ExitButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DisplayHandler(Sender: TObject; var Msg : String);
@@ -352,6 +353,7 @@ type
     procedure ModeSAsyncButtonClick(Sender: TObject);
     procedure CodePageEditChange(Sender: TObject);
     procedure ConnectHostAsyncButtonClick(Sender: TObject);
+    procedure ConnectFeatAsyncButtonClick(Sender: TObject);
     procedure HostAsyncButtonClick(Sender: TObject);
     procedure ReinAsyncButtonClick(Sender: TObject);
     procedure LangAsyncButtonClick(Sender: TObject);
@@ -711,49 +713,73 @@ procedure TFtpReceiveForm.FtpClient1RequestDone(
     Sender  : TObject;
     RqType  : TFtpRequest;
     ErrCode : Word);
+var
+    Cli : TFtpClient;
 begin
+    Cli := TFtpClient(Sender);
     Display('Request ' + LookupFTPReq (RqType) + ' Done.');
-    Display('StatusCode = ' + IntToStr(FtpClient1.StatusCode));
-    Display('LastResponse was : ''' + FtpClient1.LastResponse + '''');
+    Display('StatusCode = ' + IntToStr(Cli.StatusCode));
+    Display('LastResponse was : ''' + Cli.LastResponse + '''');
     if ErrCode = 0 then
         Display('No error')
     else
         Display('Error = ' + IntToStr(ErrCode) +
-                ' (' + FtpClient1.ErrorMessage + ')');
+                ' (' + Cli.ErrorMessage + ')');
 
     { Display last progress value }
     InfoLabel.Text := IntToStr(FProgressCount);
 
     if ErrCode = 0 then begin
         case RqType of
-        ftpOptsAsync : if (FtpClient1.NewOpts = 'UTF8 ON') and
-                          (FtpClient1.StatusCode = 200) then begin
-                          CodePageEdit.Text := IntToStr(CP_UTF8);
-                          FtpClient1.CodePage := CP_UTF8;
-                       end
-                       else if (FtpClient1.NewOpts = 'UTF8 OFF') and
-                          (FtpClient1.StatusCode = 200) then begin
-                          CodePageEdit.Text := IntToStr(CP_ACP);
-                          FtpClient1.CodePage := CP_ACP;
-                       end;
-        { ftpFeatAsync : if ftpFeatUtf8 in FtpClient1.SupportedExtensions then
-                            CodePageEdit.Text := IntToStr(CP_UTF8); }
-        ftpDirAsync, ftpDirectoryAsync,
-        ftpLsAsync,  ftpListAsync,
-        ftpMlsdAsync, ftpSiteCmlsdAsync,
-        ftpXCmlsdAsync, ftpXDmlsdAsync,
-        ftpSiteDmlsdAsync, ftpSiteIndexAsync : DisplayFile(TEMP_FILE_NAME);
+            ftpFeatAsync,
+            ftpConnectFeatAsync,
+            ftpConnectFeatHostAsync :
+                { If the server supports rfc 2640 we turn UTF-8 ON.            }
+                { see also http://wiki.filezilla-project.org/Character_Set     }
+                { For backward compatibility with servers that implement       }
+                { the long expired IETF draft                                  }
+                { http://tools.ietf.org/html/draft-ietf-ftpext-utf-8-option-00 }
+                { it is also required to send the OPTS UTF8 ON command and to  }
+                { ignore a possible error response.                            }
+                if ftpFeatUtf8 in Cli.SupportedExtensions then begin
+                    { Sets property CodePage as well in Edit's OnChange }
+                    CodePageEdit.Text := IntToStr(CP_UTF8);
+                    Display('Server seems to support RFC 2640 - UTF-8 turned on');
+                end;
 
-        ftpSizeAsync                    : Display(
-                                             'File size is ' +
-                                             IntToStr(FtpClient1.SizeResult) +
-                                             ' bytes' );
-        ftpPwdAsync, ftpMkdAsync,
-        ftpCDupAsync, ftpCwdAsync       : Display(
-                                             'Directory is "' +
-                                             FtpClient1.DirResult + '"');
-        ftpGetAsync  : InfoLabel.Text := InfoLabel.Text + ' [' +
-                       IntToStr(IcsGetFileSize(FtpClient1.LocalFileName)) + ']';
+            ftpOptsAsync :
+                { Opts UTF8 ON is only required for backward compatibility }
+                { with servers not implementing rfc 2640 properly.         }
+                if Cli.NewOpts = 'UTF8 ON' then
+                    CodePageEdit.Text := IntToStr(CP_UTF8)
+                else if Cli.NewOpts = 'UTF8 OFF' then
+                    CodePageEdit.Text := IntToStr(CP_ACP);
+
+            ftpDirAsync,
+            ftpDirectoryAsync,
+            ftpLsAsync,
+            ftpListAsync,
+            ftpMlsdAsync,
+            ftpSiteCmlsdAsync,
+            ftpXCmlsdAsync,
+            ftpXDmlsdAsync,
+            ftpSiteDmlsdAsync,
+            ftpSiteIndexAsync :
+                DisplayFile(TEMP_FILE_NAME);
+
+            ftpSizeAsync :
+                Display('File size is ' + IntToStr(Cli.SizeResult) +
+                        ' bytes' );
+
+            ftpPwdAsync,
+            ftpMkdAsync,
+            ftpCDupAsync,
+            ftpCwdAsync :
+                Display('Directory is "' + Cli.DirResult + '"');
+
+            ftpGetAsync  :
+                InfoLabel.Text := InfoLabel.Text + ' [' +
+                       IntToStr(IcsGetFileSize(Cli.LocalFileName)) + ']';
         end;
     end;
 end;
@@ -909,6 +935,16 @@ begin
     FtpClient1.UserName        := UserNameEdit.Text;
     FtpClient1.Password        := PasswordEdit.Text;
     ExecuteCmd(FtpClient1.ConnectHost, FtpClient1.ConnectHostAsync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpReceiveForm.ConnectFeatAsyncButtonClick(Sender: TObject);
+begin
+    // Connect require HostName and Port which are set in ExecuteCmd
+    // Connect is 4 commands in sequence: Open, User, Pass and Feat.
+    FtpClient1.UserName        := UserNameEdit.Text;
+    FtpClient1.Password        := PasswordEdit.Text;
+    ExecuteCmd(FtpClient1.ConnectFeat, FtpClient1.ConnectFeatAsync);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

@@ -1,9 +1,9 @@
 object FtpReceiveForm: TFtpReceiveForm
   Left = 227
   Top = 183
-  Width = 634
-  Height = 596
   Caption = 'FTP - http://www.overbyte.be'
+  ClientHeight = 558
+  ClientWidth = 628
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,8 +19,8 @@ object FtpReceiveForm: TFtpReceiveForm
   object DisplayMemo: TMemo
     Left = 0
     Top = 401
-    Width = 626
-    Height = 161
+    Width = 628
+    Height = 157
     Hint = 'This area show the activity with the host'
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -39,7 +39,7 @@ object FtpReceiveForm: TFtpReceiveForm
   object Panel1: TPanel
     Left = 0
     Top = 173
-    Width = 626
+    Width = 628
     Height = 228
     Align = alTop
     Font.Charset = DEFAULT_CHARSET
@@ -1280,11 +1280,26 @@ object FtpReceiveForm: TFtpReceiveForm
       TabOrder = 76
       Text = 'EN'
     end
+    object ConnectFeatAsyncButton: TButton
+      Left = 336
+      Top = 204
+      Width = 81
+      Height = 17
+      Caption = 'Connect Feat'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 77
+      OnClick = ConnectFeatAsyncButtonClick
+    end
   end
   object SettingsPageControl: TPageControl
     Left = 0
     Top = 0
-    Width = 626
+    Width = 628
     Height = 173
     ActivePage = MainSettingsTabSheet
     Align = alTop
@@ -1300,7 +1315,7 @@ object FtpReceiveForm: TFtpReceiveForm
       object Panel2: TPanel
         Left = 0
         Top = 0
-        Width = 618
+        Width = 620
         Height = 145
         Align = alClient
         BevelOuter = bvNone
@@ -1674,7 +1689,6 @@ object FtpReceiveForm: TFtpReceiveForm
           Top = 73
           Width = 126
           Height = 21
-          ItemHeight = 13
           TabOrder = 16
           Text = 'UTF8 ON'
           Items.Strings = (
@@ -1754,7 +1768,6 @@ object FtpReceiveForm: TFtpReceiveForm
         Top = 7
         Width = 145
         Height = 21
-        ItemHeight = 0
         TabOrder = 0
         Text = 'ProxyTypeComboBox'
         OnCloseUp = ProxyTypeComboBoxCloseUp
@@ -1764,7 +1777,6 @@ object FtpReceiveForm: TFtpReceiveForm
         Top = 8
         Width = 145
         Height = 21
-        ItemHeight = 0
         TabOrder = 1
         Text = 'ProxyHttpAuthTypeComboBox'
         OnCloseUp = ProxyHttpAuthTypeComboBoxCloseUp
@@ -1826,6 +1838,7 @@ object FtpReceiveForm: TFtpReceiveForm
     OnStateChange = FtpClient1StateChange
     BandwidthLimit = 10000
     BandwidthSampling = 1000
+    SocketFamily = sfIPv4
     Left = 38
     Top = 446
   end

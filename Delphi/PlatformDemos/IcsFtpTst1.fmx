@@ -28,8 +28,8 @@ object FtpReceiveForm: TFtpReceiveForm
     TabOrder = 1
     object InfoLabel: TLabel
       Position.Point = '(512,6)'
-      Width = 50.035640716552730000
-      Height = 18.630859375000000000
+      Width = 52.500000000000000000
+      Height = 19.500000000000000000
       TabOrder = 0
       AutoSize = True
       Text = 'InfoLabel'
@@ -45,8 +45,8 @@ object FtpReceiveForm: TFtpReceiveForm
     end
     object Label7: TLabel
       Position.Point = '(504,122)'
-      Width = 56.314449310302730000
-      Height = 18.630859375000000000
+      Width = 59.500000000000000000
+      Height = 19.500000000000000000
       TabOrder = 2
       AutoSize = True
       Text = 'Resume at'
@@ -54,8 +54,8 @@ object FtpReceiveForm: TFtpReceiveForm
     end
     object Label11: TLabel
       Position.Point = '(504,142)'
-      Width = 48.295406341552730000
-      Height = 18.630859375000000000
+      Width = 51.500000000000000000
+      Height = 19.500000000000000000
       TabOrder = 3
       AutoSize = True
       Text = 'Start Pos'
@@ -63,8 +63,8 @@ object FtpReceiveForm: TFtpReceiveForm
     end
     object Label12: TLabel
       Position.Point = '(504,162)'
-      Width = 43.708492279052730000
-      Height = 18.630859375000000000
+      Width = 46.500000000000000000
+      Height = 19.500000000000000000
       TabOrder = 4
       AutoSize = True
       Text = 'End Pos'
@@ -72,8 +72,8 @@ object FtpReceiveForm: TFtpReceiveForm
     end
     object Label13: TLabel
       Position.Point = '(504,182)'
-      Width = 61.363277435302730000
-      Height = 18.630859375000000000
+      Width = 62.500000000000000000
+      Height = 19.500000000000000000
       TabOrder = 5
       AutoSize = True
       Text = 'Max KBytes'
@@ -81,8 +81,8 @@ object FtpReceiveForm: TFtpReceiveForm
     end
     object Label15: TLabel
       Position.Point = '(504,202)'
-      Width = 52.952144622802730000
-      Height = 18.630859375000000000
+      Width = 55.500000000000000000
+      Height = 19.500000000000000000
       TabOrder = 6
       AutoSize = True
       Text = 'Language'
@@ -716,13 +716,21 @@ object FtpReceiveForm: TFtpReceiveForm
       TabOrder = 84
       Text = 'Sleep(10 sec)'
     end
+    object ConnectFeatButton: TButton
+      Position.Point = '(336,204)'
+      Width = 81.000000000000000000
+      Height = 17.000000000000000000
+      OnClick = ConnectFeatAsyncButtonClick
+      TabOrder = 85
+      Text = 'Connect Feat'
+    end
   end
   object SettingsPageControl: TTabControl
     Align = alTop
     Width = 634.000000000000000000
     Height = 173.000000000000000000
     TabOrder = 2
-    TabIndex = 1
+    TabIndex = 0
     TabHeight = 20.000000000000000000
     object MainSettingsTabSheet: TTabItem
       Width = 80.000000000000000000
@@ -742,8 +750,8 @@ object FtpReceiveForm: TFtpReceiveForm
         TabOrder = 0
         object Label1: TLabel
           Position.Point = '(11,12)'
-          Width = 58.000000000000000000
-          Height = 19.000000000000000000
+          Width = 60.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 0
           AutoSize = True
           Text = 'HostName'
@@ -751,8 +759,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label3: TLabel
           Position.Point = '(20,95)'
-          Width = 48.000000000000000000
-          Height = 19.000000000000000000
+          Width = 50.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 1
           AutoSize = True
           Text = 'Host File'
@@ -760,8 +768,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label4: TLabel
           Position.Point = '(11,39)'
-          Width = 57.000000000000000000
-          Height = 19.000000000000000000
+          Width = 59.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 2
           AutoSize = True
           Text = 'UserName'
@@ -769,8 +777,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label5: TLabel
           Position.Point = '(216,40)'
-          Width = 53.000000000000000000
-          Height = 19.000000000000000000
+          Width = 55.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 3
           AutoSize = True
           Text = 'PassWord'
@@ -778,8 +786,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label2: TLabel
           Position.Point = '(16,123)'
-          Width = 50.000000000000000000
-          Height = 19.000000000000000000
+          Width = 52.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 4
           AutoSize = True
           Text = 'Local File'
@@ -787,8 +795,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label6: TLabel
           Position.Point = '(240,12)'
-          Width = 25.000000000000000000
-          Height = 19.000000000000000000
+          Width = 27.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 5
           AutoSize = True
           Text = 'Port'
@@ -796,8 +804,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label8: TLabel
           Position.Point = '(7,63)'
-          Width = 60.000000000000000000
-          Height = 19.000000000000000000
+          Width = 62.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 6
           AutoSize = True
           Text = 'Port Range'
@@ -813,8 +821,8 @@ object FtpReceiveForm: TFtpReceiveForm
         end
         object Label10: TLabel
           Position.Point = '(224,64)'
-          Width = 44.000000000000000000
-          Height = 19.000000000000000000
+          Width = 46.500000000000000000
+          Height = 19.500000000000000000
           TabOrder = 8
           AutoSize = True
           Text = 'Account'
@@ -1034,8 +1042,8 @@ object FtpReceiveForm: TFtpReceiveForm
       WordWrap = False
       object Label22: TLabel
         Position.Point = '(39,10)'
-        Width = 28.003416061401370000
-        Height = 18.630859375000000000
+        Width = 30.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 0
         AutoSize = True
         Text = 'Type'
@@ -1043,8 +1051,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label23: TLabel
         Position.Point = '(225,11)'
-        Width = 89.271476745605470000
-        Height = 18.630859375000000000
+        Width = 90.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 1
         AutoSize = True
         Text = 'HTTP proxy auth.'
@@ -1052,8 +1060,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label18: TLabel
         Position.Point = '(14,37)'
-        Width = 56.405757904052730000
-        Height = 18.630859375000000000
+        Width = 58.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 2
         AutoSize = True
         Text = 'Proxy host'
@@ -1061,8 +1069,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label19: TLabel
         Position.Point = '(16,63)'
-        Width = 55.782711029052730000
-        Height = 18.630859375000000000
+        Width = 58.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 3
         AutoSize = True
         Text = 'Proxy port'
@@ -1070,8 +1078,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label20: TLabel
         Position.Point = '(260,37)'
-        Width = 55.788082122802730000
-        Height = 18.630859375000000000
+        Width = 57.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 4
         AutoSize = True
         Text = 'Proxy user'
@@ -1079,8 +1087,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label21: TLabel
         Position.Point = '(235,64)'
-        Width = 82.176261901855470000
-        Height = 18.630859375000000000
+        Width = 84.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 5
         AutoSize = True
         Text = 'Proxy password'
@@ -1088,8 +1096,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label17: TLabel
         Position.Point = '(16,92)'
-        Width = 451.218719482421900000
-        Height = 18.630859375000000000
+        Width = 450.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 6
         AutoSize = True
         Text = 
@@ -1099,8 +1107,8 @@ object FtpReceiveForm: TFtpReceiveForm
       end
       object Label24: TLabel
         Position.Point = '(16,106)'
-        Width = 479.143035888671900000
-        Height = 18.630859375000000000
+        Width = 481.500000000000000000
+        Height = 19.500000000000000000
         TabOrder = 7
         AutoSize = True
         Text = 

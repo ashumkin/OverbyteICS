@@ -2,15 +2,14 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      7.09
+Version:      7.10
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
-              Compatible with Delphi 1, 2, 3, 4 and 5
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1997-2012 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -88,6 +87,7 @@ Apr 16, 2009  V7.07 Angus assume STREAM64, USE_ONPROGRESS64_ONLY, removed OnProg
 Feb 15, 2011  V7.08 Arno added proxy demo.
 Mar 01, 2011  V7.09 Arno enable/disable the proxy-controls depending on proxy
               setting.
+Apr 09, 2012  V7.10 Arno - Changed OnRequestDone
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpTst1;
@@ -111,8 +111,8 @@ uses
   OverByteIcsWSocket, OverbyteIcsWndControl, ComCtrls;
 
 const
-  FTPTstVersion      = 708;
-  CopyRight : String = ' FtpTst (c) 1997-2011 F. Piette V7.08 ';
+  FTPTstVersion      = 710;
+  CopyRight : String = ' FtpTst (c) 1997-2012 F. Piette V7.10 ';
 
 type
   TSyncCmd   = function : Boolean  of object;
@@ -252,6 +252,7 @@ type
     ProxyPasswordEdit: TEdit;
     Label17: TLabel;
     Label24: TLabel;
+    ConnectFeatAsyncButton: TButton;
     procedure ExitButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DisplayHandler(Sender: TObject; var Msg : String);
@@ -333,6 +334,7 @@ type
     procedure ModeSAsyncButtonClick(Sender: TObject);
     procedure CodePageEditChange(Sender: TObject);
     procedure ConnectHostAsyncButtonClick(Sender: TObject);
+    procedure ConnectFeatAsyncButtonClick(Sender: TObject);
     procedure HostAsyncButtonClick(Sender: TObject);
     procedure ReinAsyncButtonClick(Sender: TObject);
     procedure LangAsyncButtonClick(Sender: TObject);
@@ -664,45 +666,73 @@ procedure TFtpReceiveForm.FtpClient1RequestDone(
     Sender  : TObject;
     RqType  : TFtpRequest;
     ErrCode : Word);
+var
+    Cli : TFtpClient;
 begin
+    Cli := TFtpClient(Sender);
     Display('Request ' + LookupFTPReq (RqType) + ' Done.');
-    Display('StatusCode = ' + IntToStr(FtpClient1.StatusCode));
-    Display('LastResponse was : ''' + FtpClient1.LastResponse + '''');
+    Display('StatusCode = ' + IntToStr(Cli.StatusCode));
+    Display('LastResponse was : ''' + Cli.LastResponse + '''');
     if ErrCode = 0 then
         Display('No error')
     else
         Display('Error = ' + IntToStr(ErrCode) +
-                ' (' + FtpClient1.ErrorMessage + ')');
+                ' (' + Cli.ErrorMessage + ')');
 
     { Display last progress value }
     InfoLabel.Caption := IntToStr(FProgressCount);
 
     if ErrCode = 0 then begin
         case RqType of
-        ftpOptsAsync : if (FtpClient1.NewOpts = 'UTF8 ON') and
-                          (FtpClient1.StatusCode = 200) then
-                          CodePageEdit.Text := IntToStr(CP_UTF8)
-                       else if (FtpClient1.NewOpts = 'UTF8 OFF') and
-                          (FtpClient1.StatusCode = 200) then
-                          CodePageEdit.Text := IntToStr(CP_ACP);
-        { ftpFeatAsync : if ftpFeatUtf8 in FtpClient1.SupportedExtensions then
-                            CodePageEdit.Text := IntToStr(CP_UTF8); }
-        ftpDirAsync, ftpDirectoryAsync,
-        ftpLsAsync,  ftpListAsync,
-        ftpMlsdAsync, ftpSiteCmlsdAsync,
-        ftpXCmlsdAsync, ftpXDmlsdAsync,
-        ftpSiteDmlsdAsync, ftpSiteIndexAsync : DisplayFile(TEMP_FILE_NAME);
+            ftpFeatAsync,
+            ftpConnectFeatAsync,
+            ftpConnectFeatHostAsync :
+                { If the server supports rfc 2640 we turn UTF-8 ON.            }
+                { see also http://wiki.filezilla-project.org/Character_Set     }
+                { For backward compatibility with servers that implement       }
+                { the long expired IETF draft                                  }
+                { http://tools.ietf.org/html/draft-ietf-ftpext-utf-8-option-00 }
+                { it is also required to send the OPTS UTF8 ON command and to  }
+                { ignore a possible error response.                            }
+                if ftpFeatUtf8 in Cli.SupportedExtensions then begin
+                    { Sets property CodePage as well in Edit's OnChange }
+                    CodePageEdit.Text := IntToStr(CP_UTF8);
+                    Display('Server seems to support RFC 2640 - UTF-8 turned on');
+                end;
 
-        ftpSizeAsync                    : Display(
-                                             'File size is ' +
-                                             IntToStr(FtpClient1.SizeResult) +
-                                             ' bytes' );
-        ftpPwdAsync, ftpMkdAsync,
-        ftpCDupAsync, ftpCwdAsync       : Display(
-                                             'Directory is "' +
-                                             FtpClient1.DirResult + '"');
-        ftpGetAsync  : InfoLabel.Caption := InfoLabel.Caption + ' [' +
-                       IntToStr(IcsGetFileSize(FtpClient1.LocalFileName)) + ']';
+            ftpOptsAsync :
+                { Opts UTF8 ON is only required for backward compatibility }
+                { with servers not implementing rfc 2640 properly.         }
+                if Cli.NewOpts = 'UTF8 ON' then
+                    CodePageEdit.Text := IntToStr(CP_UTF8)
+                else if Cli.NewOpts = 'UTF8 OFF' then
+                    CodePageEdit.Text := IntToStr(CP_ACP);
+
+            ftpDirAsync,
+            ftpDirectoryAsync,
+            ftpLsAsync,
+            ftpListAsync,
+            ftpMlsdAsync,
+            ftpSiteCmlsdAsync,
+            ftpXCmlsdAsync,
+            ftpXDmlsdAsync,
+            ftpSiteDmlsdAsync,
+            ftpSiteIndexAsync :
+                DisplayFile(TEMP_FILE_NAME);
+
+            ftpSizeAsync :
+                Display('File size is ' + IntToStr(Cli.SizeResult) +
+                        ' bytes' );
+
+            ftpPwdAsync,
+            ftpMkdAsync,
+            ftpCDupAsync,
+            ftpCwdAsync :
+                Display('Directory is "' + Cli.DirResult + '"');
+
+            ftpGetAsync  :
+                InfoLabel.Caption := InfoLabel.Caption + ' [' +
+                       IntToStr(IcsGetFileSize(Cli.LocalFileName)) + ']';
         end;
     end;
 end;
@@ -856,6 +886,16 @@ begin
     FtpClient1.UserName        := UserNameEdit.Text;
     FtpClient1.Password        := PasswordEdit.Text;
     ExecuteCmd(FtpClient1.ConnectHost, FtpClient1.ConnectHostAsync);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TFtpReceiveForm.ConnectFeatAsyncButtonClick(Sender: TObject);
+begin
+    // ConnectFeat require HostName and Port which are set in ExecuteCmd
+    // ConnectFeat is 4 commands in sequence: Open, User, Pass and Feat.
+    FtpClient1.UserName        := UserNameEdit.Text;
+    FtpClient1.Password        := PasswordEdit.Text;
+    ExecuteCmd(FtpClient1.ConnectFeat, FtpClient1.ConnectFeatAsync);
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
