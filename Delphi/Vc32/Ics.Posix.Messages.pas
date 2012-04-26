@@ -433,21 +433,13 @@ var
 
 {$IFNDEF NOFORMS}
 {$IFDEF MACOS}
-type
-  THackPlatformCocoa = class(TPlatform)  // This is a hack of course !
-  private
-    NSApp: NSApplication;
-  end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;  // The hack !
+function ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;
 var
   NSApp: NSApplication;
   TimeoutDate: NSDate;
   NSEvt: NSEvent;
 begin
-  NSApp := THackPlatformCocoa(platform).NSApp;
+  NSApp := TNSApplication.Wrap(TNSApplication.OCClass.sharedApplication);
   if NSApp = nil then
     Exit(False);
   if ATimeoutSec = 0 then
@@ -1418,9 +1410,9 @@ var
   LDstPump, LSrcPump: TIcsMessagePump;
   LGlobalReadUnlocked: Boolean;
 begin
-  LGlobalReadUnlocked := False;
   GlobalSync.BeginRead;
   try
+    LGlobalReadUnlocked := False;
     if not GLWindowTree.Contains(hWnd) then
     begin
       SetLastError(ERROR_INVALID_WINDOW_HANDLE);
