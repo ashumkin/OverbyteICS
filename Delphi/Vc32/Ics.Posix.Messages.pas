@@ -239,6 +239,12 @@ type
   {$IFDEF MSGQ_DEBUG}
     FMaxMsgCount          : Integer;
   {$ENDIF}
+  {$IFNDEF NOFORMS}
+  {$IFDEF MACOS}
+    FNSApp                : NSApplication;
+    function ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;
+  {$ENDIF}
+  {$ENDIF}
     function CheckForSyncMessages(Timeout: Integer = 0): Boolean;
     function MsgSynchronize(hWnd: HWND; Msg: UINT; wParam: WPARAM;
       lParam: LPARAM; ADestination: TIcsMessagePump;
@@ -433,23 +439,19 @@ var
 
 {$IFNDEF NOFORMS}
 {$IFDEF MACOS}
-function ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;
+function TIcsMessagePump.ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;
 var
-  NSApp: NSApplication;
   TimeoutDate: NSDate;
   NSEvt: NSEvent;
 begin
-  NSApp := TNSApplication.Wrap(TNSApplication.OCClass.sharedApplication);
-  if NSApp = nil then
-    Exit(False);
   if ATimeoutSec = 0 then
     TimeoutDate := TNSDate.Wrap(TNSDate.OCClass.dateWithTimeIntervalSinceNow(0.1))
   else
     TimeoutDate := TNSDate.Wrap(TNSDate.OCClass.dateWithTimeIntervalSinceNow(ATimeOutSec));
-  NSEvt := NSApp.nextEventMatchingMask(NSAnyEventMask, TimeoutDate, NSDefaultRunLoopMode, True);
+  NSEvt := FNSApp.nextEventMatchingMask(NSAnyEventMask, TimeoutDate, NSDefaultRunLoopMode, True);
   Result := NSEvt <> nil;
   if Result then
-    NSApp.sendEvent(NSEvt); // Dispatch message
+    FNSApp.sendEvent(NSEvt); // Dispatch message
 end;
 {$ENDIF MACOS}
 {$ENDIF !NOFORMS}
@@ -650,6 +652,11 @@ var
 begin
   if FRefCnt > 1 then
     Exit;
+{$IFNDEF NOFORMS}
+{$IFDEF MACOS}
+  FNSApp := TNSApplication.Wrap(TNSApplication.OCClass.sharedApplication);
+{$ENDIF}
+{$ENDIF}
   FHandles := TMessagePumpHandleList.Create(Self);
   FSyncLock := TIcsCriticalSection.Create;
   FMessageQueue := TMessageQueue.Create;
