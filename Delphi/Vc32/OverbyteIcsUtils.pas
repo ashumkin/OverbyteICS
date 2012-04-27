@@ -3407,7 +3407,7 @@ begin
     try
         if Status <> 0 then
             Result := 0
-        else
+        else begin
           {$IFDEF MSWINDOWS}
             Move(SearchRec.FindData.ftLastWriteTime, LInt64, SizeOf(LInt64));
             Result := (LInt64 / FileTimeStep) + FileTimeBase;
@@ -3417,6 +3417,7 @@ begin
             Result := EncodeDate(LUT.tm_year + 1900, LUT.tm_mon + 1, LUT.tm_mday) +
                       EncodeTime(LUT.tm_hour, LUT.tm_min, LUT.tm_sec, 0);
           {$ENDIF}
+        end;
     finally
         FindClose(SearchRec);
     end;
