@@ -3,10 +3,10 @@
 			<ProjectGuid>{30D8AA58-0A26-4C23-AD0A-2243BA3306F8}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
-			<Projects Include="..\Packages\OverbyteIcsDXeRun.dproj">
+			<Projects Include="..\Delphi\Vc32\OverbyteIcsDXeRun.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="..\Packages\OverbyteIcsDXeDesign.dproj">
+			<Projects Include="..\Delphi\Vc32\OverbyteIcsDXeDesign.dproj">
 				<Dependencies/>
 			</Projects>
 		</ItemGroup>
@@ -18,22 +18,22 @@
 			</BorlandProject>
 		</ProjectExtensions>
 		<Target Name="OverbyteIcsDXeRun">
-			<MSBuild Projects="..\Packages\OverbyteIcsDXeRun.dproj"/>
+			<MSBuild Projects="..\Delphi\Vc32\OverbyteIcsDXeRun.dproj"/>
 		</Target>
 		<Target Name="OverbyteIcsDXeRun:Clean">
-			<MSBuild Targets="Clean" Projects="..\Packages\OverbyteIcsDXeRun.dproj"/>
+			<MSBuild Targets="Clean" Projects="..\Delphi\Vc32\OverbyteIcsDXeRun.dproj"/>
 		</Target>
 		<Target Name="OverbyteIcsDXeRun:Make">
-			<MSBuild Targets="Make" Projects="..\Packages\OverbyteIcsDXeRun.dproj"/>
+			<MSBuild Targets="Make" Projects="..\Delphi\Vc32\OverbyteIcsDXeRun.dproj"/>
 		</Target>
 		<Target Name="OverbyteIcsDXeDesign">
-			<MSBuild Projects="..\Packages\OverbyteIcsDXeDesign.dproj"/>
+			<MSBuild Projects="..\Delphi\Vc32\OverbyteIcsDXeDesign.dproj"/>
 		</Target>
 		<Target Name="OverbyteIcsDXeDesign:Clean">
-			<MSBuild Targets="Clean" Projects="..\Packages\OverbyteIcsDXeDesign.dproj"/>
+			<MSBuild Targets="Clean" Projects="..\Delphi\Vc32\OverbyteIcsDXeDesign.dproj"/>
 		</Target>
 		<Target Name="OverbyteIcsDXeDesign:Make">
-			<MSBuild Targets="Make" Projects="..\Packages\OverbyteIcsDXeDesign.dproj"/>
+			<MSBuild Targets="Make" Projects="..\Delphi\Vc32\OverbyteIcsDXeDesign.dproj"/>
 		</Target>
 		<Target Name="Build">
 			<CallTarget Targets="OverbyteIcsDXeRun;OverbyteIcsDXeDesign"/>

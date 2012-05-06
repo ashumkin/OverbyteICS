@@ -1,38 +1,4 @@
-﻿06/05/2012 **** BREAKING CHANGE **** 
-
-The directory structure has changed to:
-
-.\                                    Info directory
-.\Install                             Component packages project groups for all versions
-.\Packages        (was Delphi\Vc32)   Delphi (7 and up) and C++Builder (2006 and up) packages projects
-.\Source          (was Delphi\Vc32)   ICS Delphi source code 
-.\Source\Include  (was Delphi\Vc32)   .inc files (including OverbyteIcsDefs.inc)
-
-.\Lib                                 Unit output directories for all package builds, subdirectories
-    |                                 for 2007+ will be created on building the packages 
-  \$(Config)                          Release / Debug
-      |
-	\$(Platform)                      Win32 / Win64 / OSX32
-        |
-	  \<delphi_version>               D7..XE2 includes .dcu and .dfm files for Delphi
-	                                  and .obj and .hpp files for C++ Builder
-	  
-.\Samples\delphi\internet             Delphi Win32/Win64 sample applications (all Delphi versions)
-.\Samples\delphi\sslinternet          Delphi Win32/Win64 SSL-enabled sample applications (all Delphi versions)
-.\Samples\delphi\PlatformDemos        Delphi FireMonkey and cross-platform samples (Delphi XE2+)
-.\Samples\delphi\internet\WebServData Directory for WebServ demo data files
-.\Samples\cpp\internet                C++Builder sample applications
-.\Samples\cpp\internet\cb2006         C++Builder 2006 projects
-.\Samples\cpp\internet\cb2007         C++Builder 2007 projects
-.\Samples\cpp\internet\cb2009         C++Builder 2009 projects
-.\Samples\cpp\internet\cb2010         C++Builder 2010 projects
-.\Samples\cpp\internet\cbXE           C++Builder XE projects
-.\Samples\cpp\internet\cbXE2          C++Builder XE2 projects
-
-Also read ReadMe8.txt "UPGRADING and REINSTALLING"
-
-
-06/04/2012 **** BREAKING CHANGE ****
+﻿06/04/2012 **** BREAKING CHANGE ****
 ------------------------------------
 TFtpClient
 Request type of two methods changed/corrected:
