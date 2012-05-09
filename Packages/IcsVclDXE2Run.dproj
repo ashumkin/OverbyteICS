@@ -108,6 +108,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_Debug)'!=''">
+			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
 			<DCC_SymbolReferenceInfo>2</DCC_SymbolReferenceInfo>
 			<Version>7.0</Version>

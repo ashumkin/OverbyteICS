@@ -30,6 +30,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<_TCHARMapping>wchar_t</_TCHARMapping>
 			<IntermediateOutputDir>..\Lib\$(Config)\$(Platform)\XE2</IntermediateOutputDir>
 			<DCC_ObjOutput>..\Lib\$(Config)\$(Platform)\XE2</DCC_ObjOutput>
 			<BCC_OutputDir>..\Lib\$(Config)\$(Platform)\XE2</BCC_OutputDir>

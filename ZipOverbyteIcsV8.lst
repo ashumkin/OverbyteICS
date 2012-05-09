@@ -57,31 +57,23 @@ Packages\OverbyteIcsDXeDesign.res
 
 Packages\OverbyteIcsDXe2Run.dproj
 Packages\OverbyteIcsDXe2Run.dpk
-Packages\OverbyteIcsDXe2Run.res
 Packages\OverbyteIcsDXe2Design.dproj
 Packages\OverbyteIcsDXe2Design.dpk
-Packages\OverbyteIcsDXe2Design.res
 
 Packages\IcsCommonDXE2Run.dpk
 Packages\IcsCommonDXE2Run.dproj
-Packages\IcsCommonDXE2Run.res
 Packages\IcsCommonDXE2Design.dpk
 Packages\IcsCommonDXE2Design.dproj
-Packages\IcsCommonDXE2Design.res
 
 Packages\IcsFmxDXE2Run.dpk
 Packages\IcsFmxDXE2Run.dproj
-Packages\IcsFmxDXE2Run.res
 Packages\IcsFmxDXE2Design.dpk
 Packages\IcsFmxDXE2Design.dproj
-Packages\IcsFmxDXE2Design.res
 
 Packages\IcsVclDXE2Run.dpk
 Packages\IcsVclDXE2Run.dproj
-Packages\IcsVclDXE2Run.res
 Packages\IcsVclDXE2Design.dpk
 Packages\IcsVclDXE2Design.dproj
-Packages\IcsVclDXE2Design.res
 
 Packages\OverbyteIcsCB2006Run.bdsproj
 Packages\OverbyteIcsCB2006Run.cpp

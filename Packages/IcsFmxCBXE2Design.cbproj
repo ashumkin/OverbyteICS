@@ -50,7 +50,7 @@
 			<ProjectType>CppPackage</ProjectType>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
 			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-			<_TCHARMapping>char</_TCHARMapping>
+			<_TCHARMapping>wchar_t</_TCHARMapping>
 			<Multithreaded>true</Multithreaded>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DynamicRTL>true</DynamicRTL>
