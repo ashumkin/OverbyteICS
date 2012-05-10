@@ -161,6 +161,9 @@
 			<DelphiCompile Include="..\Source\OverbyteIcsDigestAuth.pas">
 				<BuildOrder>10</BuildOrder>
 			</DelphiCompile>
+			<DelphiCompile Include="..\Source\OverByteIcsFtpSrvT.pas">
+				<BuildOrder>45</BuildOrder>
+			</DelphiCompile>
 			<DelphiCompile Include="..\Source\OverbyteIcsHttpCCodZLib.pas">
 				<BuildOrder>44</BuildOrder>
 			</DelphiCompile>
