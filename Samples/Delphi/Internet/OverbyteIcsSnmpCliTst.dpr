@@ -12,7 +12,6 @@ uses
 
 begin
   Application.Initialize;
-  Application.MainFormOnTaskbar := True;
   Application.CreateForm(TSnmpClientTestForm, SnmpClientTestForm);
   Application.Run;
 end.
