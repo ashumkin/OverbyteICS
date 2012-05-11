@@ -6,7 +6,8 @@ program OverbyteIcsSysLogClientDemo;
 uses
   Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
   OverbyteIcsSysLogClientDemo1 in 'OverbyteIcsSysLogClientDemo1.pas' {SysLogClientForm},
-  OverbyteIcsSysLogClient in '..\Vc32\OverbyteIcsSysLogClient.pas';
+  OverbyteIcsSysLogDefs in '..\..\..\Source\OverbyteIcsSysLogDefs.pas',
+  OverbyteIcsSysLogClient in '..\..\..\Source\OverbyteIcsSysLogClient.pas';
 
 {$R *.res}
 
