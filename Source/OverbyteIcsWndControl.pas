@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      1.17
+Version:      1.18
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -97,7 +97,10 @@ Historique:
                  are thrown away silently.
 15/04/2011 V1.15 Arno prepared for 64-bit.
 06/05/2011 V1.16 Arno - Make use of type TThreadID.
-16/08/2011 V1.17 Arno TIcsTimer prepared for x64.
+16/08/2011 V1.17 Arno TIcsTimer prepared for x64.µ
+13/05/2012 V1.18 FPiette created InitializeGlobalHandler and GUnitInitialized
+                 to check if we passed thru the initialization section which
+                 is not the case when a TWSocket is dropped on a fmx form.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -139,8 +142,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  TIcsWndControlVersion  = 117;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2011 F. Piette V1.17 ';
+  TIcsWndControlVersion  = 118;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2012 F. Piette V1.18 ';
 
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 
@@ -348,6 +351,9 @@ var
   // handler because the unit has been finalized before the socket was diposed
   GUnitFinalized: Boolean; { V1.09 }
 
+  // Is used to assert if we have been initialized
+  GUnitInitialized: Boolean; { V1.18 }
+
 implementation
 
 uses
@@ -384,6 +390,19 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF MSWINDOWS}
+procedure InitializeGlobalHandler;   { V1.18 }
+begin
+    // Check if already initialized
+    if GUnitInitialized then
+        Exit;
+    // Not yet initialized, do it right now V1.18
+    GUnitInitialized := TRUE;
+    GWndHandlerPool  := TIcsWndHandlerPool.Create;
+    InitializeCriticalSection(GWndHandlerCritSect);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure FinalizeGlobalHandler; { V1.09 }
 begin
     // If the list is empty, we can safely delete the global handler,
@@ -504,6 +523,7 @@ begin
     // The solution to this problem is to make sure that all threads are
     // finished before the application is terminated itself.
     Assert(not GUnitFinalized, 'Unit is already finalized, check your threads!!!'); { V1.09 }
+    InitializeGlobalHandler; { V1.18 }
 
     FThreadId := GetCurrentThreadId;
     GWndHandlerPool.Lock;
@@ -695,6 +715,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsWndControl.Create(AOwner : TComponent);
 begin
+    InitializeGlobalHandler; { V1.18 }
   {$IFDEF POSIX}
     FWndHandler := TIcsWndHandler.Create;
   {$ENDIF}
@@ -1405,8 +1426,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFDEF MSWINDOWS}
 initialization
-    GWndHandlerPool := TIcsWndHandlerPool.Create;
-    InitializeCriticalSection(GWndHandlerCritSect);
+    InitializeGlobalHandler; { V1.18 }
 
 finalization
     FinalizeGlobalHandler;  { V1.09 }
