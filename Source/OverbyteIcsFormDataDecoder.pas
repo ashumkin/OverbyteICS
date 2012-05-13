@@ -228,23 +228,8 @@ function ConvertValueToUnicode(
             LHtmlEntityHashs.Capacity := 260;
             LHtmlEntityHashs.CaseSensitive := TRUE;
             InitEntityList(LHtmlEntityHashs);
-          {$IFDEF COMPILER12_UP}
-            {$IFDEF COMPILER16_UP}
-              if TInterlocked.CompareExchange(Pointer(GHtmlEntityHashs),
+            if IcsInterlockedCompareExchange(Pointer(GHtmlEntityHashs),
                                    Pointer(LHtmlEntityHashs), nil) <> nil then
-            {$ELSE}
-              if InterlockedCompareExchangePointer(Pointer(GHtmlEntityHashs),
-                                   Pointer(LHtmlEntityHashs), nil) <> nil then
-            {$ENDIF}
-          {$ELSE}
-            {$IFDEF COMPILER10_UP} // Possibly even COMPILER9_UP - Delphi 2005?
-                if InterlockedCompareExchange(Integer(GHtmlEntityHashs),
-                                   Integer(LHtmlEntityHashs), 0) <> 0 then
-            {$ELSE} { Delphi 7 }
-                if InterlockedCompareExchange(Pointer(GHtmlEntityHashs),
-                                   Pointer(LHtmlEntityHashs), nil) <> nil then
-            {$ENDIF}
-          {$ENDIF}
                 LHtmlEntityHashs.Free;
         end;
 

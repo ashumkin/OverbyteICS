@@ -175,6 +175,9 @@ uses
   {$ENDIF}
 {$ENDIF}
     Classes, SysUtils, RtlConsts, SysConst,
+{$IFDEF COMPILER16_UP}
+    System.SyncObjs,
+{$ENDIF}
     OverbyteIcsMD5, OverbyteIcsTypes; // for TBytes and TThreadID
 
 type
@@ -411,6 +414,8 @@ const
     function IcsCryptGenRandom(var Buf; BufSize: Integer): Boolean;
     function IcsRandomInt(const ARange: Integer): Integer;
     function IcsFileUtcModified(const FileName: String) : TDateTime;
+    function IcsInterlockedCompareExchange(var Destination: Pointer;
+        Exchange: Pointer; Comperand: Pointer): Pointer;
 { Wide library }
     function IcsFileCreateW(const FileName: UnicodeString): {$IFDEF COMPILER16_UP} THandle {$ELSE} Integer {$ENDIF}; overload;
     function IcsFileCreateW(const Utf8FileName: UTF8String): {$IFDEF COMPILER16_UP} THandle {$ELSE} Integer {$ENDIF}; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
@@ -3418,6 +3423,29 @@ begin
     finally
         FindClose(SearchRec);
     end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsInterlockedCompareExchange(
+    var Destination : Pointer;
+    Exchange        : Pointer;
+    Comperand       : Pointer): Pointer;
+begin
+{$IFDEF COMPILER12_UP}
+  {$IFDEF COMPILER16_UP}
+    Result := TInterlocked.CompareExchange(Destination, Exchange, Comperand);
+  {$ELSE}
+    Result := InterlockedCompareExchangePointer(Destination, Exchange, Comperand);
+  {$ENDIF}
+{$ELSE}
+  {$IFDEF COMPILER10_UP} // Possibly even COMPILER9_UP - Delphi 2005?
+    Result := Pointer(InterlockedCompareExchange(Integer(Destination),
+                                        Integer(Exchange), Integer(Comperand)));
+  {$ELSE} { Delphi 7 }
+    Result := InterlockedCompareExchange(Destination, Exchange, Comperand);
+  {$ENDIF}
+{$ENDIF}
 end;
 
 
