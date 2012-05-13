@@ -715,7 +715,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TIcsWndControl.Create(AOwner : TComponent);
 begin
+  {$IFDEF MSWINDOWS}
     InitializeGlobalHandler; { V1.18 }
+  {$ENDIF}
   {$IFDEF POSIX}
     FWndHandler := TIcsWndHandler.Create;
   {$ENDIF}
