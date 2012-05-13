@@ -219,7 +219,7 @@ begin
         FResultList[TWSocket(Sender).Tag] := WSocketErrorDesc(ErrCode);
     ResultMemo.Lines.Assign(FResultList);
     ResultMemo.Update;
-    PostMessage(Handle, WM_USER, Integer(Sender), 0);
+    PostMessage(Handle, WM_USER, WPARAM(Sender), 0);
 end;
 
 procedure TBatchDnsLookupForm.StartButtonClick(Sender: TObject);
