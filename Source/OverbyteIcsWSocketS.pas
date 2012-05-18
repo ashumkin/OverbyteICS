@@ -355,6 +355,7 @@ type
       property  State: TSocketState read FState write FState;
       function  SetAddressListChangeNotification: Boolean;
       function  SetRoutingInterfaceChangeNotification: Boolean;
+      property  SelectEvent: LongWord read FSelectEvent;
     published
       property Addr: string read FAddr write SetAddr;
       property ListenBacklog: Integer           read  FListenBacklog
@@ -1200,7 +1201,7 @@ begin
                                                   AItem.HSocket,
                                                   Handle,
                                                   FMsg_WM_ASYNCSELECT,
-                                                  FD_ACCEPT or FD_CLOSE) = 0);
+                                                  AItem.SelectEvent) = 0);
 
 end;
 
@@ -1316,7 +1317,7 @@ begin
                                   {$ENDIF}
                                     LItem.HSocket,
                                     Handle, FMsg_WM_ASYNCSELECT,
-                                    LItem.FSelectEvent);
+                                    LItem.SelectEvent);
     end;
 end;
 
