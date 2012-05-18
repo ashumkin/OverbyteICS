@@ -1316,7 +1316,7 @@ begin
                                   {$ENDIF}
                                     LItem.HSocket,
                                     Handle, FMsg_WM_ASYNCSELECT,
-                                    FD_ACCEPT or FD_CLOSE);
+                                    LItem.FSelectEvent);
     end;
 end;
 
@@ -1328,17 +1328,19 @@ var
     LItem : TWSocketMultiListenItem;
 begin
     FMultiListenIndex := -1;
-    inherited ThreadDetach;
-    for I := 0 to FMultiListenSockets.Count -1 do begin
-        LItem := FMultiListenSockets[I];
-        if (LItem.HSocket <> INVALID_SOCKET) then
-            WSocket_WSAASyncSelect(
-                                  {$IFDEF POSIX}
-                                    LItem,
-                                  {$ENDIF}
-                                    LItem.HSocket,
-                                    Handle, 0, 0);
+    if ThreadID = IcsGetCurrentThreadID then begin // not thread-safe
+        for I := 0 to FMultiListenSockets.Count -1 do begin
+            LItem := FMultiListenSockets[I];
+            if (LItem.HSocket <> INVALID_SOCKET) then
+                WSocket_WSAASyncSelect(
+                                      {$IFDEF POSIX}
+                                        LItem,
+                                      {$ENDIF}
+                                        LItem.HSocket,
+                                        Handle, 0, 0);
+        end;
     end;
+    inherited ThreadDetach;
 end;
 
 
