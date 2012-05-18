@@ -8,7 +8,7 @@ Version:      7.04
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2011 by François PIETTE
+Legal issues: Copyright (C) 1999-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -160,7 +160,7 @@ uses
 
 const
     WSocketServerVersion     = 704;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2011 F. Piette V7.04 ';
+    CopyRight : String       = ' TWSocketServer (c) 1999-2012 F. Piette V7.04 ';
     DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
 
 type
@@ -192,9 +192,6 @@ type
         FPeerAddr          : String;
         FPeerPort          : String;
         FSessionClosedFlag : Boolean;
-        {$IFDEF CLR}
-        FHandleGc          : GCHandle;
-        {$ENDIF}
         FCliId             : LongInt;          { angus V7.00 }
 
     public
@@ -205,10 +202,6 @@ type
         function    GetPeerPort: String; override;
         property    Server : TCustomWSocketServer read  FServer
                                                   write FServer;
-        {$IFDEF CLR}
-        property    HandleGc : GCHandle           read  FHandleGc
-                                                  write FHandleGc;
-        {$ENDIF}
         property    CliId : LongInt               read  FCliId              { angus V7.00 }
                                                   write FCliId;
     published
@@ -232,9 +225,7 @@ type
         FOnClientConnect        : TWSocketClientConnectEvent;
         FOnClientDisconnect     : TWSocketClientConnectEvent;
         procedure WndProc(var MsgRec: TMessage); override;
-{$IFNDEF CLR}
         procedure Notification(AComponent: TComponent; operation: TOperation); override;
-{$ENDIF}
         procedure TriggerSessionAvailable(Error : Word); override;
         procedure TriggerClientCreate(Client : TWSocketClient); virtual;
         procedure TriggerClientConnect(Client : TWSocketClient; Error : Word); virtual;
@@ -246,11 +237,7 @@ type
         procedure AllocateMsgHandlers; override;
         procedure FreeMsgHandlers; override;
     public
-{$IFDEF CLR}
-    constructor Create; override;
-{$ELSE}
-    constructor Create(AOwner: TComponent); override;
-{$ENDIF}
+        constructor Create(AOwner: TComponent); override;
         destructor  Destroy; override;
         { Check  if a given object is one of our clients }
         function  IsClient(SomeThing : TObject) : Boolean;
@@ -520,9 +507,9 @@ implementation
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-constructor TCustomWSocketServer.Create{$IFNDEF CLR}(AOwner: TComponent){$ENDIF};
+constructor TCustomWSocketServer.Create(AOwner: TComponent);
 begin
-    inherited Create{$IFNDEF CLR}(AOwner){$ENDIF};
+    inherited Create(AOwner);
     FClientList      := TList.Create;
     FClientClass     := TWSocketClient;
     FBanner          := DefaultBanner;
@@ -539,9 +526,6 @@ begin
         { We need to destroy all clients }
         for I := FClientList.Count - 1 downto 0 do begin
             try
-                {$IFDEF CLR}
-                TWSocketClient(FClientList.Items[I]).HandleGc.Free;
-                {$ENDIF}
                 TWSocketClient(FClientList.Items[I]).Free;
             except
                 { Ignore any exception here }
@@ -603,7 +587,6 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Called by destructor when child component (a clients) is create or        }
 { destroyed.                                                                }
-{$IFNDEF CLR}
 procedure TCustomWSocketServer.Notification(
     AComponent : TComponent;
     Operation  : TOperation);
@@ -618,7 +601,6 @@ begin
             FClientList.Remove(AComponent);
     end;
 end;
-{$ENDIF}
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -768,31 +750,19 @@ procedure TCustomWSocketServer.WMClientClosed(var msg: TMessage);
 var
     Client : TWSocketClient;
     PIdRec : PClientIdRec;
-{$IFDEF CLR}
-    GCH          : GCHandle;
-{$ENDIF}
 begin
     PIdRec := PClientIdRec(Msg.LParam);  { angus V7.00 }
     try
-{$IFDEF CLR}
-    GCH := GCHandle(IntPtr(PIdRec^.PClient);
-    Client := TWSocketClient(GCH.Target);
-{$ELSE}
-    Client := TWSocketClient(PIdRec^.PClient);
-{$ENDIF}
-    { angus V7.00 ensure client not freed already }
-    if IsClient(Client) and (Client.CliId = PIdRec^.CliId) then
-    try
-        TriggerClientDisconnect(Client, Msg.WParam);
-    finally
-        { Calling Free will automatically remove client from list because    }
-        { we installed a notification handler.                               }
-{$IFDEF CLR}
-        FClientList.Remove(Client);
-        Client.HandleGc.Free;
-{$ENDIF}
-        Client.Free;
-    end;
+        Client := TWSocketClient(PIdRec^.PClient);
+        { angus V7.00 ensure client not freed already }
+        if IsClient(Client) and (Client.CliId = PIdRec^.CliId) then
+        try
+            TriggerClientDisconnect(Client, Msg.WParam);
+        finally
+            { Calling Free will automatically remove client from list because    }
+            { we installed a notification handler.                               }
+            Client.Free;
+        end;
     finally
         System.Dispose(PIdRec);
     end;
@@ -1829,12 +1799,8 @@ begin
             New(PIdRec);
             PIdRec^.PClient := Self;
             PIdRec^.CliId   := FCliId;
-            if NOT PostMessage(Server.Handle, Server.FMsg_WM_CLIENT_CLOSED, ErrCode,
-                        {$IFDEF CLR}
-                        Integer(IntPtr(Self.HandleGc)));
-                        {$ELSE}
-                        LPARAM(PIdRec))
-                        {$ENDIF}
+            if NOT PostMessage(Server.Handle, Server.FMsg_WM_CLIENT_CLOSED,
+                               WPARAM(ErrCode), LPARAM(PIdRec))
             then
                 System.Dispose(PIdRec);
         end;
