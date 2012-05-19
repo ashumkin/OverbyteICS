@@ -236,6 +236,7 @@ type
     FEnterExitObserverRef : CFRunLoopObserverRef;
     FThreadID             : TThreadID;
     FMessageQueue         : TMessageQueue;
+    FRunning              : Boolean;
   {$IFDEF MSGQ_DEBUG}
     FMaxMsgCount          : Integer;
   {$ENDIF}
@@ -269,6 +270,7 @@ type
     procedure HandleException(Sender: TObject);
     //class function GetMessagePump(AThreadID: TThreadID): TIcsMessagePump;
     class property Instance: TIcsMessagePump read GetInstance;
+    property Running: Boolean read FRunning;
     property ThreadID: TThreadID read FThreadID;
     property Terminated: Boolean read FTerminated;
     property OnMessage: TIcsMessageEvent read FOnMessage write FOnMessage;
@@ -438,6 +440,15 @@ var
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
 {$IFNDEF NOFORMS}
+{ We need this hack to be able to read private field FRunning in order  }
+{ to know whether or not the Application is running a message loop.     }
+type
+  THackApplication = class(TApplication)
+  private
+    FOnException: TExceptionEvent;
+    FRunning: Boolean;
+  end;
+
 {$IFDEF MACOS}
 function TIcsMessagePump.ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;
 var
@@ -461,7 +472,7 @@ end;
 function TIcsMessagePump.ProcessMessage(AWaitTimeoutSec: LongWord = 0): Boolean;
 begin
 {$IFNDEF NOFORMS}
-  if FThreadID = MainThreadID then
+  if (FThreadID = MainThreadID) and THackApplication(Application).FRunning then
     Result := ProcessCocoaAppMessageWithTimeout(AWaitTimeoutSec)
   else
 {$ENDIF}
@@ -482,14 +493,25 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TIcsMessagePump.HandleMessages;
 begin
-{$IFDEF NOFORMS}
-  while CFRunLoopRunInMode(kCFRunLoopDefaultMode, MaxDouble, False) <> kCFRunLoopRunStopped do
-    {loop};
-{$ELSE} // Allow message loops in non-main threads even though NOFORMS is NOT defined
-  if FThreadID <> MainThreadID then
-    while CFRunLoopRunInMode(kCFRunLoopDefaultMode, MaxDouble, False) <> kCFRunLoopRunStopped do
-    {loop};
-{$ENDIF}
+  if not FRunning then
+  begin
+    FRunning := True;
+    try
+    {$IFDEF NOFORMS}
+      while CFRunLoopRunInMode(kCFRunLoopDefaultMode, MaxDouble, False) <> kCFRunLoopRunStopped do
+        {loop};
+    {$ELSE}
+      { Allow message loops in non-main threads even though NOFORMS is NOT defined }
+      { also if NOFORMS is NOT defined and this is a console mode application      }
+      { or better said Application.FRunning is False.                              }
+      if (FThreadID <> MainThreadID) or (not THackApplication(Application).FRunning) then
+        while CFRunLoopRunInMode(kCFRunLoopDefaultMode, MaxDouble, False) <> kCFRunLoopRunStopped do
+          {loop};
+    {$ENDIF}
+    finally
+      FRunning := False;
+    end;
+  end;
 end;
 
 
