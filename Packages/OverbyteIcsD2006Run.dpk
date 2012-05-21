@@ -123,7 +123,6 @@ contains
   OverbyteIcsIconv in '..\Source\OverbyteIcsIconv.pas',
   OverbyteIcsCsc in '..\Source\OverbyteIcsCsc.pas',
   OverbyteIcsWinnls in '..\Source\OverbyteIcsWinnls.pas',
-  OverbyteIcsSslHtmlSmtpProt in '..\Source\OverbyteIcsSslHtmlSmtpProt.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
   OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas';
 

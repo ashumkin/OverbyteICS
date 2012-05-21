@@ -226,9 +226,6 @@ $(PostBuildEvent)]]></PostBuildEvent>
 			<DelphiCompile Include="..\Source\OverbyteIcsSmtpProt.pas">
 				<BuildOrder>34</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="..\Source\OverbyteIcsSslHtmlSmtpProt.pas">
-				<BuildOrder>36</BuildOrder>
-			</DelphiCompile>
 			<ResFiles Include="..\Source\OverbyteIcsSslSessionCache.dcr">
 				<BuildOrder>38</BuildOrder>
 			</ResFiles>

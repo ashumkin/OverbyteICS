@@ -158,7 +158,6 @@
 			<DCCReference Include="..\Source\Ics.Fmx.OverbyteIcsThreadTimer.pas"/>
 			<DCCReference Include="..\Source\Ics.Fmx.OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="..\Source\Ics.Posix.Messages.pas"/>
-			<DCCReference Include="..\Source\Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>

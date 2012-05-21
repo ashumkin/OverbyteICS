@@ -87,7 +87,6 @@ contains
   OverbyteIcsHttpAppServer in '..\Source\OverbyteIcsHttpAppServer.pas',
   OverbyteIcsCharsetComboBox in '..\Source\OverbyteIcsCharsetComboBox.pas',
   OverbyteIcsThreadTimer in '..\Source\OverbyteIcsThreadTimer.pas',
-  OverbyteIcsWSocketTS in '..\Source\OverbyteIcsWSocketTS.pas',
-  OverbyteIcsSslHtmlSmtpProt in '..\Source\OverbyteIcsSslHtmlSmtpProt.pas';
+  OverbyteIcsWSocketTS in '..\Source\OverbyteIcsWSocketTS.pas';
 
 end.

@@ -190,7 +190,6 @@ $(PostBuildEvent)]]></PostBuildEvent>
 			<DCCReference Include="..\Source\OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsThreadTimer.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsWSocketTS.pas"/>
-			<DCCReference Include="..\Source\OverbyteIcsSslHtmlSmtpProt.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>

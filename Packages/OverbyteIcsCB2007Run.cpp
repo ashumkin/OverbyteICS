@@ -2,6 +2,9 @@
 
 #include <basepch.h>
 #pragma hdrstop
+
+
+USEFORMNS("..\Source\OverbyteIcsTnOptFrm.pas", Overbyteicstnoptfrm, OptForm);
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 

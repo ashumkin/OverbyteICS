@@ -197,9 +197,6 @@
 			<DelphiCompile Include="..\Source\Ics.Fmx.OverbyteIcsSocketUtils.pas">
 				<BuildOrder>37</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="..\Source\Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas">
-				<BuildOrder>38</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="..\Source\Ics.Fmx.OverbyteIcsSslSessionCache.pas">
 				<BuildOrder>39</BuildOrder>
 			</DelphiCompile>

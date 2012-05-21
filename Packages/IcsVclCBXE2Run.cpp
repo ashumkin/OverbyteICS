@@ -3,7 +3,8 @@
 #include <System.hpp>
 #pragma hdrstop
 
-USEFORMNS("OverbyteIcsTnOptFrm.pas", Overbyteicstnoptfrm, OptForm);
+
+USEFORMNS("..\Source\OverbyteIcsTnOptFrm.pas", Overbyteicstnoptfrm, OptForm);
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

@@ -278,8 +278,6 @@ Source\Ics.Fmx.OverbyteIcsCharsetComboBox.pas
 Source\Ics.Fmx.OverbyteIcsReg.pas
 Source\Ics.Vcl.OverbyteIcsReg.pas
 Source\Ics.Fmx.OverByteIcsWSocketE.pas
-Source\OverbyteIcsSslHtmlSmtpProt.pas
-Source\Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas
 
 Source\Include\OverbyteIcsDotNetSockImpl.inc
 Source\Include\OverbyteIcsDotNetSockTypes.inc

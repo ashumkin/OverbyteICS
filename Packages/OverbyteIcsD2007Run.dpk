@@ -124,7 +124,6 @@ contains
   OverbyteIcsCsc in '..\Source\OverbyteIcsCsc.pas',
   OverbyteIcsIconv in '..\Source\OverbyteIcsIconv.pas',
   OverbyteIcsWinnls in '..\Source\OverbyteIcsWinnls.pas',
-  OverbyteIcsSslHtmlSmtpProt in '..\Source\OverbyteIcsSslHtmlSmtpProt.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
   OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas',
   OverbyteIcsZLibDll in '..\Source\OverbyteIcsZLibDll.pas';

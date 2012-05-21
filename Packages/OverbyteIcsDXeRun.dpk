@@ -43,7 +43,7 @@ package OverbyteIcsDXeRun;
 { OPTIMIZATION OFF}
 { OVERFLOWCHECKS OFF}
 { RANGECHECKS OFF}
-{ REFERENCEINFO ON}
+{$REFERENCEINFO ON}
 {$SAFEDIVIDE OFF}
 { STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
@@ -122,7 +122,6 @@ contains
   OverbyteIcsIconv in '..\Source\OverbyteIcsIconv.pas',
   OverbyteIcsMLang in '..\Source\OverbyteIcsMLang.pas',
   OverbyteIcsWinnls in '..\Source\OverbyteIcsWinnls.pas',
-  OverbyteIcsSslHtmlSmtpProt in '..\Source\OverbyteIcsSslHtmlSmtpProt.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
   OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas',
   OverbyteIcsTnOptFrm in '..\Source\OverbyteIcsTnOptFrm.pas' {OptForm};

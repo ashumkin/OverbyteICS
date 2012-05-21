@@ -161,7 +161,6 @@
 			<DCCReference Include="..\Source\OverbyteIcsCsc.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsIconv.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsWinnls.pas"/>
-			<DCCReference Include="..\Source\OverbyteIcsSslHtmlSmtpProt.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsCookies.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsHttpCCodZLib.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsHttpSrv.dcr"/>

@@ -439,7 +439,6 @@ uses
     OverbyteIcsWinsock,
 {$ENDIF}
     SysUtils, Classes,
-{$IFNDEF TSslHtmlSmtpCli_ONLY}
 {$IFNDEF NOFORMS}
   {$IFDEF FMX}
     FMX.Forms,
@@ -464,7 +463,6 @@ uses
 {$IFDEF USE_SSL}
     OverByteIcsSSLEAY, OverByteIcsLIBEAY,  {AG/SSL}
 {$ENDIF}
-{$ENDIF !TSslHtmlSmtpCli_ONLY}
 {$IFDEF FMX}
     Ics.Fmx.OverbyteIcsWndControl,
     Ics.Fmx.OverbyteIcsWSocket,
@@ -472,13 +470,6 @@ uses
     OverbyteIcsWndControl,
     OverbyteIcsWSocket,
 {$ENDIF}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-  {$IFDEF FMX}
-    Ics.Fmx.OverbyteIcsSmtpProt,
-  {$ELSE}
-    OverbyteIcsSmtpProt,
-  {$ENDIF FMX}
-{$ENDIF TSslHtmlSmtpCli_ONLY}
     OverbyteIcsNtlmMsgs,
     OverbyteIcsMimeUtils,
     OverbyteIcsMD5,
@@ -495,7 +486,6 @@ const
   SmtpDefEncArray : array [0..3] of AnsiString = ('7bit',             '8bit',
                                                   'quoted-printable', 'base64'); {AG}
 type
-{$IFNDEF TSslHtmlSmtpCli_ONLY}
     TCustomSmtpClient = class;
     TSmtpDefaultEncoding      = (smtpEnc7bit,            smtpEnc8bit,
                                  smtpEncQuotedPrintable, smtpEncBase64);   {AG}
@@ -1212,7 +1202,7 @@ Dec 29, 2007  Reworked the component. After command StartTls completed you
 
 type
     TSmtpSslType     = (smtpTlsNone,  smtpTlsImplicit,  smtpTlsExplicit);
-    TSslSmtpCli = class(TSyncSmtpCli)
+    TCustomSslSmtpCli = class(TSyncSmtpCli)
     protected
         FSslType                    : TSmtpSslType;
         FOnSslHandshakeDone         : TSslHandshakeDoneEvent;
@@ -1254,7 +1244,7 @@ type
         property    SmtpTlsSupported  : Boolean     read  FTlsSupported;
         property    SslAcceptableHosts : TStrings   read  GetSslAcceptableHosts
                                                     write SetSslAcceptableHosts;
-    published
+    // published
         property SslType              : TSmtpSslType  read  FSslType
                                                       write FSslType;
         property SslContext           : TSslContext   read  GetSslContext
@@ -1275,13 +1265,24 @@ type
                                                       read  GetSslCliCertRequest
                                                       write SetSslCliCertRequest;
     end;
-{$ENDIF} // USE_SSL
-{$ENDIF !TSslHtmlSmtpCli_ONLY}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-    TSslHtmlSmtpCli = class(TSslSmtpCli)
+
+    TSslSmtpCli = class(TCustomSslSmtpCli)
+    published
+        property SslType;
+        property SslContext;
+        property OnSslVerifyPeer;
+        property OnSslCliGetSession;
+        property OnSslCliNewSession;
+        property OnSslHandshakeDone;
+        property OnSslCliCertRequest;
+    end;
+{$ENDIF USE_SSL}
+
+{$IFDEF USE_SSL}
+    THtmlSmtpCli = class(TCustomSslSmtpCli)
 {$ELSE}
     THtmlSmtpCli = class(TSmtpCli)
-{$ENDIF}
+{$ENDIF USE_SSL}
     private
         FPlainText              : TStrings;
         FEmailImages            : TStrings;
@@ -1347,7 +1348,19 @@ type
                                               write FHtmlImageCidSuffix;
     end;
 
-{$IFNDEF TSslHtmlSmtpCli_ONLY}
+  {$IFDEF USE_SSL}
+    TSslHtmlSmtpCli = class(THtmlSmtpCli)
+    published
+        property SslType;
+        property SslContext;
+        property OnSslVerifyPeer;
+        property OnSslCliGetSession;
+        property OnSslCliNewSession;
+        property OnSslHandshakeDone;
+        property OnSslCliCertRequest;
+    end;
+  {$ENDIF}
+
 { Function to convert a TDateTime to an RFC822 timestamp string }
 function Rfc822DateTime(t : TDateTime) : String;
 { Function to parse a friendly email and extract friendly name and email }
@@ -1369,14 +1382,12 @@ function SmtpCliErrorMsgFromErrorCode(ErrCode: Word): String;
 { List of separators accepted between email addresses }
 const
     SmtpEMailSeparators = [';', ','];
-{$ENDIF !TSslHtmlSmtpCli_ONLY}
 
 implementation
 
 const
     CRLF = AnsiString(#13#10);
     
-{$IFNDEF TSslHtmlSmtpCli_ONLY}
 var
     GL_En_US_FormatSettings : TFormatSettings;
 
@@ -4630,13 +4641,8 @@ begin
         FTimeStop := Integer(IcsGetTickCount) + FTimeout * 1000;
 end;
 
-{$ENDIF !TSslHtmlSmtpCli_ONLY}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-constructor TSslHtmlSmtpCli.Create(AOwner : TComponent);
-{$ELSE}
 constructor THtmlSmtpCli.Create(AOwner : TComponent);
-{$ENDIF}
 begin
     inherited Create(AOwner);
     FPlainText    := TStringList.Create;
@@ -4652,11 +4658,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-destructor TSslHtmlSmtpCli.Destroy;
-{$ELSE}
 destructor THtmlSmtpCli.Destroy;
-{$ENDIF}
 begin
     ClearImageStreamArray;
     if Assigned(FPlainText) then begin
@@ -4676,11 +4678,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.SetHtmlConvertToCharset(const Value: Boolean);
-{$ELSE}
 procedure THtmlSmtpCli.SetHtmlConvertToCharset(const Value: Boolean);
-{$ENDIF}
 begin
 {$IFDEF UNICODE}
     FHtmlConvertToCharset := TRUE; // We have to convert to ANSI or ANSI-UTF anyway!!
@@ -4696,11 +4694,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.SetEMailImages(newValue : TStrings);
-{$ELSE}
 procedure THtmlSmtpCli.SetEMailImages(newValue : TStrings);
-{$ENDIF}
 var
     I        : Integer;
     FilePath : String;
@@ -4721,11 +4715,7 @@ begin
     end;
 end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-function TSslHtmlSmtpCli.GetImageStreamCount: Integer;
-{$ELSE}
 function THtmlSmtpCli.GetImageStreamCount: Integer;
-{$ENDIF}
 begin
     if not Assigned(FStreamArray) then
         Result := 0
@@ -4735,11 +4725,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.ClearImageStreamArray;
-{$ELSE}
 procedure THtmlSmtpCli.ClearImageStreamArray;
-{$ENDIF}
 begin
     if Assigned(FStreamArray) then begin
         FStreamArray.Destroy;
@@ -4749,11 +4735,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-function TSslHtmlSmtpCli.GetImageStream(Index: Integer): TStream;
-{$ELSE}
 function THtmlSmtpCli.GetImageStream(Index: Integer): TStream;
-{$ENDIF}
 begin
     if not Assigned(FStreamArray) then
         Result := nil
@@ -4765,15 +4747,9 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.SetImageStream(
-    Index       : Integer;
-    const Value : TStream);
-{$ELSE}
 procedure THtmlSmtpCli.SetImageStream(
     Index       : Integer;
     const Value : TStream);
-{$ENDIF}
 begin
     if not Assigned(Value) then
         Exit;
@@ -4786,11 +4762,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.SetHtmlCharset(const Value: String);
-{$ELSE}
 procedure THtmlSmtpCli.SetHtmlCharset(const Value: String);
-{$ENDIF}
 begin
     FHtmlCharSet := IcsLowerCase(Trim(Value));
     { If empty set the default system codepage }
@@ -4815,11 +4787,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.SetHtmlText(const newValue: TStrings);
-{$ELSE}
 procedure THtmlSmtpCli.SetHtmlText(const newValue: TStrings);
-{$ENDIF}
 var
     I : Integer;
 begin
@@ -4831,11 +4799,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.SetPlainText(const newValue: TStrings);
-{$ELSE}
 procedure THtmlSmtpCli.SetPlainText(const newValue: TStrings);
-{$ENDIF}
 var
     I : Integer;
 begin
@@ -4847,19 +4811,11 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.TriggerGetData(
-    LineNum  : Integer;
-    MsgLine  : Pointer;
-    MaxLen   : Integer; // Must not be > 1022
-    var More : Boolean);
-{$ELSE}
 procedure THtmlSmtpCli.TriggerGetData(
     LineNum  : Integer;
     MsgLine  : Pointer;
     MaxLen   : Integer; // Must not be > 1022
     var More : Boolean);
-{$ENDIF}
 var
     LineBuf  : AnsiString;
     BAction  : TSmtpBeforeOpenFileAction;
@@ -5261,11 +5217,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.TriggerProcessHeader(HdrLines: TStrings);
-{$ELSE}
 procedure THtmlSmtpCli.TriggerProcessHeader(HdrLines: TStrings);
-{$ENDIF}
 var
     I : Integer;
 begin
@@ -5295,11 +5247,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.GenerateBoundaries;
-{$ELSE}
 procedure THtmlSmtpCli.GenerateBoundaries;
-{$ENDIF}
 var
     TickPart : AnsiString;
     RandPart : AnsiString;
@@ -5313,11 +5261,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF TSslHtmlSmtpCli_ONLY}
-procedure TSslHtmlSmtpCli.PrepareEMail;
-{$ELSE}
 procedure THtmlSmtpCli.PrepareEMail;
-{$ENDIF}
 begin
     if FContentType = smtpPlainText then begin
         // FLineOffset was not reset properly after a mail with    {AG 07/11/07}
@@ -5337,10 +5281,9 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { You must define USE_SSL so that SSL code is included in the component.    }
 { Either in OverbyteIcsDefs.inc or in the project/package options.          }
-{$IFNDEF TSslHtmlSmtpCli_ONLY}
 {$IFDEF USE_SSL}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.CreateSocket;
+procedure TCustomSslSmtpCli.CreateSocket;
 begin
     FWSocket         := TSslWSocket.Create(nil);
     FWSocket.SslMode := sslModeClient;
@@ -5348,7 +5291,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.GetSslAcceptableHosts: TStrings;
+function TCustomSslSmtpCli.GetSslAcceptableHosts: TStrings;
 begin
     if Assigned(FWSocket) then
         Result := FWSocket.SslAcceptableHosts
@@ -5358,7 +5301,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.SetSslAcceptableHosts(const Value: TStrings);
+procedure TCustomSslSmtpCli.SetSslAcceptableHosts(const Value: TStrings);
 begin
     if Assigned(FWSocket) then
         FWSocket.SslAcceptableHosts.Assign(Value);
@@ -5366,7 +5309,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.GetSslContext: TSslContext;
+function TCustomSslSmtpCli.GetSslContext: TSslContext;
 begin
     if Assigned(FWSocket) then
         Result := FWSocket.SslContext
@@ -5376,7 +5319,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.SetSslContext(Value: TSslContext);
+procedure TCustomSslSmtpCli.SetSslContext(Value: TSslContext);
 begin
     if Assigned(FWSocket) then
         FWSocket.SslContext := Value
@@ -5384,7 +5327,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.GetSslCliNewSession: TSslCliNewSession;
+function TCustomSslSmtpCli.GetSslCliNewSession: TSslCliNewSession;
 begin
     if Assigned(FWSocket) then
         Result := FWSocket.OnSslCliNewSession
@@ -5394,7 +5337,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.GetSslCliGetSession: TSslCliGetSession;
+function TCustomSslSmtpCli.GetSslCliGetSession: TSslCliGetSession;
 begin
     if Assigned(FWSocket) then
         Result := FWSocket.OnSslCliGetSession
@@ -5404,7 +5347,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.GetSslVerifyPeer: TSslVerifyPeerEvent;
+function TCustomSslSmtpCli.GetSslVerifyPeer: TSslVerifyPeerEvent;
 begin
     if Assigned(FWSocket) then
         Result := FWSocket.OnSslVerifyPeer
@@ -5414,7 +5357,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.SetSslCliGetSession(const Value: TSslCliGetSession);
+procedure TCustomSslSmtpCli.SetSslCliGetSession(const Value: TSslCliGetSession);
 begin
     if Assigned(FWSocket) then
         FWSocket.OnSslCliGetSession := Value;
@@ -5422,7 +5365,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.SetSslCliNewSession(const Value: TSslCliNewSession);
+procedure TCustomSslSmtpCli.SetSslCliNewSession(const Value: TSslCliNewSession);
 begin
     if Assigned(FWSocket) then
         FWSocket.OnSslCliNewSession := Value;
@@ -5430,7 +5373,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.SetSslVerifyPeer(const Value: TSslVerifyPeerEvent);
+procedure TCustomSslSmtpCli.SetSslVerifyPeer(const Value: TSslVerifyPeerEvent);
 begin
     if Assigned(FWSocket) then
         FWSocket.OnSslVerifyPeer := Value;
@@ -5438,7 +5381,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.GetSslCliCertRequest: TSslCliCertRequest;
+function TCustomSslSmtpCli.GetSslCliCertRequest: TSslCliCertRequest;
 begin
     if Assigned(FWSocket) then
         Result := FWSocket.OnSslCliCertRequest
@@ -5448,7 +5391,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.SetSslCliCertRequest(
+procedure TCustomSslSmtpCli.SetSslCliCertRequest(
   const Value: TSslCliCertRequest);
 begin
     if Assigned(FWSocket) then
@@ -5457,7 +5400,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.GetSecurityExtensions(const Msg: String);
+procedure TCustomSslSmtpCli.GetSecurityExtensions(const Msg: String);
 var
     S : String;
 begin
@@ -5468,7 +5411,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.TransferSslHandshakeDone(
+procedure TCustomSslSmtpCli.TransferSslHandshakeDone(
     Sender         : TObject;
     ErrCode        : Word;
     PeerCert       : TX509Base;
@@ -5509,7 +5452,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.TlsNext;
+procedure TCustomSslSmtpCli.TlsNext;
 begin
     if FRequestResult <> 0 then begin
         TriggerRequestDone(FRequestResult);
@@ -5540,7 +5483,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.StartTls;  // RFC 2487
+procedure TCustomSslSmtpCli.StartTls;  // RFC 2487
 var
      ErrMsg : String;
 begin
@@ -5566,7 +5509,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.WSocketSessionConnected(Sender: TObject; Error: Word);
+procedure TCustomSslSmtpCli.WSocketSessionConnected(Sender: TObject; Error: Word);
 begin
     if (FSslType <> smtpTlsImplicit) or (Error <> 0) then
         inherited WSocketSessionConnected(Sender, Error)
@@ -5598,7 +5541,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.TriggerResponse(Msg : String);
+procedure TCustomSslSmtpCli.TriggerResponse(Msg : String);
 begin
     { Search for "STARTTLS" in multiline EHLO response }
     if FFctPrv = smtpFctEhlo then
@@ -5608,7 +5551,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.DoHighLevelAsync;
+procedure TCustomSslSmtpCli.DoHighLevelAsync;
 begin
 {$IFDEF TRACE} TriggerDisplay('! HighLevelAsync ' + IntToStr(FRequestResult)); {$ENDIF}
     if FState = smtpAbort then begin
@@ -5742,7 +5685,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.Open;
+procedure TCustomSslSmtpCli.Open;
 begin
     if FSslType = smtpTlsExplicit then begin
         if FAuthType <> smtpAuthNone then
@@ -5758,7 +5701,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.Connect;
+procedure TCustomSslSmtpCli.Connect;
 begin
     FTlsSupported      := FALSE;
     FWSocket.SslEnable := FALSE; // We handle everything in code
@@ -5767,7 +5710,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.Ehlo;
+procedure TCustomSslSmtpCli.Ehlo;
 begin
     FTlsSupported := FALSE;
     inherited Ehlo;
@@ -5775,7 +5718,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.WndProc(var MsgRec: TMessage);
+procedure TCustomSslSmtpCli.WndProc(var MsgRec: TMessage);
 begin
     try
         with MsgRec do begin
@@ -5792,21 +5735,21 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.WMSmtpQuitDelayed(var Msg: TMessage);
+procedure TCustomSslSmtpCli.WMSmtpQuitDelayed(var Msg: TMessage);
 begin
     Quit;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslSmtpCli.MsgHandlersCount : Integer;
+function TCustomSslSmtpCli.MsgHandlersCount : Integer;
 begin
     Result := 1 + inherited MsgHandlersCount;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.AllocateMsgHandlers;
+procedure TCustomSslSmtpCli.AllocateMsgHandlers;
 begin
     inherited AllocateMsgHandlers;
     FMsg_WM_SMTP_QUIT_DELAYED  := FWndHandler.AllocateMsgHandler(Self);
@@ -5814,7 +5757,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslSmtpCli.FreeMsgHandlers;
+procedure TCustomSslSmtpCli.FreeMsgHandlers;
 begin
     if Assigned(FWndHandler) then
         FWndHandler.UnregisterMessage(FMsg_WM_SMTP_QUIT_DELAYED);
@@ -5827,8 +5770,6 @@ end;
 
 initialization
   PrepareGlobalSmtpFormatSettings;
-
-{$ENDIF !TSslHtmlSmtpCli_ONLY}
 
 end.
 
