@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 08, 2004 (extracted from various ICS components)
-Version:      6.05
+Version:      8.00
 Description:  This unit contain support routines for URL handling.
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
@@ -47,6 +47,8 @@ Dec 19, 2009 V6.03 A. Garrels added UrlEncodeToA().
 Aug 07, 2010 V6.04 Bjørnar Nielsen suggested to add an overloaded UrlDecode()
                    that takes a RawByteString URL.
 Jan 20, 2012 V6.05 RTT changed ParseUrl() to support URLs starting with "//".
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -78,8 +80,8 @@ uses
     OverbyteIcsUtils;
 
 const
-    IcsUrlVersion        = 605;
-    CopyRight : String   = ' TIcsURL (c) 1997-2012 F. Piette V6.05 ';
+    IcsUrlVersion        = 800;
+    CopyRight : String   = ' TIcsURL (c) 1997-2012 F. Piette V8.00 ';
 
 { Syntax of an URL: protocol://[user[:password]@]server[:port]/path }
 procedure ParseURL(const URL : String;

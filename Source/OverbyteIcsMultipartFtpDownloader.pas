@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 6, 2007
-Version:      0.99d ALPHA CODE
+Version:      8.00 ALPHA CODE
 Description:  TMultipartFtpDownloader is a component to download files using
               simultaneous connections to speedup download. The demo make
               also use of the TMultiProgressBar (included in ICS) which is
@@ -11,7 +11,7 @@ EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2007 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -48,6 +48,8 @@ Oct 31, 2010 0.99c In DownloadDocData, restart the timeout timer.
              FMyFtp (Breaking change. Not an issue since we are in alpha phase).
 Nov 08, 2010 0.99d Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}

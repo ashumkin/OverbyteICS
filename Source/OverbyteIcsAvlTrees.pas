@@ -12,7 +12,7 @@ Description:  Implements a fast cache-like data storage based on two
               65536 requires at most 16 compares.
               Uses an AVL-Tree as it is described in the book
               "Algorithms & Data Structures", Prof. Niklaus Wirth.
-Version:      1.06
+Version:      8.00
 EMail:        Arno Garrels <arno.garrels@gmx.de>
 Support:      Don't expect any support, however please report bugs/fixes.
 Credits:      Many thanks to Benjamin Stadin <stadin@gmx.de>, without
@@ -35,6 +35,8 @@ Mar  15, 2009  Fixed a memory leak with secondary duplicated index.
 Mar  16, 2009  CompareStr ignored the first char (Unicode only), uses
                Windows.pas to avoid a compiler warning.
 Dez  06, 2011  Made TCacheNode Data and Len writable.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 

@@ -50,6 +50,8 @@
   Sep 10, 2010 Angus and Arno updated ZLIB to 1.2.5
                Always use zlib1.dll if found in precedence to zlib.dll which is not 1.2.5
   Dec 29, 2010 Arno - Small change to support MacOS
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
   My own work was to wrap access to dll functions in zlib.dll
   So, no copyright for this code, but don't copyright it !

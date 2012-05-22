@@ -3,14 +3,14 @@
 
 Author:       François PIETTE
 Creation:     May 01, 2003
-Version:      1.00 ALPHA
+Version:      8.00 ALPHA
 Description:  A console mode application object for ICS
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
               francois.piette@pophost.eunet.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 1996-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -39,6 +39,8 @@ Legal issues: Copyright (C) 1996-2010 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

@@ -7,7 +7,7 @@ Version:      1.07
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2004-2011 by François PIETTE
+Legal issues: Copyright (C) 2004-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -43,7 +43,9 @@ Dec 03, 2009 Arno added some of the polymorphic integer types from
              Windows.pas/BaseTsd.h.
 May 07, 2010 Arno added a few declarations.
 Apr 15, 2011 Arno prepared for 64-bit.
-May 06, 2011 Arno added TThreadID 
+May 06, 2011 Arno added TThreadID
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTypes;
@@ -59,8 +61,8 @@ uses
   SysUtils;
 
 const
-  OverbyteIcsTypesVersion = 107;
-  CopyRight : String      = ' OverbyteIcsTypes (c) 2004-2011 F. Piette V1.07 ';
+  OverbyteIcsTypesVersion = 800;
+  CopyRight : String      = ' OverbyteIcsTypes (c) 2004-2012 F. Piette V8.00 ';
 
 type
 {$IFNDEF COMPILER12_UP}

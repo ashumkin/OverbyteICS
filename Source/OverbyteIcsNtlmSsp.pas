@@ -2,7 +2,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  Server-side NTLM, validation of user credentials using Windows SSPI.
 Creation:     Sep 04, 2006
-Version:      1.07
+Version:      8.00
 Legal issues: Copyright (C) 2005-2011 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
 
@@ -48,6 +48,8 @@ Jul 22, 2011 V1.06 Arno - OEM NTLM changes.
 Feb 17, 2012 V1.07 Arno added NTLMv2 and NTLMv2 session security (basics),
              to method ValidateUserCredintials read comment "HowTo NTLMv2" in
              OverbyteIcsNtlmMsgs.pas.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsNtlmSsp;

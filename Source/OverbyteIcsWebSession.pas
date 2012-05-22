@@ -3,12 +3,12 @@
 Author:       François PIETTE
 Description:  Classes to handle session for THttpAppSrv and MidWare.
 Creation:     Dec 20, 2003
-Version:      1.01
+Version:      8.00
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list midware@elists.org or twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 1998-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -39,6 +39,8 @@ Updates:
 Apr 19, 2010 V1.01 Angus, stop MaxAge (SessionTimeout) being restored with saved
                       session data since it can never then be changed
                    Added SessionDataCount so client can use it, only set by AssignName
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}

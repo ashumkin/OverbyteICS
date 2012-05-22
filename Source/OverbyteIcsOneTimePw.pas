@@ -3,8 +3,8 @@
 Author:       Angus Robertson, Magenta Systems Ltd
 Description:  One Time Password support functions, see RFC2289/1938 (aka S/KEY)
 Creation:     12 November 2007
-Updated:      06 August 2008
-Version:      1.06
+Updated:      22 May 2012
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -46,6 +46,8 @@ Updates:
 14 Aug 2011 - 1.05 Arno fixed a bug that showed up since Delphi XE only and made
               two small optimizations.
 Feb 29, 2012  1.06 Arno - Use IcsRandomInt
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 Background:
@@ -141,8 +143,8 @@ uses
     OverbyteIcsUtils;
 
 const
-    OneTimePwVersion = 106;
-    CopyRight : String = ' OneTimePw (c) 1997-2012 F. Piette V1.06 ';
+    OneTimePwVersion = 800;
+    CopyRight : String = ' OneTimePw (c) 1997-2012 F. Piette V8.00 ';
     OtpKeyNames: array [0..3] of string =
                 ('none', 'otp-md5', 'otp-md4', 'otp-sha1') ;
 

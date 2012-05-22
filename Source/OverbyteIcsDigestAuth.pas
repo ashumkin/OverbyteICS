@@ -5,7 +5,7 @@ Author:       Arno Garrels <arno.garrels@gmx.de>
               Fastream Technologies (www.fastream.com) coders SubZero
               (G. I. Ates) and PeterS (Peter Nikolow), Luke (Boris Evstatiev)
 Creation:     January 7, 2009
-Version:      1.04
+Version:      8.00
 Description:  HTTP Digest Access Authentication, RFC 2617.
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
@@ -47,6 +47,8 @@ Jan 09, 2012 V1.03 Fixed backward compatibility with RFC 2069.
                    Handle more than one qop and algorithm in server challenge.
                    Faster checks for empty strings.
 Feb 29, 2012 V1.04 Use IcsRandomInt
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsDigestAuth;

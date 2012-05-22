@@ -3,8 +3,8 @@
 Author:       Angus Robertson, based on HashLib! from http://www.cobans.net/
 Description:  Calculates CRC32 abnd CRC32B
 Creation:     10 July 2006
-Updated:      14 April 2009
-Version:      7.01
+Updated:      22 May 2012
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -45,6 +45,8 @@ Oct 31, 2006 V1.02 Angus - added a progress callback to FileCRC().
 08 Jan 2008  V1.04 Angus - optional file mode to stop file being share locked
 14 Apr 2009  V7.00 Angus - added StreamCRC32B, always STREAM64
 15 Apr 2011  V7.01 Arno  - prepared for 64-bit
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsCRC;
@@ -65,8 +67,8 @@ uses
     SysUtils, Classes;
 
 const
-    CRCVersion         = 701;
-    CopyRight : String = ' CRC32 (c) 1997-2011 F. Piette V7.01 ';
+    CRCVersion         = 800;
+    CopyRight : String = ' CRC32 (c) 1997-2012 F. Piette V8.00 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;   { V1.04 }
 
 type

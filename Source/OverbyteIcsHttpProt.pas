@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      7.25
+Version:      8.00
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -456,10 +456,10 @@ Oct 6, 2011  V7.19 ensure content decompression triggered at end of document,
              failed if Content-Length missing, thanks to Yuri Semenov for the fix
 Oct 09, 2011 V7.20 Arno - Clear FResponseVer after relocations when the connection
              was closed. This ensures that ProxyConnection keep-alive is set on
-             proxy-reconnects after relocation with HTTPS as well. 
+             proxy-reconnects after relocation with HTTPS as well.
              Made a change in GetHeaderLineNext to fix a bug with 401 and 407
              responses when no content-length header was present (body was parsed
-             as header, thanks to Fastream for reporting). 
+             as header, thanks to Fastream for reporting).
 Nov 20, 2011 V7.21 Jean DELAGOUTTE - Do not clear FContentRangeBegin and
              FContentRangeEnd with method CONNECT.
 Jan 20, 2012 V7.22 RTT changed GetHeaderLineNext to support relocation URLs
@@ -473,6 +473,8 @@ Jan 23, 2012 V7.23 Arno added httperrNoStatusCode, passed to OnRequestDone and
 Feb 15, 2012 V7.24 Tobias Rapp added methods Del and DelAsync (HTTP method DELETE).
 Feb 17, 2012 V7.25 Arno added NTLMv2 and NTLMv2 session security (basics),
              read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -560,8 +562,8 @@ uses
     OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
-    HttpCliVersion       = 725;
-    CopyRight : String   = ' THttpCli (c) 1997-2012 F. Piette V7.25 ';
+    HttpCliVersion       = 800;
+    CopyRight : String   = ' THttpCli (c) 1997-2012 F. Piette V8.00 ';
     DefaultProxyPort     = '80';
     //HTTP_RCV_BUF_SIZE    = 8193;
     //HTTP_SND_BUF_SIZE    = 8193;

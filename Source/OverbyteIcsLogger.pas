@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  Logger class donated to ICS.
 Creation:     December 2005
-Version:      6.06
+Version:      8.00
 EMail:        francois.piette@overbyte.be      http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -50,6 +50,8 @@ May 08, 2009 V6.03 Added properties TimeStampFormatString and TimeStampSeparator
 Dec 20, 2009 V6.04 Exchanged symbol "NO_ADV_MT" by "NO_LOGGER_MT".
 Dec 06, 2010 V6.05 Thread-safe FreeNotification and RemoveFreeNotification.
 Apr 15, 2011 V6.06 Arno prepared for 64-bit.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsLogger;
@@ -87,8 +89,8 @@ uses
     SysUtils, Classes, SyncObjs, OverbyteIcsUtils;
 
 const
-    TIcsLoggerVersion   = 606;
-    CopyRight : String  = ' IcsLogger (c) 2005-2011 by François PIETTE V6.06 ';
+    TIcsLoggerVersion   = 800;
+    CopyRight : String  = ' IcsLogger (c) 2005-2012 by François PIETTE V8.00 ';
 
 type
     ELoggerException = class(Exception);

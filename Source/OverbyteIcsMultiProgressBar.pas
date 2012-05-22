@@ -2,13 +2,13 @@
 
 Author:       François PIETTE
 Creation:     March 2007
-Version:      6.00
+Version:      8.00
 Description:  TMultiProgressBar is a segmented progress bar.
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2007 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -37,6 +37,8 @@ Legal issues: Copyright (C) 2007 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 Updates:
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -70,9 +72,9 @@ uses
   SysUtils, Classes, Controls, ExtCtrls, Graphics;
 
 const
-    MultiProgressBarVersion = 600;
+    MultiProgressBarVersion = 800;
     CopyRight : String      = ' TMultiProgressBar ' +
-                              '(c) 2007 F. Piette V6.00 ';
+                              '(c) 2012 F. Piette V8.00 ';
 
 type
   TMyShape = class(TShape)

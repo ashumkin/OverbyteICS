@@ -1,4 +1,4 @@
-{*_* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
 Author:       François PIETTE
@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      7.40
+Version:      8.00
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -395,6 +395,8 @@ Jul 22, 2011 V7.38  Arno - OEM NTLM changes.
 Feb 17, 2012 V7.39  Arno added NTLMv2 and NTLMv2 session security (basics),
                     read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
 Feb 29, 2012 V7.40  Arno - Use IcsRandomInt
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -478,11 +480,11 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-  SmtpCliVersion     = 740;
-  CopyRight : String = ' SMTP component (c) 1997-2012 Francois Piette V7.40 ';
+  SmtpCliVersion     = 800;
+  CopyRight : String = ' SMTP component (c) 1997-2012 Francois Piette V8.00 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
-  
+
   SmtpDefEncArray : array [0..3] of AnsiString = ('7bit',             '8bit',
                                                   'quoted-printable', 'base64'); {AG}
 type

@@ -3,8 +3,8 @@
 Author:       Angus Robertson, Magenta Systems Ltd
 Description:  Client Cookie Handling, see RFC2109/RFC6265 (RFC2965 is obsolete)
 Creation:     19 March 2012
-Updated:      19 March 2012
-Version:      1.01
+Updated:      22 May 2012
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -48,6 +48,8 @@ OverbyteIcsHttpTst1.pas shows how to handle cookies, very few new lines
 Updates:
 19 Mar 2012 - 1.00 baseline Angus
 28 Mar 2012 - 1.01 Arno: StrictDelimiter doesn't exist in Delphi 7
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 Note - needs more testing for domain and path matching
 Pending - not yet thread safe

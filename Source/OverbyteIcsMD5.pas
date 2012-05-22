@@ -5,7 +5,7 @@ Author:       François PIETTE. Based on work given by Louis S. Berman from
 Description:  MD5 is an implementation of the MD5 Message-Digest Algorithm
               as described in RFC-1321
 Creation:     October 11, 1997
-Version:      7.03
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -73,6 +73,8 @@ Sep 21, 2010 V7.02 Arno - Changed parameters of MD5SameDigest() to reference
              types rather than value types. Changed MD5DigestToLowerHexA to
              return RawByteString.
 Mar 15, 2012 V7.03 Arno - HMAC_MD5() did not handle key sizes > 64 bytes correctly.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMD5;
@@ -94,8 +96,8 @@ uses
     OverbyteIcsTypes;   // For TBytes
 
 const
-    MD5Version         = 703;
-    CopyRight : String = ' MD5 Message-Digest (c) 1997-2010 F. Piette V7.03 ';
+    MD5Version         = 800;
+    CopyRight : String = ' MD5 Message-Digest (c) 1997-2012 F. Piette V8.00 ';
     DefaultMode =  fmOpenRead or fmShareDenyWrite;
 
 {$Q-}

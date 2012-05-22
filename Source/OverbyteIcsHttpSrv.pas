@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      7.51
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -353,6 +353,9 @@ Mar 26, 2012 V7.49 Angus - MakeCookie has optional domain parameter
 Mar 31, 2012 V7.50 Arno - Made TextToHtmlText work with WideString in Ansi Delphi
 Apr 27, 2012 V7.51 Arno - Fixed and deprecated FileDate() use
                    OverbyteIcsUtils.IcsFileUtcModified() instead.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -451,8 +454,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-    THttpServerVersion = 751;
-    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V7.51 ';
+    THttpServerVersion = 800;
+    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.00 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
     MinSndBlkSize = 8192 ;  { V7.40 }

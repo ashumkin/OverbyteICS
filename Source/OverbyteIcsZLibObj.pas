@@ -42,6 +42,8 @@
 
   Apr 15, 2011 Arno prepared for 64-bit.
   Aug 13, 2011 Arno fixed record allignment.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
   This software is provided 'as-is', without any express or implied warranty.
   In no event will the author be held liable for any damages arising from the use of this software.

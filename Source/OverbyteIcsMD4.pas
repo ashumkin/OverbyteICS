@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Sep 03, 2004
-Version:      1.01
+Version:      8.00
 Description:  MD4 is an implementation of the MD4 Message-Digest Algorithm
               as described in RFC1320
 Credit:       This unit is based on code written by David Barton
@@ -22,7 +22,7 @@ EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2004-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -53,6 +53,8 @@ Legal issues: Copyright (C) 2004-2010 by François PIETTE
 History:
 July 2007    V1.01 changes for .net compatibility
 Apr 12, 2008 *Temporary, non-breaking Unicode changes* AG.
+                  May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -75,8 +77,8 @@ uses
   Sysutils{, DCPcrypt2, DCPconst};
 
 const
-    IcsMD4Version          = 101;
-    CopyRight : String     = ' IcsMD4 (c) 2004-2010 F. Piette V1.01 ';
+    IcsMD4Version          = 800;
+    CopyRight : String     = ' IcsMD4 (c) 2004-2012 F. Piette V8.00 ';
 
 type
 {$IFDEF DELPHI3}

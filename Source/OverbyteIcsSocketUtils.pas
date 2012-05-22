@@ -4,7 +4,7 @@ Author:       Arno Garrels
               Contact address <forename.surname@gmx.de>
 Description:  Crossplatform socket utilities for ICS.
 Creation:     January 2012
-Version:      1.00
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -36,6 +36,8 @@ Legal issues: Copyright (C) 2012 by François PIETTE and Author
 History:
 Jan 04, 2012 Moved code from unit OverbyteIcsWinsock2 here and made some
              breaking changes to support OSX and IPv6.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}

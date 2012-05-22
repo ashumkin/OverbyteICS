@@ -3,8 +3,8 @@
 Author:       Angus Robertson, Magenta Systems Ltd
 Description:  GetTickCount64 support for all versions of Windows
 Creation:     3 September 2009
-Updated:      3 September 2009
-Version:      1.00
+Updated:      22 May 2012
+Version:      8.00
 Email:        delphi@magsys.co.uk  http://www.magsys.co.uk
 Legal issues: Copyright (C) 2009 by Magenta Systems Ltd, England
 
@@ -32,6 +32,8 @@ Legal issues: Copyright (C) 2009 by Magenta Systems Ltd, England
 
 Updates:
 3 Sep 2009 - 1.00 baseline Angus
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 

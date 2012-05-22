@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      7.87
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -918,6 +918,8 @@ Sep 26, 2011 V7.84 Angus - Set SocketSndBufSize and SocketRcvBufSize for
 Feb 17, 2012 V7.86 Arno added NTLMv2 and NTLMv2 session security (basics),
                    read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
 Apr 30, 2012 V7.87 Arno - Some SSL debug log strings adjusted.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 }
 
 {
@@ -1061,8 +1063,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 787;
-  CopyRight    : String     = ' TWSocket (c) 1996-2012 Francois Piette V7.87 ';
+  WSocketVersion            = 800;
+  CopyRight    : String     = ' TWSocket (c) 1996-2012 Francois Piette V8.00 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 

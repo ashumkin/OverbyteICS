@@ -31,6 +31,8 @@ Jul 30, 2007 V2.00 Updated for .NET
 Mar 24, 2008 V2.01 Made some changes to prepare code for Unicode
                    Use only AnsiString
 Sep 20, 2010 V2.02 Arno added SHA1DigestToHex functions.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 ------------------------------------------------------------------------------}
 
@@ -57,8 +59,8 @@ uses
    SysUtils, Classes, OverbyteIcsTypes;
 
 const
-   IcsSHA1Version     = 202;
-   CopyRight : String = ' IcsSHA1 (c) 2004-2010 F. Piette V2.02 ';
+   IcsSHA1Version     = 800;
+   CopyRight : String = ' IcsSHA1 (c) 2004-2012 F. Piette V8.00 ';
 
 const
    shaSuccess      = 0;

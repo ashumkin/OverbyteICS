@@ -3,12 +3,12 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  TIcsCharsetComboBox provides easy MIME charset selection.
 Creation:     May 10, 2009
-Version:      V1.01
+Version:      V8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2009 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -40,6 +40,8 @@ History:
 May  21, 2009 V1.00a Preserve custom alias names.
 June 27, 2009 V1.01 Added the CodeGear-fix of QC #41940 for compilers below
               D2007 UPD 3.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

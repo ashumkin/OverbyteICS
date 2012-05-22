@@ -5,7 +5,7 @@ Description:  Multi-threaded socket server component derived from TWSocketServer
               Based on code written by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
 Creation:     November 2005
-Version:      7.02
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -46,6 +46,8 @@ Mar 06, 2006 A. Garrels: Fixed synchronisation in ClientAttachThread and
              see unit IcsSslThrdLock and changed TSslWSocketThrdServer to
              use TSslDynamicLock.
 Apr 09, 2012 V7.02 Arno - 64-bit and message handling fix.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -84,8 +86,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-    WSocketThrdServerVersion = 700;
-    CopyRight : String       = ' TWSocketThrdServer (c) 2005-2010 F. Piette V7.00 ';
+    WSocketThrdServerVersion = 800;
+    CopyRight : String       = ' TWSocketThrdServer (c) 2005-2012 F. Piette V8.00 ';
 
     WM_THREAD_BASE_MSG           = WM_USER + 100;
     WM_THREAD_ADD_CLIENT         = WM_THREAD_BASE_MSG + 0;

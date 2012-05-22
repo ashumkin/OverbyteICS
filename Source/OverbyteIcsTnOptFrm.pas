@@ -3,12 +3,12 @@
 Author:       François PIETTE
 Description:  User interface for TnEmulVT component options
 Creation:     May, 1996
-Version:      7.00
+Version:      8.00
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org See website for details.
 Legal issues: Copyright (C) 1996-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -41,8 +41,10 @@ Mar 18, 1999  V1.01 Removed FormPos dependency
 Mar 26, 2006  V6.00 started from previous version
 Mar 24, 2008  V6.01 Francois Piette made some changes to prepare code
               for Unicode.
-May 11, 2008  V6.02 USchuster removed local atoi implementation (atoi is now in OverbyteIcsUtils.pas) 
+May 11, 2008  V6.02 USchuster removed local atoi implementation (atoi is now in OverbyteIcsUtils.pas)
 Sept 4, 2008  V7.00 Angus don't save form size since it's fixed, font now Sans Serif
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTnOptFrm;
@@ -78,8 +80,8 @@ uses
     Dialogs, Forms, StdCtrls, IniFiles, Buttons, OverbyteIcsUtils;
 
 const
-  TnOptFrmVersion      = 700;
-  CopyRight : String = ' TnOptFrm (c) 1996-2010 F. Piette V7.00 ';
+  TnOptFrmVersion      = 800;
+  CopyRight : String = ' TnOptFrm (c) 1996-2012 F. Piette V8.00 ';
 
 type
   TOptForm = class(TForm)

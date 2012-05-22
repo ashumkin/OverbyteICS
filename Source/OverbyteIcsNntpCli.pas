@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TNntpCli is a client for the NNTP protocol (RFC-977)
 Creation:     December 19, 1997
-Version:      6.05
+Version:      8.00
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -103,6 +103,8 @@ Dec 17, 2009  V6.03 Arno changed most string types of TNntpCli to AnsiString.
 Nov 08, 2010  V6.04 Arno improved final exception handling, more details
               in OverbyteIcsWndControl.pas (V1.14 comments).
 Feb 29, 2012 V6.05 Arno - Use IcsRandomInt
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -174,8 +176,8 @@ uses
      OverbyteIcsWinSock;
 
 const
-    NntpCliVersion     = 605;
-    CopyRight : String = ' TNntpCli (c) 1997-2012 F. Piette V6.05 ';
+    NntpCliVersion     = 800;
+    CopyRight : String = ' TNntpCli (c) 1997-2012 F. Piette V8.00 ';
 {$IFDEF VER80}
     { Delphi 1 has a 255 characters string limitation }
     NNTP_SND_BUF_SIZE = 255;

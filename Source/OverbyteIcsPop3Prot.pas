@@ -10,7 +10,7 @@ Author:       François PIETTE
 Object:       TPop3Cli class implements the POP3 protocol
               (RFC-1225, RFC-1939)
 Creation:     03 october 1997
-Version:      6.13
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -190,6 +190,8 @@ Jun 18, 2011 V6.11 aguser removed one compiler hint.
 Jul 22, 2011 V6.12 Arno - OEM NTLM changes.
 Feb 17, 2012 V6.13 Arno added NTLMv2 and NTLMv2 session security (basics),
              read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -253,11 +255,11 @@ uses
 
 { This resolves a name conflict with Win API GetUserName() defined in MS headers }
 (*$HPPEMIT '#pragma alias "@Overbyteicspop3prot@TCustomPop3Cli@GetUserNameA$qqrv"="@Overbyteicspop3prot@TCustomPop3Cli@GetUserName$qqrv"' *)
-(*$HPPEMIT '#pragma alias "@Overbyteicspop3prot@TCustomPop3Cli@GetUserNameW$qqrv"="@Overbyteicspop3prot@TCustomPop3Cli@GetUserName$qqrv"' *)	
+(*$HPPEMIT '#pragma alias "@Overbyteicspop3prot@TCustomPop3Cli@GetUserNameW$qqrv"="@Overbyteicspop3prot@TCustomPop3Cli@GetUserName$qqrv"' *)
 
 const
-    Pop3CliVersion     = 613;
-    CopyRight : String = ' POP3 component (c) 1997-2010 F. Piette V6.13 ';
+    Pop3CliVersion     = 800;
+    CopyRight : String = ' POP3 component (c) 1997-2012 F. Piette V8.00 ';
     POP3_RCV_BUF_SIZE  = 4096;
 
 type

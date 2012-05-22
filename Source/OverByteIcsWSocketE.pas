@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Registration unit for TWSocket. If you build a runtime
               package, you shouldn't include this unit.
 Creation:     Feb 24, 2002
-Version:      6.03
+Version:      8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -48,7 +48,9 @@ Mar 24, 2008 V6.02 Francois Piette made some changes to prepare code
                    for Unicode.
 Apr 20, 2011 V6.03 Arno - LineEnd property converts to and from ANSI,
                    removed 2 implicit string cast warnings and some old
-                   compiler directives. 
+                   compiler directives.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF FMX}
@@ -85,8 +87,8 @@ uses
   DesignIntf, DesignEditors;
 
 const
-    WSocketEVersion          = 603;
-    CopyRight : String       = ' WSocketE (c) 2002-2011 F. Piette V6.03 ';
+    WSocketEVersion          = 800;
+    CopyRight : String       = ' WSocketE (c) 2002-2012 F. Piette V8.00 ';
 
 type
     TWSocketLineEndProperty = class(TStringProperty)

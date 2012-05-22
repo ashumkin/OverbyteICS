@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Oct 25, 2005
 Description:  Fast streams for ICS tested on D5 and D7.
-Version:      6.18
+Version:      8.00
 Legal issues: Copyright (C) 2005-2012 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               
@@ -82,6 +82,8 @@ Feb 08, 2012 V6.17 Fixed a 64-bit bug and a memory leak in TBufferedFileStream.
                    removed some default parameter values from constructors,
                    verify that existing code calls the right overload.
 Mar 31, 2012 V6.18 Fixed TMultiPartFileReader.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

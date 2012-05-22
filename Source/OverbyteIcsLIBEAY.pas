@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.17
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -72,7 +72,7 @@ Dec 20, 2009 A.Garrels added plenty of stuff. Some is not yet used some is, like
              OverbyteIcsSslDefs.inc).
 May 07, 2010 A. Garrels moved declaration of size_t to OverbyteIcsTypes,
              changed user type CRYPTO_dynlock_value to use TRTLCriticalSection.
-May 08, 2010 Arno Garrels added support for OpenSSL 0.9.8n. 
+May 08, 2010 Arno Garrels added support for OpenSSL 0.9.8n.
              In OSSL v0.9.8L and v0.9.8m renegotiation support was disabled
              due to vulnerability of the SSL protocol. In v0.9.8n renegotiation
              support was re-enabled and RFC5746 implemented but require the
@@ -88,6 +88,8 @@ May 08, 2011 Arno added function f_ERR_remove_thread_state new in v1.0.0+.
 May 17, 2011 Arno made one hack thread-safe and got rid of another hack with
              OSSL v1.0.0+.
 May 31, 2011 Arno changed the 64-bit hack in Ics_Ssl_EVP_PKEY_GetKey.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -127,8 +129,8 @@ uses
     OverbyteIcsSSLEAY;
 
 const
-    IcsLIBEAYVersion   = 117;
-    CopyRight : String = ' IcsLIBEAY (c) 2003-2011 F. Piette V1.17 ';
+    IcsLIBEAYVersion   = 800;
+    CopyRight : String = ' IcsLIBEAY (c) 2003-2012 F. Piette V8.00 ';
 
 type
     EIcsLibeayException = class(Exception);
@@ -146,7 +148,7 @@ type
     TDynLockCreateCallback  = function(const _file : PAnsiChar; Line: Integer): PCRYPTO_dynlock_value; cdecl;
     TDynLockLockCallback    = procedure(Mode : Integer; L : PCRYPTO_dynlock_value; _File : PAnsiChar; Line: Integer); cdecl;
     TDynLockDestroyCallback = procedure(L : PCRYPTO_dynlock_value; _File : PAnsiChar; Line: Integer); cdecl;
-   
+
 const
     V_ASN1_UNIVERSAL                    = $00;
     V_ASN1_APPLICATION                  = $40;

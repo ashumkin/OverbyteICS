@@ -5,12 +5,12 @@ Description:  TSysLogClient class encapsulate the client side of the SysLog
               protocol as described in RFC3164 and RFC5424 but UTF-8 encoding
               is not supported.
 Creation:     September 2009
-Version:      1.01
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2009 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -41,6 +41,8 @@ Legal issues: Copyright (C) 2009 by François PIETTE
 History:
 Feb 08, 2010 V1.01 F. Piette moved NILVALUE to SysLogDefs so that it can be
                    used from client and server components.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

@@ -10,11 +10,11 @@ Description:  This unit encapsulate the ICMP.DLL into an object of type TICMP.
               to change properties or event handler. This is much simpler to
               use for a GUI program.
 Creation:     January 6, 1997
-Version:      7.01
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2010 by François PIETTE
+Legal issues: Copyright (C) 1997-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -60,6 +60,8 @@ Mar 24, 2008 V6.01 Francois Piette made some changes to prepare code
                    Use of AnsiString.
 Aug 12, 2008 V7.00 Reverted from AnsiString to String for properties.
 Jul 25, 2011 V7.01 Added directive "EXTERNALSYM"
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -98,8 +100,8 @@ uses
     Windows, SysUtils, Classes, OverbyteIcsWinsock;
 
 const
-  IcmpVersion = 7.01;
-  CopyRight : String   = ' TICMP (c) 1997-2010 F. Piette V7.01 ';
+  IcmpVersion = 8.00;
+  CopyRight : String   = ' TICMP (c) 1997-2012 F. Piette V8.00 ';
   IcmpDLL     = 'icmp.dll';
 
   // IP status codes returned to transports and user IOCTLs.

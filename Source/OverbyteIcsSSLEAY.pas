@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
               This is only the subset needed by ICS.
 Creation:     Jan 12, 2003
-Version:      1.09
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -61,11 +61,13 @@ Dec 20, 2009 A.Garrels added plenty of stuff. Some is not yet used some is, like
 May 08, 2010 A. Garrels added two declarations required to support
              Open SSL 0.9.8n.
 Apr 23, 2011 A. Garrels added C-macro f_SSL_clear_options.
-Apr 24, 2011 Arno - Record TEVP_PKEY_st changed in 1.0.0 and had to 
+Apr 24, 2011 Arno - Record TEVP_PKEY_st changed in 1.0.0 and had to
              be declared as dummy. See helper functions Ics_Ssl_EVP_PKEY_xxx
              in OverbyteIcsLibeay.pas.
 May 03, 2011 Arno added some function declarations.
 May 31, 2011 Arno removed the packed modifier from non-dummy records.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$B-}                                 { Enable partial boolean evaluation   }
@@ -104,8 +106,8 @@ uses
     SysUtils, OverbyteIcsUtils;
 
 const
-    IcsSSLEAYVersion   = 109;
-    CopyRight : String = ' IcsSSLEAY (c) 2003-2011 F. Piette V1.09 ';
+    IcsSSLEAYVersion   = 800;
+    CopyRight : String = ' IcsSSLEAY (c) 2003-2012 F. Piette V8.00 ';
 
     EVP_MAX_IV_LENGTH                 = 16;       { 03/02/07 AG }
     EVP_MAX_BLOCK_LENGTH              = 32;       { 11/08/07 AG }

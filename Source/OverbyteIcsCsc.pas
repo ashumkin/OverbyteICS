@@ -4,7 +4,7 @@ Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  TIcsCsc (Csc => Charset Context) provides string conversion and
               improved (Ansi) multi-byte character set routines.
 Creation:     Apr 25, 2010
-Version:      1.00
+Version:      8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -36,6 +36,8 @@ Legal issues: Copyright (C) 2010 by Arno Garrels, contributed to ICS
                  street address, EMail address and any comment you like to say.
 
 History:
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsCsc;

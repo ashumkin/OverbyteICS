@@ -3,7 +3,7 @@
 Author:       Maurizio Lotauro <Lotauro.Maurizio@dnet.it>
               Code donated to the ICS project
 Creation:     July 2005
-Version:      6.00
+Version:      8.00
 Description:  This unit contains the class used by THttpCli to handle the
               Accept-Encoding and Content-Encoding header fields.
               It also contains the THttpContentCoding class needed to implement
@@ -38,6 +38,8 @@ Jan 08, 2006 V1.01 Maurizio fixed GetCoding
                    Francois Piette reformated the code to fit the ICS rules,
                    added compilation directives.
 Mar 26, 2006 V6.00 New version 6 started
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -86,7 +88,7 @@ type
         class function GetActive: Boolean; virtual;
         function PropGetActive: Boolean;
         class function GetCoding: String; virtual;
-        function PropGetCoding: String; 
+        function PropGetCoding: String;
         property OutputWriteBuffer: TWriteBufferProcedure read FOutputWriteBuffer;
     public
         constructor Create(WriteBufferProc: TWriteBufferProcedure); virtual;

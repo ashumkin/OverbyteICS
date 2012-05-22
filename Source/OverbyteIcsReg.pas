@@ -3,7 +3,12 @@ unit OverbyteIcsReg;
   {$DEFINE ICS_COMMON}
 {$ENDIF}
 
-{ Feb 15, 2012 Angus - added OverbyteIcsMimeUtils }
+{
+Feb 15, 2012 Angus - added OverbyteIcsMimeUtils
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
+}
+
 
 {$I Include\OverbyteIcsDefs.inc}
 {$IFDEF USE_SSL}
@@ -240,10 +245,10 @@ const
         sIcsSplashImg   = 'ICSPRODUCTICON';
     {$ENDIF}
 {$ENDIF}
-    sIcsLongProductName = 'Internet Component Suite V7';
+    sIcsLongProductName = 'Internet Component Suite V8';
     sIcsFreeware        = 'Freeware';
     sIcsDescription     = sIcsLongProductName + #13#10 +
-                          //'Copyright (C) 1996-2011 by François PIETTE'+ #13#10 +
+                          //'Copyright (C) 1996-2012 by François PIETTE'+ #13#10 +
                           // Actually there's source included with different
                           // copyright, so either all or none should be mentioned
                           // here.

@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Sep 03, 2004
-Version:      1.00
+Version:      8.00
 Description:  DES encryption
 Credit:       Implementation of the Data Encryption Standard (DES) as
               described in the book:
@@ -45,6 +45,8 @@ Legal issues: Copyright (C) 2004-2010 by François PIETTE
                  address, EMail address and any comment you like to say.
 
 History:
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -62,8 +64,8 @@ unit OverbyteIcsDES;
 interface
 
 const
-    IcsDESVersion          = 100;
-    CopyRight : String     = ' IcsDES (c) 2004-2010 F. Piette V1.00 ';
+    IcsDESVersion          = 800;
+    CopyRight : String     = ' IcsDES (c) 2004-2012 F. Piette V8.00 ';
 
 type
     TArrayOf8Bytes  = array [0..7] of Byte;

@@ -4,7 +4,7 @@ Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  Windows API interface Unit for Object Pascal.
               Includes portions of the original file sspi.h as well as security.h.
 Creation:     Jan 11, 2006
-Version:      1.01
+Version:      8.00
 Legal issues: Portions Copyright (C) 2006 by Arno Garrels, Berlin, Germany,
               contact: <arno.garrels@gmx.de>
               Portions created by Microsoft are Copyright (C) 1995-2001
@@ -35,7 +35,9 @@ Sep 04, 2006 V1.01 Reworked by A.Garrels in order to support BCB as well as
              Technologies (www.fastream.com) and donated to ICS, thanks.
              **If you compile with BCB personality define SECURITY_WIN32
              in the project options**
-Apr 25, 2008 V1.0.2 A.Garrels some changes to prepare code for Unicode; 
+Apr 25, 2008 V1.0.2 A.Garrels some changes to prepare code for Unicode;
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

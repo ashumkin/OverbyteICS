@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  Time functions.
 Creation:     Nov 24, 1999 from Bruce Christensen <bkc51831234@hotmail.com>
               code used with his permission. Thanks.
-Version:      7.09
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -58,7 +58,7 @@ Mar 10, 2008 V1.16 FPiette made some changes to prepare code for Unicode
                    GetFileAge: do not use set of char
 Apr 22, 2008 V1.17 AGarrels Removed checks for faVolumeID
 12 May 2008  V1.18 Removed function atoi it's in OverbyteIcsUtils.pas now.
-Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and later only                    
+Jul 10, 2008 V6.01 bumped version, now using TryEncodeDate/Time since D7 and later only
 Nov 16, 2008 V7.02 Angus added IcsGetFileSize
 Apr 16, 2009 V7.07 Angus FtpFileMD5 and FtpFileCrc32B using buffered stream with unicode
                    Fixed IcsGetTickCountX to never return triggers (two in four billion bug)
@@ -70,6 +70,8 @@ May 17, 2009 V7.08 Angus assume STREAM64
                    Made IcsBuildDirList and IcsCompareDirNext public
 Feb 22, 2011 V7.09 Angus IcsGetDirList always keeps directories for FTP recursive
                       subdirectory listings
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -106,8 +108,8 @@ uses
     OverbyteIcsStreams;    { angus V7.7 }
 
 const
-    FtpSrvT_Unit       = 709;
-    CopyRight : String = ' FtpSrvT  (c) 1999-2011 F. Piette V7.09 ';
+    FtpSrvT_Unit       = 800;
+    CopyRight : String = ' FtpSrvT  (c) 1999-2012 F. Piette V8.00 ';
 
   { V1.16 Tick and Trigger constants }
   TicksPerDay      : longword =  24 * 60 * 60 * 1000 ;

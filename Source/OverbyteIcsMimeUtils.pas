@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      7.25
+Version:      8.00
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -113,6 +113,8 @@ Feb 15, 2012 V7.25  Angus - added MIME Content Type component and functions:
                           file, with methods to get ContentType or file extension
                       ContentTypeGetExtn - get one file extension and class for ContentType
                       ContentTypeFromExtn - get one ContentType from file extension
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -168,8 +170,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    TMimeUtilsVersion = 725;
-    CopyRight : String = ' MimeUtils (c) 2003-2012 F. Piette V7.25 ';
+    TMimeUtilsVersion = 800;
+    CopyRight : String = ' MimeUtils (c) 2003-2012 F. Piette V8.00 ';
 
     SmtpDefaultLineLength = 76; // without CRLF
     SMTP_SND_BUF_SIZE     = 2048;

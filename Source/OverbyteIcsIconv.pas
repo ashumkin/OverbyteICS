@@ -3,14 +3,16 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  Headers for iconv library (LGPL) 
 Creation:     Apr 25, 2010
-Version:      1.00
+Version:      8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-              
+
 History:
 May 07 2010  1.01 Made it compatible with C++Builder, removed declaration of
              size_t to OverbyteIcsTypes.pas
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsIconv;

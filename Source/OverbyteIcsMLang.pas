@@ -4,7 +4,7 @@ Description:  A few header translations from MS mlang.h.
               Requires Internet Explorer 5 or better, all functions fail
               with HRESULT E_NOTIMPL if the library isn't loaded.
 Creation:     March 19, 2010
-Version:      1.00
+Version:      8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -12,6 +12,8 @@ Legal issues: Copyright (C) Microsoft Corporation.  All Rights Reserved.
               Translator Arno Garrels <arno.garrels@gmx.de>
 
 History:
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 

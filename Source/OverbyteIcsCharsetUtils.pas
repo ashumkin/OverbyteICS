@@ -14,12 +14,12 @@ Description:  A place for MIME-charset stuff.
               http://msdn.microsoft.com/en-us/library/ms776446.aspx
               http://www.iana.org/assignments/character-sets
 Creation:     July 17, 2008
-Version:      V7.12
+Version:      V8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2002-2012 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -86,7 +86,9 @@ Nov 18, 2009 V7.11 Added MimeCharsetToCodePageEx(), MimeCharsetToCodePageExDef()
                    and IcsIsValidCodePageID(). All take new Unicode code page IDs
                    into account. Such as CP_UTF16, CP_UTF16Be, CP_UTF32 and
                    CP_UTF32Be.
-May 07, 2010 v7.12 Should be POSIX-ready. 
+May 07, 2010 v7.12 Should be POSIX-ready.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 //
 // Windows codepage Identifiers, June 2008, for a current list try

@@ -10,7 +10,7 @@ Description:  TIcsBufferHandler is a class which encapsulate a data fifo to
               to hold more data, it is taken from the free list, if any, or
               a new one is created.
 Creation:     June 11, 2006 (Built from basic version created in april 1996)
-Version:      6.02 (Initial version was 6.01 to match TWSocket version)
+Version:      8.00 (Initial version was 6.01 to match TWSocket version)
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -62,6 +62,8 @@ Mar 25, 2006  V6.00c Fixed TBuffer.Write to correctly use the offset. Thanks
 June 11, 2006 V6.01 New version with TIcsBufferHandler. Take all of the
               buffer handling out of TWSocket.
 Apr 15, 2011  V6.02 Arno prepared for 64-bit.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -98,8 +100,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  WSockBufVersion    = 602;
-  CopyRight : String = ' TWSockBuf (c) 1996-2011 Francois Piette V6.02 ';
+  WSockBufVersion    = 800;
+  CopyRight : String = ' TWSockBuf (c) 1996-2012 Francois Piette V8.00 ';
 
 type
 {$IFDEF CLR}

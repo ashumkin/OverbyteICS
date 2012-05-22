@@ -3,12 +3,12 @@
 Author:       François PIETTE
 Description:  Version defines for ICS (Internet Component Suite)
 Creation:     2003
-Version:      1.13
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 1996-2006 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -52,6 +52,8 @@ Sep 21, 2010 V1.10 Arno corrected VER180/VER185 and added VER190 and VER160.
 Sep 24, 2010 V1.11 Arno removed BCB7/C++BuilderX.
 Oct 23, 2010 V1.12 PasDoc compatible.
 Feb 4,  2011 V1.13 BUILTIN_TIMEOUT and BUILTIN_THROTTLE now enabled by default 
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
   SYMBOL           Compiler version

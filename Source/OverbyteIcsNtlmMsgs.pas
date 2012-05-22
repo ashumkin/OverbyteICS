@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Jan 01, 2004
-Version:      6.07
+Version:      8.00
 Description:  This is an implementation of the NTLM authentification
               messages used within HTTP protocol (client side).
               NTLM protocol documentation can be found at:
@@ -60,6 +60,8 @@ Feb 26, 2011 V6.04 Function NtlmGetMessage2 returned garbage WideStrings with
 Jul 22, 2011 V6.05 Arno - OEM NTLM changes.
 Feb 17, 2012 V6.06 Arno added NTLMv2 and NTLMv2 session security (basics).
 Feb 29, 2012 V6.07 Arno - Use IcsRandomInt, .Net code removed.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 HowTo NTLMv2:
@@ -148,8 +150,8 @@ uses
     OverbyteIcsMimeUtils;
 
 const
-    IcsNtlmMsgsVersion     = 607;
-    CopyRight : String     = ' IcsNtlmMsgs (c) 2004-2012 F. Piette V6.07 ';
+    IcsNtlmMsgsVersion     = 800;
+    CopyRight : String     = ' IcsNtlmMsgs (c) 2004-2012 F. Piette V8.00 ';
 
 const
     Flags_Negotiate_Unicode               = $00000001;

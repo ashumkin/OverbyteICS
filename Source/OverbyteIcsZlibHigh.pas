@@ -2,7 +2,7 @@
 
 Author:       Angus Robertson, Magenta Systems Ltd
 Creation:     15 December 2005
-Version:      7.01
+Version:      8.00
 Description:  High level functions for ZLIB compression and decompression
 Credit:       Based on work by Gabriel Corneanu <gabrielcorneanu(AT)yahoo.com>
               Derived from original sources by Bob Dellaca and Cosmin Truta.
@@ -52,6 +52,8 @@ May 02, 2008 V6.02 A.Garrels prepared code for Unicode, type-changes from String
 Aug 05, 2008 V6.03 F. Piette reverted ZlibErrMess to from AnsiString to String.
 Sep 10, 2010 V7.00 Angus and Arno updated ZLIB to 1.2.5, subdirectory now lowercase
 Apr 15, 2011 V7.01 Arno prepared for 64-bit.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 pending: compress callback not correct total count

@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      7.19
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -400,6 +400,8 @@ May 21, 2011 V7.17 Arno ensure CommandAUTH resets the SSL prot-level correctly.
 Jul 18, 2011 V7.18 Arno added Unicode normalization.
 Aug 8,  2011 V7.19 Angus added client SndBufSize and RcvBufSize to set data socket
              buffers sizes for better performance, set to 32K to double speeds
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
 
@@ -508,8 +510,8 @@ uses
 
 
 const
-    FtpServerVersion         = 719;
-    CopyRight : String       = ' TFtpServer (c) 1998-2011 F. Piette V7.19 ';
+    FtpServerVersion         = 800;
+    CopyRight : String       = ' TFtpServer (c) 1998-2012 F. Piette V8.00 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 

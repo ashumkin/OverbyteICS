@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      7.09
+Version:      8.00
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2003-2011 by François PIETTE
+Legal issues: Copyright (C) 2003-2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -81,6 +81,8 @@ Dec 18, 2011 V7.09 F. Piette fixed THttpAppSrv.GetDispatchVirtualDocument so
                    that OnDestroying is correct initialized. This prevent
                    crashing when defered answer is used and client is gone at
                    the time the answer is sent.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
 {$IFNDEF ICS_INCLUDE_MODE}

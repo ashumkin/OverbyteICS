@@ -5,7 +5,7 @@ Description:  Delphi component combining both TnCnx and EmulVT components.
               Hence it does ANSI emulation using TCP/IP telnet protocol.
 Author:       François PIETTE
 Creation:     May, 1996
-Version:      7.01
+Version:      8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -78,6 +78,8 @@ Mar 24, 2008 V6.01 Francois Piette made some changes to prepare code
 Aug 15, 2008 V7.00 Delphi 2009 (Unicode) support. The terminal is not
              unicode, but the component support unicode strings.
 Jul 17, 2011 V7.01 Arno fixed some bugs with non-Windows-1252 code pages.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -120,8 +122,8 @@ uses
     OverbyteIcsTnOptFrm, OverbyteIcsWSocket;
 
 const
-  TnEmultVTVersion   = 701;
-  CopyRight : String = ' TTnEmulVT (c) 1996-2011 F. Piette V7.01 ';
+  TnEmultVTVersion   = 800;
+  CopyRight : String = ' TTnEmulVT (c) 1996-2012 F. Piette V8.00 ';
 
 type
   TTnEmulVTDataAvailable = procedure (Sender  : TObject;

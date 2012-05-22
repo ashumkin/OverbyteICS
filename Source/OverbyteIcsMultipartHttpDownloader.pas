@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     March 2007
-Version:      0.99c ALPHA CODE
+Version:      8.00 ALPHA CODE
 Description:  TMultipartHttpDownloader is a component to download files using
               simultaneous connections to speedup download. The demo make
               also use of the TMultiProgressBar (included in ICS) which is
@@ -11,7 +11,7 @@ EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2007 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -44,6 +44,8 @@ Oct 30, 2010 0.99b In DownloadDocData, fixed call to Seek so that the int64
              overloaded version is used.
 Nov 08, 2010 0.99c Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -95,9 +97,9 @@ uses
     OverbyteIcsUtils;
 
 const
-    MultipartHttpDownloaderVersion = 600;
+    MultipartHttpDownloaderVersion = 800;
     CopyRight : String             = ' TMultipartHttpDownloader ' +
-                                     '(c) 2007 F. Piette V6.00 ';
+                                     '(c) 2012 F. Piette V8.00 ';
 
 type
     TDisplayEvent             = procedure (Sender       : TObject;

@@ -3,6 +3,10 @@ unit OverbyteIcsWinnls;
 // From Winnls.h
 { Normalization requires Vista+ or XP SP2 with additional install of:
   Microsoft Internationalized Domain Names (IDN) Mitigation APIs 1.1 }
+{
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
+}
 
 {$ALIGN ON}
 {$MINENUMSIZE 4}

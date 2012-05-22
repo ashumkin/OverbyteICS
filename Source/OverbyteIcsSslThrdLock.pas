@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Nov 01, 2005
 Description:  Implementation of OpenSsl thread locking (Windows);
-Version:      1.03
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
@@ -56,6 +56,8 @@ Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 May 05, 2010 V1.02 A.Garrels changed synchronisation to use TRTLCriticalSection
              instead of Mutex, removed useless contructor, should be POSIX-ready.
 May 06, 2011 V1.03 Arno - Make use of new CRYPTO_THREADID_set_callback.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}

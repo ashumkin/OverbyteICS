@@ -3,12 +3,12 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Creation:     Nov 10, 2008
 Description:  Classes and little helpers for use with the ICS demo applications.
-Version:      7.02
+Version:      8.00
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2008 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -43,6 +43,8 @@ Legal issues: Copyright (C) 2008 by François PIETTE
 History:
 Dec 03, 2009 V7.01 Uses TIcsStreamReader and TIcsStreamWriter.
 Oct 11, 2010 V7.02 Added methods ReadStrings and WriteStrings from MailSnd demo.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsIniFiles;

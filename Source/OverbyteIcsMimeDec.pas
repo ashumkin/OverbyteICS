@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.22
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -296,6 +296,8 @@ Nov 19, 2009  V7.20 Angus added PIsTextpart to PartInfos and removed PSubject
               which is the same for all parts
 Feb 20, 2011  V7.21 Angus, prevent range error for malformed blank lines
 Mar 11, 2011  V7.22 Angus, prevent range error for blank header in UnfoldHdrValue
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -349,8 +351,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 722;
-    CopyRight : String = ' TMimeDecode (c) 1998-2011 Francois Piette V7.22';
+    MimeDecodeVersion  = 800;
+    CopyRight : String = ' TMimeDecode (c) 1998-2012 Francois Piette V8.00';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;

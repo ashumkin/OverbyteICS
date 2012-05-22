@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      1.18
+Version:      8.00
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -101,6 +101,8 @@ Historique:
 13/05/2012 V1.18 FPiette created InitializeGlobalHandler and GUnitInitialized
                  to check if we passed thru the initialization section which
                  is not the case when a TWSocket is dropped on a fmx form.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -142,8 +144,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  TIcsWndControlVersion  = 118;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2012 F. Piette V1.18 ';
+  TIcsWndControlVersion  = 800;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2012 F. Piette V8.00 ';
 
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 

@@ -6,13 +6,13 @@ Description:  This unit encapsulate the ICMP.DLL into a VCL of type TPing.
               Works only in 32 bits mode (no Delphi 1) under NT or 95.
               If you wants to build a console mode program, use the TICMP
               object. You'll have a much smaller program.
-Version:      6.01
+Version:      8.00
 Creation:     January 6, 1997
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 1997-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -63,7 +63,9 @@ Mar 26, 2006 V6.00 New version 6 started.
 Jul 19, 2008 V6.00 F. Piette made some changes for Unicode. Address, HostName
                       and DnsResult properties made as an AnsiString.
 Nov 08, 2010 V6.01 Arno improved final exception handling, more details
-             in OverbyteIcsWndControl.pas (V1.14 comments).                      
+             in OverbyteIcsWndControl.pas (V1.14 comments).
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -114,8 +116,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-  PingVersion           = 601;
-  CopyRight : String    = ' TPing (c) 1997-2010 F. Piette V6.01 ';
+  PingVersion           = 800;
+  CopyRight : String    = ' TPing (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TDnsLookupDone = procedure (Sender: TObject; Error: Word) of object;

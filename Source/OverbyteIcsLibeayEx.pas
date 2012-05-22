@@ -5,12 +5,12 @@ Description:  Some more function headers of LIBEAY32.DLL which are not
               declared/used in OverbyteIcsLibeay.pas (OpenSSL)
               This is only the subset and may grow.
 Creation:     Jan 12, 2005
-Version:      1.02
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list ics-ssl@elists.org
               Follow "SSL" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 2005-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -44,6 +44,8 @@ Jun 30, 2008 A.Garrels made some changes to prepare SSL code for Unicode.
 Sep 09, 2009 Arno - Don't define PEngine if it's already defined in
              OverbyteIcsLibeay.pas.
 Oct 17, 2009 Removed some declarations available in OverbyteIcsLibeay as well.
+May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
+                   also IPv6 support, include files now in sub-directory
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
