@@ -443,7 +443,7 @@ var
 { We need this hack to be able to read private field FRunning in order  }
 { to know whether or not the Application is running a message loop.     }
 type
-  THackApplication = class(TApplication)
+  THackApplication = class(TComponent)
   private
     FOnException: TExceptionEvent;
     FRunning: Boolean;
