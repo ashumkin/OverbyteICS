@@ -1465,6 +1465,9 @@ Samples\Delphi\Internet\OverbyteIcsBatchDnsLookup.res
 Samples\Delphi\Internet\OverbyteIcsBatchDnsLookup1.pas
 Samples\Delphi\Internet\OverbyteIcsBatchDnsLookup1.dfm
 
+Samples\Delphi\Internet\OverbyteIcsCommonVersion.res
+Samples\Delphi\Internet\OverbyteIcsXpManifest.res
+
 Samples\Delphi\Internet\Browser\AuthUnit.dfm
 Samples\Delphi\Internet\Browser\AuthUnit.pas
 Samples\Delphi\Internet\Browser\CachUnitId.pas
@@ -1622,6 +1625,9 @@ Samples\Delphi\SslInternet\OverbyteIcsMsVerify.res
 Samples\Delphi\SslInternet\OverbyteIcsMsVerify1.dfm
 Samples\Delphi\SslInternet\OverbyteIcsMsVerify1.pas
 
+Samples\Delphi\SslInternet\OverbyteIcsCommonVersion.res
+Samples\Delphi\SslInternet\OverbyteIcsXpManifest.res
+
 Samples\Delphi\MiscDemos\Dcu\dir.txt
 Samples\Delphi\MiscDemos\OverbyteIcsMiscDemos.bpg
 
@@ -1684,6 +1690,10 @@ Samples\Delphi\MiscDemos\FastAppProcessMessagePatch.pas
 Samples\Delphi\MiscDemos\OverbyteIcsPrngTst.dpr
 Samples\Delphi\MiscDemos\OverbyteIcsPrngTst1.pas
 Samples\Delphi\MiscDemos\OverbyteIcsPrngTst1.dfm
+
+Samples\Delphi\MiscDemos\OverbyteIcsCommonVersion.res
+Samples\Delphi\MiscDemos\OverbyteIcsXpManifest.res
+
 
 Samples\Delphi\PlatformDemos\xSamples.groupproj
 
