@@ -355,6 +355,11 @@ Apr 27, 2012 V7.51 Arno - Fixed and deprecated FileDate() use
                    OverbyteIcsUtils.IcsFileUtcModified() instead.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+                   New SocketFamily property (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6)
+                   New MultiListenSockets property to add extra listening sockets,
+                     each with Addr/Port/SocketFamily/SslEnable properties
+                     in events check MultiListenIndex, -1 is main socket, >=0 is
+                     index into MultiListenSockets[] for socket raising event
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1051,7 +1056,7 @@ type
         FWSocketServer            : TWSocketServer;
         FPort                     : String;
         FAddr                     : String;
-        FSocketFamily             : TSocketFamily;
+        FSocketFamily             : TSocketFamily;        { V8.00 } 
         FMaxClients               : Integer;              {DAVID}
         FClientClass              : THttpConnectionClass;
         FDocDir                   : String;
@@ -1190,7 +1195,7 @@ type
 {$ENDIF}
         property ListenBacklog  : Integer           read  FListenBacklog
                                                     write FListenBacklog; {Bjørnar}
-        property MultiListenSockets : TWSocketMultiListenCollection
+        property MultiListenSockets : TWSocketMultiListenCollection                   { V8.00 }
                                                     read  GetMultiListenSockets
                                                     write SetMultiListenSockets;
         { Component source version }
@@ -1202,7 +1207,7 @@ type
         { available interfaces                                        }
         property Addr          : String          read  FAddr
                                                  write SetAddr;
-        property SocketFamily  : TSocketFamily   read  FSocketFamily
+        property SocketFamily  : TSocketFamily   read  FSocketFamily                  { V8.00 }
                                                  write FSocketFamily;
         property MaxClients    : Integer         read  FMaxClients   {DAVID}
                                                  write FMaxClients;
@@ -1730,7 +1735,7 @@ begin
     FOptions        := [];
     FAddr           := ICS_ANY_HOST_V4;
     FPort           := '80';
-    FSocketFamily   := DefaultSocketFamily;
+    FSocketFamily   := DefaultSocketFamily;        { V8.00 } 
     FMaxClients     := 0;                {DAVID}
     FListenBacklog  := 5; {Bjørnar}
     FDefaultDoc     := 'index.html';
@@ -1841,7 +1846,7 @@ begin
 {$IFNDEF NO_DIGEST_AUTH}
     FAuthDigestServerSecret           := CreateServerSecret;
 {$ENDIF}
-    FWSocketServer.Listen;
+    FWSocketServer.MultiListen;       { V8.00 listen on multiple sockets, if more than one configured }
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loProtSpecInfo) then                           { V1.38 }
         DebugLog(loProtSpecInfo, Name + ' started');
@@ -2267,7 +2272,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function THttpServer.GetMultiListenSockets: TWSocketMultiListenCollection;
+function THttpServer.GetMultiListenSockets: TWSocketMultiListenCollection;    { V8.00 }
 begin
     if Assigned(FWSocketServer) then
         Result := FWSocketServer.MultiListenSockets
@@ -2277,7 +2282,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure THttpServer.SetMultiListenSockets(
+procedure THttpServer.SetMultiListenSockets(                                 { V8.00 } 
   const Value: TWSocketMultiListenCollection);
 begin
     if Assigned(FWSocketServer) then
