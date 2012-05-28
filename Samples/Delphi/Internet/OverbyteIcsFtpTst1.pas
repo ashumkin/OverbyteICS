@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      7.10
+Version:      8.00
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -88,6 +88,7 @@ Feb 15, 2011  V7.08 Arno added proxy demo.
 Mar 01, 2011  V7.09 Arno enable/disable the proxy-controls depending on proxy
               setting.
 Apr 09, 2012  V7.10 Arno - Changed OnRequestDone
+May 2012 - V8.00 - this is a Windows only demo, IPv4 only
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsFtpTst1;
@@ -111,8 +112,8 @@ uses
   OverByteIcsWSocket, OverbyteIcsWndControl, ComCtrls;
 
 const
-  FTPTstVersion      = 710;
-  CopyRight : String = ' FtpTst (c) 1997-2012 F. Piette V7.10 ';
+  FTPTstVersion      = 800;
+  CopyRight : String = ' FtpTst (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TSyncCmd   = function : Boolean  of object;

@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.17
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -85,7 +85,7 @@ Nov 13, 2008 V1.14 Arno adjusted UTF-8/code page support.
 Nov 21, 2008 V1.15 Angus removed raw display
 Jun 10, 2010 V1.16 Angus added MaxKB bandwidth limit
 Aug 8, 2011  V1.17 Angus constant FtpBuffSize = 32768 to increase FTP internal and data socket buffer sizes
-
+May 2012 - V8.00 - this is a Windows only demo, IPv4 only
 
 
 
@@ -122,15 +122,15 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls, Menus,
- { OverbyteIcsFtpSrvC, }   OverbyteIcsFtpSrvT,
+  OverbyteIcsFtpSrvT,
   OverbyteIcsWSocket,    OverbyteIcsWinsock,
   OverbyteIcsWndControl, OverbyteIcsFtpSrv,
   OverbyteIcsAvlTrees,   OverbyteIcsOneTimePw,
   OverbyteIcsUtils;
 
 const
-  FtpServVersion      = 117;
-  CopyRight : String  = ' FtpServ (c) 1998-2011 F. Piette V1.17 ';
+  FtpServVersion      = 800;
+  CopyRight : String  = ' FtpServ (c) 1998-2012 F. Piette V8.00 ';
   WM_APPSTARTUP       = WM_USER + 1;
   FtpBuffSize         = 32768;  // V1.17
 

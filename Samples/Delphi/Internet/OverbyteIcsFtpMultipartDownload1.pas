@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Mar 13, 2003
 Description:
-Version:      6.00 ALPHA CODE
+Version:      8.00 ALPHA CODE
 EMail:        francois.piette@overbyte.be    francois.piette@rtfm.be
               http://www.overbyte.be
 Support:      Unsupported code.
@@ -39,6 +39,7 @@ Legal issues: Copyright (C) 2003 by François PIETTE
 History:
 Jul 19, 2008 V6.00 F. Piette made small changes for Unicode, bumped version
                    number to 6.00
+May 2012 - V8.00 - this is a Windows only demo, IPv4 only
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
