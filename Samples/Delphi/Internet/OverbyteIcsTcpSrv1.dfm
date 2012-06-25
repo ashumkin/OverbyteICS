@@ -47,6 +47,7 @@ object TcpSrvForm: TTcpSrvForm
     LineEnd = #13#10
     LineEcho = False
     LineEdit = False
+    SocketFamily = sfIPv4
     Proto = 'tcp'
     LocalAddr = '127.0.0.1'
     LocalPort = '0'
@@ -74,6 +75,7 @@ object TcpSrvForm: TTcpSrvForm
     MaxClients = 0
     OnClientDisconnect = WSocketServer1ClientDisconnect
     OnClientConnect = WSocketServer1ClientConnect
+    MultiListenSockets = <>
     Left = 40
     Top = 96
   end

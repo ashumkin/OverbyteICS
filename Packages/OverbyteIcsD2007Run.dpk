@@ -30,6 +30,9 @@ package OverbyteIcsD2007Run;
 {$R '..\Source\OverbyteIcsWSocketTS.dcr'}
 {$R '..\Source\OverbyteIcsMimeUtils.dcr'}
 {$R '..\Source\OverbyteIcsCookies.dcr'}
+{$R '..\Source\OverbyteIcsSysLogClient.dcr'}
+{$R '..\Source\OverbyteIcsSysLogServer.dcr'}
+{$R '..\Source\OverbyteIcsSnmpCli.dcr'}
 {$ALIGN 8}
 { ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -126,6 +129,14 @@ contains
   OverbyteIcsWinnls in '..\Source\OverbyteIcsWinnls.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
   OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas',
-  OverbyteIcsZLibDll in '..\Source\OverbyteIcsZLibDll.pas';
+  OverbyteIcsZLibDll in '..\Source\OverbyteIcsZLibDll.pas',
+  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas',
+  OverbyteIcsFormDataDecoder in '..\Source\OverbyteIcsFormDataDecoder.pas',
+  OverbyteIcsSysLogClient in '..\Source\OverbyteIcsSysLogClient.pas',
+  OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
+  OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
+  OverbyteIcsSnmpCli in '..\Source\OverbyteIcsSnmpCli.pas',
+  OverbyteIcsAsn1Utils in '..\Source\OverbyteIcsAsn1Utils.pas',
+  OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas';
 
 end.

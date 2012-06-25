@@ -129,6 +129,7 @@ object ClientForm: TClientForm
     LineEnd = #13#10
     LineEcho = False
     LineEdit = False
+    SocketFamily = sfIPv4
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'
     LocalPort = '0'

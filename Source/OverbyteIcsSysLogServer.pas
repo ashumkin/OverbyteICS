@@ -42,7 +42,7 @@ Feb 08, 2010 V1.01 F. Piette used SYSLOG_NILVALUE instead of '-'. Tested
                    this value for hostname and process which can be nil.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-
+                   fixed DecimalSeparator warning with XE and later
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSysLogServer;
@@ -457,7 +457,11 @@ begin
         SMSec := '0';
     end;
 
+{$IFDEF COMPILER15_UP}
+    SMsec := '0' + FormatSettings.DecimalSeparator + SMSec;
+{$ELSE}
     SMsec := '0' + DecimalSeparator + SMSec;
+{$ENDIF}
     DecodedMessage.Year     := StrToInt(SYear);
     DecodedMessage.Month    := StrToInt(SMonth);
     DecodedMessage.Day      := StrToInt(SDay);

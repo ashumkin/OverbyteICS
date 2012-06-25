@@ -124,6 +124,14 @@ contains
   OverbyteIcsWinnls in '..\Source\OverbyteIcsWinnls.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
   OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas',
-  OverbyteIcsTnOptFrm in '..\Source\OverbyteIcsTnOptFrm.pas' {OptForm};
+  OverbyteIcsTnOptFrm in '..\Source\OverbyteIcsTnOptFrm.pas' {OptForm},
+  OverbyteIcsAsn1Utils in '..\Source\OverbyteIcsAsn1Utils.pas',
+  OverbyteIcsFormDataDecoder in '..\Source\OverbyteIcsFormDataDecoder.pas',
+  OverbyteIcsSnmpCli in '..\Source\OverbyteIcsSnmpCli.pas',
+  OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas',
+  OverbyteIcsSysLogClient in '..\Source\OverbyteIcsSysLogClient.pas',
+  OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
+  OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
+  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas';
 
 end.

@@ -1312,6 +1312,10 @@ object FtpReceiveForm: TFtpReceiveForm
     TabOrder = 2
     object MainSettingsTabSheet: TTabSheet
       Caption = 'Main'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Panel2: TPanel
         Left = 0
         Top = 0
@@ -1689,6 +1693,7 @@ object FtpReceiveForm: TFtpReceiveForm
           Top = 73
           Width = 126
           Height = 21
+          ItemHeight = 13
           TabOrder = 16
           Text = 'UTF8 ON'
           Items.Strings = (
@@ -1703,6 +1708,10 @@ object FtpReceiveForm: TFtpReceiveForm
     object ConnectionTypeTabSheet: TTabSheet
       Caption = 'Connection Type'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label22: TLabel
         Left = 39
         Top = 10
@@ -1768,6 +1777,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Top = 7
         Width = 145
         Height = 21
+        ItemHeight = 0
         TabOrder = 0
         Text = 'ProxyTypeComboBox'
         OnCloseUp = ProxyTypeComboBoxCloseUp
@@ -1777,6 +1787,7 @@ object FtpReceiveForm: TFtpReceiveForm
         Top = 8
         Width = 145
         Height = 21
+        ItemHeight = 0
         TabOrder = 1
         Text = 'ProxyHttpAuthTypeComboBox'
         OnCloseUp = ProxyHttpAuthTypeComboBoxCloseUp

@@ -53,6 +53,7 @@
 			<DCC_Platform>x86</DCC_Platform>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_Win32)'!=''">
+			<DCC_UsePackage>OverbyteIcsDXe2Run;$(DCC_UsePackage)</DCC_UsePackage>
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
 			<DCC_Description>Overbyte ICS Design-Time Package for Delphi XE2</DCC_Description>
 		</PropertyGroup>

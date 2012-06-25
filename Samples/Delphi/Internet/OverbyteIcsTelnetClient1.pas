@@ -5,12 +5,12 @@ Object:       Delphi application which is a basic telnet program demonstrating
               WSocket, TnCnx, TnEmulVT, EmulVT components.
 Author:       François PIETTE
 Creation:     July 22, 1997
-Version:      7.00
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 1997-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -46,6 +46,7 @@ Mar 26, 2006  V2.06 Set local echo at the right places: after connect and
 Mar 26, 2006  V6.00 Started from ICS-V5
 Aug 15, 2008  V7.00 Delphi 2009 (Unicode) support. The terminal is not
               unicode, but the component support unicode strings.
+May 2012 - V8.00 - this is a Windows only demo, IPv4 only
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

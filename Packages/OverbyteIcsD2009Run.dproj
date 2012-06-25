@@ -32,7 +32,7 @@
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_Description>Overbyte ICS Run-Time Package Delphi 2009</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\6.0\Bpl\OverbyteIcsD2009Run.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\OverbyteIcsD2009Run.bpl</DCC_DependencyCheckOutputName>
 			<GenDll>true</GenDll>
 			<GenPackage>true</GenPackage>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
@@ -95,6 +95,9 @@
 			<DCCReference Include="..\Source\OverbyteIcsWSocketTS.dcr"/>
 			<DCCReference Include="..\Source\OverbyteIcsMimeUtils.dcr"/>
 			<DCCReference Include="..\Source\OverbyteIcsCookies.dcr"/>
+			<DCCReference Include="..\source\OverbyteIcsSnmpCli.dcr"/>
+			<DCCReference Include="..\source\OverbyteIcsSysLogClient.dcr"/>
+			<DCCReference Include="..\source\OverbyteIcsSysLogServer.dcr"/>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="..\Source\OverbyteIcsTypes.pas"/>
@@ -163,6 +166,14 @@
 			<DCCReference Include="..\Source\OverbyteIcsWinnls.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsCookies.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsHttpCCodZLib.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsAsn1Utils.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsFormDataDecoder.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSnmpCli.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSnmpMsgs.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogClient.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogDefs.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogServer.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsTicks64.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsHttpSrv.dcr"/>
 			<DCCReference Include="..\Source\OverbyteIcsFtpSrv.dcr"/>
 			<DCCReference Include="..\Source\OverbyteIcsNntpCli.dcr"/>
@@ -192,6 +203,9 @@
 			<DCCReference Include="..\Source\OverbyteIcsWSocketTS.dcr"/>
 			<DCCReference Include="..\Source\OverbyteIcsMimeUtils.dcr"/>
 			<DCCReference Include="..\Source\OverbyteIcsCookies.dcr"/>
+			<DCCReference Include="..\source\OverbyteIcsSnmpCli.dcr"/>
+			<DCCReference Include="..\source\OverbyteIcsSysLogClient.dcr"/>
+			<DCCReference Include="..\source\OverbyteIcsSysLogServer.dcr"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

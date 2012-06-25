@@ -251,7 +251,8 @@ begin
     with WSocketServer1.MultiListenSockets.Add do begin
         Addr := 'LocalHost';
         Port := '24';
-        SocketFamily := sfAny; // OS preference of either IPv4 or IPv6.
+     //   SocketFamily := sfAny; // OS preference of either IPv4 or IPv6.
+        SocketFamily := sfIPv4; // OS preference of either IPv4 or IPv6.
     end;
 
     try

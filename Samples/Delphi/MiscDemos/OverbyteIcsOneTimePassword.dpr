@@ -1,7 +1,7 @@
 program OverbyteIcsOneTimePassword;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms,
   OverbyteIcsOneTimePassword1 in 'OverbyteIcsOneTimePassword1.pas' {Form1};
 
 {$R *.res}

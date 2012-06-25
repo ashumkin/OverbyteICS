@@ -28,7 +28,7 @@
 			<DCC_Define>USE_SSL;NO_EXTENDED_RTTI;$(DCC_Define)</DCC_Define>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
 			<DCC_Description>Overbyte ICS Run-Time Package Delphi 2010</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Dokumente und Einstellungen\All Users\Dokumente\RAD Studio\7.0\Bpl\OverbyteIcsD2010Run.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\OverbyteIcsD2010Run.bpl</DCC_DependencyCheckOutputName>
 			<GenDll>true</GenDll>
 			<GenPackage>true</GenPackage>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
@@ -159,6 +159,14 @@
 			<DCCReference Include="..\Source\OverbyteIcsWinnls.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsCookies.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsHttpCCodZLib.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsAsn1Utils.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsFormDataDecoder.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSnmpCli.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSnmpMsgs.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogClient.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogDefs.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogServer.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsTicks64.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

@@ -30,6 +30,9 @@ package OverbyteIcsD2006Run;
 {$R '..\Source\OverbyteIcsWSocketTS.dcr'}
 {$R '..\Source\OverbyteIcsMimeUtils.dcr'}
 {$R '..\Source\OverbyteIcsCookies.dcr'}
+{$R '..\source\OverbyteIcsSnmpCli.dcr'}
+{$R '..\source\OverbyteIcsSysLogClient.dcr'}
+{$R '..\source\OverbyteIcsSysLogServer.dcr'}
 {$ALIGN 8}
 { ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -124,6 +127,14 @@ contains
   OverbyteIcsCsc in '..\Source\OverbyteIcsCsc.pas',
   OverbyteIcsWinnls in '..\Source\OverbyteIcsWinnls.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
-  OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas';
+  OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas',
+  OverbyteIcsAsn1Utils in '..\Source\OverbyteIcsAsn1Utils.pas',
+  OverbyteIcsFormDataDecoder in '..\Source\OverbyteIcsFormDataDecoder.pas',
+  OverbyteIcsSnmpCli in '..\Source\OverbyteIcsSnmpCli.pas',
+  OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas',
+  OverbyteIcsSysLogClient in '..\Source\OverbyteIcsSysLogClient.pas',
+  OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
+  OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
+  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas';
 
 end.

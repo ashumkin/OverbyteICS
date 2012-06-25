@@ -10,7 +10,7 @@ EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
 Legal issues: Copyright (C) 1999-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -47,6 +47,7 @@ Jul 19, 2008 V6.00 F.Piette made some changes for Unicode
 Nov 28, 2008 V7.01 A.Garrels added command binary, requires OverbyteIcsBinCliDemo.
 Dec 20, 2008 V7.02 F.Piette removed an implicit string conversion warning in
                    WMAppStartup (Hostname).
+May 2012 - V8.00 - this is a Windows only demo, IPv4 only
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTcpSrv1;
@@ -59,8 +60,8 @@ uses
   OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsWndControl;
 
 const
-  TcpSrvVersion = 702;
-  CopyRight     = ' TcpSrv (c) 1999-2010 by François PIETTE. V7.02';
+  TcpSrvVersion = 800;
+  CopyRight     = ' TcpSrv (c) 1999-2012 by François PIETTE. V8.00';
   WM_APPSTARTUP = WM_USER + 1;
 
 type

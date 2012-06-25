@@ -1,9 +1,9 @@
 object FtpServerForm: TFtpServerForm
   Left = 205
   Top = 121
-  Width = 384
-  Height = 310
   Caption = 'FtpServerSForm'
+  ClientHeight = 283
+  ClientWidth = 376
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -21,7 +21,7 @@ object FtpServerForm: TFtpServerForm
     Left = 0
     Top = 66
     Width = 376
-    Height = 190
+    Height = 217
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText

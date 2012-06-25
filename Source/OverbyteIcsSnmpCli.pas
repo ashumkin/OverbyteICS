@@ -42,6 +42,20 @@ History:
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSnmpCli;
 
+{$I Include\OverbyteIcsDefs.inc}
+{$IFDEF COMPILER14_UP}
+  {$IFDEF NO_EXTENDED_RTTI}
+    {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+  {$ENDIF}
+{$ENDIF}
+{$B-}             { Enable partial boolean evaluation   }
+{$T-}             { Untyped pointers                    }
+{$X+}             { Enable extended syntax              }
+{$H+}             { Use long strings                    }
+{$IFDEF BCB}
+    {$ObjExportAll On}
+{$ENDIF}
+
 interface
 
 uses
@@ -53,8 +67,8 @@ uses
     OverbyteIcsSnmpMsgs;
 
 const
-  SnmpClientVersion         = 100;
-  CopyRight    : String     = ' TSnmpClient (c) 2011 Francois Piette V1.00 ';
+  SnmpClientVersion         = 800;
+  CopyRight    : String     = ' TSnmpClient (c) 2012 Francois Piette V8.00 ';
 
 
 type

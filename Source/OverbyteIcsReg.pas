@@ -7,6 +7,7 @@ unit OverbyteIcsReg;
 Feb 15, 2012 Angus - added OverbyteIcsMimeUtils
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Jun 2012 - V8.00 - Angus added SysLog and SNMP components VCL only for now 
 }
 
 
@@ -90,6 +91,9 @@ uses
     {$ENDIF}
     OverbyteIcsWSocketE,
     OverbyteIcsWSocketS,
+    OverbyteIcsSysLogClient,
+    OverbyteIcsSysLogServer,
+    OverbyteIcsSnmpCli,
 
     // VCL only
     OverbyteIcsMultiProgressBar,
@@ -167,7 +171,10 @@ begin
       {$IFNDEF BCB}
         TWSocketThrdServer,
       {$ENDIF}
-      TMultiProgressBar
+      TMultiProgressBar,
+      TSysLogClient,
+      TSysLogServer,
+      TSnmpCli
     ]);
 {$ENDIF VCL}
 {$IFDEF ICS_COMMON}

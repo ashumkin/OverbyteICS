@@ -1,11 +1,14 @@
 program OverbyteIcsHttpDmo;
 
-{$R 'OverbyteIcsCommonVersion.res' '..\..\..\Source\OverbyteIcsCommonVersion.rc'}
-{$R 'OverbyteIcsXpManifest.res' '..\..\..\Source\OverbyteIcsXpManifest.rc'}
+
+
+{$R '..\..\OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
-  OverbyteIcsHttpDmo1 in 'OverbyteIcsHttpDmo1.pas' {HttpToMemoForm};
+  Forms,
+  OverbyteIcsHttpDmo1 in 'OverbyteIcsHttpDmo1.pas' {HttpToMemoForm},
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas';
 
 {$R *.RES}
 

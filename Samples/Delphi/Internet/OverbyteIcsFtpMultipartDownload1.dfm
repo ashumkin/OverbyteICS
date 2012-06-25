@@ -287,6 +287,7 @@ object MultipartFtpDownloadForm: TMultipartFtpDownloadForm
     Timeout = 15
     MultiThreaded = False
     Port = 'ftp'
+    CodePage = 0
     DataPortRangeStart = 0
     DataPortRangeEnd = 0
     LocalAddr = '0.0.0.0'
@@ -295,9 +296,12 @@ object MultipartFtpDownloadForm: TMultipartFtpDownloadForm
     ShareMode = ftpShareExclusive
     Options = [ftpAcceptLF]
     ConnectionType = ftpDirect
+    ProxyPort = 'ftp'
+    Language = 'EN'
     OnDisplay = FtpClient1Display
     BandwidthLimit = 10000
     BandwidthSampling = 1000
+    SocketFamily = sfIPv4
     Left = 244
     Top = 220
   end

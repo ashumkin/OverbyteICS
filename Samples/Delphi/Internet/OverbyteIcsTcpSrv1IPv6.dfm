@@ -1,9 +1,9 @@
 object TcpSrvForm: TTcpSrvForm
   Left = 544
   Top = 164
-  Width = 397
-  Height = 277
   Caption = 'TcpSrvIPv6Form'
+  ClientHeight = 250
+  ClientWidth = 389
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -28,7 +28,7 @@ object TcpSrvForm: TTcpSrvForm
     Left = 0
     Top = 41
     Width = 389
-    Height = 202
+    Height = 209
     Align = alClient
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText

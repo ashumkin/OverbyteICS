@@ -1,11 +1,11 @@
 object Form1: TForm1
   Left = 53
   Top = 89
-  Width = 562
-  Height = 425
   Caption = 
     'OverByte ICS - One Time Password Testing - http://www.overbyte.b' +
     'e'
+  ClientHeight = 398
+  ClientWidth = 554
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
