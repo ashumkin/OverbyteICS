@@ -280,7 +280,6 @@ Source\Ics.Fmx.OverbyteIcsPop3Prot.pas
 Source\Ics.Fmx.OverbyteIcsReg.pas
 Source\Ics.Fmx.OverbyteIcsSmtpProt.pas
 Source\Ics.Fmx.OverbyteIcsSocketUtils.pas
-Source\Ics.Fmx.OverbyteIcsSslHtmlSmtpProt.pas
 Source\Ics.Fmx.OverbyteIcsSslSessionCache.pas
 Source\Ics.Fmx.OverbyteIcsSslThrdLock.pas
 Source\Ics.Fmx.OverbyteIcsThreadTimer.pas
