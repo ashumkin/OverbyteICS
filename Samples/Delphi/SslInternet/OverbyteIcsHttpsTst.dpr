@@ -1,10 +1,11 @@
 program OverbyteIcsHttpsTst;
 
-{$R 'OverbyteIcsXpManifest.res' '..\..\..\Source\OverbyteIcsXpManifest.rc'}
-{$R 'OverbyteIcsCommonVersion.res' '..\..\..\Source\OverbyteIcsCommonVersion.rc'}
+{$R 'OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
+{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, 
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverbyteIcsHttpsTst1 in 'OverbyteIcsHttpsTst1.pas' {HttpsTstForm};
 
 {$R *.res}

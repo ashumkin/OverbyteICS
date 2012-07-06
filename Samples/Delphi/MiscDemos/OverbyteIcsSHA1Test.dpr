@@ -1,7 +1,8 @@
 program OverbyteIcsSHA1Test;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, 
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverbyteIcsSHA1Test1 in 'OverbyteIcsSHA1Test1.pas' {Form2};
 
 {$R *.res}

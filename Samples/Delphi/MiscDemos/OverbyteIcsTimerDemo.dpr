@@ -1,7 +1,7 @@
 program OverbyteIcsTimerDemo;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverbyteIcsTimerDemo1 in 'OverbyteIcsTimerDemo1.pas' {IcsTimerDemoForm};
 
 {$R *.res}

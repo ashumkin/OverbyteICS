@@ -1,7 +1,7 @@
 program OverByteIcsWndControlTest;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverByteIcsWndControlTest1 in 'OverByteIcsWndControlTest1.pas' {AppBaseForm};
 
 {$R *.res}

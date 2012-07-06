@@ -1,12 +1,12 @@
 program OverbyteIcsPemTool;
 
-{$R 'OverbyteIcsXpManifest.res' '..\..\..\Source\OverbyteIcsXpManifest.rc'}
-{$R 'OverbyteIcsCommonVersion.res' '..\..\..\Source\OverbyteIcsCommonVersion.rc'}
+{$R 'OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
+{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
 
 uses
   Forms, 
-  OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
-  OverbyteIcsLibeayEx in '..\..\..\Source\OverbyteIcsLibeayEx.pas',
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
+  OverbyteIcsLibeayEx in '..\..\..\Source\Extras\OverbyteIcsLibeayEx.pas',
   OverbyteIcsPemTool1 in 'OverbyteIcsPemTool1.pas' {frmPemTool1},
   OverbyteIcsPemTool2 in 'OverbyteIcsPemTool2.pas' {frmPemTool2},
   OverbyteIcsPemTool3 in 'OverbyteIcsPemTool3.pas' {frmPemTool3};

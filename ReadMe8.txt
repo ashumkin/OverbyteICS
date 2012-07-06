@@ -3,7 +3,7 @@ ICS - Internet Component Suite - Beta V8 - Delphi 7 to RAD Studio XE2
 (Aka FPIETTE's Components)
 
 
-Revised: June 25, 2012
+Revised: July 6, 2012
 http://www.overbyte.be
 
 Table of content:
@@ -138,7 +138,8 @@ This is the subdirectory layout:
 .\Samples\delphi\BroswerDemo\Resources Resource file, web pages and movie linked into browser demo
 .\Samples\delphi\FtpDemos             Delphi Win32/Win64 FTP sample applications (all Delphi versions)
 .\Samples\delphi\MailNewsDemos        Delphi Win32/Win64 SMTP, POP3, NNTP sample applications (all Delphi versions)
-.\Samples\delphi\OtherDemos           Delphi Win32/Win64 FTP sample applications (all Delphi versions)
+.\Samples\delphi\MiscDemos            Delphi Win32/Win64 Miscellaneous applications (all Delphi versions)
+.\Samples\delphi\OtherDemos           Delphi Win32/Win64 DNS, Ping, SNMP, Syslog sample applications (all Delphi versions)
 .\Samples\delphi\PlatformDemos        Delphi FireMonkey and cross-platform samples (Delphi XE2+)
 .\Samples\delphi\SocketDemos          Delphi Win32/Win64 Socket sample applications (all Delphi versions)
 .\Samples\delphi\sslinternet          Delphi Win32/Win64 SSL-enabled sample applications (all Delphi versions)
@@ -387,83 +388,159 @@ at: http://wiki.overbyte.be/arch/icsv7w.zip
 
 Sample applications:
 --------------------
+With V8, the sample applications are now grouped into directories according to general
+functionality, to make it easier to compare related samples.
 
-Note: All sample file names begins with prefix "OverbyteIcs". Some samples listed
-below maybe missing from distribution because the are from version 5 and not yet
-ported to V7. If you need those samples, download V5.
+Many samples are similar. When searching for something, always look at the date
+the demos where created. The most recent is always the best code!  In the lists
+below, ACTIVE!! indicates applications that are actively maintained to test and
+support new functionality in the ICS components.  These may not be be simpliest
+samples, but are usually the first to try when learning about a component.
 
-BASFTP          Basic FTP client program
-CLIDEMO         Example of client for SRVDEMO
-CLIENT5         Basic client GUI applications
-CONCLI1         Basic client/server console applications
-CONCLI2         Basic client/server console applications with thread
-CONFTP          Basic console mode FTP client
-CONHTTP         Basic console mode HTTP client
-CONPING         Basic console mode demo of ping component
-CONPOP3         Basic console mode demo for POP3 (mail receive)
-CONSMTP         Basic console mode demo for SMTP (mail send)
-CONSRV1         Basic server application in console mode
-DLLTST1         Test program using ICSDLL
-DNSLOOK         Example of name resolution, see also NSLOOKUP sample
-DYNCLI          Basic client create TWSocket dynamically
-DYNCLI          Demo of dynamically created TWSocket components
-FINGER          Example of TFingerCli component
-FTPASY          Example of asynchronous FTP client
-FTPSERV         General purpose FTP server
-FTPTHRD         Demo of multithreaded FTP client, see also FTPASY
-FTPTST          Basic graphical FTP client
-HTTPASP         Example of THttpCli component with cookie (POST to an ASP page)
-HTTPASY         Example of THttpCli component with multiple async requests (GET)
-HTTPCHK         Example of THttpCli to check for valid URL
-HTTPDMO         Yet another HTTP client demo
-HTTPGET         Example of THttpCli component (GET into a file)
-HTTPPG          Example of THttpCli component (POST)
-HTTPPOST	Example of THttpCli component (POST), work with WebServ sample
-HTTPTHRD        Example of THttpCli component (multi-threaded GET)
-HTTPTST	        Example of THttpCli component (GET), show many features
-ICSDLL1         Example of TWSocket component within a DLL, use with TcpSrv demo
-ICSDLL2         Example of HTTP client component within a DLL
-ICSISAPI        Example of FTP client component within an ISAPI extension
-MAILHTML        Example of HTML formatted EMail sending, including embedded images
-MAILRCV         Internet EMail access using POP3 protocol
-MAILSND         Example of EMail sending, including file attach
-MAILSNDASYNC    Example of simultaneous EMail sending
-MD5FILE         Example of MD5 unit: computer MD5 checksum for files
-MD5TEST         Test program for MD5 unit
-MIMEDEMO        Example of EMail decoding (attached files are extracted)
-MIMETST         Example of EMail sending with attached files
-MTSRV           Basic server, multi-threaded, see THRDSRV for better code
-NEWSHTML        Example of NNTP component to send HTML messages
-NEWSRDR         Example of TNntpCli component (Send/receive newsgroups)
-NSLOOKUP        Demo for the DNS query component
-PINGTST         Demo for the ping component
-POP3MIME        Example of MIME decoding, for example of EMails received with POP3 component
-RECV            Simple file receive (server), use with SENDER demo (client)
-SENDER          Simple file send (client), use with RECV demo (server)
-SERVER5         Basic server GUI applications
-SHATEST         Test program for SHA unit
-SOCKSTST        How to use TWSocket with SOCKS protocol (firewall traversing)
-SRVDEMO         Example of server using a TTable
-SRVTCP          Basic server without client forms, event-driven
-SVCTCP          Same as SRVTCP but as an NT/2K/XP service
-TCPSRV          Basic server without client forms, event-driven
-THRDSRV         Basic multithreaded TCP server
-TNCLIENT        Telnet client using a TnEmulVT
-TNDEMO          Telnet client using a TMemo
-TNSRV           Basic TCP server with client forms, event-driven
-TWSCHAT         Chat program (both client and server in a single program)
-UDPLSTN         UDP listen demo
-UDPSEND         UDP send demo
-WEBSERV         HTTP server demo. Show static and dynamic pages. Use template for HTML.
-WEBAPPSERVER	Advanced HTTP server demo.
+Delphi Win32/Win64 Web Browser sample application
+-------------------------------------------------
+.\Samples\delphi\BroswerDemo
+> FrameBrowserIcs.dpr           Web Browser using HtmlViewer component - ACTIVE!!
+Note this sample needs HtmlViewer component installed
 
-Note 1: Many samples are similar. When searching for something, always look at the date
-        the demos where created. The most recent is always the best code !
-Note 2: Not all samples have been rewritten in C++ for BCB. And those rewritten are
+Delphi Win32/Win64 FTP sample applications
+------------------------------------------
+.\Samples\delphi\FtpDemos\FtpDemos.bpg - Project group
+> OverbyteIcsBasFtp.dpr         Basic FTP client program
+> OverbyteIcsConFtp.dpr         Basic console mode FTP client
+> OverbyteIcsFtpAsy.dpr         Example of asynchronous FTP client
+> OverbyteIcsFtpMulti.dpr       Demo to do several FTP downloads in parallel to get a list of files
+> OverbyteIcsFtpMultipartDownload.dpr Demo to FTP download a single large file in several parts in parallel
+> OverbyteIcsFtpServ.dpr        General purpose FTP server, uses TSocketServer - ACTIVE!!
+> OverbyteIcsFtpThrd.dpr        Demo of multithreaded FTP client, see also FTPASY
+> OverbyteIcsFtpTst.dpr         Basic graphical FTP client - ACTIVE!!
+
+Delphi Win32/Win64 SMTP, POP3, NNTP sample applications
+-------------------------------------------------------
+.\Samples\delphi\MailNewsDemos\MailNewsDemos.bpg - Project group
+> OverbyteIcsBasNntp.dpr        Basic NNTP client program
+> OverbyteIcsConPop3.dpr        Basic console mode demo for POP3 (mail receive)
+> OverbyteIcsConSmtp.dpr        Basic console mode demo for SMTP (mail send)
+> OverbyteIcsMailHtml.dpr       Example of HTML formatted EMail sending, including embedded images - ACTIVE!!
+> OverbyteIcsMailRcv.dpr        Internet EMail access using POP3 protocol - ACTIVE!!
+> OverbyteIcsMailSnd.dpr        Example of EMail sending using SMTP, including file attach - ACTIVE!!
+> OverbyteIcsMailSndAsync.dpr   Example of parallel EMail sending with multiple connections
+> OverbyteIcsMimeDemo.dpr       Example of EMail decoding (attached files are extracted) - ACTIVE!!
+> OverbyteIcsNewsReader.dpr     Example of TNntpCli component (Send/receive newsgroups) - ACTIVE!!
+
+Delphi Win32/Win64 Miscellaneous applications
+---------------------------------------------
+.\Samples\delphi\MiscDemos\MiscDemos.bpg - Project group
+> OverbyteIcsBufStrmTst.dpr     Test of buffered stream classes
+> OverbyteIcsCacheTest.dpr      Test of TCacheTree class used in TSslAvlSessionCache
+> OverbyteIcsMD4Test.dpr        Test program for MD4 unit
+> OverbyteIcsMD5File.dpr        Example of MD5 unit: computer MD5 checksum for files
+> OverbyteIcsMD5Test.dpr        Test program for MD5 unit
+> OverbyteIcsOneTimePassword.dpr One Time Password test routines for OverByteIcsOneTimePw unit
+> OverbyteIcsSHA1Test.dpr       Test program for SHA unit
+> OverbyteIcsThreadTimerDemo.dpr Demo for TIcsThreadTimer
+> OverbyteIcsTicks64Demo.dpr    GetTickCount64 test routines for OverbyteIcsTicks64 unit
+> OverbyteIcsTimerDemo.dpr      Very simple demo for TIcsTimer
+> OverByteIcsWndControlTest.dpr Test program for windows and threads
+
+Delphi Win32/Win64 DNS, Ping, SNMP, Syslog sample applications
+--------------------------------------------------------------
+.\Samples\delphi\OtherDemos\OtherDemos.bpg - Project group
+> OverbyteIcsBatchDnsLookup.dpr Batch async DNS lookup using DnsLookup (IPv6 and IPv4)
+> OverbyteIcsConPing.dpr        Basic console mode demo for ping component
+> OverbyteIcsDll1.dpr           Demo showing how to use a TWSocket component in a DLL
+> OverbyteIcsDll2.dpr           demo showing how to use a THttpCli component in a DLL
+> OverbyteIcsDllTst.dpr         Test program calling ICSDLL1 and ICSDLL2
+> OverbyteIcsDnsLook.dpr        Example of name resolution (IPv6 and IPv4)
+> OverbyteIcsDnsResolver.dpr    Batch async DNS lookup event driven using DnsQuery
+> OverbyteIcsFinger.dpr         Example of TFingerCli component
+> OverbyteIcsNsLookup.dpr       Demo for the DnsQuery component
+> OverbyteIcsPingTst.dpr        Demo for the ping component
+> OverbyteIcsSnmpCliTst.dpr     Demo for SNMP (simple network management protocol) component
+> OverbyteIcsSysLogClientDemo.dpr Demo for SysLog client compoment
+> OverbyteIcsSysLogServerDemo.dpr Demo for SysLog server compoment
+
+Delphi FireMonkey and cross-platform samples (Delphi XE2+)
+----------------------------------------------------------
+.\Samples\delphi\PlatformDemos
+(details to follow)
+
+ Delphi Win32/Win64 Socket sample applications
+ ---------------------------------------------
+ .\Samples\delphi\SocketDemos\SocketDemos.bpg - Project group
+> OverbyteIcsBinCliDemo.dpr       Client program to receive binary and delimited text data. Works with BinTcpSrv demo.
+> OverbyteIcsCliDemo.dpr          Example of client for SRVDEMO, IPV4 only  - ACTIVE!!
+> OverbyteIcsClient5.dpr          Basic client GUI applications
+> OverbyteIcsClient7.dpr          Simple client application demonstrating TWSocket
+> OverbyteIcsConCli1.dpr          Basic client/server console applications
+> OverbyteIcsConCli2.dpr          Basic client/server console applications with thread
+> OverbyteIcsConSrv1.dpr          Basic server application in console mode
+> OverbyteIcsConUdpLstn.dpr       Console application to listen for UDP messages
+> OverbyteIcsDynCli.dpr           Demo of dynamically created TWSocket components
+> OverbyteIcsMtSrv.dpr            Basic server, multi-threaded, see THRDSRV for better code
+> OverbyteIcsRecv.dpr             Simple file receive (server), use with SENDER demo (client)
+> OverbyteIcsSender.dpr           Simple file send (client), use with RECV demo (server)
+> OverbyteIcsServer5.dpr          Basic server GUI applications
+> OverbyteIcsSocksTst.dpr         How to use TWSocket with SOCKS protocol (firewall traversing)
+> OverbyteIcsSrvDemo.dpr          Example of server using a TTable - ACTIVE!!
+> OverbyteIcsSrvTcp.dpr           Basic server without client forms, event-driven
+> OverbyteIcsSvcTcp.dpr           Same as SRVTCP but as an NT/2K/XP service
+> OverbyteIcsTWSChat.dpr          Chat program (both client and server in a single program)
+> OverbyteIcsTcpSrv.dpr           Basic server without client forms, event-driven, IPv4 only - ACTIVE!!
+> OverbyteIcsTcpSrvIPv6.dpr       Basic server without client forms, event-driven, IPv4/IPV6 - ACTIVE!!
+> OverbyteIcsTelnetClient.dpr     Telnet client using a TnEmulVT
+> OverbyteIcsThrdSrv.dpr          Basic multithreaded TCP server, banner sent in main thread
+> OverbyteIcsThrdSrvV2.dpr        Basic multithreaded TCP server, banner sent in worker thread
+> OverbyteIcsThrdSrvV3.dpr        Basic TCP server showing how to use TWSocketThrdServer
+> OverbyteIcsTnDemo.dpr           Telnet client using a TMemo
+> OverbyteIcsTnSrv.dpr            Basic TCP server with client forms, event-driven
+> OverbyteIcsUdpLstn.dpr          UDP listen demo
+> OverbyteIcsUdpSend.dpr          UDP send demo
+
+Delphi Win32/Win64 SSL-enabled sample applications
+--------------------------------------------------
+.\Samples\delphi\sslinternet\SslDemos.bpg - Project group
+> OverbyteIcsHttpsTst.dpr         Example of TSslHttpCli component (GET) - ACTIVE!!
+> OverbyteIcsMsVerify.dpr         Demo of HTTPs server, static and dynamic pages, template for HTML - ACTIVE!!
+> OverbyteIcsPemTool.dpr          ICS Pem Certificate Tool - export IE certificates to OpenSLL PEM format
+> OverbyteIcsSimpleSslCli.dpr     Example of simple SSL client using TSslWSocket
+> OverbyteIcsSimpleSslServer.dpr  Example of SSL server using TSslWSocket
+> OverbyteIcsSslFtpServ.dpr       General purpose FTP SSL server, uses TSocketServer - ACTIVE!!
+> OverbyteIcsSslFtpTst.dpr        Basic graphical FTP SSL client - ACTIVE!!
+> OverbyteIcsSslMailRcv.dpr       Internet EMail access using POP3 protocol and SSL - ACTIVE!!
+> OverbyteIcsSslMailSnd.dpr       Example of EMail sending using SMTP and SSL - ACTIVE!!
+> OverbyteIcsSslNewsRdr.dpr       Example of TSslNntpCli component (Send/receive newsgroups) - ACTIVE!!
+> OverbyteIcsSslSniSrv.dpr`       Test of Server Name Indication (SNI) in server mode.
+> OverbyteIcsSslWebServ.dpr       Demo of HTTPS server, uses TSocketServer - ACTIVE!!
+
+Delphi Win32/Win64 HTTP sample applications
+-------------------------------------------
+.\Samples\delphi\WebDemos\WebDemos.bpg - Project group
+> OverbyteIcsConHttp.dpr          Basic console mode HTTP client
+> OverbyteIcsHttpAsp.dpr          Example of THttpCli component with cookie (POST to an ASP page)
+> OverbyteIcsHttpAsy.dpr          Example of THttpCli component with multiple async requests (GET)
+> OverbyteIcsHttpChk.dpr          Example of THttpCli to check for valid URL using HEAD request
+> OverbyteIcsHttpDmo.dpr          Simple HTTP client demo with proxy
+> OverbyteIcsHttpGet.dpr          Example of THttpCli component (GET into a file)
+> OverbyteIcsHttpMultipartDownload.dpr  Demo application for TMultipartHttpDownloader to download files using simultaneous connections
+> OverbyteIcsHttpPg.dpr           Example of THttpCli component (POST to CGI script)
+> OverbyteIcsHttpPost.dpr         Example of THttpCli component (POST), work with WebServ sample - ACTIVE!!
+> OverbyteIcsHttpThrd.dpr         Example of THttpCli component (multi-threaded GET)
+> OverbyteIcsHttpTst.dpr          Example of THttpCli component (GET), show many features - ACTIVE!!
+> OverbyteIcsIsapi.dll            Example of FTP client component within an ISAPI extension
+> OverbyteIcsWebAppServer.dpr     Advanced HTTP server demo, uses WebServ, adds sessions - ACTIVE!!
+> OverbyteIcsWebServ.dpr          Demo of HTTP server, uses TSocketServer - ACTIVE!!
+
+Two samples are not in the project group since they need extra components installed
+> OverbyteIcsRestDemo.drp         Demo program showing how to use REST API from Google and Yahoo
+> OverbyteIcsRestJsonDemo.drp     Demo program showing how to use REST API from Google Search and JSON
+
+Sample Notes
+------------
+Note 1: Not all samples have been rewritten in C++ for BCB. And those rewritten are
         frequently much simpler. So BCB user: have a look at the Delphi sample too !
-Note 3: Follow "UserMade" link on ICS website to find more sample programs written by
+Note 2: Follow "UserMade" link on ICS website to find more sample programs written by
         ICS users.
-Note 4: See folder SslInternet for SSL-enabled versions of the samples.
 
 As explained in the component installation, you may encounter an error loading
 a sample application or running it. This may be because the last time I
@@ -532,7 +609,7 @@ TRUSTEDCABUNDLE.PEM :
                the comments included in this file.
 6F6359FC.0 :   Located in sub directory SslInternet\TrustedCaStore,
                it's the file CACERT.PEM stored with a hashed file
-               name. Directory TrustedCaStore can be spezified in
+               name. Directory TrustedCaStore can be specified in
                property CA Path of the demo applications.
 
 For details about certificate, see the excellent book:

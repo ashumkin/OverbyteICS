@@ -1,7 +1,8 @@
 program OverbyteIcsMD5Test;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, 
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverbyteIcsMD5Test1 in 'OverbyteIcsMD5Test1.pas' {Form1};
 
 {$R *.res}

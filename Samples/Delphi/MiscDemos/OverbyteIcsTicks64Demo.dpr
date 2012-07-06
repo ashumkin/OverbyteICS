@@ -1,7 +1,7 @@
 program OverbyteIcsTicks64Demo;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverbyteIcsTicks64Demo1 in 'OverbyteIcsTicks64Demo1.pas' {Form1};
 
 {$R *.res}

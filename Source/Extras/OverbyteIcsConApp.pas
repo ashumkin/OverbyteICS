@@ -46,7 +46,7 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsConApp;
 
-{$I Include\OverbyteIcsDefs.inc}
+{$I ..\Include\OverbyteIcsDefs.inc}
 
 interface
 

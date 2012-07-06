@@ -1,7 +1,8 @@
 program OverbyteIcsCacheTest;
 
 uses
-  Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  Forms, 
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   OverbyteIcsCacheTest1 in 'OverbyteIcsCacheTest1.pas' {CacheTestForm};
 
 {$R *.res}
