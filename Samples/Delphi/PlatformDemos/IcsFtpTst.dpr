@@ -1,7 +1,7 @@
 program IcsFtpTst;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsFtpTst1 in 'IcsFtpTst1.pas' {FtpReceiveForm},
   IcsFtpTst2 in 'IcsFtpTst2.pas' {DirectoryForm};

@@ -1,7 +1,7 @@
 program IcsUdpLstn;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   IcsUdpLstn1 in 'IcsUdpLstn1.pas' {MainForm};
 
 {$R *.res}

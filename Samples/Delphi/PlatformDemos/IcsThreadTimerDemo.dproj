@@ -110,7 +110,7 @@
 			<DelphiCompile Include="$(MainSource)">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="..\..\..\Source\OverbyteIcsIniFiles.pas"/>
+			<DCCReference Include="..\..\OverbyteIcsIniFiles.pas"/>
 			<DCCReference Include="IcsThreadTimerDemo1.pas">
 				<Form>IcsTimerDemoForm</Form>
 			</DCCReference>

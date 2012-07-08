@@ -1,7 +1,7 @@
 program IcsMailSnd;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsMailSnd1 in 'IcsMailSnd1.pas' {SmtpTestForm};
 

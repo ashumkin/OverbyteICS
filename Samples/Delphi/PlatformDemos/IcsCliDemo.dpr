@@ -1,7 +1,7 @@
 program IcsCliDemo;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsCliDemo1 in 'IcsCliDemo1.pas' {ClientForm};
 

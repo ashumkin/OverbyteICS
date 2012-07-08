@@ -1,7 +1,7 @@
 program IcsThreadTimerDemo;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsThreadTimerDemo1 in 'IcsThreadTimerDemo1.pas' {IcsTimerDemoForm};
 

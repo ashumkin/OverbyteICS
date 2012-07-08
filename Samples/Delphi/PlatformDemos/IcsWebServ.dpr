@@ -2,7 +2,7 @@ program IcsWebServ;
 
 uses
   FMX.Forms,
-  OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsWebServ1 in 'IcsWebServ1.pas' {WebServForm},
   OverbyteIcsFormDataDecoder in '..\..\..\Source\OverbyteIcsFormDataDecoder.pas';

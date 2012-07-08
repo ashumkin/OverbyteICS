@@ -1,7 +1,7 @@
 program IcsFtpServ;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsFtpServ1 in 'IcsFtpServ1.pas' {FtpServerForm};
 

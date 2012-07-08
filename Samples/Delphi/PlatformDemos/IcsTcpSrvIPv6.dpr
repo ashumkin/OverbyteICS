@@ -1,7 +1,7 @@
 program IcsTcpSrvIPv6;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsTcpSrv1IPv6 in 'IcsTcpSrv1IPv6.pas' {TcpSrvForm};
 

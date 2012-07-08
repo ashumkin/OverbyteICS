@@ -1,7 +1,7 @@
 program IcsDllTst;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsDllTst1 in 'IcsDllTst1.pas' {DllTestForm};
 

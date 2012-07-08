@@ -1,7 +1,7 @@
 program IcsUdpSend;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\..\Source\OverbyteIcsIniFiles.pas',
+  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   IcsUdpSend1 in 'IcsUdpSend1.pas' {MainForm};
 
 {$R *.res}

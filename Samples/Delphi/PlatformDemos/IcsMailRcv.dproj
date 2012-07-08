@@ -107,7 +107,7 @@
 			<DelphiCompile Include="$(MainSource)">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="..\..\..\Source\OverbyteIcsIniFiles.pas"/>
+			<DCCReference Include="..\..\OverbyteIcsIniFiles.pas"/>
 			<DCCReference Include="IcsMailRcv1.pas">
 				<Form>POP3ExcercizerForm</Form>
 			</DCCReference>

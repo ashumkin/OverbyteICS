@@ -124,7 +124,7 @@
 			<DelphiCompile Include="$(MainSource)">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="..\..\..\Source\OverbyteIcsIniFiles.pas"/>
+			<DCCReference Include="..\..\OverbyteIcsIniFiles.pas"/>
 			<DCCReference Include="IcsFtpTst1.pas">
 				<Form>FtpReceiveForm</Form>
 			</DCCReference>
