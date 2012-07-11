@@ -4,9 +4,10 @@ program OverbyteIcsSslSniSrv;
 {$R 'OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
 
 uses
-  Forms, 
+  Forms,
   OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
-  OverbyteIcsSslSniSrv1 in 'OverbyteIcsSslSniSrv1.pas' {MainForm};
+  OverbyteIcsSslSniSrv1 in 'OverbyteIcsSslSniSrv1.pas' {MainForm},
+  OverbyteIcsLibeayEx in '..\..\..\Source\Extras\OverbyteIcsLibeayEx.pas';
 
 {$R *.res}
 

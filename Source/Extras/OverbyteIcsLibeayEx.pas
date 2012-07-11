@@ -54,7 +54,7 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
 {$X+}                                 { Enable extended syntax              }
 {$H+}                                 { Use long strings                    }
 {$J+}                                 { Allow typed constant to be modified }
-{$I Include\OverbyteIcsSslDefs.inc}
+{$I ..\Include\OverbyteIcsSslDefs.inc}
 
 unit OverbyteIcsLibeayEx;
 

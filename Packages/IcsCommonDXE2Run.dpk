@@ -79,7 +79,9 @@ contains
   Ics.Posix.KEventApi in '..\Source\Ics.Posix.KEventApi.pas',
   Ics.Posix.KEventTypes in '..\Source\Ics.Posix.KEventTypes.pas',
   OverbyteIcsCookies in '..\Source\OverbyteIcsCookies.pas',
-  OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas';
+  OverbyteIcsHttpCCodZLib in '..\Source\OverbyteIcsHttpCCodZLib.pas',
+  OverbyteIcsAsn1Utils in '..\Source\OverbyteIcsAsn1Utils.pas',
+  OverbyteIcsFormDataDecoder in '..\Source\OverbyteIcsFormDataDecoder.pas';
 
 end.
 
