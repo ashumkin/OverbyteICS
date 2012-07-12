@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -360,6 +360,8 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                      each with Addr/Port/SocketFamily/SslEnable properties
                      in events check MultiListenIndex, -1 is main socket, >=0 is
                      index into MultiListenSockets[] for socket raising event
+Jul 11, 2012 V8.01 Angus - added new THttpConnectionState of hcSendData for GET/HEAD so
+                   we don't start a new request if extra blank lines sent after header
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -459,8 +461,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-    THttpServerVersion = 800;
-    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.00 ';
+    THttpServerVersion = 801;
+    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.01 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
     MinSndBlkSize = 8192 ;  { V7.40 }
@@ -528,7 +530,7 @@ type
                                       const FileName: string;
                                       var ContentType: string) of object;
 
-    THttpConnectionState = (hcRequest, hcHeader, hcPostedData);
+    THttpConnectionState = (hcRequest, hcHeader, hcPostedData, hcSendData);   { V8.01 }
     THttpOption          = (hoAllowDirList, hoAllowOutsideRoot, hoContentEncoding);   { V7.20 }
     THttpOptions         = set of THttpOption;
     THttpRangeInt        = Int64;
@@ -1620,7 +1622,7 @@ function VarRecToString(V : TVarRec) : String;
 
 const
     HttpConnectionStateName : array [THttpConnectionState] of String =
-         ('hcRequest', 'hcHeader', 'hcPostedData');
+         ('hcRequest', 'hcHeader', 'hcPostedData', 'hcSendData');
 
 {$IFNDEF NO_AUTHENTICATION_SUPPORT}
     HttpAuthTypeNames : array [TAuthenticationType] of String =
@@ -2679,6 +2681,10 @@ begin
             Dec(Len);
         SetLength(FRcvdLine, Len);
     end;
+    if FState = hcSendData then begin  // V8.01 got more commands while sending data
+        if FRcvdLine = '' then exit;   // ignore blank line
+        FState := hcRequest; 
+    end;
     if FState = hcRequest then begin
         { We just start a new request. Initialize all header variables }
         FRequestContentType    := '';
@@ -2736,7 +2742,7 @@ begin
              FState := hcPostedData
         { With a GET method, we _never_ have any document        10/02/2004 }
         else if FMethod <> 'POST' then                            {10/02/2004 Bjornar}
-            FState := hcRequest;
+            FState := hcSendData;         // V8.01 was hcRequest;
         { We will process request before receiving data because application }
         { has to setup things to be able to receive posted data             }
         {Bjornar, should also be able to accept more requests after HEAD}
