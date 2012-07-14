@@ -87,6 +87,11 @@ contains
   OverbyteIcsHttpAppServer in '..\Source\OverbyteIcsHttpAppServer.pas',
   OverbyteIcsCharsetComboBox in '..\Source\OverbyteIcsCharsetComboBox.pas',
   OverbyteIcsThreadTimer in '..\Source\OverbyteIcsThreadTimer.pas',
-  OverbyteIcsWSocketTS in '..\Source\OverbyteIcsWSocketTS.pas';
+  OverbyteIcsWSocketTS in '..\Source\OverbyteIcsWSocketTS.pas',
+  OverbyteIcsSysLogClient in '..\SOURCE\OverbyteIcsSysLogClient.pas',
+  OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
+  OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
+  OverbyteIcsSnmpCli in '..\Source\OverbyteIcsSnmpCli.pas',
+  OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas';
 
 end.

@@ -190,6 +190,11 @@ $(PostBuildEvent)]]></PostBuildEvent>
 			<DCCReference Include="..\Source\OverbyteIcsCharsetComboBox.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsThreadTimer.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsWSocketTS.pas"/>
+			<DCCReference Include="..\SOURCE\OverbyteIcsSysLogClient.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogDefs.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSysLogServer.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSnmpCli.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsSnmpMsgs.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>
