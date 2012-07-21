@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -96,7 +96,7 @@ Apr 15, 2011 V7.03 Arno prepared for 64-bit.
 May 13, 2011 V7.04 Anton S. found a small issue with CliId.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-
+Jul 21, 2012 V8.01 Fix in TCustomMultiListenWSocketServer.TriggerClientConnect. 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -161,8 +161,8 @@ uses
     OverbyteIcsUtils, OverbyteIcsTypes;
 
 const
-    WSocketServerVersion     = 800;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2012 F. Piette V8.00 ';
+    WSocketServerVersion     = 801;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2012 F. Piette V8.01 ';
     DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
 
 type
@@ -1323,7 +1323,7 @@ procedure TCustomMultiListenWSocketServer.TriggerClientConnect(
 begin
     inherited TriggerClientConnect(Client, Error);
     { Finally reset the MultiListenIndex just to avoid bad component use }
-    FMultiListenIndex := -1;
+    //FMultiListenIndex := -1;
 end;
 
 
