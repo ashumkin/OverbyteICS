@@ -10,7 +10,7 @@ Description:  This unit encapsulate the ICMP.DLL into an object of type TICMP.
               to change properties or event handler. This is much simpler to
               use for a GUI program.
 Creation:     January 6, 1997
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -62,7 +62,10 @@ Aug 12, 2008 V7.00 Reverted from AnsiString to String for properties.
 Jul 25, 2011 V7.01 Added directive "EXTERNALSYM"
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Jul 21, 2012 V7.02 Arno fixed a Win64 bug.
 
+
+ToDo: IPv6 support
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsIcmp;
@@ -73,6 +76,7 @@ interface
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
 {$X+}           { Enable extended syntax              }
+{$A+}
 {$I Include\OverbyteIcsDefs.inc}
 {$IFDEF COMPILER14_UP}
   {$IFDEF NO_EXTENDED_RTTI}
@@ -100,8 +104,8 @@ uses
     Windows, SysUtils, Classes, OverbyteIcsWinsock;
 
 const
-  IcmpVersion = 8.00;
-  CopyRight : String   = ' TICMP (c) 1997-2012 F. Piette V8.00 ';
+  IcmpVersion = 8.01;
+  CopyRight : String   = ' TICMP (c) 1997-2012 F. Piette V8.01 ';
   IcmpDLL     = 'icmp.dll';
 
   // IP status codes returned to transports and user IOCTLs.
@@ -194,7 +198,7 @@ type
   TIPStatus = LongInt;   // Status code returned from IP APIs.
 
   PIPOptionInformation = ^TIPOptionInformation;
-  TIPOptionInformation = packed record
+  TIPOptionInformation = record
      TTL:         Byte;      // Time To Live (used for traceroute)
      TOS:         Byte;      // Type Of Service (usually 0)
      Flags:       Byte;      // IP header flags (usually 0)
@@ -203,7 +207,7 @@ type
   end;
 
   PIcmpEchoReply = ^TIcmpEchoReply;
-  TIcmpEchoReply = packed record
+  TIcmpEchoReply = record
      Address:       TIPAddr;              // Replying address
      Status:        DWord;                // IP status value
      RTT:           DWord;                // Round Trip Time in milliseconds
