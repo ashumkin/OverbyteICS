@@ -442,12 +442,14 @@ var
 {$IFNDEF NOFORMS}
 { We need this hack to be able to read private field FRunning in order  }
 { to know whether or not the Application is running a message loop.     }
+{$HINTS OFF}
 type
   THackApplication = class(TComponent)
   private
     FOnException: TExceptionEvent;
     FRunning: Boolean;
   end;
+{$HINTS ON}
 
 {$IFDEF MACOS}
 function TIcsMessagePump.ProcessCocoaAppMessageWithTimeout(ATimeOutSec: LongWord): Boolean;
