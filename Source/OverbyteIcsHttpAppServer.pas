@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      8.00
+Version:      8.02
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -83,6 +83,14 @@ Dec 18, 2011 V7.09 F. Piette fixed THttpAppSrv.GetDispatchVirtualDocument so
                    the time the answer is sent.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+                   New SocketFamily property (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6)
+                   New MultiListenSockets property to add extra listening sockets,
+                     each with Addr/Port/SocketFamily/SslEnable properties
+                     in events check MultiListenIndex, -1 is main socket, >=0 is
+                     index into MultiListenSockets[] for socket raising event
+Jul 23, 2012 V8.02 Angus added TSslHttpAppSrv
+                   SslEnable specifies if SSL is used and defaults to FALSE
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -308,7 +316,11 @@ type
     TDeleteSessionEvent = procedure (Sender : TObject;
                                      Session : TWebSession) of object;
 
+{$IFDEF USE_SSL}
+    THttpAppSrv = class(TCustomSslHttpServer)              //  V8.02 Angus
+{$ELSE}
     THttpAppSrv = class(THttpServer)
+{$ENDIF USE_SSL}
     protected
         FGetHandler      : THttpHandlerList;
         FPostHandler     : THttpHandlerList;
@@ -383,6 +395,20 @@ type
         property OnVirtualException : TVirtualExceptionEvent read  FOnVirtualExceptionEvent
                                                              write FOnVirtualExceptionEvent;      { V7.05 }
     end;
+
+{$IFDEF USE_SSL}
+    TSslHttpAppSrv = class(THttpAppSrv)     //  V8.02 Angus
+    published
+        property SslEnable;
+        property SslContext;
+        property OnSslVerifyPeer;
+        property OnSslSetSessionIDContext;
+        property OnSslSvrNewSession;
+        property OnSslSvrGetSession;
+        property OnSslHandshakeDone;
+    end;
+{$ENDIF} // USE_SSL
+
 {$IFDEF MSWINDOWS} // todo: make it POSIX compatible
 function ReverseTextFileToHtmlToString(
     const LogViewURL : String;
@@ -434,6 +460,10 @@ begin
     FSessionTimer              := TTimer.Create(nil);
     FSessionTimer.Enabled      := FALSE;
     FSessionTimer.OnTimer      := SessionTimerHandler;
+{$IFDEF USE_SSL}
+    FSslEnable                 := FALSE;  // V8.02
+    FWSocketServer.SslEnable   := FALSE;  // V8.02
+{$ENDIF}
 end;
 
 

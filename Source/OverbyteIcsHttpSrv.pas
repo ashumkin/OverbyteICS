@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      8.01
+Version:      8.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -362,6 +362,8 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                      index into MultiListenSockets[] for socket raising event
 Jul 11, 2012 V8.01 Angus - added new THttpConnectionState of hcSendData for GET/HEAD so
                    we don't start a new request if extra blank lines sent after header
+Jul 23, 2012 V8.02 Angus - added TCustomSslHttpServer to allow descendents (TSslHttpAppSrv)
+                   added SslEnable property so SSL can be disabled, defaults to TRUE
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -461,8 +463,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-    THttpServerVersion = 801;
-    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.01 ';
+    THttpServerVersion = 802;
+    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.02 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
     MinSndBlkSize = 8192 ;  { V7.40 }
@@ -1443,13 +1445,14 @@ Description:  A component adding SSL support to THttpServer.
 {$J+}                                 { Allow typed constant to be modified }
 
 const
-     SslHttpSrvVersion            = 100;
-     SslHttpSrvDate               = 'Jul 20, 2003';
-     SslHttpSrvCopyRight : String = ' TSslHttpSrv (c) 2003-2010 Francois Piette V1.00.0 ';
+     SslHttpSrvVersion            = 802;
+     SslHttpSrvDate               = 'Jul 19, 2012';
+     SslHttpSrvCopyRight : String = ' TSslHttpSrv (c) 2003-2012 Francois Piette V8.00.2 ';
 
 type
-    TSslHttpServer = class(THttpServer)
+    TCustomSslHttpServer = class(THttpServer)  //  V8.02 Angus - was TSslHttpServer
     protected
+        FSslEnable                     : Boolean;  //  V8.02 Angus
         FOnSslHandshakeDone            : TSslHandshakeDoneEvent;
         FOnSslVerifyPeer               : TSslVerifyPeerEvent;
         FOnSslSetSessionIDContext      : TSslSetSessionIDContext;
@@ -1488,7 +1491,9 @@ type
         constructor Create(AOwner : TComponent); override;
         destructor  Destroy; override;
         procedure   SetAcceptableHostsList(const SemiColonSeparatedList : String);
-    published
+//    published V8.02 Angus stop them being published
+        property  SslEnable          : Boolean             read  FSslEnable  //  V8.02 Angus
+                                                           write FSslEnable;
         property  SslContext         : TSslContext         read  GetSslContext
                                                            write SetSslContext;
         property  OnSslVerifyPeer    : TSslVerifyPeerEvent read  FOnSslVerifyPeer
@@ -1503,6 +1508,17 @@ type
         property  OnSslHandshakeDone : TSslHandshakeDoneEvent
                                                            read  FOnSslHandshakeDone
                                                            write FOnSslHandshakeDone;
+    end;
+
+    TSslHttpServer = class(TCustomSslHttpServer)     //  V8.02 Angus
+    published
+        property SslEnable;
+        property SslContext;
+        property OnSslVerifyPeer;
+        property OnSslSetSessionIDContext;
+        property OnSslSvrNewSession;
+        property OnSslSvrGetSession;
+        property OnSslHandshakeDone;
     end;
 
 {$ENDIF} // USE_SSL
@@ -5778,7 +5794,7 @@ end;
 {$IFDEF USE_SSL}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
-constructor TSslHttpServer.Create(AOwner: TComponent);
+constructor TCustomSslHttpServer.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
     //SslVersionMethod       := sslV23_SERVER;
@@ -5788,25 +5804,26 @@ begin
     FWSocketServer.OnSslSvrNewSession       := TransferSslSvrNewSession;
     FWSocketServer.OnSslSvrGetSession       := TransferSslSvrGetSession;
     FWSocketServer.OnSslHandshakeDone       := TransferSslHandshakeDone;
+    fSslEnable                              := TRUE;   // V8.02 Angus
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-destructor TSslHttpServer.Destroy;
+destructor TCustomSslHttpServer.Destroy;
 begin
     inherited Destroy;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.CreateSocket;
+procedure TCustomSslHttpServer.CreateSocket;
 begin
     FWSocketServer := TSslWSocketServer.Create(Self);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.WSocketServerClientCreate(
+procedure TCustomSslHttpServer.WSocketServerClientCreate(
     Sender : TObject;
     Client : TWSocketClient);
 begin
@@ -5816,40 +5833,41 @@ begin
     THttpConnection(Client).OnSslSvrGetSession       := TransferSslSvrGetSession;
     THttpConnection(Client).OnSslSetSessionIDContext := TransferSslSetSessionIDContext;
     THttpConnection(Client).OnSslHandshakeDone       := TransferSslHandshakeDone;
+    FWSocketServer.SslEnable                         := fSslEnable;    // V8.02 Angus
     inherited WSocketServerClientCreate(Sender, Client);
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TSslHttpServer.GetSslContext: TSslContext;
+function TCustomSslHttpServer.GetSslContext: TSslContext;
 begin
     Result := FWSocketServer.SslContext
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.SetSslContext(Value: TSslContext);
+procedure TCustomSslHttpServer.SetSslContext(Value: TSslContext);
 begin
     FWSocketServer.SslContext := Value
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.SetSslAcceptableHosts(Value : TStrings);
+procedure TCustomSslHttpServer.SetSslAcceptableHosts(Value : TStrings);
 begin
     TSslWSocketServer(FWSocketServer).SslAcceptableHosts := Value;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function  TSslHttpServer.GetSslAcceptableHosts: TStrings;
+function  TCustomSslHttpServer.GetSslAcceptableHosts: TStrings;
 begin
     Result := TSslWSocketServer(FWSocketServer).SslAcceptableHosts;
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.TransferSslVerifyPeer(
+procedure TCustomSslHttpServer.TransferSslVerifyPeer(
     Sender        : TObject;
     var Ok        : Integer;
     Cert          : TX509Base);
@@ -5860,7 +5878,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.TransferSslSetSessionIDContext(Sender: TObject;
+procedure TCustomSslHttpServer.TransferSslSetSessionIDContext(Sender: TObject;
     var SessionIDContext: TSslSessionIdContext);
 begin
     if Assigned(FOnSslSetSessionIDContext) then
@@ -5869,7 +5887,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.TransferSslSvrGetSession(Sender: TObject;
+procedure TCustomSslHttpServer.TransferSslSvrGetSession(Sender: TObject;
     var SslSession : Pointer; SessId: Pointer; IdLen: Integer;
     var IncRefCount: Boolean);
 begin
@@ -5879,7 +5897,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.TransferSslSvrNewSession(Sender: TObject;
+procedure TCustomSslHttpServer.TransferSslSvrNewSession(Sender: TObject;
     SslSession: Pointer; SessId : Pointer; Idlen : Integer;
     var AddToInternalCache : Boolean);
 begin
@@ -5889,7 +5907,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.TransferSslHandshakeDone(Sender: TObject;
+procedure TCustomSslHttpServer.TransferSslHandshakeDone(Sender: TObject;
     ErrCode: Word; PeerCert: TX509Base;  var Disconnect : Boolean);
 begin
     if Assigned(FOnSslHandshakeDone) then
@@ -5898,7 +5916,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.WSocketServerClientConnect(
+procedure TCustomSslHttpServer.WSocketServerClientConnect(
     Sender  : TObject;
     Client  : TWSocketClient;
     ErrCode : Word);
@@ -5908,7 +5926,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TSslHttpServer.SetAcceptableHostsList(
+procedure TCustomSslHttpServer.SetAcceptableHostsList(
     const SemiColonSeparatedList : String);
 begin
     FWSocketServer.SetAcceptableHostsList(SemiColonSeparatedList);
