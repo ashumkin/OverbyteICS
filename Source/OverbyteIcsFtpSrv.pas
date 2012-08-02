@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -402,6 +402,7 @@ Aug 8,  2011 V7.19 Angus added client SndBufSize and RcvBufSize to set data sock
              buffers sizes for better performance, set to 32K to double speeds
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Aug 2, 2011  V8.01 Angus ensure SSL not enabled by default
 
 
 
@@ -510,8 +511,8 @@ uses
 
 
 const
-    FtpServerVersion         = 800;
-    CopyRight : String       = ' TFtpServer (c) 1998-2012 F. Piette V8.00 ';
+    FtpServerVersion         = 801;
+    CopyRight : String       = ' TFtpServer (c) 1998-2012 F. Piette V8.01 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -8346,6 +8347,7 @@ constructor TSslFtpServer.Create(AOwner: TComponent);
 begin
     inherited Create(AOwner);
     FFtpSslTypes   := [];
+    FSocketServer.SslEnable := false;  { V8.01 }
     AddCommand('AUTH', CommandAUTH);
     AddCommand('PROT', CommandPROT);
     AddCommand('PBSZ', CommandPBSZ);
