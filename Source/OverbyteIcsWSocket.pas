@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -920,6 +920,14 @@ Feb 17, 2012 V7.86 Arno added NTLMv2 and NTLMv2 session security (basics),
 Apr 30, 2012 V7.87 Arno - Some SSL debug log strings adjusted.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+                   added property SocketFamily, sfAny = System default preference,
+                     sfAnyIPv4 = IPv4 preference, sfAnyIPv6 = IPv6 preference,
+                     sfIPv4 = explicit IPv4, sfIPv6 = explicit IPv6.
+                   added functions WSocketIPv4ToStr, WSocketIPv6ToStr,
+                     WSocketStrToIPv4, WSocketStrToIPv6, WSocketStrToMappedIPv4,
+                     WSocketIsIPv4, WSocketIsIP (finds SocketFamily from string)
+Aug 4, 2012 V8.01 - Angus added WSocketIsIPEx (finds SocketFamily from string,
+                     including AnyIPv4/IPv6)
 }
 
 {
@@ -3204,6 +3212,7 @@ function  WSocketStrToMappedIPv4(const IPv4Str: string; APortNum: Word;
 {$ENDIF}
 function  WSocketIsIPv4(const S: string): Boolean;
 function  WSocketIsIP(const S: string; out ASocketFamily: TSocketFamily): Boolean;
+function  WSocketIsIPEx(const S: string; out ASocketFamily: TSocketFamily): Boolean;  { V8.01 }
 { function  WSocketLoadWinsock : Boolean; 14/02/99 }
 {$IFDEF MSWINDOWS}
 function WSocket_WSAStartup(wVersionRequired: word;
@@ -4122,6 +4131,19 @@ begin
             ASocketFamily := sfIPv6
         else
             ASocketFamily := sfAny;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function WSocketIsIPEx(const S: string; out ASocketFamily: TSocketFamily): Boolean;   { V8.01 }
+begin
+    Result := WSocketIsIP(S, ASocketFamily);
+    if Result then begin
+        if S = ICS_ANY_HOST_V4 then
+            ASocketFamily := sfAnyIPv4
+        else if S = ICS_ANY_HOST_V6 then
+            ASocketFamily := sfAnyIPv6;
     end;
 end;
 
