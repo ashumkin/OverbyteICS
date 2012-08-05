@@ -926,8 +926,8 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    added functions WSocketIPv4ToStr, WSocketIPv6ToStr,
                      WSocketStrToIPv4, WSocketStrToIPv6, WSocketStrToMappedIPv4,
                      WSocketIsIPv4, WSocketIsIP (finds SocketFamily from string)
-Aug 4, 2012 V8.01 - Angus added WSocketIsIPEx (finds SocketFamily from string,
-                     including AnyIPv4/IPv6)
+Aug 5, 2012 V8.01 - Angus added WSocketIsIPEx (finds SocketFamily from string,
+                     including AnyIPv4/IPv6), added SocketFamilyNames
 }
 
 {
@@ -1263,6 +1263,8 @@ const
   SocketStateNames: array [TSocketState] of PChar = ('Invalid', 'Opened', 'Bound',
       'Connecting', 'SocksConnected', 'Connected', 'Accepting', 'Listening',
       'Closed');
+  SocketFamilyNames: array [TSocketFamily] of PChar = ('Any', 'AnyIPv4', 'AnyIPv6',  { V8.01 }
+      'IPv4', 'IPv6');
 type
   TNetChangeEvent    = procedure (Sender: TObject; ErrCode: Word) of object;
   TDataAvailable     = procedure (Sender: TObject; ErrCode: Word) of object;
