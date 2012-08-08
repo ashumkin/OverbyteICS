@@ -402,7 +402,9 @@ Aug 8,  2011 V7.19 Angus added client SndBufSize and RcvBufSize to set data sock
              buffers sizes for better performance, set to 32K to double speeds
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-Aug 2, 2011  V8.01 Angus ensure SSL not enabled by default
+Aug 8, 2012 V8.01 Angus ensure SSL not enabled by default, added MultiListen,
+                    SslEnable must be specifically set for each MultiListenItem
+                    to enable or disable ftpImplicitSsl
 
 
 
@@ -1533,7 +1535,7 @@ type
         function    IsClient(SomeThing : TObject) : Boolean;
         function    OpenFileStream(const FileName: string; Mode: Word): TStream;    { angus V1.54 }
         procedure   CloseFileStreams(Client : TFtpCtrlSocket);                      { angus V1.54 }
-        property  ServSocket    : TWSocketServer      read  FSocketServer;		    { angus V7.00 }
+        property  ServSocket    : TWSocketServer      read  FSocketServer;          { angus V7.00 }
         property  ClientCount   : Integer             read  GetClientCount;
         property  Active        : Boolean             read  GetActive
                                                       write SetActive;
@@ -2492,7 +2494,7 @@ begin
     FSocketServer.ComponentOptions  := [wsoNoReceiveLoop];
     FSocketServer.BandwidthLimit    := fBandwidthLimit;     { angus V7.16 in client connect }
     FSocketServer.BandwidthSampling := fBandwidthSampling;  { angus V7.16 }
-    FSocketServer.Listen;
+    FSocketServer.MultiListen;                    { V8.01 }
     FEventTimer.Enabled := true;                  { angus V1.54 }
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loProtSpecInfo) then                            { V1.46 }
