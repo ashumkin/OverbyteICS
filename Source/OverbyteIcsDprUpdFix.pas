@@ -400,6 +400,14 @@ begin
                         { Check if Winapi is set in Base config, if not add it }
                         IniValues.DelimitedText := 'Winapi;System.Win';
                         BaseConfig.GetValues(sNamespace, Values, False);
+
+                        { For some reason unit scope name 'Ics.Fmx' is added in XE2 }
+                        if Values.IndexOf('Ics.Fmx') >= 0 then begin
+                          SetLength(RS, 1);
+                          RS[0] := 'Ics.Fmx';
+                          BaseConfig.RemoveValues(sNamespace, RS);
+                        end;
+
                         for I := IniValues.Count - 1 downto 0 do
                         begin
                             if Values.IndexOf(IniValues[I]) >= 0 then
