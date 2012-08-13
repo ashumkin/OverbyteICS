@@ -402,9 +402,14 @@ Aug 8,  2011 V7.19 Angus added client SndBufSize and RcvBufSize to set data sock
              buffers sizes for better performance, set to 32K to double speeds
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-Aug 8, 2012 V8.01 Angus ensure SSL not enabled by default, added MultiListen,
-                    SslEnable must be specifically set for each MultiListenItem
-                    to enable or disable ftpImplicitSsl
+                   New SocketFamily property (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6)
+                   New MultiListenSockets property to add extra listening sockets,
+                     each with Addr/Port/SocketFamily/FtpSslTypes properties
+                     in events check MultiListenIndex, -1 is main socket, >=0 is
+                     index into MultiListenSockets[] for socket raising event
+Aug 13, 2012 V8.01 Angus ensure SSL not enabled by default, corrected MultiListen
+                   Arno added TSslFtpWSocketMultiListenItem with FtpSslTypes
+                     for each MultiListen socket
 
 
 
@@ -635,6 +640,9 @@ type
     TFtpString = type String;
 
 {$IFDEF USE_SSL}
+    TFtpSslType  = (ftpAuthSsl,      ftpAuthTls,     ftpAuthTlsP,
+                    ftpAuthTlsC ,    ftpImplicitSsl);
+    TFtpSslTypes = set of TFtpSslType;
     TCurFtpSslType  = (curftpSslNone,   curftpAuthSsl,      curftpAuthTls,
                        curftpAuthTlsP,  curftpAuthTlsC ,    curftpImplicitSsl);
 {$ENDIF}
@@ -786,6 +794,7 @@ type
         ProtP             : Boolean;
         AuthFlag          : Boolean;
         CccFlag           : Boolean;
+        FtpSslTypes       : TFtpSslTypes;
         CurFtpSslType     : TCurFtpSslType;
 {$ENDIF}
         constructor Create(AOwner: TComponent); override;
@@ -1094,6 +1103,7 @@ type
         FSystemCodePage         : LongWord;                  { AG 7.02 }
         FOnAddVirtFiles         : TFtpSrvAddVirtFilesEvent;  { angus V7.08 }
         procedure CreateSocket; virtual;
+        function  GetMultiListenIndex: Integer;
         function  GetMultiListenSockets: TWSocketMultiListenCollection;
         procedure SetMultiListenSockets(const Value: TWSocketMultiListenCollection);
         procedure SetOnBgException(const Value: TIcsBgExceptionEvent); override; { V7.15 }
@@ -1547,6 +1557,7 @@ type
                                                       read  GetClient;
         property  ZlibWorkDir            : String     read  FZlibWorkDir    { angus V1.54 }
                                                       write FZlibWorkDir;
+        property  MultiListenIndex       : Integer    read  GetMultiListenIndex;  { V8.01 } 
     published
 {$IFNDEF NO_DEBUG_LOG}
         property IcsLogger               : TIcsLogger  read  GetIcsLogger  { V1.46 }
@@ -1789,9 +1800,22 @@ Description:  A component adding TLS/SSL support to TFtpServer.
               warnings.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-    TFtpSslType  = (ftpAuthSsl,      ftpAuthTls,     ftpAuthTlsP,
-                    ftpAuthTlsC ,    ftpImplicitSsl);
-    TFtpSslTypes = set of TFtpSslType;
+
+    TSslFtpWSocketMultiListenItem = class(TSslWSocketMultiListenItem)
+    private
+      FFtpSslTypes : TFtpSslTypes;
+      procedure SetFtpSslTypes(const Value: TFtpSslTypes);
+    public
+      constructor Create(Collection: TCollection); override;
+    published
+      property  FtpSslTypes        : TFtpSslTypes        read  FFtpSslTypes
+                                                         write SetFtpSslTypes;
+    end;
+
+    TFtpSslWSocketServer = class(TSslWSocketServer)
+    protected
+        function  MultiListenItemClass: TWSocketMultiListenItemClass; override;
+    end;
 
     TSslFtpServer = class(TFtpServer)
     protected
@@ -2588,7 +2612,11 @@ begin
 {$ENDIF}
 {$IFDEF USE_SSL}
     if Self is TSslFtpServer then begin     {  V1.48 }
-        if ftpImplicitSsl in TSslFtpserver(Self).FFtpSslTypes then   { V1.47 }
+        if MultiListenIndex = -1 then
+          MyClient.FtpSslTypes := TSslFtpserver(Self).FFtpSslTypes
+        else
+          MyClient.FtpSslTypes := TSslFtpWSocketMultiListenItem(MultiListenSockets[MultiListenIndex]).FFtpSslTypes;
+        if ftpImplicitSsl in MyClient.FtpSslTypes then   { V1.47 }
             MyClient.CurFtpSslType := curftpImplicitSsl;               { V1.47 }
     end;
 {$ENDIF}
@@ -5869,20 +5897,20 @@ begin
                                   ' OPTS MODE;UTF8;' + #13#10; { angus V7.01 }
     {$IFDEF USE_SSL}
         if Self is TSslFtpServer then begin     {  V1.48 }
-        if TSslFtpserver(Self).FFtpSslTypes <> [] then begin             { V1.47 }
-                if not (ftpImplicitSsl in TSslFtpserver(Self).FFtpSslTypes) then begin
-                Answer := Answer + ' AUTH ';
-                if ftpAuthTls in TSslFtpserver(Self).FFtpSslTypes then
+            if Client.FtpSslTypes <> [] then begin             { V1.47 }
+                if not (ftpImplicitSsl in Client.FtpSslTypes) then begin
+                	Answer := Answer + ' AUTH ';
+                if ftpAuthTls in Client.FtpSslTypes then
                     Answer := Answer + 'TLS;';
-                if ftpAuthSsl in TSslFtpserver(Self).FFtpSslTypes then
+                if ftpAuthSsl in Client.FtpSslTypes then
                     Answer := Answer + 'SSL;';
-                if ftpAuthTlsP in TSslFtpserver(Self).FFtpSslTypes then
+                if ftpAuthTlsP in Client.FtpSslTypes then
                     Answer := Answer + 'TLS-P;';
-                if ftpAuthTlsC in TSslFtpserver(Self).FFtpSslTypes then
+                if ftpAuthTlsC in Client.FtpSslTypes then
                     Answer := Answer + 'TLS-C;';
                 Answer := Answer +  #13#10 +
                           ' CCC'+ #13#10;
-            {if TSslFtpserver(Self).FFtpSslType = sslTypeAuthSsl then
+            {if Client.FtpSslTypes(Self).FFtpSslType = sslTypeAuthSsl then
                 Answer := Answer + '  AUTH TLS;SSL;' + #13#10;}
             end;
             Answer := Answer + ' PROT C;P;' + #13#10 +
@@ -6872,6 +6900,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TFtpServer.GetMultiListenIndex: Integer;
+begin
+  if Assigned(FSocketServer) then
+        Result := FSocketServer.MultiListenIndex
+    else
+        Result := -1;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TFtpServer.GetMultiListenSockets: TWSocketMultiListenCollection;
 begin
     if Assigned(FSocketServer) then
@@ -7140,6 +7178,7 @@ begin
     AuthFlag         := FALSE;
     CccFlag          := FALSE;
     CurFtpSslType    := curftpSslNone;
+    FtpSslTypes      := [];
 {$ENDIF}
     FDataSocket.Name := 'DataWSocket';
     FBanner          := DefaultBanner;
@@ -8119,7 +8158,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslFtpServer.SetFtpSslTypes(const Value: TFtpSslTypes); { 1.04 }
 begin
-    { Implizit SSL cannot be combined with explizit SSL }
+    { Implicit SSL cannot be combined with explicit SSL }
     if Value <> FFtpSslTypes then begin
         if (ftpImplicitSsl in Value) and
            ((ftpAuthSsl in Value) or
@@ -8160,7 +8199,7 @@ procedure TSslFtpServer.CommandCCC(                                           { 
     var Params  : TFtpString;
     var Answer  : TFtpString);
 begin
-    if (FFtpSslTypes = []) or (ftpImplicitSsl in FFtpSslTypes) then begin
+    if (Client.FtpSslTypes = []) or (ftpImplicitSsl in Client.FtpSslTypes) then begin
         Answer := Format(msgCmdUnknown, [Keyword]);
         Exit;
     end;
@@ -8340,7 +8379,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslFtpServer.CreateSocket;
 begin
-    FSocketServer := TSslWSocketServer.Create(Self);
+    FSocketServer := TFtpSslWSocketServer.Create(Self);// TSslWSocketServer.Create(Self);
 end;
 
 
@@ -8453,7 +8492,7 @@ begin
     { The event handler may have closed the connection }
     if Client.State <> wsConnected then
         Exit;
-    Client.SslEnable  := ftpImplicitSsl in TSslFtpServer(Self).FFtpSslTypes;
+    Client.SslEnable  := ftpImplicitSsl in Client.FtpSslTypes;
     if Client.SslEnable then begin
         Client.CurFtpSslType            := curftpImplicitSsl;
         Client.SslMode                  := sslModeServer;
@@ -8620,7 +8659,43 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$ENDIF} // USE_SSL{$ENDIF}
+{ TSslFtpWSocketMultiListenItem }
+constructor TSslFtpWSocketMultiListenItem.Create(Collection: TCollection);
+begin
+    inherited Create(Collection);
+    SslEnable       := FALSE;
+end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslFtpWSocketMultiListenItem.SetFtpSslTypes(
+  const Value: TFtpSslTypes);
+begin
+  { Implicit SSL cannot be combined with explicit SSL }
+    if Value <> FFtpSslTypes then begin
+        if (ftpImplicitSsl in Value) and
+           ((ftpAuthSsl in Value) or
+           (ftpAuthTls in Value) or
+           (ftpAuthTlsP in Value) or
+           (ftpAuthTlsC in Value)) then begin
+            FFtpSslTypes := [];
+            raise Exception.Create('Option ftpImplicitSsl cannot be combined ' +
+                                   'with explicit SSL types.');
+         end
+         else
+            FFtpSslTypes := Value;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ TFtpSslWSocketServer }
+function TFtpSslWSocketServer.MultiListenItemClass: TWSocketMultiListenItemClass;
+begin
+    Result := TSslFtpWSocketMultiListenItem;
+end;
+
+{$ENDIF} // USE_SSL{$ENDIF}
 end.
+
 
