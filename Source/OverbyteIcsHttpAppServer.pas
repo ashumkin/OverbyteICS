@@ -88,8 +88,9 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                      each with Addr/Port/SocketFamily/SslEnable properties
                      in events check MultiListenIndex, -1 is main socket, >=0 is
                      index into MultiListenSockets[] for socket raising event
-Jul 23, 2012 V8.02 Angus added TSslHttpAppSrv
+Aug 17, 2012 V8.02 Angus added TSslHttpAppSrv
                    SslEnable specifies if SSL is used and defaults to FALSE
+                   added MaxSessions to allow more than 100 web sessions
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -356,6 +357,8 @@ type
         function  GetSessionsCount: Integer;
         function  GetSessionTimeout: Integer;
         procedure SetSessionTimeout(const Value: Integer);
+        function  GetMaxSessions: Integer;               { V8.02 }
+        procedure SetMaxSessions(const Value: Integer);  { V8.02 }
         procedure DeleteSessionHandler(Sender: TObject; Session: TWebSession);
         procedure SessionTimerHandler(Sender: TObject);
     public
@@ -390,6 +393,8 @@ type
     published
         property SessionTimeout  : Integer                read  GetSessionTimeout
                                                           write SetSessionTimeout;
+        property MaxSessions  : Integer                   read  GetMaxSessions         { V8.02 }
+                                                          write SetMaxSessions;
         property OnDeleteSession : TDeleteSessionEvent    read  FOnDeleteSession
                                                           write FOnDeleteSession;
         property OnVirtualException : TVirtualExceptionEvent read  FOnVirtualExceptionEvent
@@ -1245,6 +1250,24 @@ procedure THttpAppSrv.SetSessionTimeout(const Value: Integer);
 begin
     if Assigned(FWSessions) then
         FWSessions.MaxAge := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function THttpAppSrv.GetMaxSessions: Integer;
+begin
+    if not Assigned(FWSessions) then
+        Result := 0
+    else
+        Result := FWSessions.MaxSessions;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpAppSrv.SetMaxSessions(const Value: Integer);
+begin
+    if Assigned(FWSessions) then
+        FWSessions.MaxSessions := Value;
 end;
 
 

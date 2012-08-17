@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  Classes to handle session for THttpAppSrv and MidWare.
 Creation:     Dec 20, 2003
-Version:      8.00
+Version:      8.01
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list midware@elists.org or twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -41,6 +41,7 @@ Apr 19, 2010 V1.01 Angus, stop MaxAge (SessionTimeout) being restored with saved
                    Added SessionDataCount so client can use it, only set by AssignName
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Aug 17, 2012 V8.01 Angus, added MaxSessions to allow more than 100 web sessions
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -169,6 +170,8 @@ type
         function    RefreshSession(const Value : String): TWebSession;
         function    GetMaxAge: Integer;
         procedure   SetMaxAge(const Value: Integer);
+        function    GetMaxSessions: Integer;               { V8.02 }
+        procedure   SetMaxSessions(const Value: Integer);  { V8.02 }
         function    GetCount: Integer;
         function    GetSessions(nIndex: Integer): TWebSession;
         procedure   Clear;
@@ -186,6 +189,8 @@ type
     published
         property MaxAge   : Integer              read  GetMaxAge    // Seconds
                                                  write SetMaxAge;
+        property MaxSessions : Integer           read   GetMaxSessions  { V8.02 }
+                                                 write  SetMaxSessions;
         property OnDeleteSession : TDeleteSessionEvent read  FOnDeleteSession
                                                        write FOnDeleteSession;
         property OnCreateSession : TDeleteSessionEvent read  FOnCreateSession
@@ -778,6 +783,34 @@ begin
     try
         if Assigned(FTimeList) then
             Result := FTimeList.MaxAge
+        else
+            Result := 0;
+    finally
+        Unlock;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TWebSessions.SetMaxSessions(const Value: Integer);    { V8.01 }
+begin
+    Lock;
+    try
+        if Assigned(FTimeList) then
+            FTimeList.MaxItems := Value;
+    finally
+        Unlock;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TWebSessions.GetMaxSessions: Integer;            { V8.01 } 
+begin
+    Lock;
+    try
+        if Assigned(FTimeList) then
+            Result := FTimeList.MaxItems
         else
             Result := 0;
     finally
