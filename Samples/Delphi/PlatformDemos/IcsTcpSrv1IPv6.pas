@@ -2,7 +2,7 @@
 
 Author:       François Piette
 Creation:     Aug 29, 1999
-Version:      7.03
+Version:      8.00
 Description:  Basic TCP server showing how to use TWSocketServer and
               TWSocketClient components and how to send binary data
               which requires OverbyteIcsBinCliDemo as client application.
@@ -49,6 +49,8 @@ Dec 20, 2008 V7.02 F.Piette removed an implicit string conversion warning in
                    WMAppStartup (Hostname).
 Jun 15, 2010 V7.03 A.Garrels changed to demonstrate IPv6 and listening on
                    multiple interfaces.
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -56,6 +58,7 @@ unit IcsTcpSrv1IPv6;
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -73,14 +76,14 @@ uses
   Ics.Posix.Messages,
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Platform, System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
+  System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit,
   OverbyteIcsUtils, OverbyteIcsIniFiles,
   OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS;
 
 const
-  TcpSrvVersion = 703;
-  CopyRight     = ' TcpSrv (c) 1999-2010 by François PIETTE. V7.03';
+  TcpSrvVersion = 800;
+  CopyRight     = ' TcpSrv (c) 1999-2012 by François PIETTE. V8.00';
   WM_APPSTARTUP = WM_USER + 1;
 
 type
@@ -159,6 +162,9 @@ implementation
 
 {$R *.FMX}
 
+uses
+    DemoUtils;
+
 const
     SectionWindow      = 'WindowTcpSrv';
     KeyTop             = 'Top';
@@ -210,20 +216,6 @@ begin
 {$IFDEF POSIX}
     FMessagePump.Free;
 {$ENDIF}
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
 end;
 
 

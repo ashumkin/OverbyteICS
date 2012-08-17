@@ -8,7 +8,7 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      1.17
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -85,6 +85,8 @@ Nov 13, 2008 V1.14 Arno adjusted UTF-8/code page support.
 Nov 21, 2008 V1.15 Angus removed raw display
 Jun 10, 2010 V1.16 Angus added MaxKB bandwidth limit
 Aug 8, 2011  V1.17 Angus constant FtpBuffSize = 32768 to increase FTP internal and data socket buffer sizes
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
 
 
@@ -104,6 +106,7 @@ ReadOnly=false
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsFtpServ1;
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -131,7 +134,6 @@ uses
   Ics.Posix.WinTypes,
   Ics.Posix.Messages,
 {$ENDIF}
-  FMX.Platform,
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit, FMX.Objects, FMX.Menus,
@@ -142,8 +144,8 @@ uses
   OverbyteIcsUtils;
 
 const
-  FtpServVersion      = 117;
-  CopyRight : String  = ' FtpServ (c) 1998-2011 F. Piette V1.17 ';
+  FtpServVersion      = 800;
+  CopyRight : String  = ' FtpServ (c) 1998-2012 F. Piette V8.00 ';
   WM_APPSTARTUP       = WM_USER + 1;
   FtpBuffSize         = 32768;  // V1.17
 
@@ -354,6 +356,9 @@ implementation
 
 {$R *.fmx}
 
+uses
+    DemoUtils;
+
 { TMyClient }
 
 constructor TMyClient.Create(AOwner: TComponent);
@@ -409,20 +414,6 @@ const
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TLogMsg.Text(Prefix : Char; Msg : String);
 begin
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
 end;
 
 

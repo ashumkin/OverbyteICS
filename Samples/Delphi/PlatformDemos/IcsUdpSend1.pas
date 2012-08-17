@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Copyright:    You can use this software freely, at your own risks
 Creation:     April 4, 1997
-Version:      2.03
+Version:      8.00
 Object:       Demo program to show how to use TWSocket object to broadcast
               UDP messages on the network. Use UDPLstn to listen to those
               UDP messages, or other UDP messages.
@@ -45,10 +45,13 @@ Dec 12, 1998 V2.02 Added LocalPort editbox
 Jan 10, 2004 V2.03 Don't close socket immediately after send. Instead,
              close it from DataSent event.
              Removed FormPos dependency.
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsUdpSend1;
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -63,15 +66,15 @@ uses
 {$ENDIF}
 {$IFDEF POSIX}
   Posix.SysSocket,
-{$ENDIF} 
+{$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Platform, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit,
   OverbyteIcsIniFiles, OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-  UdpSendVersion     = 203;
-  CopyRight : String = ' UdpSend (c) 1997-2012 F. Piette V2.03 ';
+  UdpSendVersion     = 800;
+  CopyRight : String = ' UdpSend (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TMainForm = class(TForm)
@@ -103,6 +106,8 @@ implementation
 
 {$R *.fmx}
 
+uses
+    DemoUtils;
 
 const
     SectionWindow = 'MainForm';
@@ -114,20 +119,6 @@ const
     KeyPort       = 'Port';
     KeyLocalPort  = 'LocalPort';
     KeyMessage    = 'Message';
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TMainForm.FormCreate(Sender: TObject);

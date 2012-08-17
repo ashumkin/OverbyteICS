@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Object:       Show how to use TPop3Cli (POP3 protocol, RFC-1225)
 Creation:     03 october 1997
-Version:      6.01
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -44,12 +44,15 @@ Jan 11, 2004  V1.04 Added Auth feature.
 Mar 23, 2006  V6.00  New version started from ICS-V5
 Aug 12, 2007  V6.00a Updated for ICS-V6
 Jul 04, 2010  V6.01 Use TFileStream and updated to support TPop3Cli V6.07
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsMailRcv1;
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -63,15 +66,15 @@ uses
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Memo, FMX.ListBox,
-  FMX.Edit, FMX.Layouts, FMX.Platform,
+  FMX.Edit, FMX.Layouts,
   OverbyteIcsIniFiles,
   OverbyteIcsMimeDec,
   OverbyteIcsPop3Prot,
   OverbyteIcsWndControl;
 
 const
-    MailRcvVersion = 601;
-    CopyRight : String = ' MailRcv demo (c) 1997-2012 F. Piette V6.01 ';
+    MailRcvVersion = 800;
+    CopyRight : String = ' MailRcv demo (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TPOP3ExcercizerForm = class(TForm)
@@ -183,7 +186,7 @@ implementation
 {$R *.fmx}
 
 uses
-    IcsMailRcv2;
+    DemoUtils, IcsMailRcv2;
 
 const
     SectionWindow     = 'Window';
@@ -197,20 +200,6 @@ const
     KeyUserName       = 'UserName';
     KeyPassword       = 'Password';
     KeyAuth           = 'Authentication';
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

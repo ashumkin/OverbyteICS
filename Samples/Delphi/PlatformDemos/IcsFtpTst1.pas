@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     Aug 1997
-Version:      7.09
+Version:      8.00
 Object:       Demo for TFtpClient object (RFC 959 implementation)
               It is a graphical FTP client program
               Compatible with Delphi 1, 2, 3, 4 and 5
@@ -88,6 +88,8 @@ Apr 16, 2009  V7.07 Angus assume STREAM64, USE_ONPROGRESS64_ONLY, removed OnProg
 Feb 15, 2011  V7.08 Arno added proxy demo.
 Mar 01, 2011  V7.09 Arno enable/disable the proxy-controls depending on proxy
               setting.
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsFtpTst1;
@@ -99,6 +101,7 @@ unit IcsFtpTst1;
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -113,7 +116,7 @@ uses
   Posix.Unistd, // Removes hint: Inline function has not been expanded
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Platform, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit, FMX.ListBox, FMX.TabControl,
   OverByteIcsIniFiles,
   OverByteIcsUtils,
@@ -123,8 +126,8 @@ uses
   OverByteIcsFtpCli;
 
 const
-  FTPTstVersion      = 708;
-  CopyRight : String = ' FtpTst (c) 1997-2011 F. Piette V7.08 ';
+  FTPTstVersion      = 800;
+  CopyRight : String = ' FtpTst (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TSyncCmd   = function : Boolean  of object;
@@ -383,7 +386,7 @@ implementation
 {$R *.FMX}
 
 uses
-    TypInfo, IcsFtpTst2;
+    TypInfo, IcsFtpTst2, DemoUtils;
 
 
 const
@@ -448,20 +451,6 @@ begin
                                nCols * nLines, sc, N);
 end;
 {$ENDIF}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TFtpReceiveForm.FormCreate(Sender: TObject);

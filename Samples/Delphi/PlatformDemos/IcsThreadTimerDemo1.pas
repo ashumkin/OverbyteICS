@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     July 24, 2009
 Description:  Demo for TIcsThreadTimer
-Version:      1.00
+Version:      8.00
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -36,12 +36,15 @@ Legal issues: Copyright (C) 2002-2012 by François PIETTE
                  to the author. Use a nice stamp and mention your name, street
                  address, EMail address and any comment you like to say.
 
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsThreadTimerDemo1;
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}

@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  Demonstration for Client program using TWSocket.
 Creation:     8 december 1997
-Version:      1.07
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -48,6 +48,8 @@ Jul 30, 2006 V1.06 Added checkboxes to allow adding CRLF or not and to allow
                    To enter a $ sign, enter $24.
 Dec 20, 2008 V1.07 Replace StrPas by a string cast. Removed an implicit
                    conversion to string by an explicit to avoid a warning.
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -55,21 +57,22 @@ unit IcsCliDemo1;
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Platform, System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
+  System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit,
   { Don't forget to add your vc32 directory to Delphi library path }
   OverbyteIcsUtils, OverbyteIcsIniFiles,
   OverbyteIcsWndControl, OverbyteIcsWSocket;
 
 const
-  CliDemoVersion     = 107;
-  CopyRight : String = ' CliDemo (c) 1997-2010 F. Piette V1.07 ';
+  CliDemoVersion     = 800;
+  CopyRight : String = ' CliDemo (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TClientForm = class(TForm)
@@ -264,6 +267,9 @@ procedure TClientForm.FormCreate(Sender: TObject);
 var
     IniFile : TIcsIniFile;
 begin
+{$IFDEF MSWINDOWS}
+    ReportMemoryLeaksOnShutdown := (DebugHook <> 0);
+{$ENDIF}
     IcsNameThreadForDebugging('Main');
     IniFileName     := GetIcsIniFileName;
     IniFile         := TIcsIniFile.Create(IniFileName);
@@ -280,8 +286,6 @@ begin
     IniFile.Free;
 
     DisplayMemo.Lines.Clear;
-    ActiveControl := SendEdit;
-    SendEdit.SelectAll;
 end;
 
 

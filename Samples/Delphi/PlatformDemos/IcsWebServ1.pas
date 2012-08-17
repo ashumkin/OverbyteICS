@@ -16,7 +16,7 @@ Description:  WebSrv1 show how to use THttpServer component to implement
               The code below allows to get all files on the computer running
               the demo. Add code in OnGetDocument, OnHeadDocument and
               OnPostDocument to check for authorized access to files.
-Version:      7.21
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -98,11 +98,14 @@ Jan 03, 2009 V7.18 A. Garrels added some lines to force client browser's login
 Oct 03, 2009 V7.19 F. Piette added file upload demo (REST & HTML Form)
 Jun 18, 2010 V7.20 Arno fixed a bug in CreateVirtualDocument_ViewFormUpload.
 Feb 4,  2011 V7.21 Angus added bandwidth throttling using TCustomThrottledWSocket
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsWebServ1;
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -139,15 +142,15 @@ uses
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.StrUtils, System.SyncObjs,
-  FMX.Platform, System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
+  System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit,
   OverbyteIcsIniFiles, OverbyteIcsUtils,
   OverbyteIcsWSocket, OverbyteIcsWndControl,
   OverbyteIcsHttpSrv,  OverbyteIcsFormDataDecoder, OverbyteIcsMimeUtils;
 
 const
-  WebServVersion     = 721;
-  CopyRight : String = 'WebServ (c) 1999-2011 F. Piette V7.21 ';
+  WebServVersion     = 800;
+  CopyRight : String = 'WebServ (c) 1999-2012 F. Piette V8.00 ';
   NO_CACHE           = 'Pragma: no-cache' + #13#10 + 'Expires: -1' + #13#10;
   WM_CLIENT_COUNT    = WM_USER + 1;
   WM_APPSTARTUP      = WM_CLIENT_COUNT + 1;
@@ -320,6 +323,9 @@ implementation
 
 {$R *.FMX}
 
+uses
+    DemoUtils;
+
 const
     { IniFile layout for persistent data }
     SectionWindow      = 'WindowMain';
@@ -340,20 +346,6 @@ const
     KeyMaxRequests     = 'MaxRequestsKeepAlive';
     KeyKeepAliveSec    = 'KeepAliveTimeSec';
     KeyBandwidthLimit  = 'BandwidthLimit';
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

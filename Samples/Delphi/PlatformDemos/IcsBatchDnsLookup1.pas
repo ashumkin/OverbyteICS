@@ -1,7 +1,12 @@
 unit IcsBatchDnsLookup1;
+{
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
+}
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -19,7 +24,7 @@ uses
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.Contnrs,
-  FMX.Platform, System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
+  System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit, FMX.ListBox, FMX.TabControl,
   OverbyteIcsUtils,
   OverbyteIcsIniFiles,
@@ -77,7 +82,8 @@ implementation
 {$R *.fmx}
 
 uses
-    Math;
+    Math,
+    DemoUtils;
 
 const
     SectionWindow      = 'Window';   // Must be unique for each window
@@ -89,20 +95,6 @@ const
     KeyInstances       = 'NumberOfInstances';
     SectionDnsNames    = 'DnsNames';
     KeyDnsName         = 'Item';
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TBatchDnsLookupForm.WndProc(var AMsg: TMessage);

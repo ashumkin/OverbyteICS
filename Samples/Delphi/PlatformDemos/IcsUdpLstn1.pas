@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Copyright:    You can use this software freely, at your own risks
 Creation:     April 4, 1997
-Version:      2.04
+Version:      8.00
 Object:       Demo program to show how to use TWSocket object to listen
               UDP messages from the network. Use UDPSend or any other
               program to send UDP messages.
@@ -47,6 +47,8 @@ Sep 27, 1997 Updated for TWSocket changes
 Dec 12, 1998 V2.02 Added icomming IP and port number display
 Mar 07, 1999 V2.03 Corrected compatibility bug with Delphi 1
 Jan 11, 2004 V2.04 Beautified code. Removed FormPos dependency.
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsUdpLstn1;
@@ -55,6 +57,7 @@ unit IcsUdpLstn1;
 
 interface
 
+{$I OverbyteIcsDefs.inc}
 {$IF CompilerVersion < 23}
   {$MESSAGE FATAL 'This project requires Delphi or RAD Studio XE2 or better'};
 {$IFEND}
@@ -70,16 +73,16 @@ uses
   Ics.Posix.WinTypes,
   Posix.SysSocket,
   Posix.NetInetIn,
-{$ENDIF} 
+{$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Platform, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit,
   OverbyteIcsIniFiles, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 
 const
-  UdpLstnVersion     = 204;
-  CopyRight : String = ' UdpLstn (c) 1997-2012 F. Piette V2.04 ';
+  UdpLstnVersion     = 800;
+  CopyRight : String = ' UdpLstn (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TMainForm = class(TForm)
@@ -114,7 +117,7 @@ implementation
 {$R *.fmx}
 
 uses
-    OverbyteIcsUtils;
+    OverbyteIcsUtils, DemoUtils;
     
 const
     SectionWindow = 'MainForm';
@@ -125,20 +128,6 @@ const
     SectionData   = 'Data';
     KeyPort       = 'Port';
     KeySender     = 'Sender';
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}

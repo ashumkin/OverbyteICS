@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       How to use TSmtpCli component
 Creation:     09 october 1997
-Version:      6.10
+Version:      8.00
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -64,7 +64,7 @@ Oct 29, 2006  V6.01 Fixed memory leak in PrepareEMail
               Added D2006 memory leak detection
 Nov 05, 2006  V6.02 Fixed typo error in AuthComboBox. Added NTLM.
 Apr 25, 2008  V6.03 A.Garrels made some changes to prepare the code for Unicode.
-              Added button "Send To File" and assigned event OnAttachContentTypeEh.  
+              Added button "Send To File" and assigned event OnAttachContentTypeEh.
 Jul 23, 2008  V6.04 A. Garrels changed code in OnGetDate event handler to prepare
               code for Unicode.
 Aug 03, 2008  V6.05 A. Garrels changed code in OnGetDate event handler to prepare
@@ -76,6 +76,8 @@ May 17, 2009  V6.08 A.Garrels added correct casts to PAnsiChar in SmtpClientHead
 Feb 15, 2011  V6.09 Arno added proxy demo.
 Mar 01, 2011  V6.10 Arno enable/disable the proxy-controls depending on proxy
               setting.
+May 2012 - V8.00 - Arno converted demo for FireMonkey cross platform Mac
+                   OS X support, now XE2 and later only uising FMX components
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit IcsMailSnd1;
@@ -88,6 +90,7 @@ unit IcsMailSnd1;
 {$WARN SYMBOL_PLATFORM   OFF}
 {$WARN SYMBOL_LIBRARY    OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
+{$I OverbyteIcsDefs.inc}
 
 interface
 
@@ -105,7 +108,7 @@ uses
   Posix.Unistd, // Removes hint: Inline function has not been expanded
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Platform, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit, FMX.ListBox, FMX.TabControl,
   OverbyteIcsUtils,
   OverbyteIcsIniFiles,
@@ -115,8 +118,8 @@ uses
   OverbyteIcsSmtpProt, Ics.Fmx.OverbyteIcsCharsetComboBox;
 
 const
-    SmtpTestVersion    = 6.09;
-    CopyRight : String = ' MailSnd (c) 1997-2011 F. Piette V6.09 ';
+    SmtpTestVersion    = 8.00;
+    CopyRight : String = ' MailSnd (c) 1997-2012 F. Piette V8.00 ';
 
 type
   TSmtpTestForm = class(TForm)
@@ -258,7 +261,7 @@ implementation
 {$R *.FMX}
 
 uses
-    TypInfo;
+    DemoUtils, TypInfo;
 
 const
     SectionData       = 'Data';
@@ -299,20 +302,6 @@ const
     KeyProxyHttpAuth  = 'ProxyHttpAuth';
     KeyProxyUser      = 'ProxyUser';
     KeyProxyPassword  = 'ProxyPassword';
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenWidth: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.X);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function ScreenHeight: Integer;
-begin
-    Result := Trunc(Platform.GetScreenSize.Y);
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Display a message in display memo box, making sure we don't overflow it.  }
