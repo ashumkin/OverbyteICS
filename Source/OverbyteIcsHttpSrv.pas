@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      8.02
+Version:      8.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -364,6 +364,8 @@ Jul 11, 2012 V8.01 Angus - added new THttpConnectionState of hcSendData for GET/
                    we don't start a new request if extra blank lines sent after header
 Jul 23, 2012 V8.02 Angus - added TCustomSslHttpServer to allow descendents (TSslHttpAppSrv)
                    added SslEnable property so SSL can be disabled, defaults to TRUE
+Aug 21, 2012 V8.03 Tobias Rapp fixed a problem in THttpRangeStream with partial GET
+                      requests returning less than requested
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -463,8 +465,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-    THttpServerVersion = 802;
-    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.02 ';
+    THttpServerVersion = 803;
+    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.03 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
     MinSndBlkSize = 8192 ;  { V7.40 }
@@ -6362,9 +6364,12 @@ begin
                 ActSize   := min(Count - DataRead, Rec.Size - (ActOffset));
                 Rec.Stream.Position := ActOffset + Rec.StartPos;
                 SizeRead := Rec.Stream.Read(Pointer(DWORD(@Buffer) + DWORD(DataRead))^, ActSize);
-                Inc(Index);
                 Inc(DataRead, SizeRead);
                 Inc(FPosition, SizeRead);
+                if (Rec.Offset + Rec.Size) > FPosition then  { V8.03 }
+                    Break
+                else
+                    Inc(Index);
             end;
             Result := DataRead;
             Exit;
