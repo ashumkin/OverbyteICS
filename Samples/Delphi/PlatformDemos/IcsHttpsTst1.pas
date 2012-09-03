@@ -310,7 +310,6 @@ begin
     IcsNameThreadForDebugging('Main');
     FIniFileName := GetIcsIniFileName;
     FTrustedList := TStringList.Create;
-    FClientCerts := nil;
     SslHttpCli1.CtrlSocket.OnBgException := BackgroundException;
     FormShow(Self);
 end;
@@ -319,9 +318,8 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpsTstForm.FormDestroy(Sender: TObject);
 begin
-    if Assigned(FTrustedList) then
-        FreeAndNil(FTrustedList);
-    FreeAndNil(FClientCerts);
+    FTrustedList.Free;
+    FClientCerts.Free;
     if FNotifyWindow <> 0 then
         DeallocateHWND(FNotifyWindow);
 {$IFDEF POSIX}
@@ -659,13 +657,13 @@ begin
         Buffer := Buffer + IntToStr(Duration) + ' milliseconds'
     else begin
         Buffer := Buffer + IntToStr(Duration div 1000) + ' seconds';
-    if FStopTime <> FStartTime then begin
-        if FByteCount > 32767 then
+        if FStopTime <> FStartTime then begin
+            if FByteCount > 32767 then
                 BytesSec := 1000 * (FByteCount div Duration)
-        else
+            else
                 BytesSec := (1000 * FByteCount) div Duration;
-        Buffer := Buffer + ' (' + IntToStr(BytesSec) + ' Bytes/sec)';
-    end;
+            Buffer := Buffer + ' (' + IntToStr(BytesSec) + ' Bytes/sec)';
+        end;
     end;
     Display('! ' + Buffer);
 end;

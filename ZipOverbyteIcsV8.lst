@@ -75,6 +75,26 @@ Packages\IcsVclDXE2Run.dproj
 Packages\IcsVclDXE2Design.dpk
 Packages\IcsVclDXE2Design.dproj
 
+Packages\OverbyteIcsDXe3Run.dproj
+Packages\OverbyteIcsDXe3Run.dpk
+Packages\OverbyteIcsDXe3Design.dproj
+Packages\OverbyteIcsDXe3Design.dpk
+
+Packages\IcsCommonDXE3Run.dpk
+Packages\IcsCommonDXE3Run.dproj
+Packages\IcsCommonDXE3Design.dpk
+Packages\IcsCommonDXE3Design.dproj
+
+Packages\IcsFmxDXE3Run.dpk
+Packages\IcsFmxDXE3Run.dproj
+Packages\IcsFmxDXE3Design.dpk
+Packages\IcsFmxDXE3Design.dproj
+
+Packages\IcsVclDXE3Run.dpk
+Packages\IcsVclDXE3Run.dproj
+Packages\IcsVclDXE3Design.dpk
+Packages\IcsVclDXE3Design.dproj
+
 Packages\OverbyteIcsCB2006Run.bdsproj
 Packages\OverbyteIcsCB2006Run.cpp
 Packages\OverbyteIcsCB2006Run.res
@@ -129,6 +149,21 @@ Packages\IcsVclCBXE2Run.cbproj
 Packages\IcsVclCBXE2Run.cpp
 Packages\IcsVclCBXE2Design.cbproj
 Packages\IcsVclCBXE2Design.cpp
+
+Packages\IcsCommonCBXE3Run.cbproj
+Packages\IcsCommonCBXE3Run.cpp
+Packages\IcsCommonCBXE3Design.cbproj
+Packages\IcsCommonCBXE3Design.cpp
+
+Packages\IcsFmxCBXE3Run.cbproj
+Packages\IcsFmxCBXE3Run.cpp
+Packages\IcsFmxCBXE3Design.cbproj
+Packages\IcsFmxCBXE3Design.cpp
+
+Packages\IcsVclCBXE3Run.cbproj
+Packages\IcsVclCBXE3Run.cpp
+Packages\IcsVclCBXE3Design.cbproj
+Packages\IcsVclCBXE3Design.cpp
 
 Packages\OverbyteIcsProductIcon.res
 
@@ -1384,7 +1419,6 @@ Samples\Delphi\PlatformDemos\IcsWebServ.dpr
 Samples\Delphi\PlatformDemos\IcsWebServ.dproj
 Samples\Delphi\PlatformDemos\IcsWebServ1.fmx
 Samples\Delphi\PlatformDemos\IcsWebServ1.pas
-
 
 Samples\Delphi\SocketDemos\SocketDemos.bpg
 Samples\Delphi\SocketDemos\Dcu\dir.txt

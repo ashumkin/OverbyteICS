@@ -2,6 +2,8 @@ unit Ics.Fmx.OverbyteIcsCharsetComboBox;
 
 interface
 
+{$I Include\OverbyteIcsDefs.inc}
+
 uses
   System.Classes, FMX.Types, FMX.ListBox,
   OverbyteIcsCharsetUtils;
@@ -20,7 +22,11 @@ type
     procedure SetCharset(const Value: String); virtual;
     procedure SetIncludeList(const Value: TMimeCharsets); virtual;
     procedure SetUserFriendly(const Value: Boolean); virtual;
+  {$IFDEF COMPILER17_UP}
+    procedure DoChange; override;
+  {$ELSE}
     procedure Change; override;
+  {$ENDIF}
     //procedure TriggerChange; virtual;
     procedure Click; override;
   public
@@ -43,10 +49,18 @@ implementation
 
 procedure TIcsCharsetComboBox.ListBoxMouseLeave(Sender: TObject);
 begin
+  {$IFDEF COMPILER17_UP}
+    DoChange;
+  {$ELSE}
     Change;
+  {$ENDIF}
 end;
 
+{$IFDEF COMPILER17_UP}
+procedure TIcsCharsetComboBox.DoChange;
+{$ELSE}
 procedure TIcsCharsetComboBox.Change;
+{$ENDIF}
 var
     ACharSet: String;
 begin
@@ -54,7 +68,7 @@ begin
     if FCharset <> ACharSet then
     begin
         FCharset := ACharSet;
-        inherited Change;
+        inherited;
     end;
 end;
 
@@ -199,12 +213,18 @@ begin
 end;
 
 procedure TIcsCharsetComboBox.SetUserFriendly(const Value: Boolean);
+var
+    LOldCharset: string;
 begin
     if Value <> FUserFriendly then
     begin
         FUserFriendly := Value;
         PopulateItems;
-        SetCharSet(FCharSet);
+        LOldCharset := FCharSet;
+      {$IFDEF COMPILER17_UP}
+        FCharSet := '';
+      {$ENDIF}
+        SetCharSet(LOldCharset);
     end;
 end;
 

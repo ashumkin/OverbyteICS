@@ -1,9 +1,9 @@
-ICS - Internet Component Suite - V8 Beta - Delphi 7 to RAD Studio XE2
+ICS - Internet Component Suite - V8 Beta - Delphi 7 to RAD Studio XE3
 =====================================================================
 (Aka FPIETTE's Components)
 
 
-Revised: August 15, 2012
+Revised: August 18, 2012
 http://www.overbyte.be/
 
 Table of content:
@@ -162,7 +162,7 @@ This is the new V8 sub-directory layout:
       |
 	\$(Platform)                      Win32 / Win64 / OSX32
         |
-	  \<delphi_version>               D7..XE2 includes .dcu and .dfm files for Delphi
+	  \<delphi_version>               D7..XE3 includes .dcu and .dfm files for Delphi
 	                                  and .obj and .hpp files for C++ Builder
 
 .\Samples                             Delphi Win32/Win64 common source for all demos
@@ -239,13 +239,16 @@ Delphi 2010      :  D2010Install.groupproj
 Delphi XE        :  DXeInstall.groupproj
 Delphi XE2       :  DXe2Install.groupproj // VCL only, no FireMonkey components
 Delphi XE2       :  DXe2InstallVclFmx.groupproj // Both VCL and FireMonkey components
+Delphi XE3       :  DXe3Install.groupproj // VCL only, no FireMonkey components
+Delphi XE3       :  DXe3InstallVclFmx.groupproj // Both VCL and FireMonkey components
 C++ Builder 2006 :  CB2006Install.bdsgroup
 C++ Builder 2007 :  CB2007Install.groupproj
 C++ Builder 2009 :  CB2009Install.groupproj
 C++ Builder 2010 :  CB2010Install.groupproj
 C++ Builder XE   :  CBXeInstall.groupproj
 C++ Builder XE2  :  CBXe2Install.groupproj // VCL only no FireMonkey components
-
+C++ Builder XE2  :  CBXe2InstallVclFmx.groupproj // Both VCL and FireMonkey components
+C++ Builder XE3  :  CBXe3InstallVclFmx.groupproj // Both VCL and FireMonkey components
 
 1 - Do a File/Open Project, navigate to the Install directory, select the correct
 file and open it. The project manager view should now display two package
@@ -261,13 +264,18 @@ After a few seconds, you should have a dialog box telling you the package has
 been installed with a bunch of new components registered in the Tool Palette
 under "Overbyte ICS" and "Overbyte ICS SSL". Then do a "Save All" and a "Close All".
 
+4 - One package is installed, called 'Overbyte ICS Design-Time Package for Delphi xxx'.
+
+5 - Various directories under .\Samples\delphi\ include samples that illustrate use
+of all the ICS components, see later.
+
 
 FIREMONKEY CROSS PLATFORM PACKAGES:
 
 1 - For XE2 and later, DXe2Install installs VCL components only, while
 DXe2InstallVclFmx also installs FireMonkey cross platform components (three
-run time packages). In order to use this feature first uninstall the old VCL
-design-time package for XE2.
+run time packages). In order to use this feature first uninstall the old
+design-time package.
 
 2 = Build all three run-time packages for all available platforms (32-bit
 and 64-bit Windows and Mac OS X) in the order they are listed in project manager.
@@ -275,12 +283,20 @@ and 64-bit Windows and Mac OS X) in the order they are listed in project manager
 3 - Next build and install the three design-time packages in the order they are
 listed in project manager.
 
+4 - Three packages are installed, called:
+    'Overbyte ICS Common Design-Time Package for Delphi xxx'
+    'Overbyte ICS FMX Design-Time Package for Delphi xxx'
+    'Overbyte ICS VCL Design-Time Package for Delphi xxx'
+
 Note that the new packaging is still beta/alpha, both package names and included
 units might change in a future beta drop. The old VCL packages are still there
 however they do no longer support FireMonkey and of course only one set of
 packages can be installed in the IDE at the same time, if you want both VCL
 and FMX install DXe2InstallVclFmx.groupproj only. Currently the XE2 package
 cache is buggy and should be disabled by adding the -nocache parameter.
+
+5 - The .\Samples\delphi\PlatformDemos\ folder contains FireMonkey sample
+projects that may all be built with FireMonkey for Mac OS X (and Windows).
 
 
 ALTERNATE INSTALLATION USING THE PACKAGE PROJECT FILES:
@@ -290,7 +306,7 @@ For each Delphi and C++ Builder version two package project files exist in the
 The run-time file name contains the "Run" suffix. The design-time file name
 contains the "Design" suffix.
 
-PACKAGE PROJECT FILE NAMES:
+PACKAGE PROJECT FILE NAMES - VCL:
 Delphi 7         :  OverbyteIcsD7Run.dpk, OverbyteIcsD7Design.dpk
 Delphi 2006      :  OverbyteIcsD2006Run.bdsproj, OverbyteIcsD2006Design.bdsproj
 Delphi 2007      :  OverbyteIcsD2007Run.dproj, OverbyteIcsD2007Design.dproj
@@ -298,12 +314,29 @@ Delphi 2009      :  OverbyteIcsD2009Run.dproj, OverbyteIcsD2009Design.dproj
 Delphi 2010      :  OverbyteIcsD2010Run.dproj, OverbyteIcsD2010Design.dproj
 Delphi XE        :  OverbyteIcsDXeRun.dproj, OverbyteIcsDXeDesign.dproj
 Delphi XE2       :  OverbyteIcsDXe2Run.dproj, OverbyteIcsDXe2Design.dproj
+Delphi XE3       :  OverbyteIcsDXe3Run.dproj, OverbyteIcsDXe3Design.dproj
 C++ Builder 2006 :  OverbyteIcsCB2006Run.bdsproj, OverbyteIcsCB2006Design.bdsproj
 C++ Builder 2007 :  OverbyteIcsCB2007Run.cbproj, OverbyteIcsCB2007Design.cbproj
 C++ Builder 2009 :  OverbyteIcsCB2009Run.cbproj, OverbyteIcsCB2009Design.cbproj
 C++ Builder 2010 :  OverbyteIcsCB2010Run.cbproj, OverbyteIcsCB2010Design.cbproj
 C++ Builder XE   :  OverbyteIcsCBXeRun.cbproj, OverbyteIcsCBXeDesign.cbproj
 C++ Builder XE2  :  OverbyteIcsCBXe2Run.cbproj, OverbyteIcsCBXe2Design.cbproj
+C++ Builder XE3  :  OverbyteIcsCBXe3Run.cbproj, OverbyteIcsCBXe3Design.cbproj
+
+PACKAGE PROJECT FILE NAMES - FireMonkey and VCL:
+Delphi XE2 FMX/VCL      :  IcsCommonDXe2Run.dproj, IcsCommonDXe2Design.dproj
+Delphi XE2 VCL          :  IcsVclDXe2Run.dproj, IcsVclDXe2Design.dproj
+Delphi XE2 FMX          :  IcsFmxDXe2Run.dproj, IcsFmxDXe2Design.dproj
+Delphi XE3 FMX/VCL      :  IcsCommonDXe3Run.dproj, IcsCommonDXe3Design.dproj
+Delphi XE3 VCL          :  IcsVclDXe3Run.dproj, IcsVclDXe3Design.dproj
+Delphi XE3 FMX          :  IcsFmxDXe3Run.dproj, IcsFmxDXe3Design.dproj
+C++ Builder XE2 FMX/VCL :  IcsCommonCBXe2Run.dproj, IcsCommonDXe2Design.dproj
+C++ Builder XE2 VCL     :  IcsVclCBXe2Run.dproj, IcsVclCBXe2Design.dproj
+C++ Builder XE2 FMX     :  IcsFmxCBXe2Run.dproj, IcsFmxCBXe2Design.dproj
+C++ Builder XE3 FMX/VCL :  IcsCommonCBXe3Run.dproj, IcsCommonDXe3Design.dproj
+C++ Builder XE3 VCL     :  IcsVclCBXe3Run.dproj, IcsVclCBXe3Design.dproj
+C++ Builder XE3 FMX     :  IcsFmxCBXe3Run.dproj, IcsFmxCBXe3Design.dproj
+
 
 1 - Open and Build the run-time package project (do not install!).
 
@@ -312,9 +345,9 @@ C++ Builder XE2  :  OverbyteIcsCBXe2Run.cbproj, OverbyteIcsCBXe2Design.cbproj
 and open it. Then in the project manager view, right-click on the package,
 then click on either the Build or Install button.)
 
-3 - For Delphi XE2, a 64-bit run-time package can be built by changing the
-package target platform to 64-bit Windows. This has the same name as the 32-bit
-package, so a different package output directory needs to be specified in
+3 - For Delphi XE2 and later, a 64-bit run-time package can be built by changing
+the package target platform to 64-bit Windows. This has the same name as the
+32-bit package, so a different package output directory needs to be specified in
 Tools / Options / Delphi Options for 64-bit Windows.
 
 After a few seconds, you should have a dialog box telling you the package has
@@ -331,8 +364,8 @@ If not, add it manually. It is not mandatory to add .\Lib to the global Delphi p
 but it will be much easier for you because otherwise you'll have to add it to each
 project.
 
-DELPHI XE2/WIN32 and XE2/WIN64: Similar to above, but the Library path is specified
-separately for 32-bit and 64-bit Windows Platforms.
+DELPHI XE2/WIN32, XE3/WIN32, XE2/WIN64 and XE3/WIN64: Similar to above, but the
+Library path is specified separately for 32-bit and 64-bit Windows Platforms.
 
 DELPHI 7: Add VC32 directory path to your library path (Tools menu / Environment
 Options / Library / Library Path. Add .\Lib\Debug\Win32\D7 path at the end of the
@@ -350,7 +383,7 @@ opened in all versions of Delphi.
 .\Samples\delphi\MailNewsDemos\MailNewsDemos.bpg
 .\Samples\delphi\MiscDemos\MiscDemos.bpg
 .\Samples\delphi\OtherDemos\OtherDemos.bpg
-.\Samples\delphi\PlatformDemos
+.\Samples\delphi\PlatformDemos\XSamples.groupproj
 .\Samples\delphi\SocketDemos\SocketDemos.bpg
 .\Samples\delphi\sslinternet\SslDemos.bpg
 .\Samples\delphi\WebDemos\WebDemos.bpg
@@ -381,7 +414,7 @@ each one after the other and compile them. For each project, do file/open
 and select the dpr file in the internet directory. Then Project/Build All.
 
 
-C++ BUILDER 2006, 2007, 2009, 2010, XE, XE2:
+C++ BUILDER 2006, 2007, 2009, 2010, XE, XE2, XE3:
 
 Follow the installation procedure described for Delphi 2006. Just change
 the project group and package name: use CB2006, CBXe, etc, see above.
@@ -645,8 +678,9 @@ Delphi Win32/Win64 DNS, Ping, SNMP, Syslog sample applications
 > OverbyteIcsSysLogClientDemo.dpr Demo for SysLog client component
 > OverbyteIcsSysLogServerDemo.dpr Demo for SysLog server component
 
-Delphi FireMonkey and cross-platform samples (Delphi XE2+)
-----------------------------------------------------------
+Delphi FireMonkey cross-platform samples (Delphi XE2 and later)
+---------------------------------------------------------------
+All these samples may be built for Mac OS X (and Windows).
 .\Samples\delphi\PlatformDemos\XSamples.groupproj
 > IcsCliDemo.dproj              Example of client for SRVDEMO, IPV4 only
 > IcsTcpSrvIPv6.dproj           Basic server without client forms, event-driven, IPv4/IPV6
@@ -819,6 +853,61 @@ convert existing certificates in the Windows Certificate Store
 to PEM format understood by OpenSSL and to examine PEM certificates.
 
 You will find more information in IcsSslHowTo.txt file.
+
+
+Commercial SSL certificates:
+To avoid browsers giving certificate warning messages, you need to purchase
+a SSL certificate from one of numerous companies, such as Verisign, Thawte
+GeoTrust or RapidSSL.  Prices vary dramatically and are often cheaper from
+resellers such as Servertastic than from the main issuing companies.
+
+The main purpose of an SSL certificate is to prove the identity of the owner
+of a web site, ideally the company behind the web site.  That usually requires
+paper work identifying the company is submitted and also proof the domain being
+protected is owned by that company, it usually also involves telephone calls.
+Such certificates are usually called fully validated and cost $120 or more each
+year for a single domain, ie secure.website.com.  Wild card certificates cost
+$350 or more, but protect multiple sub-domains, ie web.website.com as well.
+Extended Validation certificates cost from $450 a year, and show the company name
+in green in the address bar.  For testing and simple use, instant issued SSL
+certificates cost from $15 per year and protect a single domain only with automated
+checking reducing the cost (an email to admin@website.com to prove you receive
+email for the domain, perhaps a telephone call as well).  Note these instant
+certificates do not include a company name.
+
+To buy and install an SSL certificate for use with ICS and OpenSSL follow these
+steps:
+
+1 - Build the SSL demo project OverbyteIcsPemTool. Take Extras, Create Certificate
+Requests, fill in the various fields (check other certificates if uncertain, the
+Common Name is the domain to protect, ie secure.website.com and E-Mail should be
+an email address at the than domain, ideally admin or administrator, 2048 bits.
+Click Create, and specify two file names, first for the private key (mykey.pem)
+then the certificate request file (myreq.pem).  The request can also be done using
+OpenSSL command line arguments, or you can build it into your own application.
+
+2 - Choose you SSL supplier and certificate type, at some point during the ordering
+process you will be asked for the certificate request, so open the PEM file you
+saved with a text editor and copy the base64 encoded block starting
+-BEGIN CERTIFICATE REQUEST- into the web form.  It should be decoded and displayed
+so you check it's correct.  The private key is not needed for the certificate to
+be issued.  At this point the validation process starts as mentioned above, which
+might take hours or weeks to complete.
+
+3 - Eventually the SSL certificate should be issued, either by email or made
+available to download from the supplier's web site.  It should be in X.509 format
+in a base64 encoded block starting -BEGIN CERTIFICATE- which should be saved as
+a PEM file (mycert.pem).  There should also be an Intermediate CA certificate,
+with which your new certificate was signed, which should also be saved as a file
+(mycacert.pem). This may also be downloadable from the supplier as a bundle file
+and should be common to any certificates they issue, ie RapidSSL_CA_bundle.pem.
+
+4 - The OverbyteIcsPemTool tool has a View PEM button that allows examination of
+your new PEM files.
+
+5 - The three PEM files now need to be attached to the SslContext component in
+your application, with properties SslCertFile, SslPrivKeyFile and SslCAFile.
+The request certificate file has no further use.
 
 
 Support:

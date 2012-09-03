@@ -85,6 +85,9 @@ uses
   Ics.Posix.Messages,
 {$ENDIF}
   SysUtils, Classes, SyncObjs, SysConst,
+{$IFDEF COMPILER17_UP}
+  System.Types,
+{$ENDIF}
 {$IFDEF FMX}
   Ics.Fmx.OverbyteIcsWndControl,
 {$ELSE}

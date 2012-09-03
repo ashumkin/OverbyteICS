@@ -354,7 +354,7 @@ var
   GUnitFinalized: Boolean; { V1.09 }
 
   // Is used to assert if we have been initialized
-  GUnitInitialized: Boolean; { V1.18 }
+  GUnitInitialized: Integer; { V1.18 }
 
 implementation
 
@@ -395,10 +395,9 @@ end;
 procedure InitializeGlobalHandler;   { V1.18 }
 begin
     // Check if already initialized
-    if GUnitInitialized then
+    if InterlockedExchange(GUnitInitialized, 1) <> 0 then
         Exit;
     // Not yet initialized, do it right now V1.18
-    GUnitInitialized := TRUE;
     GWndHandlerPool  := TIcsWndHandlerPool.Create;
     InitializeCriticalSection(GWndHandlerCritSect);
 end;

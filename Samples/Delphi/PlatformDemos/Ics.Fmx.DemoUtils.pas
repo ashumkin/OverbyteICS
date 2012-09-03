@@ -14,15 +14,34 @@ implementation
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ScreenHeight : Integer;
+{$IFDEF COMPILER17_UP}
+var
+    ScreenService : IFMXScreenService;
 begin
+    Result := 480;
+    if TPlatformServices.Current.SupportsPlatformService(IFMXScreenService,
+        IInterface(ScreenService)) then
+    Result := Trunc(ScreenService.GetScreenSize.Y);
+{$ELSE}
     Result := Trunc(Platform.GetScreenSize.Y);
+{$ENDIF}
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function ScreenWidth : Integer;
+{$IFDEF COMPILER17_UP}
+var
+    ScreenService : IFMXScreenService;
+begin
+    Result := 640;
+    if TPlatformServices.Current.SupportsPlatformService(IFMXScreenService,
+        IInterface(ScreenService)) then
+    Result := Trunc(ScreenService.GetScreenSize.X);
+{$ELSE}
 begin
     Result := Trunc(Platform.GetScreenSize.X);
+{$ENDIF}
 end;
 
 

@@ -57,7 +57,7 @@ uses
   {$ENDIF}
     Classes, SysUtils,
   {$IFDEF FMX}
-    System.Types, System.UITypes, FMX.Types,
+    System.Types, System.UITypes, System.UIConsts, FMX.Types,
   {$ELSE}
     Graphics, Jpeg,
   {$ENDIF}
