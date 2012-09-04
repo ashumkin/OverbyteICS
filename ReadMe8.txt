@@ -3,7 +3,7 @@ ICS - Internet Component Suite - V8 Beta - Delphi 7 to RAD Studio XE3
 (Aka FPIETTE's Components)
 
 
-Revised: August 18, 2012
+Revised: September 4, 2012
 http://www.overbyte.be/
 
 Table of content:

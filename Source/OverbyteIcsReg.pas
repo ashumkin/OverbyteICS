@@ -7,7 +7,8 @@ unit OverbyteIcsReg;
 Feb 15, 2012 Angus - added OverbyteIcsMimeUtils
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-Jun 2012 - V8.00 - Angus added SysLog and SNMP components VCL only for now 
+Jun 2012 - V8.00 - Angus added SysLog and SNMP components VCL only for now
+Jul 2012   V8.02   Angus added TSslHttpAppSrv
 }
 
 
@@ -201,7 +202,7 @@ begin
       TSslWSocket, TSslWSocketServer,
       TSslContext,
       TSslFtpClient, TSslFtpServer,
-      TSslHttpCli, TSslHttpServer,
+      TSslHttpCli, TSslHttpServer, TSslHttpAppSrv,
       TSslPop3Cli,
       TSslSmtpCli, TSslHtmlSmtpCli,
       TSslNntpCli,
