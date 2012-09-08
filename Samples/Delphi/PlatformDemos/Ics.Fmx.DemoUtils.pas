@@ -23,6 +23,7 @@ begin
         IInterface(ScreenService)) then
     Result := Trunc(ScreenService.GetScreenSize.Y);
 {$ELSE}
+begin
     Result := Trunc(Platform.GetScreenSize.Y);
 {$ENDIF}
 end;

@@ -113,21 +113,21 @@
 			<DCCReference Include="IcsWebAppServerMain.pas">
 				<Form>WebAppSrvForm</Form>
 			</DCCReference>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerConfig.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerCounterView.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerDataModule.pas">
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerConfig.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerCounterView.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerDataModule.pas">
 				<Form>WebAppSrvDataModule</Form>
 				<DesignClass>TDataModule</DesignClass>
 			</DCCReference>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerHead.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerHelloWorld.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerHomePage.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerHttpHandlerBase.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerLogin.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerSessionData.pas"/>
-			<DCCReference Include="..\Internet\OverbyteIcsWebAppServerUrlDefs.pas"/>
-			<DCCReference Include="..\Internet\Ics.Fmx.OverbyteIcsWebAppServerCounter.pas"/>
-			<DCCReference Include="..\Internet\Ics.Fmx.OverbyteIcsWebAppServerMailer.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerHead.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerHelloWorld.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerHomePage.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerHttpHandlerBase.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerLogin.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerSessionData.pas"/>
+			<DCCReference Include="..\WebDemos\OverbyteIcsWebAppServerUrlDefs.pas"/>
+			<DCCReference Include="..\WebDemos\Ics.Fmx.OverbyteIcsWebAppServerCounter.pas"/>
+			<DCCReference Include="..\WebDemos\Ics.Fmx.OverbyteIcsWebAppServerMailer.pas"/>
 			<DCCReference Include="..\..\..\Source\OverbyteIcsFormDataDecoder.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
