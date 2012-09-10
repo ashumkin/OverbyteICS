@@ -1,7 +1,7 @@
 program OverbyteIcsClient7;
 
-{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
-{$R 'OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
+{$R '..\..\OverbyteIcsCommonVersion.res'  '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
 
 uses
   Forms, 

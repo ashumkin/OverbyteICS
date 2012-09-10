@@ -51,7 +51,7 @@ May 27, 2009 V1.03 A. Garrels Delphi 2009 support.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 program OverbyteIcsConSmtp;
 
-{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsCommonVersion.res'  '..\..\OverbyteIcsCommonVersion.rc'}
 
 {$I OVERBYTEICSDEFS.INC}
 {$APPTYPE CONSOLE}

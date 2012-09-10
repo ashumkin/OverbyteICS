@@ -49,7 +49,7 @@ Oct 11, 2010 V6.01 A. Garrels fixed a Unicode bug.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 program OverbyteIcsConHttp;
 
-{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsCommonVersion.res'  '..\..\OverbyteIcsCommonVersion.rc'}
 
 {$I OVERBYTEICSDEFS.INC}
 {$IFDEF VER80}

@@ -1,7 +1,7 @@
 program OverbyteIcsFtpThrd;
 
-{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
-{$R 'OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
+{$R '..\..\OverbyteIcsCommonVersion.res'  '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
 
 uses
   Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',

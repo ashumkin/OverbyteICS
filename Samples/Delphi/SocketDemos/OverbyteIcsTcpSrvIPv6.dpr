@@ -1,7 +1,7 @@
 program OverbyteIcsTcpSrvIPv6;
 
-{$R 'OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
-{$R 'OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
+{$R '..\..\OverbyteIcsCommonVersion.res'  '..\..\OverbyteIcsCommonVersion.rc'}
 
 uses
   Forms, 
