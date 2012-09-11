@@ -359,6 +359,8 @@ Install\D2010Install.groupproj
 Install\DXeInstall.groupproj
 Install\DXe2Install.groupproj
 Install\DXe2InstallVclFmx.groupproj
+Install\DXe3Install.groupproj
+Install\DXe3InstallVclFmx.groupproj
 
 Install\CB2006Install.bdsgroup
 Install\CB2007Install.groupproj
@@ -367,6 +369,7 @@ Install\CB2010Install.groupproj
 Install\CBXeInstall.groupproj
 Install\CBXe2Install.groupproj
 Install\CBXe2InstallVclFmx.groupproj
+Install\CBXe3InstallVclFmx.groupproj
 
 Samples\OverbyteIcsCommonVersion.rc
 Samples\OverbyteIcsCommonVersion.res
