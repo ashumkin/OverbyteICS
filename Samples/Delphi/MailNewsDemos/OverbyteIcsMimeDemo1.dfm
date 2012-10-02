@@ -1,6 +1,6 @@
 object MimeDecodeForm: TMimeDecodeForm
-  Left = 69
-  Top = 44
+  Left = 0
+  Top = 41
   Caption = 'MimeDecodeForm'
   ClientHeight = 462
   ClientWidth = 719
@@ -11,6 +11,7 @@ object MimeDecodeForm: TMimeDecodeForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = True
+  Position = poDesigned
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
@@ -20,7 +21,7 @@ object MimeDecodeForm: TMimeDecodeForm
     Left = 0
     Top = 0
     Width = 719
-    Height = 65
+    Height = 101
     Align = alTop
     TabOrder = 0
     object Label1: TLabel
@@ -128,7 +129,7 @@ object MimeDecodeForm: TMimeDecodeForm
     end
     object IgnoreBlankParts: TCheckBox
       Left = 602
-      Top = 10
+      Top = 12
       Width = 109
       Height = 17
       Caption = 'Ignore Blank Parts'
@@ -193,18 +194,18 @@ object MimeDecodeForm: TMimeDecodeForm
     OnInlineDecodeBegin = MimeDecode1InlineDecodeBegin
     OnInlineDecodeLine = MimeDecode1InlineDecodeLine
     OnInlineDecodeEnd = MimeDecode1InlineDecodeEnd
-    Left = 56
-    Top = 80
+    Left = 51
+    Top = 125
   end
   object MimeDecodeEx1: TMimeDecodeEx
     MaxParts = 10
     SkipBlankParts = False
-    Left = 132
-    Top = 83
+    Left = 107
+    Top = 123
   end
   object MimeTypesList1: TMimeTypesList
     LoadOSonDemand = True
-    MimeTypesFile = '/etc/apache2/mime.types'
+    MimeTypesFile = '/etc/mime.types'
     DefaultTypes.Strings = (
       '.htm=text/html'
       '.html=text/html'

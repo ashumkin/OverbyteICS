@@ -7,7 +7,7 @@ Object:       This program is a demo for TMimeDecode component.
               decode messages received with a POP3 component.
               MIME is described in RFC-1521. headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      7.22
+Version:      8.00
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -62,9 +62,10 @@ Dec 22, 2008  V7.20 Arno - Added workaround for error "incompatible parameter li
               in D2009. Added explicit string conversion in
               MimeDecode1InlineDecodeBegin to remove warning.
 Oct 9, 2009   V7.21 Angus - more content headers shown
-Feb 14, 2012  V7.22 Angus - test TMimeTypesList1 component
-
-
+Feb 14, 2012  V7.22 Angus - test TMimeTypesList component
+Oct 2, 2012   V8.00 Angus - restored missing buttons to form
+                            DecodeFileExButton uses ContentTypeGetExtn to display Reg Extn
+                            
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDemo1;
@@ -94,8 +95,8 @@ uses
   OverbyteIcsUtils, OverbyteIcsCharsetUtils;
 
 const
-  MimeDemoVersion    = 722;
-  CopyRight : String = ' MimeDemo (c) 1998-2012 F. Piette V7.22 ';
+  MimeDemoVersion    = 800;
+  CopyRight : String = ' MimeDemo (c) 1998-2012 F. Piette V8.00 ';
 
 type
 {$IFDEF USE_TNT}
@@ -582,6 +583,7 @@ end;
 procedure TMimeDecodeForm.DecodeFileExButtonClick(Sender: TObject);
 var
     I: integer;
+    CLSID: string;
 begin
     Display('MIME Decoding ' + FileEdit.Text);
     MimeDecodeEx1.MaxParts := 999 ;  // we want lots of parts
@@ -609,9 +611,12 @@ begin
                       ', Encoding: ' + String(PEncoding) +
                       ', Charset: '  + String(PCharset) +
                       ', ApplType: ' + String(PApplType) +
-                      ', Content Id: ' + String(PContentId));
+                      ', Content Id: ' + String(PContentId) +
+                      ', Reg Extn: ' + ContentTypeGetExtn (PContentType, CLSID)) ;    { V8.00 }
                  // the content of each part is in PartStream
                  // but we don't attempt to display it here, only the size
+                 // you can save to file, ie PartStream.SaveToFile (fname)
+                 // or load the stream into another component, ie HtmlViewer.LoadFromStream (PartStream, fname, ImgType)
             end;
         end;
         MimeDecodeEx1.Reset ;  // clear streams to free memory
