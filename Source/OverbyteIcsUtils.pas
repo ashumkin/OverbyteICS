@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      8.00
+Version:      8.01
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -123,6 +123,7 @@ Feb 29, 2012 V7.44 Arno added IcsRandomInt() and IcsCryptGenRandom(), see
 Apr 27, 2012 V7.45 Arno added IcsFileUtcModified().
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Oct 06, 2012 v8.01 Arno simplified TIcsIntegerList.IndexOf().
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -4899,18 +4900,8 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TIcsIntegerList.IndexOf(Item: Integer): Integer;
-var
-    I : Integer;
 begin
-    for I := 0 to FList.Count -1 do
-    begin
-        if Integer(FList[I]) = Item then
-        begin
-            Result := I;
-            Exit;
-        end;
-    end;
-    Result := -1;
+    Result := FList.IndexOf(Pointer(Item));
 end;
 
 
