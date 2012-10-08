@@ -3,7 +3,7 @@
 Author:       Maurizio Lotauro <Lotauro.Maurizio@dnet.it>
               Code donated to the ICS project
 Creation:     July 2005
-Version:      8.00
+Version:      8.01
 Description:  This unit contains the class used by THttpCli to handle the
               Accept-Encoding and Content-Encoding header fields.
               It also contains the THttpContentCoding class needed to implement
@@ -40,6 +40,7 @@ Jan 08, 2006 V1.01 Maurizio fixed GetCoding
 Mar 26, 2006 V6.00 New version 6 started
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Oct 8, 2012, V8.01 may be more than one encoding type specified, parse them
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -232,16 +233,24 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TContCodingsList.FindCoding(Coding: String): THttpContentCodingClass;
 var
-    I: Integer;
+    I, J: Integer;
+    EncList : TStringList;
 begin
-    for I := Count - 1 downto 0 do begin
-        if SameText(PContCoding(Items[I])^.ContClass.GetCoding,
-                    Coding) then begin
-            Result := PContCoding(Items[I])^.ContClass;
-            Exit;
+    EncList := TStringList.Create;   // V8.01 may be more than one encoding type specified
+    try
+        for I := Count - 1 downto 0 do begin
+            EncList.CommaText := PContCoding(Items[I])^.ContClass.GetCoding;  // ie 'gzip, deflate'
+            for J := 0 to EncList.Count - 1 do begin   // V8.01 test each type in turn
+                if SameText(EncList [J], Coding) then begin
+                    Result := PContCoding(Items[I])^.ContClass;
+                    Exit;
+                end;
+            end;
         end;
+        Result := nil;
+    finally
+        EncList.Free;
     end;
-    Result := nil;
 end;
 
 
@@ -624,7 +633,7 @@ begin
         Exit;
     EncList := TStringList.Create;
     try
-        EncList.CommaText := Encodings;
+        EncList.CommaText := Encodings;         // unsure why a server would report more than one encoding!!!
         for I := 0 to EncList.Count - 1 do begin
             AClass := GetContentCodings.FindCoding(EncList[I]);
             if AClass = nil then begin

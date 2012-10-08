@@ -84,6 +84,9 @@ begin
 {$IFDEF Ver230}
         'Delphi XE2'
 {$ENDIF}
+{$IFDEF Ver240}
+        'Delphi XE3'
+{$ENDIF}
 {$IFDEF LCL}
         'Lazarus ' + lcl_version
 {$ENDIF}

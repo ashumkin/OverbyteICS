@@ -54,6 +54,7 @@ object AboutBox: TAboutBox
       PrintMarginRight = 2.000000000000000000
       PrintMarginTop = 2.000000000000000000
       PrintScale = 1.000000000000000000
+      QuirksMode = qmDetect
       ScrollBars = ssNone
       ViewImages = False
     end

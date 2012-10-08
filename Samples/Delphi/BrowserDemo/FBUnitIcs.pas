@@ -32,7 +32,7 @@
 
   which must also be downloaded and installed before the demo can be built.
 
-  It also needs ICS v7 dated 1st April 2012 or later from:
+  It also needs ICS v7 dated 1st April 2012 or later or ICS v8 from:
 
   http://wiki.overbyte.be/wiki/index.php/ICS_Download
 
@@ -49,7 +49,7 @@
 
   22 March 2012 - added new setting to log HTML page code for diagnostics
 
-  23 March 2012 - added HTTP GZIP compression support
+  23 March 2012 - added HTTP GZIP compression support in UrlConIcs
 
   10 April 2012 - Arno improved authentication but still need to cache URL/logins
                   Arno fixed multipart/form-data file upload
@@ -62,6 +62,7 @@
                   This allows http/1.1 and keep-alive to work.  Likewise, Connection
                   used for html and css pages is no longer always closed.
 
+  7 Oct 2012      Angus - recognise XE3 in About, supports ICS v7 and v8 
 
 
   Pending - use NoCache header to stop dynamic pages being cached and expire them
@@ -183,7 +184,7 @@ type
         CacheImages : TMenuItem;
         ShowLogHTML : TMenuItem;
         MimeTypesList1 : TMimeTypesList;
-    ShowLogHTTP: TMenuItem;
+        ShowLogHTTP: TMenuItem;
         procedure FormCreate(Sender : TObject);
         procedure FormDestroy(Sender : TObject);
         procedure GetButtonClick(Sender : TObject);
@@ -1916,7 +1917,7 @@ end;
 
 procedure THTTPForm.About1Click(Sender : TObject);
 begin
-    AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser ICSv7 Demo',
+    AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser ICSv7/v8 Demo',
         'TFrameBrowser');
     try
         AboutBox.ShowModal;

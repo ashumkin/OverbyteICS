@@ -2,6 +2,8 @@ unit OverbyteIcsHttpCCodZLib;
 {
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Oct 8, 2012  V8.01 - Angus, announce deflate is supported as well as gzip
+
 }
 
 interface
@@ -56,32 +58,16 @@ end;
 
 class function THttpCCodzlib.GetCoding: String;
 begin
-    Result := 'gzip';
+    Result := 'gzip, deflate';   // V8.01
 end;
-
-{  this version writes an uncompressed stream, that's then copied to the content stream
-procedure THttpCCodzlib.Complete;
-var
-    OutStream: TMemoryStream;
-begin
-    OutStream := TMemoryStream.Create;
-    try
-        FStream.Position := 0;
-        ZlibDecompressStream (FStream, OutStream) ;
-        OutputWriteBuffer(OutStream.Memory, OutStream.Size);
-    finally
-        OutStream.Free;
-    end ;
-end;      }
 
 function Strm_Write(BackObj: PZBack; buf: PByte; size: Integer): Integer; cdecl;
 begin
     THttpCCodzlib (BackObj.MainObj).OutputWriteBuffer(buf, size) ;
-    Result := 0 ;  // assume we wrote all the data OK 
+    Result := 0 ;  // assume we wrote all the data OK
 end;
 
-{ this version does not use an uncompress stream, but writes the content
-  stream a block at a time, it handles gzip, zlib or raw streams }
+{ write the content stream a block at a time, it handles gzip, zlib or raw streams }
 
 procedure THttpCCodzlib.Complete;
 var
