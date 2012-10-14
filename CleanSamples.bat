@@ -167,16 +167,17 @@ if exist samples\delphi\miscdemos\OverbyteIcs*.dcu del samples\delphi\miscdemos\
 if exist samples\delphi\miscdemos\OverbyteIcs*.dproj del samples\delphi\miscdemos\OverbyteIcs*.dproj
 if exist samples\delphi\miscdemos\OverbyteIcs*.dproj.2007 del samples\delphi\miscdemos\OverbyteIcs*.dproj.2007
 if exist samples\delphi\miscdemos\OverbyteIcs*.bdsproj del samples\delphi\miscdemos\OverbyteIcs*.bdsproj
-if exist samples\delphi\miscdemos\OverbyteIcs*.bdsgroup del samples\delphi\miscdemos\OverbyteIcs*.bdsgroup
-if exist samples\delphi\miscdemos\OverbyteIcs*.groupproj del samples\delphi\miscdemos\OverbyteIcs*.groupproj
+if exist samples\delphi\miscdemos\MiscDemos.bdsgroup del samples\delphi\miscdemos\MiscDemos.bdsgroup
+if exist samples\delphi\miscdemos\MiscDemos.groupproj del samples\delphi\miscdemos\MiscDemos.groupproj
 if exist samples\delphi\miscdemos\OverbyteIcs*.cfg del samples\delphi\miscdemos\OverbyteIcs*.cfg
 if exist samples\delphi\miscdemos\OverbyteIcs*.~*  del samples\delphi\miscdemos\OverbyteIcs*.~*
 if exist samples\delphi\miscdemos\OverbyteIcs*.bak del samples\delphi\miscdemos\OverbyteIcs*.bak
 if exist samples\delphi\miscdemos\OverbyteIcs*.dproj.local del samples\delphi\miscdemos\OverbyteIcs*.dproj.local
-if exist samples\delphi\miscdemos\OverbyteIcs*.groupproj.local del samples\delphi\miscdemos\OverbyteIcs*.groupproj.local
+if exist samples\delphi\miscdemos\MiscDemos.groupproj.local del samples\delphi\miscdemos\MiscDemos.groupproj.local
 if exist samples\delphi\miscdemos\OverbyteIcs*.bdsproj.local del samples\delphi\miscdemos\OverbyteIcs*.bdsproj.local
-if exist samples\delphi\miscdemos\OverbyteIcs*.bdsgroup.local del samples\delphi\miscdemos\OverbyteIcs*.bdsgroup.local
+if exist samples\delphi\miscdemos\MiscDemos.bdsgroup.local del samples\delphi\miscdemos\MiscDemos.bdsgroup.local
 if exist samples\delphi\miscdemos\OverbyteIcs*.identcache del samples\delphi\miscdemos\OverbyteIcs*.identcache
+
 
 
 if exist samples\delphi\platformdemos\*.identcache del samples\delphi\platformdemos\*.identcache
