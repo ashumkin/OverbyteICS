@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     March 2007
-Version:      8.00 ALPHA CODE
+Version:      8.01 ALPHA CODE
 Description:  TMultipartHttpDownloader is a component to download files using
               simultaneous connections to speedup download. The demo make
               also use of the TMultiProgressBar (included in ICS) which is
@@ -10,7 +10,7 @@ Description:  TMultipartHttpDownloader is a component to download files using
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2007 by François PIETTE
+Legal issues: Copyright (C) 2012 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
@@ -46,6 +46,9 @@ Nov 08, 2010 0.99c Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Oct 17, 2012 V8.01 Vladimir Kudlein fixed EDivByZero in
+                   TMultipartHttpDownloader.Timer1Timer.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -97,9 +100,9 @@ uses
     OverbyteIcsUtils;
 
 const
-    MultipartHttpDownloaderVersion = 800;
+    MultipartHttpDownloaderVersion = 801;
     CopyRight : String             = ' TMultipartHttpDownloader ' +
-                                     '(c) 2012 F. Piette V8.00 ';
+                                     '(c) 2012 F. Piette V8.01 ';
 
 type
     TDisplayEvent             = procedure (Sender       : TObject;
@@ -722,8 +725,11 @@ begin
         //MultipartDownloadForm.ListBox1.Items[HttpCli.FIndex] := IntToStr(HttpCli.FDataCount);
     end;
 
-    Tick         := IcsGetTickCount;
-    FCurSpeed    := 8 * (FTotalCount - FPrevCount) / (Tick - FPrevTick);
+    Tick := IcsGetTickCount;
+    if Tick = FPrevTick then  {V8.01}
+        FCurSpeed := 0
+    else
+        FCurSpeed := 8 * (FTotalCount - FPrevCount) / (Tick - FPrevTick);
     FElapsedTime := Now - FStartTime;
     if FContentLength = 0 then
         FPercentDone := 0
