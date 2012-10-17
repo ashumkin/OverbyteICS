@@ -4,7 +4,7 @@
 Author:       François PIETTE
 Object:       Mime support routines (RFC2045).
 Creation:     May 03, 2003  (Extracted from SmtpProt unit)
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -115,6 +115,8 @@ Feb 15, 2012 V7.25  Angus - added MIME Content Type component and functions:
                       ContentTypeFromExtn - get one ContentType from file extension
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Oct 17, 2012 V8.01 Max Terentiev fixed a serious bug in StrEncodeQPEx()
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeUtils;
@@ -170,8 +172,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    TMimeUtilsVersion = 800;
-    CopyRight : String = ' MimeUtils (c) 2003-2012 F. Piette V8.00 ';
+    TMimeUtilsVersion = 801;
+    CopyRight : String = ' MimeUtils (c) 2003-2012 F. Piette V8.01 ';
 
     SmtpDefaultLineLength = 76; // without CRLF
     SMTP_SND_BUF_SIZE     = 2048;
@@ -2065,7 +2067,7 @@ begin
            (Ord(Buf[cPos]) < 32)   or
            (Buf[cPos] in Specials) or
            (Buf[cPos] = '=') then begin
-            if (Buf[cPos] = ' ') and ShortSpace then begin
+            if (Buf[cPos] = ' ') and ShortSpace and (lPosRes < MaxCol) then begin { V8.01 }
                 Result[lPosRes] := '_';
                 Inc(lPosRes);
                 Inc(cPos);
