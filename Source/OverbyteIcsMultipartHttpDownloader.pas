@@ -46,7 +46,7 @@ Nov 08, 2010 0.99c Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-Oct 17, 2012 V8.01 Vladimir Kudlein fixed EDivByZero in
+Oct 17, 2012 V8.01 Vladimir Kudelin fixed EDivByZero in
                    TMultipartHttpDownloader.Timer1Timer.
 
 
