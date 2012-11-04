@@ -342,6 +342,7 @@ begin
     { ThreadAttach which is not subject of this demo, so let's create it.    }
     FSmtpCli := TSmtpCli.Create(nil);
     try
+      FSmtpCli.MultiThreaded := True;
     {$IFDEF CUSTOM_MESSAGELOOP}
     {$IFDEF POSIX}
       { Get the thread-singleton instance of TIcsMessagePump that TSmtpCli   }
