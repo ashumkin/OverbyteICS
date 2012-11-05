@@ -203,7 +203,7 @@ function TMailThread.PosixMessageHandler(ahWnd: HWND; auMsg: UINT;
   awParam: WPARAM; alParam: LPARAM; var Handled: Boolean): LRESULT;
 begin
   Result := 0;
-  { Every message in this thread context passes this handler }
+  { Every message posted in/to this thread context passes this handler }
   if ahWnd = 0 then // Messages posted with PostThreadMessage()
   begin
     if auMsg = WM_BEEP then
@@ -351,13 +351,13 @@ begin
       { but then we had to call the destructor later on as well. We are lazy }
       { and call class method Instance.                                      }
       FMessagePump := TIcsMessagePump.Instance;
-      { Assign an event handler that is triggered for every message in this  }
-      { thread context.                                                      }
+      { Assign an event handler that is triggered for every message posted   }
+      { in/to this thread context.                                           }
       FMessagePump.OnMessage := PosixMessageHandler;
     {$ENDIF}
     {$ENDIF}
       { Tell the main thread that this thread is ready to process messages   }
-      PostMessage(FGUINotifyWindow, WM_THREAD_IS_READY, 0, 0);
+      PostMessage(FGUINotifyWindow, WM_THREAD_IS_READY, WPARAM(ThreadID), 0);
       InitSmtpAndConnect;
     {$IFDEF CUSTOM_MESSAGELOOP}
       CustomMessageLoop;
@@ -595,7 +595,7 @@ begin
     else if MsgRec.Msg = WM_THREAD_IS_READY then
     begin
     {$IFDEF CUSTOM_MESSAGELOOP}
-      PostThreadMessage(FMailThread.ThreadID, WM_BEEP, 0, 0);
+      PostThreadMessage(FMailThread.ThreadID, WM_BEEP, MsgRec.WParam, 0);
     {$ENDIF}
     end
     else
