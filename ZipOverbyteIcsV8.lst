@@ -1177,6 +1177,7 @@ Samples\Delphi\MailNewsDemos\mime-demo2.txt
 Samples\Delphi\MailNewsDemos\mime-demo3.txt
 Samples\Delphi\MailNewsDemos\mime-demo4.txt
 Samples\Delphi\MailNewsDemos\mime-demo5.txt
+Samples\Delphi\MailNewsDemos\mime.types
 
 Samples\Delphi\MailNewsDemos\OverbyteIcsNewsReader.dof
 Samples\Delphi\MailNewsDemos\OverbyteIcsNewsReader.dpr
@@ -1823,6 +1824,7 @@ Samples\Delphi\WebDemos\OverbyteIcsWebServ1.dfm
 Samples\Delphi\WebDemos\OverbyteIcsWebServ1.pas
 Samples\Delphi\WebDemos\fp_small.gif
 Samples\Delphi\WebDemos\ics_logo.gif
+Samples\Delphi\WebDemos\mime.types
 
 Samples\Delphi\WebDemos\WebAppServerData\Templates\Config.html
 Samples\Delphi\WebDemos\WebAppServerData\Templates\ConfigConfirm.html
