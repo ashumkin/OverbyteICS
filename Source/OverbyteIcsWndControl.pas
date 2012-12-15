@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -103,6 +103,8 @@ Historique:
                  is not the case when a TWSocket is dropped on a fmx form.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+15/12/2012 V8.01 (Posix only) Arno reset FHandle and FThreadID to zero in
+                 TIcsWndControl.DeallocateHWnd.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -144,8 +146,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  TIcsWndControlVersion  = 800;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2012 F. Piette V8.00 ';
+  TIcsWndControlVersion  = 801;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2012 F. Piette V8.01 ';
 
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 
@@ -572,8 +574,10 @@ begin
 {$ELSE MSWINDOWS}
     FreeMsgHandlers;
     Ics.Posix.Messages.DestroyWindow(FHandle);
+    FHandle := 0;
     FWndHandler.FLastMessage := WM_USER;
     FreeAndNil(FMessagePump);
+    FThreadID := 0;
 {$ENDIF}
 end;
 
