@@ -100,7 +100,7 @@ uses
 {$IFDEF USE_MODEZ}              { V2.102 }
   OverbyteIcsHttpCCodZLib,
 {$ENDIF}
-  OverbyteIcsHttpProt;
+  OverbyteIcsHttpProt, OverbyteIcsCookies;
 
 
 const
@@ -170,6 +170,7 @@ type
     HttpVersionComboBox: TComboBox;
     ListBoxItem6: TListBoxItem;
     ListBoxItem7: TListBoxItem;
+    IcsCookies: TIcsCookies;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -203,6 +204,8 @@ type
     procedure AbortButtonClick(Sender: TObject);
     procedure SslHttpCli1DocData(Sender: TObject; Buffer: Pointer;
       Len: Integer);
+    procedure IcsCookiesNewCookie(Sender: TObject; ACookie: TCookie;
+      var Save: Boolean);
 
   private
     FIniFileName               : String;
@@ -498,7 +501,7 @@ begin
         SslHttpCli1.ModifiedSince := StrToDateTime(DateTimeEdit.Text)
     else
         SslHttpCli1.ModifiedSince := 0;
-
+    SslHttpCli1.Cookie := IcsCookies.GetCookies(SslHttpCli1.URL);
     //SslHttpCli1.SetAcceptableHostsList(AcceptableHostsEdit.Text);
 
     SslContext1.SslCertFile         := CertFileEdit.Text;
@@ -592,7 +595,7 @@ procedure THttpsTstForm.SslHttpCli1Cookie(
     const Data : String;
     var Accept : Boolean);
 begin
-    Display('Cookie: "' + Data + '"');
+    IcsCookies.SetCookie (Data, SslHttpCli1.Url);
 end;
 
 
@@ -1025,6 +1028,25 @@ procedure THttpsTstForm.BackgroundException(
 begin
     Display('!' + E.ClassName + ': ' + E.Message);
     CanClose := TRUE;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpsTstForm.IcsCookiesNewCookie(Sender: TObject; ACookie: TCookie;
+  var Save: Boolean);
+var
+    S: string;
+begin
+    with ACookie do begin
+        S := 'NewCookie: ' + CName + '=' + CValue + ', Domain=' + CDomain + ', Path=' + CPath ;
+        if CPersist then
+            S := S + ', Expires=' + DateTimeToStr (CExpireDT)
+        else
+            S := S + ', Not Persisent';
+        if CSecureOnly then S := S + ', SecureOnly';
+        if CHttpOnly then S := S + ', HttpOnly';
+        Display (S);
+    end;
 end;
 
 
