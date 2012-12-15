@@ -4,7 +4,7 @@ Author:       Angus Robertson, Magenta Systems Ltd
 Description:  Client Cookie Handling, see RFC2109/RFC6265 (RFC2965 is obsolete)
 Creation:     19 March 2012
 Updated:      22 May 2012
-Version:      8.01
+Version:      8.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -51,7 +51,9 @@ Updates:
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 Oct 8, 2012  V8.01 remove compiler warning
-
+Dec 15, 2012 V8.01 Arno removed Windows.pas from uses clause and fixed a small bug
+                   in GetCookies() when path was empty. Also removed use of "with"
+                   in GetCookies() for better debugging.
 
 Note - needs more testing for domain and path matching
 Pending - not yet thread safe
@@ -77,7 +79,7 @@ unit OverbyteIcsCookies;
 interface
 
 uses
-  Windows, SysUtils, Classes, IniFiles,
+  SysUtils, Classes, IniFiles,
   OverbyteIcsUrl, OverbyteIcsUtils;
 
 type
@@ -254,7 +256,7 @@ begin
     TryEncodeDate(Year, Month, Day, Result);
     TryEncodeTime(Hour, Min, Sec, 0, newDT);
     Result := Result + newDT;
-    if Pos ('GMT', aDate) > 10 then Result := IcsUTCToDateTime (Result) ;;  // convert GMT to local time
+    if Pos ('GMT', aDate) > 10 then Result := IcsUTCToDateTime (Result) ;  // convert GMT to local time
 end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -529,6 +531,7 @@ var
     idx, cnr, I: integer;
     Proto, User, Pass, Host, Port, Path: string;
     curDT: TDateTime;
+    LCookie: TCookie;
     secure, expireflag: boolean;
 
 // pending cookies are supposed to be sorted by name, currently by domain then by name
@@ -539,17 +542,16 @@ var
         FCookieIdx.Find (domain, idx);  // partial match
         while idx < FCookieIdx.Count do begin
             cnr := Integer (FCookieIdx.Objects [idx]);
-            with FCookies [cnr] do begin
-                if CDomain <> domain then exit;  // finished matching domains
-                if (CExpireDT <= curDT) then expireflag := true;  // need to remove cookie in a moment
-                if (Pos (CPath, path) = 1) and ((NOT CPersist) or
-                                        (CExpireDT > curDT)) then begin // if persistend, check not expired
-                    if (NOT CSecureOnly) or (CSecureOnly = secure) then
-                    begin
-                        if result <> '' then result := result + '; ';
-                        result := result + CName + '=' + CValue;
-                        CAccessDT := curDT;
-                    end;
+            LCookie := FCookies [cnr];
+            if LCookie.CDomain <> domain then exit;  // finished matching domains
+            if (LCookie.CExpireDT <= curDT) then expireflag := true;  // need to remove cookie in a moment
+            if (Pos (LCookie.CPath, path) = 1) and ((NOT LCookie.CPersist) or
+                                    (LCookie.CExpireDT > curDT)) then begin // if persistend, check not expired
+                if (NOT LCookie.CSecureOnly) or (LCookie.CSecureOnly = secure) then
+                begin
+                    if result <> '' then result := result + '; ';
+                    result := result + LCookie.CName + '=' + LCookie.CValue;
+                    LCookie.CAccessDT := curDT;
                 end;
             end;
             inc (idx); // look for next name
@@ -561,6 +563,9 @@ begin
     expireflag := false;
     curDT := Now;
     ParseURL (AnsiLowercase (AURL), Proto, User, Pass, Host, Port, Path);
+    if Path = '' then
+        Path := '/';
+
     secure := (Proto = 'https');
 
 // now build cookie string, removing one node of host name at a time
