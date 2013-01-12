@@ -7,11 +7,11 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      8.00
+Version:      8.01
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2012 by François PIETTE
+Legal issues: Copyright (C) 1997-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -397,6 +397,11 @@ Feb 17, 2012 V7.39  Arno added NTLMv2 and NTLMv2 session security (basics),
 Feb 29, 2012 V7.40  Arno - Use IcsRandomInt
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Jan 12, 2013 V8.01  CLEM New event to attach stream directly. If assigned
+                    OnFileOpen it will make a call that can return a stream
+                    instead of opening the file, so you could return a memory
+                    stream for example. If the call returns a nil stream it
+                    tries to open the file the 'usual' way.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -480,8 +485,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-  SmtpCliVersion     = 800;
-  CopyRight : String = ' SMTP component (c) 1997-2012 Francois Piette V8.00 ';
+  SmtpCliVersion     = 801;
+  CopyRight : String = ' SMTP component (c) 1997-2013 Francois Piette V8.01 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
 
@@ -633,6 +638,13 @@ type
                                            Size      : Integer) of object;
     {AG end}
 
+    {CLEM V8.01 start}
+    TSmtpFileOpenEvent = procedure(Sender           : TObject;
+                                   Idx              : Integer;
+                                   FileName         : String;
+                                   var Stream       : TStream)
+                                   of object;
+    {CLEM V8.01 end}
     TSmtpDisplay               = procedure(Sender  : TObject;
                                            Msg     : String) of object;
     TSmtpHeaderLineEvent       = procedure(Sender  : TObject;
@@ -1027,6 +1039,7 @@ type
         FOnAttachHeader         : TSmtpAttachHeader;
         FOnBeforeFileOpen       : TSmtpBeforeFileOpenEvent;               {AG}
         FOnAfterFileOpen        : TSmtpAfterFileOpenEvent;                {AG}
+        FOnFileOpen             : TSmtpFileOpenEvent;                     {CLEM V8.01}
         procedure   TriggerAttachContentType(FileNumber      : Integer;
                                              var FileName    : String;
                                              var ContentType : String); virtual;
@@ -1130,6 +1143,10 @@ type
                                                      write FOnAfterFileOpen;
         {AG end}
         property SocketFamily;
+        {CLEM V8.01 start}
+        property OnFileOpen  : TSmtpFileOpenEvent    read  FOnFileOpen
+                                                     write FOnFileOpen;
+        {CLEM V8.01 end}
     end;
 
     { TSyncSmtpCli add synchronous functions. You should avoid using this   }
@@ -4134,7 +4151,13 @@ begin
 
         AAction := smtpAfterOpenFileNone;
         try
-            FStream := InitFileEncBase64(FileName, FShareMode);
+            {CLEM V8.01 start}
+            FStream := nil;
+            if Assigned(FOnFileOpen) then
+               FOnFileOpen(Self, FCurrentFile, FileName, FStream);
+            if not Assigned(FStream) then
+               FStream := InitFileEncBase64(FileName, FShareMode);
+            {CLEM V8.01 end}
             if Assigned(FOnAfterFileOpen) then begin
                 FOnAfterFileOpen(Self, FCurrentFile, FileName, nil, AAction);
                 case AAction of
