@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      8.02
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -928,7 +928,6 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                      WSocketIsIPv4, WSocketIsIP (finds SocketFamily from string)
 Aug 5, 2012 V8.01 - Angus added WSocketIsIPEx (finds SocketFamily from string,
                      including AnyIPv4/IPv6), added SocketFamilyNames
-Feb 16. 2013, V8.02 Angus - WSocketResolveIp no exception for IPv6 lookups
 }
 
 {
@@ -1072,8 +1071,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 802;
-  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.02 ';
+  WSocketVersion            = 800;
+  CopyRight    : String     = ' TWSocket (c) 1996-2012 Francois Piette V8.00 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -9344,6 +9343,7 @@ begin
                (ResList.Count = 0) then
             begin
                 Result := '';
+                raise ESocketException.Create('WSocketResolveIp: Invalid address.');
             end
             else
                 Result := AnsiString(ResList[0]);
