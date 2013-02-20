@@ -6,7 +6,7 @@ Description:  This unit encapsulate the ICMP.DLL into a VCL of type TPing.
               Works only in 32 bits mode (no Delphi 1) under NT or 95.
               If you wants to build a console mode program, use the TICMP
               object. You'll have a much smaller program.
-Version:      8.00
+Version:      8.02
 Creation:     January 6, 1997
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
@@ -66,6 +66,21 @@ Nov 08, 2010 V6.01 Arno improved final exception handling, more details
              in OverbyteIcsWndControl.pas (V1.14 comments).
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Feb 20, 2013 V8.02 Angus -  Pings IPv4 or IPv6 addresses or host names
+                   Added LastErrStr property to return last error message if Result=0
+                   Added SrcAddress property to specify IP of interface from which to ping
+                   Added PingMsg property to allow the ping packet content to be changed
+                   IPv6 ping returns Reply6 record, check SocketFamily to see which record
+                   Results now also returned as ReplyIP (string), ReplyStatus, ReplyRTT and
+                      ReplySize which are the same for  IPv4 and IPv6
+                   Added AsyncPing which currently not does work, callback never called, no idea why
+                   Added TPingThread which pings using a thread to allow multiple pings
+                       to run without blocking the main thread, simple and trace route
+                       demos in OverbyteIcsPingTst1
+
+
+
+Pending - ping using raw ICMP socket, will be async and should work on POSIX/MacOS
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -104,20 +119,19 @@ interface
 
 uses
     Windows, Messages, SysUtils, Classes,
-  {$IFDEF FMX}
+{$IFDEF FMX}
     Ics.Fmx.OverbyteIcsWndControl,
-  {$ELSE}
+    Ics.Fmx.OverbyteIcsWSocket,
+{$ELSE}
     OverbyteIcsWndControl,
-  {$ENDIF}
+    OverbyteIcsWSocket,
+{$ENDIF FMX}
     OverbyteIcsIcmp,
-    // Here we use Winsock directly. If we use OverbyteIcsWinsock, then
-    // we must also use OverbyteIcsWSocket and make the comopnent a lot
-    // bigger. The drawback is that winsock.dll is loaded statically.
     OverbyteIcsWinsock;
 
 const
-  PingVersion           = 800;
-  CopyRight : String    = ' TPing (c) 1997-2012 F. Piette V8.00 ';
+  PingVersion           = 802;
+  CopyRight : String    = ' TPing (c) 1997-2013 F. Piette V8.02 ';
 
 type
   TDnsLookupDone = procedure (Sender: TObject; Error: Word) of object;
@@ -130,29 +144,33 @@ type
   TPing = class(TIcsWndControl)
   protected
     FIcmp             : TICMP;
-    FDnsLookupBuffer  : array [0..MAXGETHOSTSTRUCT] of char;
-    FDnsLookupHandle  : THandle;
     FDnsResult        : String;
+    FDnsSocket        : TWSocket;         { V8.02 use wsocket instead of local functions }
+    FDnsLookPending   : boolean;          { V8.02 }
     FOnDnsLookupDone  : TDnsLookupDone;
     FOnEchoRequest    : TPingRequest;
     FOnEchoReply      : TPingReply;
     FOnDisplay        : TPingDisplay;
-    FMsg_WM_ASYNCGETHOSTBYNAME : UINT;
     procedure   AbortComponent; override; { V6.01 }
-    procedure   AllocateMsgHandlers; override;
-    procedure   FreeMsgHandlers; override;
-    function    MsgHandlersCount: Integer; override;
-    procedure   WndProc(var MsgRec: TMessage); override;
-    procedure   WMAsyncGetHostByName(var msg: TMessage); virtual;
     procedure   SetAddress(Value : String);
     function    GetAddress : String;
+    procedure   SetSrcAddress(Value : String);    { V8.02 }
+    function    GetSrcAddress : String;           { V8.02 }
+    procedure   SetSrcAddress6(Value : String);   { V8.02 }
+    function    GetSrcAddress6 : String;          { V8.02 }
+    procedure   SetSocketFamily(const Value: TSocketFamily);  { V8.02 }
+    function    GetSocketFamily : TSocketFamily;  { V8.02 }
+    procedure   SetPingMsg(Value : String);       { V8.02 }
+    function    GetPingMsg : String;              { V8.02 }
     procedure   SetSize(Value : Integer);
     function    GetSize : Integer;
     procedure   SetTimeout(Value : Integer);
     function    GetTimeout : Integer;
     function    GetReply : TIcmpEchoReply;
+    function    GetReply6 : TIcmpV6EchoReply;    { V8.02 }
     function    GetErrorCode : Integer;
     function    GetErrorString : String;
+    function    GetLastErrStr : String;         { V8.02 }
     function    GetHostName : String;
     function    GetHostIP : String;
     procedure   SetTTL(Value : Integer);
@@ -160,25 +178,27 @@ type
     procedure   Setflags(Value : Integer);
     function    Getflags : Integer;
     function    GetICMPHandle : HModule;
-//    procedure   SetOnDisplay(Value : TICMPDisplay);
-//    function    GetOnDisplay : TICMPDisplay;
-//    procedure   SetOnEchoRequest(Value : TNotifyEvent);
-//    function    GetOnEchoRequest : TNotifyEvent;
-//    procedure   SetOnEchoReply(Value : TICMPReply);
-//    function    GetOnEchoReply : TICMPReply;
+    function    GetReplyIP : String;
+    function    GetReplyStatus: Integer;
+    function    GetReplyRTT : Integer;
+    function    GetReplySize : Integer;
     procedure   IcmpEchoReply(Sender: TObject; Error : Integer);
     procedure   IcmpEchoRequest(Sender: TObject);
     procedure   IcmpDisplay(Sender: TObject; Msg: String);
+    procedure   DnsLookupDone (Sender: TObject; Error: Word);
   public
     constructor Create(Owner : TComponent); override;
     destructor  Destroy; override;
     function    Ping : Integer; virtual;
+    function    PingAsync : Integer; virtual;     { V8.02 }
     procedure   DnsLookup(HostName : String); virtual;
     procedure   CancelDnsLookup;
 
     property    Reply         : TIcmpEchoReply read GetReply;
+    property    ReplyIPv6     : TIcmpV6EchoReply read GetReply6;   { V8.02 }
     property    ErrorCode     : Integer        read GetErrorCode;
     property    ErrorString   : String         read GetErrorString;
+    property    LastErrStr    : String         read GetLastErrStr; { V8.02 }
     property    HostName      : String         read GetHostName;
     property    HostIP        : String         read GetHostIP;
     property    DnsResult     : String         read FDnsResult;
@@ -186,6 +206,14 @@ type
   published
     property    Address     : String         read  GetAddress
                                              write SetAddress;
+    property    SocketFamily: TSocketFamily  read  GetSocketFamily
+                                             write SetSocketFamily;   { V8.02 }
+    property    SrcAddress  : String         read  GetSrcAddress
+                                             write SetSrcAddress;     { V8.02 }
+    property    SrcAddress6 : String         read  GetSrcAddress6
+                                             write SetSrcAddress6;    { V8.02 }
+    property    PingMsg     : String         read  GetPingMsg
+                                             write SetPingMsg;        { V8.02 }
     property    Size        : Integer        read  GetSize
                                              write SetSize;
     property    Timeout     : Integer        read  GetTimeout
@@ -194,6 +222,10 @@ type
                                              write SetTTL;
     property    Flags       : Integer        read  Getflags
                                              write SetFlags;
+    property    ReplyIP     : String         read  GetReplyIP;        { V8.02 }
+    Property    ReplyRTT    : Integer        read  GetReplyRTT;       { V8.02 }
+    Property    ReplyStatus : Integer        read  GetReplyStatus;    { V8.02 }
+    Property    ReplySize   : Integer        read  GetReplySize;      { V8.02 }
     property    OnDisplay   : TPingDisplay   read  FOnDisplay
                                              write FOnDisplay;
     property    OnEchoRequest : TPingRequest read  FOnEchoRequest
@@ -206,118 +238,42 @@ type
     property    OnBgException;               { V6.01 }
   end;
 
+ { V8.02 added threaded ping }
+type
+    TPingThread = class(TThread)
+    private
+        FIcmp: TICMP;
+    public
+        PingHostName:       string;     // host name or IP address to ping
+        PingSocketFamily:   TSocketFamily; // IPv4 or IPv6 address
+        PingSrcAddress:     String;     // Source IPv4 Address given
+        PingSrcAddress6:    String;     // Source IPv6 Address given
+        PingPingMsg:        String;     // The message to ping
+        PingLookupReply:    boolean;    // if true, ReplyAddress is reverse DNS looked-up to ReplyHostName
+        PingSize:           Integer;    // bytes of data to ping
+        PingTimeout:        Integer;    // milliseconds ping timeout
+        PingTTL:            Integer;    // ping Time To Live, to stop ping short of host
+        PingFlags:          Integer;    // ping options
+        PingId:             integer;    // available in terminate event to distinguish multiple pings
+        PingThreadNum:      integer;    // thread number (not ThreadId) to used in terminate event to remove thread
+        DnsHostIP:          String;     // IP address looked up for PingHostName
+        ReplyIPAddr:        String;     // Replying IP address (integer)
+        ReplyStatus:        DWORD;      // IP status value
+        ReplyRTT:           DWORD;      // Round Trip Time in milliseconds
+        ReplyDataSize:      Integer;    // Reply data size
+        ReplyTotal:         Integer;    // Number of replies to ping
+        ReplyHostName:      String;     // Reply host name (if PingLookupReply=true)
+        ErrCode:            Integer;    // non-zero ping or DNS error
+        ErrString:          String ;    // error literal if errcode non-zero
+        procedure Execute; override;
+    end;
+
+
 {$ENDIF MSWINDOWS}
 
 implementation
 
 {$IFDEF MSWINDOWS}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ This function is a callback function. It means that it is called by       }
-{ windows. This is the very low level message handler procedure setup to    }
-{ handle the message sent by windows (winsock) to handle messages.          }
-function XSocketWindowProc(
-    ahWnd   : HWND;
-    auMsg   : Integer;
-    awParam : WPARAM;
-    alParam : LPARAM): Integer; stdcall;
-var
-    Obj    : TPing;
-    MsgRec : TMessage;
-begin
-    { At window creation ask windows to store a pointer to our object       }
-    Obj := TPing(GetWindowLong(ahWnd, 0));
-
-    { If the pointer is not assigned, just call the default procedure       }
-    if not Assigned(Obj) then
-        Result := DefWindowProc(ahWnd, auMsg, awParam, alParam)
-    else begin
-        { Delphi use a TMessage type to pass paramter to his own kind of    }
-        { windows procedure. So we are doing the same...                    }
-        MsgRec.Msg    := auMsg;
-        MsgRec.wParam := awParam;
-        MsgRec.lParam := alParam;
-        Obj.WndProc(MsgRec);
-        Result := MsgRec.Result;
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ This global variable is used to store the windows class characteristic    }
-{ and is needed to register the window class used by TWSocket               }
-var
-    XSocketWindowClass: TWndClass = (
-        style         : 0;
-        lpfnWndProc   : @XSocketWindowProc;
-        cbClsExtra    : 0;
-        cbWndExtra    : SizeOf(Pointer);
-        hInstance     : 0;
-        hIcon         : 0;
-        hCursor       : 0;
-        hbrBackground : 0;
-        lpszMenuName  : nil;
-        lpszClassName : 'ICSPingWindowClass');
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Allocate a window handle. This means registering a window class the first }
-{ time we are called, and creating a new window each time we are called.    }
-function XSocketAllocateHWnd(Obj : TObject): HWND;
-var
-    TempClass       : TWndClass;
-    ClassRegistered : Boolean;
-begin
-    { Check if the window class is already registered                       }
-    XSocketWindowClass.hInstance := HInstance;
-    ClassRegistered := GetClassInfo(HInstance,
-                                    XSocketWindowClass.lpszClassName,
-                                    TempClass);
-    if not ClassRegistered then begin
-       { Not yet registered, do it right now                                }
-{$IFDEF USEWINDOWS}
-       Result := Windows.RegisterClass(XSocketWindowClass);
-{$ELSE}
-       Result := WinProcs.RegisterClass(XSocketWindowClass);
-{$ENDIF}
-       if Result = 0 then
-           Exit;
-    end;
-
-    { Now create a new window                                               }
-    Result := CreateWindowEx(WS_EX_TOOLWINDOW,
-                           XSocketWindowClass.lpszClassName,
-                           '',        { Window name   }
-                           WS_POPUP,  { Window Style  }
-                           0, 0,      { X, Y          }
-                           0, 0,      { Width, Height }
-                           0,         { hWndParent    }
-                           0,         { hMenu         }
-                           HInstance, { hInstance     }
-                           nil);      { CreateParam   }
-
-    { if successfull, the ask windows to store the object reference         }
-    { into the reserved byte (see RegisterClass)                            }
-    if (Result <> 0) and Assigned(Obj) then
-        SetWindowLong(Result, 0, Longint(Obj));
-    // Guess this will change to SetWindowLongPtr() in Win64    
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{ Free the window handle                                                    }
-procedure XSocketDeallocateHWnd(Wnd: HWND);
-begin
-    DestroyWindow(Wnd);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function TPing.MsgHandlersCount : Integer;
-begin
-    Result := 1 + inherited MsgHandlersCount;
-end;
-
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TPing.AbortComponent; { V6.01 }
@@ -332,70 +288,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.AllocateMsgHandlers;
-begin
-    inherited AllocateMsgHandlers;
-    FMsg_WM_ASYNCGETHOSTBYNAME := FWndHandler.AllocateMsgHandler(Self);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.FreeMsgHandlers;
-begin
-    if Assigned(FWndHandler) then begin
-        FWndHandler.UnregisterMessage(FMsg_WM_ASYNCGETHOSTBYNAME);
-    end;
-    inherited FreeMsgHandlers;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.WndProc(var MsgRec: TMessage);
-begin
-    try
-         with MsgRec do begin
-             if Msg = FMsg_WM_ASYNCGETHOSTBYNAME then
-                 WMAsyncGetHostByName(MsgRec)
-             else
-                 inherited WndProc(MsgRec);
-        end;
-    except
-        on E:Exception do
-            HandleBackGroundException(E);
-    end;
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-procedure TPing.WMAsyncGetHostByName(var msg: TMessage);
-var
-    Phe     : Phostent;
-    IPAddr  : TInAddr;
-    Error   : Word;
-begin
-    if msg.wParam <> WPARAM(FDnsLookupHandle) then
-        Exit;
-    FDnsLookupHandle := 0;
-    Error := Msg.LParamHi;
-    if Error = 0 then begin
-        Phe        := PHostent(@FDnsLookupBuffer);
-        IPAddr     := PInAddr(Phe^.h_addr_list^)^;
-        FDnsResult := String(AnsiString(inet_ntoa(IPAddr)));
-    end;
-    if Assigned(FOnDnsLookupDone) then
-        FOnDnsLookupDone(Self, Error);
-end;
-
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TPing.Create(Owner : TComponent);
 begin
     Inherited Create(Owner);
-    AllocateHWnd;
     FIcmp               := TICMP.Create;
     FIcmp.OnDisplay     := IcmpDisplay;
     FIcmp.OnEchoRequest := IcmpEchoRequest;
     FIcmp.OnEchoReply   := IcmpEchoReply;
+    FDnsSocket          := TWsocket.Create (Self) ;   { V8.02 }
+    FDnsSocket.OnDnsLookupDone := DnsLookupDone ;
+    FDnsLookPending     := FALSE;
 end;
 
 
@@ -403,6 +305,10 @@ end;
 destructor TPing.Destroy;
 begin
     CancelDnsLookup;                 { Cancel any pending dns lookup      }
+    if Assigned(FDnsSocket) then begin      { V8.02 }
+        FDnsSocket.Destroy;
+        FDnsSocket := nil;
+    end;
     if Assigned(FIcmp) then begin
         FIcmp.Destroy;
         FIcmp := nil;
@@ -446,14 +352,39 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.PingAsync : Integer;       { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.PingAsync
+    else
+        Result := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPing.DnsLookupDone (Sender: TObject; Error: Word);    { V8.02 }
+var
+    MyFamily: TSocketFamily;
+begin
+    if Error = 0 then begin
+        FDnsResult := FDnsSocket.DnsResult;
+        if Assigned(FIcmp) then begin
+            if WSocketIsIP(FDnsResult, MyFamily) then
+                            FIcmp.SocketFamily := MyFamily;
+        end;
+    end;
+    FDnsLookPending := FALSE;
+    if Assigned(FOnDnsLookupDone) then
+        FOnDnsLookupDone(Self, Error);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TPing.CancelDnsLookup;
 begin
-    if FDnsLookupHandle = 0 then
-        Exit;
-    if WSACancelAsyncRequest(FDnsLookupHandle) <> 0 then
-        raise Exception.CreateFmt('WSACancelAsyncRequest failed, error #%d',
-                               [WSAGetLastError]);
-    FDnsLookupHandle := 0;
+    if NOT FDnsLookPending then exit;
+    FDnsSocket.CancelDnsLookup;
+    FDnsLookPending := FALSE;
     if Assigned(FOnDnsLookupDone) then
         FOnDnsLookupDone(Self, WSAEINTR);
 end;
@@ -462,32 +393,22 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TPing.DnsLookup(HostName : String);
 var
-    IPAddr    : TInAddr;
-    XHostName : AnsiString;
+    LSocketFamily: TSocketFamily;
 begin
-    { Cancel any pending lookup }
-    if FDnsLookupHandle <> 0 then
-        WSACancelAsyncRequest(FDnsLookupHandle);
-
-    FDnsResult := '';
-    XHostName  := AnsiString(HostName);
-    IPAddr.S_addr := Inet_addr(@XHostName[1]);
-    if IPAddr.S_addr <> u_long(INADDR_NONE) then begin
-        FDnsResult := String(AnsiString((inet_ntoa(IPAddr))));
-        if Assigned(FOnDnsLookupDone) then
-            FOnDnsLookupDone(Self, 0);
-        Exit;
+    { If the address is either a valid IPv4 or IPv6 address, shik a DNS lookup }
+    { change current SocketFamily.                          }
+    if WSocketIsIP(HostName, LSocketFamily) then begin
+        if Assigned(FIcmp) then FIcmp.SocketFamily := LSocketFamily;
+        if (LSocketFamily = sfIPv4) or (LSocketFamily = sfIPv6) then begin
+            FDnsResult := HostName;
+            if Assigned(FOnDnsLookupDone) then
+                    FOnDnsLookupDone(Self, 0);
+            exit;
+        end;
     end;
-
-    FDnsLookupHandle := WSAAsyncGetHostByName(FHandle,
-                                              FMsg_WM_ASYNCGETHOSTBYNAME,
-                                              @XHostName[1],
-                                              @FDnsLookupBuffer,
-                                              SizeOf(FDnsLookupBuffer));
-    if FDnsLookupHandle = 0 then
-        raise Exception.CreateFmt(
-                  '%s: can''t start DNS lookup, error #%d',
-                  [HostName, WSAGetLastError]);
+    FDnsLookPending := TRUE;
+    if Assigned(FIcmp) then FDnsSocket.SocketFamily := FIcmp.SocketFamily;
+    FDnsSocket.DnsLookup (HostName);
 end;
 
 
@@ -503,9 +424,73 @@ end;
 function TPing.GetAddress : String;
 begin
     if Assigned(FIcmp) then
-        Result := FIcmp.Address
+        Result := FIcmp.Address;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPing.SetSrcAddress(Value : String);    { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        FIcmp.SrcAddress := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetSrcAddress : String;           { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.SrcAddress;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPing.SetSrcAddress6(Value : String);    { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        FIcmp.SrcAddress6 := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetSrcAddress6 : String;           { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.SrcAddress6;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPing.SetSocketFamily(const Value: TSocketFamily);  { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        FIcmp.SocketFamily := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetSocketFamily : TSocketFamily;  { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.SocketFamily
     else
-        Result := '';
+        Result := sfAny;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPing.SetPingMsg(Value : String);       { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        FIcmp.PingMsg := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetPingMsg : String;              { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.PingMsg;
 end;
 
 
@@ -592,6 +577,55 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetReply6 : TIcmpV6EchoReply;    { V8.02 }
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.Reply6
+    else
+        FillChar(Result, SizeOf(Result), 0);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetReplyIP : String;
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.ReplyIP
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetReplyStatus: Integer;
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.ReplyStatus
+    else
+        Result := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetReplyRTT : Integer;
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.ReplyRTT
+    else
+        Result := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetReplySize : Integer;
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.ReplySize
+    else
+        Result := 0;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TPing.GetErrorCode : Integer;
 begin
     if Assigned(FIcmp) then
@@ -606,6 +640,16 @@ function TPing.GetErrorString : String;
 begin
     if Assigned(FIcmp) then
         Result := FIcmp.ErrorString
+    else
+        Result := '';
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TPing.GetLastErrStr : String;
+begin
+    if Assigned(FIcmp) then
+        Result := FIcmp.LastErrStr
     else
         Result := '';
 end;
@@ -632,60 +676,6 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{procedure TPing.SetOnDisplay(Value : TICMPDisplay);
-begin
-    if Assigned(FIcmp) then
-        FIcmp.OnDisplay := Value;
-end;
-}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{function TPing.GetOnDisplay : TICMPDisplay;
-begin
-    if Assigned(FIcmp) then
-        Result := FIcmp.OnDisplay
-    else
-        Result := nil;
-end;
-}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{procedure TPing.SetOnEchoRequest(Value : TNotifyEvent);
-begin
-    if Assigned(FIcmp) then
-        FIcmp.OnEchoRequest := Value;
-end;
-}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{function TPing.GetOnEchoRequest : TNotifyEvent;
-begin
-    if Assigned(FIcmp) then
-        Result := FIcmp.OnEchoRequest
-    else
-        Result := nil;
-end;
-}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{procedure TPing.SetOnEchoReply(Value : TICMPReply);
-begin
-    if Assigned(FIcmp) then
-        FIcmp.OnEchoReply := Value;
-end;
-}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{function TPing.GetOnEchoReply : TICMPReply;
-begin
-    if Assigned(FIcmp) then
-        Result := FIcmp.OnEchoReply
-    else
-        Result := nil;
-end;
-}
-
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TPing.GetICMPHandle: HModule;
 begin
      Result := FIcmp.ICMPdllhandle;
@@ -693,6 +683,68 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+// TPingThread
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
+procedure TPingThread.Execute;
+var
+    RevHost: string;
+begin
+    FIcmp := TIcmp.Create;
+    try  // finally
+    try  // except
+
+    // see if overriding default parameters
+        ErrCode := 0;
+        ErrString := '';
+        if PingSize <> 0 then FIcmp.Size := PingSize;
+        if PingTimeout <> 0 then FIcmp.Timeout := PingTimeout;
+        if PingTTL <> 0 then FIcmp.TTL := PingTTL;
+        if PingPingMsg <> '' then FIcmp.PingMsg := PingPingMsg;
+        FIcmp.Flags := PingFlags;
+        FIcmp.SocketFamily := PingSocketFamily;
+        FIcmp.Address := PingHostName;
+        FIcmp.SrcAddress := PingSrcAddress;
+        FIcmp.SrcAddress6 := PingSrcAddress6;
+
+    // blocking ping, will also lookup IP address if required
+        ReplyTotal := FIcmp.Ping;
+        DnsHostIP := FIcmp.HostIP;
+        if ReplyTotal <> 0 then begin
+            PingSocketFamily := FIcmp.SocketFamily;
+            ReplyIPAddr := FIcmp.ReplyIp;
+            ReplyHostName := ReplyIPAddr;    // may get reversed looked up
+            ReplyStatus := FIcmp.ReplyStatus;
+            ReplyRTT := FIcmp.ReplyRTT;
+            ReplyDataSize := FIcmp.ReplySize;
+
+    // see if now looking up host name for reply address,
+    // which might not be the same address ping if TTL was less
+            if PingLookupReply and (ReplyIpAddr <> '') then begin
+                RevHost := String (WSocketResolveIp(AnsiString
+                                    (ReplyIpAddr), PingSocketFamily));
+                if RevHost <> '' then ReplyHostName := RevHost;
+            end ;
+        end
+        else begin // ping failed
+            ErrCode := FIcmp.ErrorCode;
+            ErrString := FIcmp.LastErrStr;
+            if ErrString = '' then ErrString := 'Ping failed, no error message';
+        end ;
+    except
+        on E: Exception do begin
+            ErrString := E.Message;
+            ErrCode := 0;
+        end;
+    end;
+    finally
+        FIcmp.Destroy;
+    end ;
+    Terminate ;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+
 {$ENDIF MSWINDOWS}
 end.
 
