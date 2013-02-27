@@ -1428,6 +1428,7 @@ Samples\Delphi\PlatformDemos\IcsThread.dpr
 Samples\Delphi\PlatformDemos\IcsThread.dproj
 Samples\Delphi\PlatformDemos\IcsThread1.fmx
 Samples\Delphi\PlatformDemos\IcsThread1.pas
+Samples\Delphi\PlatformDemos\Ics.Fmx.DemoUtils.pas
 
 Samples\Delphi\SocketDemos\SocketDemos.bpg
 Samples\Delphi\SocketDemos\Dcu\dir.txt
