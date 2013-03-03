@@ -75,7 +75,8 @@ contains
   Ics.Fmx.OverbyteIcsHttpAppServer in '..\Source\Ics.Fmx.OverbyteIcsHttpAppServer.pas',
   Ics.Fmx.OverbyteIcsThreadTimer in '..\Source\Ics.Fmx.OverbyteIcsThreadTimer.pas',
   Ics.Fmx.OverbyteIcsCharsetComboBox in '..\Source\Ics.Fmx.OverbyteIcsCharsetComboBox.pas',
-  Ics.Posix.Messages in '..\Source\Ics.Posix.Messages.pas';
+  Ics.Posix.Messages in '..\Source\Ics.Posix.Messages.pas',
+  Ics.Fmx.OverbyteIcsIcmp in '..\Source\Ics.Fmx.OverbyteIcsIcmp.pas';
 
 end.
 

@@ -92,6 +92,7 @@ contains
   OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
   OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
   OverbyteIcsSnmpCli in '..\Source\OverbyteIcsSnmpCli.pas',
-  OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas';
+  OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas',
+  OverbyteIcsIcmp in '..\Source\OverbyteIcsIcmp.pas';
 
 end.

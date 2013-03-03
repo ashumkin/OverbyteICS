@@ -177,7 +177,6 @@
 			<DCCReference Include="..\Source\OverbyteIcsHttpContCod.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsWinsock.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsWebSession.pas"/>
-			<DCCReference Include="..\Source\OverbyteIcsIcmp.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsTimeList.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsLogger.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsDigestAuth.pas"/>

@@ -170,9 +170,6 @@
 			<DelphiCompile Include="..\Source\OverbyteIcsHttpContCod.pas">
 				<BuildOrder>11</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="..\Source\OverbyteIcsIcmp.pas">
-				<BuildOrder>12</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="..\Source\OverbyteIcsIconv.pas">
 				<BuildOrder>13</BuildOrder>
 			</DelphiCompile>

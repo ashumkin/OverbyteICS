@@ -195,6 +195,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
 			<DCCReference Include="..\Source\OverbyteIcsSysLogServer.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsSnmpCli.pas"/>
 			<DCCReference Include="..\Source\OverbyteIcsSnmpMsgs.pas"/>
+			<DCCReference Include="..\Source\OverbyteIcsIcmp.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_Release</Key>
 				<CfgParent>Base</CfgParent>

@@ -65,7 +65,6 @@ contains
   OverbyteIcsHttpContCod in '..\Source\OverbyteIcsHttpContCod.pas',
   OverbyteIcsWinsock in '..\Source\OverbyteIcsWinsock.pas',
   OverbyteIcsWebSession in '..\Source\OverbyteIcsWebSession.pas',
-  OverbyteIcsIcmp in '..\Source\OverbyteIcsIcmp.pas',
   OverbyteIcsTimeList in '..\Source\OverbyteIcsTimeList.pas',
   OverbyteIcsLogger in '..\Source\OverbyteIcsLogger.pas',
   OverbyteIcsDigestAuth in '..\Source\OverbyteIcsDigestAuth.pas',

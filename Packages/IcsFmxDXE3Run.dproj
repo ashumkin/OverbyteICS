@@ -5,7 +5,7 @@
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName/>
-        <ProjectVersion>14.3</ProjectVersion>
+        <ProjectVersion>14.4</ProjectVersion>
         <Config Condition="'$(Config)'==''">Debug</Config>
         <Base>True</Base>
         <AppType>Package</AppType>
@@ -34,6 +34,12 @@
     <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_Release)'!=''">
         <Cfg_Release>true</Cfg_Release>
         <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='OSX32' and '$(Cfg_Release)'=='true') or '$(Cfg_Release_OSX32)'!=''">
+        <Cfg_Release_OSX32>true</Cfg_Release_OSX32>
+        <CfgParent>Cfg_Release</CfgParent>
+        <Cfg_Release>true</Cfg_Release>
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_Release)'=='true') or '$(Cfg_Release_Win32)'!=''">
@@ -72,6 +78,7 @@
         <GenPackage>true</GenPackage>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_OSX32)'!=''">
+        <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
         <Debugger_Launcher>/usr/X11/bin/xterm -e &quot;%debuggee%&quot;</Debugger_Launcher>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
@@ -91,6 +98,9 @@
         <DCC_RangeChecking>false</DCC_RangeChecking>
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_Define>RELEASE;USE_SSL</DCC_Define>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_Release_OSX32)'!=''">
+        <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_Release_Win32)'!=''">
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
@@ -158,6 +168,7 @@
         <DCCReference Include="..\Source\Ics.Fmx.OverbyteIcsThreadTimer.pas"/>
         <DCCReference Include="..\Source\Ics.Fmx.OverbyteIcsCharsetComboBox.pas"/>
         <DCCReference Include="..\Source\Ics.Posix.Messages.pas"/>
+        <DCCReference Include="..\Source\Ics.Fmx.OverbyteIcsIcmp.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_Release</Key>
             <CfgParent>Base</CfgParent>

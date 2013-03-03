@@ -176,6 +176,9 @@
 			<DelphiCompile Include="..\Source\Ics.Fmx.OverbyteIcsHttpSrv.pas">
 				<BuildOrder>30</BuildOrder>
 			</DelphiCompile>
+			<DelphiCompile Include="..\Source\Ics.Fmx.OverbyteIcsIcmp.pas">
+				<BuildOrder>44</BuildOrder>
+			</DelphiCompile>
 			<DelphiCompile Include="..\Source\Ics.Fmx.OverbyteIcsMultipartFtpDownloader.pas">
 				<BuildOrder>31</BuildOrder>
 			</DelphiCompile>

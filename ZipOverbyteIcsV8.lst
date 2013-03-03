@@ -321,6 +321,7 @@ Source\Ics.Fmx.OverbyteIcsThreadTimer.pas
 Source\Ics.Fmx.OverbyteIcsWSocket.pas
 Source\Ics.Fmx.OverbyteIcsWSocketS.pas
 Source\Ics.Fmx.OverbyteIcsWndControl.pas
+Source\Ics.Fmx.OverbyteIcsIcmp.pas
 Source\Ics.Posix.KEventApi.pas
 Source\Ics.Posix.KEventTypes.pas
 Source\Ics.Posix.Messages.pas
