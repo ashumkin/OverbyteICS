@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V8.00
+Version:      V8.01
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -1051,7 +1051,13 @@ Apr 06, 2012 V7.29 **** BREAKING CHANGE ****
              These changes might require to adjust your OnRequestDone handler.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-
+Mar 10, 2012 V8.01 - Arno added property ExternalIPv4. If specified, usually NAT
+             router's public IP, this IP is sent with the PORT command to the server.
+             Makes active mode possible behind NAT in case the router isn't smart
+             enough to handle active mode automatically or when the control connection
+             is encrypted. The NAT router then must also be configured to forward
+             incoming connections from the server properly to the client,
+             specifying a DataPortRange helps in this context.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -1141,9 +1147,9 @@ uses
     OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 800;
-  CopyRight : String = ' TFtpCli (c) 1996-2012 F. Piette V8.00 ';
-  FtpClientId : String = 'ICS FTP Client V8.00 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 801;
+  CopyRight : String = ' TFtpCli (c) 1996-2013 F. Piette V8.01 ';
+  FtpClientId : String = 'ICS FTP Client V8.01 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1272,6 +1278,7 @@ type
     FDataPortRangeStart : LongWord;  {JT}
     FDataPortRangeEnd   : LongWord;  {JT}
     FLastDataPort       : LongWord;  {JT}
+    FExternalIPv4       : String;  {V8.01}
     FDSocketSndBufSize  : Integer;{AG V7.26}
     FDSocketRcvBufSize  : Integer;{AG V7.26}
     FLocalAddr          : String; {bb}
@@ -1647,6 +1654,8 @@ type
                                                          write SetDataPortRangeStart; {JT}
     property DataPortRangeEnd     : LongWord             read  FDataPortRangeEnd
                                                          write SetDataPortRangeEnd; {JT}
+    property ExternalIPv4         : String               read  FExternalIPv4
+                                                         write FExternalIPv4; {V8.01}
     property LocalAddr            : String               read  FLocalAddr
                                                          write FLocalAddr; {bb}
     property UserName             : String               read  FUserName
@@ -1831,6 +1840,7 @@ type
     property CodePage;
     property DataPortRangeStart; {JT}
     property DataPortRangeEnd; {JT}
+    property ExternalIPv4; {V8.01}
     property LocalAddr; {bb}
     property UserName;
     property PassWord;
@@ -5799,6 +5809,12 @@ begin
                    WSocketIPv6ToStr(PIcsIPv6Address(@saddr.sin6_addr)^) +
                    '|' + IntToStr(DataPort) + '|';
         end
+        else
+        if WSocketIsIPv4(FExternalIPv4) then                           { V8.01 }
+            Msg := Format('PORT %s,%d,%d',                             { V8.01 }
+                          [StringReplace(FExternalIPv4, '.', ',', [rfReplaceAll]),
+                           IcsHiByte(DataPort),
+                           IcsLoByte(DataPort)])
         else
         if FControlSocket.sin.sin_addr.s_addr = WSocket_htonl($7F000001) then
             Msg := Format('PORT 127,0,0,1,%d,%d',
