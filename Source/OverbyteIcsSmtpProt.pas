@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      8.01
+Version:      8.02
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -402,6 +402,8 @@ Jan 12, 2013 V8.01  CLEM New event to attach stream directly. If assigned
                     instead of opening the file, so you could return a memory
                     stream for example. If the call returns a nil stream it
                     tries to open the file the 'usual' way.
+Mar 16, 2013 V8.02 Arno fixed EReadError with message 'Error reading
+                   HtmlSmtpCli.TimeOut:Property TimeOut does not exist'.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -485,8 +487,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-  SmtpCliVersion     = 801;
-  CopyRight : String = ' SMTP component (c) 1997-2013 Francois Piette V8.01 ';
+  SmtpCliVersion     = 802;
+  CopyRight : String = ' SMTP component (c) 1997-2013 Francois Piette V8.02 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
 
@@ -1300,7 +1302,7 @@ type
 {$IFDEF USE_SSL}
     THtmlSmtpCli = class(TCustomSslSmtpCli)
 {$ELSE}
-    THtmlSmtpCli = class(TSmtpCli)
+    THtmlSmtpCli = class(TSyncSmtpCli) { V8.02 }
 {$ENDIF USE_SSL}
     private
         FPlainText              : TStrings;
