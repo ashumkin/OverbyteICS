@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      8.02
+Version:      8.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2012 by François PIETTE
+Legal issues: Copyright (C) 1996-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -929,6 +929,13 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
 Aug 5, 2012 V8.01 - Angus added WSocketIsIPEx (finds SocketFamily from string,
                      including AnyIPv4/IPv6), added SocketFamilyNames
 Feb 16. 2013, V8.02 Angus - WSocketResolveIp no exception for IPv6 lookups
+Mar 16, 2013 V8.03 Arno added new property LocalAddr6. This is a breaking change
+                   if you ever assigned some IPv6 to property LocalAddr in
+                   existing code. LocalAddr6 should be assigned a local IPv6,
+                   LocalAddr should be assigned a local IPv4, provided it is
+                   actually required to bind the socket to a particular interface.
+                   By default both properties LocalAddr and LocalAddr6 do not
+                   require a value.
 }
 
 {
@@ -1072,8 +1079,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 802;
-  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.02 ';
+  WSocketVersion            = 803;
+  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.03 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -1410,6 +1417,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     FLocalPortStr       : String;
     FLocalPortNum       : Integer;
     FLocalAddr          : String;     { IP address for local interface to use }
+    FLocalAddr6         : String;     { IPv6 address for local interface to use }
     FType               : Integer;
     FBufHandler         : TIcsBufferHandler;
     FLingerOnOff        : TSocketLingerOnOff;
@@ -1492,6 +1500,7 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     procedure   SetRemotePort(sPort : String); virtual;
     function    GetRemotePort : String;
     procedure   SetLocalAddr(const sLocalAddr : String);
+    procedure   SetLocalAddr6(const sLocalAddr6 : String);
     procedure   SetMultiCastAddrStr(const sMultiCastAddrStr: String);
     procedure   SetLocalPort(const sLocalPort : String);
     procedure   SetProto(sProto : String); virtual;
@@ -1662,6 +1671,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                                                     write SetLocalPort;
     property LocalAddr : String                     read  FLocalAddr
                                                     write SetLocalAddr;
+    property LocalAddr6: String                     read  FLocalAddr6
+                                                    write SetLocalAddr6;
     property Proto : String                         read  FProtoStr
                                                     write SetProto;
     property MultiCast       : Boolean              read  FMultiCast
@@ -3076,6 +3087,7 @@ type
     property Port;
     property Proto;
     property LocalAddr;
+    property LocalAddr6;
     property LocalPort;
     property MultiThreaded;
     property MultiCast;
@@ -6011,12 +6023,8 @@ begin
     FProtoStr           := 'tcp';
     FType               := SOCK_STREAM;
     FLocalPortStr       := ICS_ANY_PORT;
-
-    if Fsin.sin6_family = AF_INET6 then
-        FLocalAddr := ICS_ANY_HOST_V6
-    else
-        FLocalAddr := ICS_ANY_HOST_V4;
-
+    FLocalAddr6         := ICS_ANY_HOST_V6;
+    FLocalAddr          := ICS_ANY_HOST_V4;
     FLingerOnOff        := wsLingerOn;
     FLingerTimeout      := 0;
     FHSocket            := INVALID_SOCKET;
@@ -7469,12 +7477,20 @@ begin
     end;
     FLocalAddr := IcsTrim(sLocalAddr);
     if FLocalAddr = '' then
-    begin
-        if Fsin.sin6_family = AF_INET6 then
-            FLocalAddr := ICS_ANY_HOST_V6
-        else
-            FLocalAddr := ICS_ANY_HOST_V4;
+      FLocalAddr := ICS_ANY_HOST_V4;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocket.SetLocalAddr6(const sLocalAddr6: String);
+begin
+    if FState <> wsClosed then begin
+        RaiseException('Cannot change LocalAddr6 if not closed');
+        Exit;
     end;
+    FLocalAddr6 := IcsTrim(sLocalAddr6);
+    if FLocalAddr6 = '' then
+      FLocalAddr6 := ICS_ANY_HOST_V6;
 end;
 
 
@@ -8269,16 +8285,27 @@ var
     SockName      : TSockAddrIn6;
     SockNamelen   : Integer;
     LocalSockName : TSockAddrIn6;
+    LLocalAddr    : String;
+    LSocketFamily : TSocketFamily;
 begin
+    if FAddrFormat = AF_INET6 then // requires Addr being resolved
+    begin
+        LSocketFamily := sfIPv6;
+        LLocalAddr := FLocalAddr6;
+    end
+    else begin
+        LSocketFamily := sfIPv4;
+        LLocalAddr := FLocalAddr;
+    end;
     FillChar(LocalSockName, Sizeof(LocalSockName), 0);
     if FSocketFamily = sfIPv4 then begin
         LocalSockName.sin6_family      := AF_INET;
         LocalSockName.sin6_port        := WSocket_Synchronized_htons(FLocalPortNum);
         PSockAddrIn(@LocalSockName)^.sin_addr.S_addr :=
-              WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).s_addr;
+              WSocket_Synchronized_ResolveHost(AnsiString(LLocalAddr)).s_addr;
     end
     else begin
-        WSocket_Synchronized_ResolveHost(FLocalAddr, LocalSockName, FSocketFamily, FProto);
+        WSocket_Synchronized_ResolveHost(LLocalAddr, LocalSockName, LSocketFamily, FProto);
         LocalSockName.sin6_port := WSocket_Synchronized_htons(FLocalPortNum);
     end;
     SockNamelen := SizeOfAddr(LocalSockName);
@@ -8607,13 +8634,13 @@ begin
                         Exit;
                 end;
             end;
-            if (FLocalAddr <> ICS_ANY_HOST_V4) and
-               (FLocalAddr <> ICS_ANY_HOST_V6) then begin
+            if ((FAddrFormat = AF_INET) and (FLocalAddr <> ICS_ANY_HOST_V4)) or
+               ((FAddrFormat = AF_INET6) and (FLocalAddr6 <> ICS_ANY_HOST_V6)) then begin
                 if FAddrFormat = PF_INET then
                     PSockAddrIn(@laddr)^.sin_addr.S_addr :=
                     WSocket_Synchronized_ResolveHost(AnsiString(FLocalAddr)).S_addr
                 else
-                    WSocket_Synchronized_ResolveHost(FLocalAddr, laddr, sfIPv6, FProto);
+                    WSocket_Synchronized_ResolveHost(FLocalAddr6, laddr, sfIPv6, FProto);
 
                 if FAddrFormat = PF_INET then
                     iStatus := WSocket_Synchronized_SetSockOpt(FHSocket,
@@ -8676,7 +8703,8 @@ begin
         SetKeepAliveOption;
 
         if (FLocalPortNum <> 0) or
-        ((FLocalAddr <> ICS_ANY_HOST_V4) and (FLocalAddr <> ICS_ANY_HOST_V6)) then
+           ((FAddrFormat = AF_INET) and (FLocalAddr <> ICS_ANY_HOST_V4)) or
+           ((FAddrFormat = AF_INET6) and (FLocalAddr6 <> ICS_ANY_HOST_V6)) then
             BindSocket;
 
         FSelectEvent := FD_READ or FD_WRITE or FD_CLOSE or FD_CONNECT;
