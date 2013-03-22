@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      8.01
+Version:      8.02
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -477,6 +477,9 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 Dec 15, 2012 V8.01 Arno fixed missing port number in both Host header and property
              Location. 
+Mar 18, 2013 V8.02 - Angus added LocalAddr6 for IPv6
+             Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
+                   allow a host name to resolve to an IPv6 address.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -564,8 +567,8 @@ uses
     OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
-    HttpCliVersion       = 801;
-    CopyRight : String   = ' THttpCli (c) 1997-2012 F. Piette V8.01 ';
+    HttpCliVersion       = 802;
+    CopyRight : String   = ' THttpCli (c) 1997-2013 F. Piette V8.02 ';
     DefaultProxyPort     = '80';
     //HTTP_RCV_BUF_SIZE    = 8193;
     //HTTP_SND_BUF_SIZE    = 8193;
@@ -654,6 +657,7 @@ type
         //FWindowHandle         : HWND;
         FState                : THttpState;
         FLocalAddr            : String;
+        FLocalAddr6           : String; { V8.02 IPv6 address for local interface to use }
         FHostName             : String;
         FTargetHost           : String;
         FTargetPort           : String;
@@ -975,6 +979,8 @@ type
                                                      write FURL;
         property LocalAddr       : String            read  FLocalAddr   {bb}
                                                      write FLocalAddr;  {bb}
+        property LocalAddr6      : String            read  FLocalAddr6
+                                                     write FLocalAddr6; { V8.02 }
         property Proxy           : String            read  FProxy
                                                      write FProxy;
         property ProxyPort       : String            read  FProxyPort
@@ -1370,7 +1376,8 @@ begin
     FRcvdHeader                    := TStringList.Create;
     FReqStream                     := TMemoryStream.Create;
     FState                         := httpReady;
-    FLocalAddr                     := '0.0.0.0';
+    FLocalAddr                     := ICS_ANY_HOST_V4;
+    FLocalAddr6                    := ICS_ANY_HOST_V6;  { V8.02 }
     FFollowRelocation              := TRUE;      {TT 29 sept 2003}
 {$IFDEF UseContentCoding}
     FContentCodingHnd              := THttpContCodHandler.Create(@FRcvdStream,
@@ -1394,7 +1401,7 @@ begin
     FLocationChangeMaxCount        := 5;  {  V1.90 }
     FLocationChangeCurCount        := 0;  {  V1.90 }
     FTimeOut                       := 30;
-    FSocketFamily                  := DefaultSocketFamily;
+    FSocketFamily                  := DefaultSocketFamily;   { V8.00 }
 end;
 
 
@@ -2099,6 +2106,7 @@ begin
     FDnsResult := '';
     StateChange(httpDnsLookup);
     FCtrlSocket.LocalAddr := FLocalAddr; {bb}
+    FCtrlSocket.LocalAddr6 := FLocalAddr6;  { V8.02 }
     try
         FCtrlSocket.SocketFamily := FSocketFamily;
         { The setter of TCustomWSocket.Addr sets the correct internal     }
@@ -2122,6 +2130,7 @@ procedure THttpCli.DoBeforeConnect;
 begin
     FCtrlSocket.Addr                := FDnsResult;
     FCtrlSocket.LocalAddr           := FLocalAddr; {bb}
+    FCtrlSocket.LocalAddr6          := FLocalAddr6;  { V8.02 }
     FCtrlSocket.Port                := FPort;
     FCtrlSocket.Proto               := 'tcp';
     FCtrlSocket.SocksServer         := FSocksServer;

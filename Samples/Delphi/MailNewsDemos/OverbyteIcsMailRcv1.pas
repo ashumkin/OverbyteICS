@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Object:       Show how to use TPop3Cli (POP3 protocol, RFC-1225)
 Creation:     03 october 1997
-Version:      6.01
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -44,6 +44,7 @@ Jan 11, 2004  V1.04 Added Auth feature.
 Mar 23, 2006  V6.00  New version started from ICS-V5
 Aug 12, 2007  V6.00a Updated for ICS-V6
 Jul 04, 2010  V6.01 Use TFileStream and updated to support TPop3Cli V6.07
+Mar 19, 2013  V8.01 Added OpenEx, Login, Capa buttons
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMailRcv1;
@@ -62,8 +63,8 @@ uses
   OverbyteIcsWndControl;
 
 const
-    MailRcvVersion = 601;
-    CopyRight : String = ' MailRcv demo (c) 1997-2010 F. Piette V6.01 ';
+    MailRcvVersion = 801;
+    CopyRight : String = ' MailRcv demo (c) 1997-2013 F. Piette V8.01 ';
 
 type
   TPOP3ExcercizerForm = class(TForm)
@@ -112,6 +113,9 @@ type
     AuthComboBox: TComboBox;
     Label11: TLabel;
     AuthButton: TButton;
+    OpenExButton: TButton;
+    CapaButton: TButton;
+    LoginButton: TButton;
     procedure ConnectButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure QuittButtonClick(Sender: TObject);
@@ -149,6 +153,10 @@ type
     procedure AuthButtonClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
+    procedure OpenExButtonClick(Sender: TObject);
+    procedure CapaButtonClick(Sender: TObject);
+    procedure LoginButtonClick(Sender: TObject);
+    procedure Pop3ClientCapaLine(Sender: TObject);
   private
     FIniFileName  : String;
     FInitialized  : Boolean;
@@ -256,6 +264,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPOP3ExcercizerForm.Pop3ClientCapaLine(Sender: TObject);
+begin
+    DisplayMemo.Lines.Add(Pop3Client.LastResponse);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This event handler is called when the TPop3Client object wants to display }
 { some information such as connection progress or errors.                   }
 procedure TPOP3ExcercizerForm.Pop3ClientDisplay(
@@ -306,6 +320,13 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPOP3ExcercizerForm.CapaButtonClick(Sender: TObject);
+begin
+    Exec(Pop3Client.Capa, 'Capability');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TPOP3ExcercizerForm.ConnectButtonClick(Sender: TObject);
 begin
     Exec(Pop3Client.Connect, 'Connect');
@@ -316,6 +337,13 @@ end;
 procedure TPOP3ExcercizerForm.OpenButtonClick(Sender: TObject);
 begin
     Exec(Pop3Client.Open, 'Open');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPOP3ExcercizerForm.OpenExButtonClick(Sender: TObject);
+begin
+    Exec(Pop3Client.OpenEx, 'OpenEx');
 end;
 
 
@@ -373,6 +401,13 @@ end;
 procedure TPOP3ExcercizerForm.ListButtonClick(Sender: TObject);
 begin
     Exec(Pop3Client.List, 'List');
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TPOP3ExcercizerForm.LoginButtonClick(Sender: TObject);
+begin
+    Exec(Pop3Client.Login, 'Login');
 end;
 
 

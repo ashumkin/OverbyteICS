@@ -121,8 +121,8 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Caption = 'Authentication'
     end
     object ConnectButton: TButton
-      Left = 8
-      Top = 80
+      Left = 6
+      Top = 79
       Width = 60
       Height = 21
       Caption = '&Connect'
@@ -292,7 +292,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60
       Height = 21
       Caption = 'Uidl'
-      TabOrder = 21
+      TabOrder = 27
       OnClick = UidlButtonClick
     end
     object ApopButton: TButton
@@ -301,7 +301,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60
       Height = 21
       Caption = 'Apop'
-      TabOrder = 22
+      TabOrder = 28
       OnClick = ApopButtonClick
     end
     object NextButton: TButton
@@ -311,7 +311,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Height = 21
       Caption = '&Next'
       Default = True
-      TabOrder = 23
+      TabOrder = 29
       OnClick = NextButtonClick
     end
     object GetAllButton: TButton
@@ -332,12 +332,12 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Text = 'PortEdit'
     end
     object OpenButton: TButton
-      Left = 456
-      Top = 104
+      Left = 8
+      Top = 128
       Width = 60
       Height = 21
-      Caption = 'Open'
-      TabOrder = 24
+      Caption = '&Open'
+      TabOrder = 22
       OnClick = OpenButtonClick
     end
     object AbortButton: TButton
@@ -346,7 +346,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60
       Height = 21
       Caption = 'Abort'
-      TabOrder = 25
+      TabOrder = 26
       OnClick = AbortButtonClick
     end
     object SubjectEdit: TEdit
@@ -357,7 +357,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       TabStop = False
       Color = clSilver
       ReadOnly = True
-      TabOrder = 26
+      TabOrder = 30
       Text = 'SubjectEdit'
     end
     object FromEdit: TEdit
@@ -368,7 +368,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       TabStop = False
       Color = clSilver
       ReadOnly = True
-      TabOrder = 27
+      TabOrder = 31
       Text = 'FromEdit'
     end
     object ToEdit: TEdit
@@ -379,7 +379,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       TabStop = False
       Color = clSilver
       ReadOnly = True
-      TabOrder = 28
+      TabOrder = 32
       Text = 'ToEdit'
     end
     object AuthComboBox: TComboBox
@@ -388,7 +388,8 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 97
       Height = 21
       Style = csDropDownList
-      TabOrder = 29
+      ItemHeight = 13
+      TabOrder = 33
       Items.Strings = (
         'None'
         'Login'
@@ -402,14 +403,43 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
       Width = 60
       Height = 21
       Caption = 'Auth'
-      TabOrder = 30
+      TabOrder = 25
       OnClick = AuthButtonClick
+    end
+    object OpenExButton: TButton
+      Left = 72
+      Top = 128
+      Width = 60
+      Height = 21
+      Caption = 'OpenE&x'
+      TabOrder = 23
+      OnClick = OpenExButtonClick
+    end
+    object CapaButton: TButton
+      Left = 136
+      Top = 128
+      Width = 60
+      Height = 21
+      Caption = '&Capa'
+      TabOrder = 24
+      OnClick = CapaButtonClick
+    end
+    object LoginButton: TButton
+      Left = 456
+      Top = 104
+      Width = 60
+      Height = 21
+      Caption = 'Login'
+      TabOrder = 21
+      OnClick = LoginButtonClick
     end
   end
   object Pop3Client: TPop3Cli
     Tag = 0
     Host = 'localhost'
+    SocketFamily = sfIPv4
     LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
     Port = 'pop3'
     UserName = 'fpiette'
     PassWord = 'fp'
@@ -426,6 +456,7 @@ object POP3ExcercizerForm: TPOP3ExcercizerForm
     OnUidlBegin = Pop3ClientUidlBegin
     OnUidlEnd = Pop3ClientUidlEnd
     OnUidlLine = Pop3ClientUidlLine
+    OnCapaLine = Pop3ClientCapaLine
     OnHeaderEnd = Pop3ClientHeaderEnd
     OnRequestDone = Pop3ClientRequestDone
     Left = 332

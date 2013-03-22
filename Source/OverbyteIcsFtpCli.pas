@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V8.00
+Version:      V8.01
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -1051,6 +1051,9 @@ Apr 06, 2012 V7.29 **** BREAKING CHANGE ****
              These changes might require to adjust your OnRequestDone handler.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Mar 18, 2013 V8.01 - Angus added LocalAddr6 for IPv6
+             Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
+                   allow a host name to resolve to an IPv6 address.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -1141,9 +1144,9 @@ uses
     OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 800;
-  CopyRight : String = ' TFtpCli (c) 1996-2012 F. Piette V8.00 ';
-  FtpClientId : String = 'ICS FTP Client V8.00 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 801;
+  CopyRight : String = ' TFtpCli (c) 1996-2013 F. Piette V8.01 ';
+  FtpClientId : String = 'ICS FTP Client V8.01 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1275,6 +1278,7 @@ type
     FDSocketSndBufSize  : Integer;{AG V7.26}
     FDSocketRcvBufSize  : Integer;{AG V7.26}
     FLocalAddr          : String; {bb}
+    FLocalAddr6         : String; { V8.01 IPv6 address for local interface to use }
     FUserName           : String;
     FPassWord           : String;
     FAccount            : String;
@@ -1649,6 +1653,8 @@ type
                                                          write SetDataPortRangeEnd; {JT}
     property LocalAddr            : String               read  FLocalAddr
                                                          write FLocalAddr; {bb}
+    property LocalAddr6           : String               read  FLocalAddr6
+                                                         write FLocalAddr6; { V8.01 }
     property UserName             : String               read  FUserName
                                                          write FUserName;
     property PassWord             : String               read  FPassWord
@@ -1832,6 +1838,7 @@ type
     property DataPortRangeStart; {JT}
     property DataPortRangeEnd; {JT}
     property LocalAddr; {bb}
+    property LocalAddr6; { V8.01 }
     property UserName;
     property PassWord;
     property HostDirName;
@@ -2282,9 +2289,10 @@ begin
     FSocksServer        := '';
     FOptions            := [ftpAcceptLF];
     FLocalAddr          := ICS_ANY_HOST_V4;
+    FLocalAddr6         := ICS_ANY_HOST_V6;  { V8.01 }
     FKeepAliveSecs      := 0; {V2.107 for control socket only }
     FClientIdStr        := ftpClientId; {V2.113 string sent for CLNT command }
-    FSocketFamily       := DefaultSocketFamily;
+    FSocketFamily       := DefaultSocketFamily;   { V8.00 IPv6 }
     FControlSocket      := CreateSocket;   { V7.08 was  TWSocket.Create(Self); }
     FControlSocket.ExceptAbortProc    := AbortComponent; { V7.15 }
     FControlSocket.OnSessionConnected := ControlSocketSessionConnected;
@@ -5057,6 +5065,7 @@ begin
     FDataSocket.Port               := TargetPort;
     FDataSocket.Addr               := TargetIP; {ControlSocket.Addr;}
     FDataSocket.LocalAddr          := FLocalAddr; {bb}
+    FDataSocket.LocalAddr6         := FLocalAddr6; { V8.01 }
     FDataSocket.OnSessionConnected := DataSocketGetSessionConnected;
     FDataSocket.LingerOnOff        := wsLingerOff;
     FDataSocket.LingerTimeout      := 0;
@@ -5390,6 +5399,7 @@ begin
     FDataSocket.Port               := TargetPort;
     FDataSocket.Addr               := TargetIP; {ControlSocket.Addr;}
     FDataSocket.LocalAddr          := FLocalAddr; {bb}
+    FDataSocket.LocalAddr6         := FLocalAddr6; { V8.01 }
     FDataSocket.OnSessionConnected := DataSocketPutSessionConnected;
     { Normally we should use LingerOn with a timeout. But doing so will }
     { often result in error 10055 triggered after a lot of consecutive  }
@@ -5850,6 +5860,7 @@ begin
         FDnsResult               := FControlSocket.DnsResult;
         FControlSocket.Addr      := FDnsResult;
         FControlSocket.LocalAddr := FLocalAddr; {bb}
+        FControlSocket.LocalAddr6 := FLocalAddr6; { V8.01 }
         FControlSocket.Proto     := 'tcp';
 {$IFDEF USE_SSL}
         FControlSocket.SslEnable := FALSE;

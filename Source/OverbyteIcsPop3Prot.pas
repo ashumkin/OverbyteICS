@@ -10,7 +10,7 @@ Author:       François PIETTE
 Object:       TPop3Cli class implements the POP3 protocol
               (RFC-1225, RFC-1939)
 Creation:     03 october 1997
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -192,6 +192,16 @@ Feb 17, 2012 V6.13 Arno added NTLMv2 and NTLMv2 session security (basics),
              read comment "HowTo NTLMv2" in OverbyteIcsNtlmMsgs.pas.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Mar 19, 2013 V8.01 Angus added OpenEx, Login, UserPass, Capa and
+                     OpenExSync, LoginSync, UserPassSync, CapaSync
+                 UserPass/UserPassSync does User then Password
+                 Login/LoginSync does APOP if available else UserPass
+                 OpenEx/OpenExSync does Connect then Login
+                 Capa/CapaSync returns server extended capabilities in
+                     OnCapaLine event
+             Added LocalAddr6 for IPv6
+             Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
+                   allow a host name to resolve to an IPv6 address.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -258,8 +268,8 @@ uses
 (*$HPPEMIT '#pragma alias "@Overbyteicspop3prot@TCustomPop3Cli@GetUserNameW$qqrv"="@Overbyteicspop3prot@TCustomPop3Cli@GetUserName$qqrv"' *)
 
 const
-    Pop3CliVersion     = 800;
-    CopyRight : String = ' POP3 component (c) 1997-2012 F. Piette V8.00 ';
+    Pop3CliVersion     = 801;
+    CopyRight : String = ' POP3 component (c) 1997-2013 F. Piette V8.01 ';
     POP3_RCV_BUF_SIZE  = 4096;
 
 type
@@ -274,15 +284,17 @@ type
     TPop3Request  = (pop3Connect, pop3User, pop3Pass, pop3RPop, pop3Quit,
                      pop3Stat,    pop3List, pop3Retr, pop3Top,  pop3Dele,
                      pop3Noop,    pop3Last, pop3RSet, pop3Uidl, pop3APop,
-                     pop3Open,    pop3Auth,
+                     pop3Open,   pop3Auth, pop3OpenEx,pop3Login,pop3UserPass,
+                     pop3Capa,
                  {$IFDEF USE_SSL}
                      pop3StartTls,
-                 {$ENDIF}    
+                 {$ENDIF}
                      pop3Custom);
     TPop3Fct      = (pop3FctNone, pop3FctConnect, pop3FctUser, pop3FctPass,
                      pop3FctRPop, pop3FctQuit,    pop3FctAPop, pop3FctStat,
                      pop3FctList, pop3FctUidl,    pop3FctRetr, pop3FctTop,
-                     pop3FctDele, pop3FctNoop,    pop3FctRSet, pop3FctLast
+                     pop3FctDele, pop3FctNoop,    pop3FctRSet, pop3FctLast,
+                     pop3FctLogin,pop3FctUserPass, pop3FctCapa
                  {$IFDEF USE_SSL}
                      , pop3FctStartTls
                  {$ENDIF}
@@ -326,8 +338,9 @@ type
         FMultiLineLine      : TNotifyEvent;
         FMultiLineEnd       : TNotifyEvent;
         FMultiLineProcess   : TNotifyEvent;
-        FHost               : String;        
+        FHost               : String;
         FLocalAddr          : String; {bb}
+        FLocalAddr6         : String; { V8.01 IPv6 address for local interface to use }
         FPort               : String;
         FUserName           : AnsiString;
         FPassWord           : AnsiString;
@@ -368,6 +381,9 @@ type
         FOnUidlBegin        : TNotifyEvent;
         FOnUidlEnd          : TNotifyEvent;
         FOnUidlLine         : TNotifyEvent;
+        FOnCapaBegin        : TNotifyEvent;  { V8.01 }
+        FOnCapaEnd          : TNotifyEvent;  { V8.01 }
+        FOnCapaLine         : TNotifyEvent;  { V8.01 }
         FOnStateChange      : TNotifyEvent;
         FOnRequestDone      : TPop3RequestDone;
         FOnResponse         : TPop3Response;
@@ -396,6 +412,7 @@ type
         procedure   CreateCtrlSocket; virtual;
         procedure   GetALine;
         procedure   StatDone;
+        procedure   CapaDone;   { V8.01 }
         procedure   ListAllDone;
         procedure   ListSingleDone;
         procedure   UidlAllDone;
@@ -450,6 +467,10 @@ type
         destructor  Destroy; override;
         procedure   Connect; virtual;
         procedure   Open; virtual;
+        procedure   OpenEx; virtual;    { V8.01 }
+        procedure   Login; virtual;     { V8.01 }
+        procedure   UserPass; virtual;  { V8.01 }
+        procedure   Capa; virtual;      { V8.01 }
         procedure   Auth; virtual; {HLX}
         procedure   User; virtual;
         procedure   Pass; virtual;
@@ -477,6 +498,8 @@ type
                                                      write FSocketFamily;
         property LocalAddr     : String              read  FLocalAddr   {bb}
                                                      write FLocalAddr;  {bb}
+        property LocalAddr6    : String              read  FLocalAddr6
+                                                     write FLocalAddr6; { V8.01 }
         property Port          : String              read  FPort
                                                      write FPort;
         property UserName      : String              read  GetUserName
@@ -544,6 +567,12 @@ type
                                                      write FOnUidlEnd;
         property OnUidlLine : TNotifyEvent           read  FOnUidlLine
                                                      write FOnUidlLine;
+        property OnCapaBegin : TNotifyEvent          read  FOnCapaBegin     { V8.01 }
+                                                     write FOnCapaBegin;
+        property OnCapaEnd : TNotifyEvent            read  FOnCapaEnd       { V8.01 }
+                                                     write FOnCapaEnd;
+        property OnCapaLine : TNotifyEvent           read  FOnCapaLine      { V8.01 }
+                                                     write FOnCapaLine;
         property OnHeaderEnd : TNotifyEvent          read  FOnHeaderEnd
                                                      write FOnHeaderEnd;
         property OnStateChange : TNotifyEvent        read  FOnStateChange
@@ -565,6 +594,7 @@ type
         property Host;
         property SocketFamily;
         property LocalAddr; {bb}
+        property LocalAddr6; { V8.01 }
         property Port;
         property UserName;
         property PassWord;
@@ -589,6 +619,9 @@ type
         property OnUidlBegin;
         property OnUidlEnd;
         property OnUidlLine;
+        property OnCapaBegin;    { V8.01 }
+        property OnCapaEnd;      { V8.01 }
+        property OnCapaLine;     { V8.01 }
         property OnHeaderEnd;
         property OnStateChange;
         property OnRequestDone;
@@ -613,6 +646,10 @@ type
         constructor Create(AOwner : TComponent); override;
         function    ConnectSync  : Boolean; virtual;
         function    OpenSync     : Boolean; virtual;
+        function    OpenExSync   : Boolean; virtual;  { V8.01 }
+        function    LoginSync    : Boolean; virtual;  { V8.01 }
+        function    UserPassSync : Boolean; virtual;  { V8.01 }
+        function    CapaSync     : Boolean; virtual;  { V8.01 }
         function    UserSync     : Boolean; virtual;
         function    PassSync     : Boolean; virtual;
         function    RPopSync     : Boolean; virtual;
@@ -694,6 +731,7 @@ Updates:
         procedure   Stls; virtual;
         //procedure   Abort; override;
         procedure   Open; override;
+        procedure   OpenEx; override;   { V8.01 }
         procedure   Connect; override;
         property    SslAcceptableHosts   : TStrings
                                                   read  GetSslAcceptableHosts
@@ -836,6 +874,7 @@ begin
     FState                   := pop3Ready;
     FSocketFamily            := FWSocket.SocketFamily;
     FLocalAddr               := ICS_ANY_HOST_V4;
+    FLocalAddr6              := ICS_ANY_HOST_V6;  { V8.01 }
     FPort                    := 'pop3';
 end;
 
@@ -939,6 +978,7 @@ begin
         FWSocket.Proto              := 'tcp';
         FWSocket.Port               := FPort;
         FWSocket.LocalAddr          := FLocalAddr; {bb}
+        FWSocket.LocalAddr6         := FLocalAddr6; { V8.01 }
         FWSocket.OnSessionConnected := WSocketSessionConnected;
         FWSocket.OnDataAvailable    := WSocketDataAvailable;
         StateChange(pop3Connecting);
@@ -1319,6 +1359,20 @@ begin
         FFctPrv := pop3FctQuit;
         FFctSet := FFctSet - [FFctPrv];
         Quit;
+        Exit;
+    end;
+
+    if pop3FctLogin in FFctSet then begin  { V8.01 }
+        FFctPrv := pop3FctLogin;
+        FFctSet := FFctSet - [FFctPrv];
+        Login;
+        Exit;
+    end;
+
+    if pop3FctUserPass in FFctSet then begin   { V8.01 }
+        FFctPrv := pop3FctUserPass;
+        FFctSet := FFctSet - [FFctPrv];
+        UserPass;
         Exit;
     end;
 
@@ -1823,11 +1877,28 @@ begin
         Display(FErrorMessage);
         raise Pop3Exception.Create(FErrorMessage);
     end;
-
     FFctPrv := pop3FctAPop;
     ExecAsync(pop3APop, 'APOP ' + Trim(FUserName) + ' ' +
                         LowerCase(StrMD5(FTimeStamp + FPassWord)),
                         pop3Transaction, nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.Login;    { V8.01 }
+begin
+    if FProtocolState <> pop3WaitingUser then begin
+        FErrorMessage := '-ERR APOP and USER commands invalid now';
+        Display(FErrorMessage);
+        raise Pop3Exception.Create(FErrorMessage);
+    end;
+    if not FHighLevelFlag then
+        FRequestType  := pop3Login;
+    FFctPrv := pop3FctLogin;
+    if FTimeStamp = '' then
+        HighLevelAsync(FRequestType, [pop3FctUser, pop3FctPass])
+    else
+        APop;
 end;
 
 
@@ -1990,9 +2061,39 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.Capa;  { V8.01 server capabilities, returns list }
+begin
+ // any time while connected, don't change state
+    FFctPrv := pop3FctCapa;
+    ExecAsync(pop3Capa, 'CAPA', FNextProtocolState, CapaDone);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.CapaDone;  { V8.01 }
+begin
+    StartMultiLine(FOnCapaBegin, FOnCapaLine, FOnCapaEnd, Nil);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomPop3Cli.Open;
 begin
     HighLevelAsync(pop3Open, [pop3FctConnect, pop3FctUser, pop3FctPass]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.UserPass;   { V8.01 }
+begin
+    HighLevelAsync(pop3UserPass, [pop3FctUser, pop3FctPass]);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomPop3Cli.OpenEx;     { V8.01 }
+begin
+    HighLevelAsync(pop3OpenEx, [pop3FctConnect, pop3FctLogin]);
 end;
 
 
@@ -2295,6 +2396,34 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSyncPop3Cli.OpenExSync   : Boolean;  { V8.01 }
+begin
+    Result := Synchronize(OpenEx);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSyncPop3Cli.LoginSync    : Boolean;  { V8.01 }
+begin
+    Result := Synchronize(Login);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSyncPop3Cli.UserPassSync :Boolean;   { V8.01 }
+begin
+    Result := Synchronize(UserPass);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TSyncPop3Cli.CapaSync :Boolean;   { V8.01 }
+begin
+    Result := Synchronize(Capa);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TSyncPop3Cli.UserSync : Boolean;
 begin
     Result := Synchronize(User);
@@ -2536,7 +2665,18 @@ begin
         HighLevelAsync(pop3Open, [pop3FctConnect, pop3FctStartTls,
                                   pop3FctUser, pop3FctPass])
     else
-        inherited Open;    
+        inherited Open;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslPop3Cli.OpenEx;   { V8.01 }
+begin
+    if FSslType = pop3TlsExplicit then
+        HighLevelAsync(pop3OpenEx, [pop3FctConnect, pop3FctStartTls,
+                                                    pop3FctLogin])
+    else
+        inherited OpenEx;
 end;
 
 
@@ -2787,6 +2927,20 @@ begin
         FFctPrv := pop3FctQuit;
         FFctSet := FFctSet - [FFctPrv];
         Quit;
+        Exit;
+    end;
+
+    if pop3FctLogin in FFctSet then begin  { V8.01 }
+        FFctPrv := pop3FctLogin;
+        FFctSet := FFctSet - [FFctPrv];
+        Login;
+        Exit;
+    end;
+
+    if pop3FctUserPass in FFctSet then begin   { V8.01 }
+        FFctPrv := pop3FctUserPass;
+        FFctSet := FFctSet - [FFctPrv];
+        UserPass;
         Exit;
     end;
 

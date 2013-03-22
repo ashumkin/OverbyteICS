@@ -7,7 +7,7 @@ Object:       TSmtpCli class implements the SMTP protocol (RFC-821)
               Support authentification (RFC-2104)
               Support HTML mail with embedded images.
 Creation:     09 october 1997
-Version:      8.02
+Version:      8.03
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -404,6 +404,9 @@ Jan 12, 2013 V8.01  CLEM New event to attach stream directly. If assigned
                     tries to open the file the 'usual' way.
 Mar 16, 2013 V8.02 Arno fixed EReadError with message 'Error reading
                    HtmlSmtpCli.TimeOut:Property TimeOut does not exist'.
+Mar 19, 2013 V8.03 Angus added LocalAddr6 for IPv6
+             Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
+                   allow a host name to resolve to an IPv6 address.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -487,8 +490,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-  SmtpCliVersion     = 802;
-  CopyRight : String = ' SMTP component (c) 1997-2013 Francois Piette V8.02 ';
+  SmtpCliVersion     = 803;
+  CopyRight : String = ' SMTP component (c) 1997-2013 Francois Piette V8.03 ';
   smtpProtocolError  = 20600; {AG}
   SMTP_RCV_BUF_SIZE  = 4096;
 
@@ -685,6 +688,7 @@ type
         FHost                : String;       { SMTP server hostname or IP  }
         FSocketFamily        : TSocketFamily;
         FLocalAddr           : String; {bb}  { Local Address for mulithome }
+        FLocalAddr6          : String; { V8.03 IPv6 address for local interface to use }
         FPort                : String;       { Should be 'smtp'            }
         FSignOn              : String;       { Used for the 'HELO' command }
         FUsername            : String;       { Used with the 'AUTH' command }
@@ -909,6 +913,8 @@ type
                                                      write FHost;
         property LocalAddr : String                  read  FLocalAddr  {bb}
                                                      write FLocalAddr; {bb}
+        property LocalAddr6 : String                 read  FLocalAddr6
+                                                     write FLocalAddr6; { V8.03 }
         property Port : String                       read  FPort
                                                      write FPort;
         property SignOn : String                     read  FSignOn
@@ -1075,6 +1081,7 @@ type
         property ShareMode;
         property Host;
         property LocalAddr;             {bb}
+        property LocalAddr6; { V8.03 }
         property Port;
         property SignOn;
         property Username;
@@ -1921,6 +1928,7 @@ begin
     FCharSet                 := CodePageToMimeCharsetString(FCodePage);
     FAuthType                := smtpAuthNone;
     FLocalAddr               := ICS_ANY_HOST_V4;
+    FLocalAddr6              := ICS_ANY_HOST_V6;  { V8.03 }
     SetContentType(smtpPlainText);
     FShareMode               := fmShareDenyWrite;
     FHdrPriority             := smtpPriorityNone;
@@ -2312,6 +2320,7 @@ begin
     else begin
         FWSocket.Addr               := FWSocket.DnsResult;
         FWSocket.LocalAddr          := FLocalAddr; {bb}
+        FWSocket.LocalAddr6         := FLocalAddr6; { V8.03 }
         FWSocket.Proto              := 'tcp';
         FWSocket.Port               := FPort;
         FWSocket.OnSessionConnected := WSocketSessionConnected;
