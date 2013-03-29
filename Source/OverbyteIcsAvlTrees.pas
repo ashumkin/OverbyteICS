@@ -37,6 +37,8 @@ Mar  16, 2009  CompareStr ignored the first char (Unicode only), uses
 Dez  06, 2011  Made TCacheNode Data and Len writable.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Mar 29,  2013  Fixed a bug in TIcsAvlPointerTree where the wrong data was
+               passed to method Notification on Remove of a node. 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
@@ -1804,7 +1806,7 @@ begin
             if up[top -1].link[Ord(Dir)] <> nil then
                 up[top -1].link[Ord(Dir)].Up := up[top -1];
 
-            Notification(heir.Data, atnRemoved);
+            Notification(Data, atnRemoved);
             Dispose(heir);
         end;
 
