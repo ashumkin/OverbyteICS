@@ -1738,7 +1738,10 @@ begin
             end;
 
             if SameData(it.Data, Data) then
+            begin
+                Notification(it.Data, atnRemoved);
                 Break;
+            end;
 
             { Push direction and node onto stack }
             upd[top] := CompareData(it.Data, Data);
@@ -1776,7 +1779,6 @@ begin
                 if FRoot <> nil then
                     FRoot.Up := nil;
             end;
-            Notification(Data, atnRemoved);
             Dispose(it);
         end
         else begin
@@ -1805,8 +1807,6 @@ begin
             { Parent link }
             if up[top -1].link[Ord(Dir)] <> nil then
                 up[top -1].link[Ord(Dir)].Up := up[top -1];
-
-            Notification(Data, atnRemoved);
             Dispose(heir);
         end;
 
