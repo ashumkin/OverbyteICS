@@ -7,7 +7,7 @@ Object:       Delphi component which implement the TCP/IP telnet protocol
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Creation:     April, 1996
-Version:      8.00
+Version:      8.01
 Support:      Use the mailing list twsocket@elists.org See website for details.
 Legal issues: Copyright (C) 1996-2010 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. 
@@ -63,6 +63,7 @@ Jul 17, 2011 V7.01 Arno fixed some bugs with non-Windows-1252 code pages.
 Jul 18, 2011 V7.02 Arno reverted breaking changes from V7.01.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Apr 11, 2013  V8.01 Angus added SocketFamily, LocalAddr and LocalAddr6 for IPv6
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTnCnx;
@@ -104,8 +105,8 @@ uses
     OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWinsock;
 
 const
-  TnCnxVersion       = 800;
-  CopyRight : String = ' TTnCnx (c) 1996-2012 F. Piette V8.00 ';
+  TnCnxVersion       = 801;
+  CopyRight : String = ' TTnCnx (c) 1996-2013 F. Piette V8.01 ';
 
   { Telnet command characters                                            }
   TNCH_EOR        = #239;     { $EF End Of Record (preceded by IAC)       }
@@ -169,6 +170,9 @@ type
     FTType              : Boolean;
     FBuffer             : array [0..2048] of AnsiChar;
     FBufferCnt          : Integer;
+    FSocketFamily       : TSocketFamily;  { V8.01 }
+    FLocalAddr          : String;         { V8.01 }
+    FLocalAddr6         : String;         { V8.01 }
     FOnSessionConnected : TTnSessionConnected;
     FOnSessionClosed    : TTnSessionClosed;
     FOnDataAvailable    : TTnDataAvailable;
@@ -220,6 +224,12 @@ type
                                                       write SetTermType;
     property LocalEcho : Boolean                      read  FLocalEcho
                                                       write FLocalEcho;
+    property SocketFamily  : TSocketFamily            read  FSocketFamily
+                                                      write FSocketFamily;    { V8.01 }
+    property LocalAddr  : String                      read  FLocalAddr
+                                                      write FLocalAddr;       { V8.01 }
+    property LocalAddr6 : String                      read  FLocalAddr6
+                                                      write FLocalAddr6;      { V8.01 }
     property OnSessionConnected : TTnSessionConnected read  FOnSessionConnected
                                                       write FOnSessionConnected;
     property OnSessionClosed :    TTnSessionClosed    read  FOnSessionClosed
@@ -276,6 +286,7 @@ begin
     FLocation                 := 'TNCNX';
     FTermType                 := 'VT100';
     FPort                     := '23';
+    FSocketFamily             := DefaultSocketFamily;   { V8.01 }
     Socket                    := TWSocket.Create(Self);
     Socket.OnSessionConnected := SocketSessionConnected;
     Socket.OnDataAvailable    := SocketDataAvailable;
@@ -333,6 +344,9 @@ begin
     Socket.Proto := 'tcp';
     Socket.Port  := FPort;
     Socket.Addr  := FHost;
+    Socket.LocalAddr := FLocalAddr;       { V8.01 }
+    Socket.LocalAddr6 := FLocalAddr6;     { V8.01 }
+    Socket.SocketFamily := FSocketFamily; { V8.01 }
     Socket.Connect;
 end;
 

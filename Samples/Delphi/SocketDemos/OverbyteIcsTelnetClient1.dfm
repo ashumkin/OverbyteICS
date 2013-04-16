@@ -48,8 +48,8 @@ object TelnetForm: TTelnetForm
     AutoRepaint = True
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
-    Font.Name = 'Terminal'
+    Font.Height = -11
+    Font.Name = 'Courier New'
     Font.Pitch = fpFixed
     Font.Style = []
     LocalEcho = False
@@ -81,6 +81,7 @@ object TelnetForm: TTelnetForm
     Port = 'telnet'
     Location = 'TNCHR'
     UpperLock = False
+    SocketFamily = sfAny
     OnSessionClosed = TnEmulVT1SessionClosed
     OnSessionConnected = TnEmulVT1SessionConnected
   end

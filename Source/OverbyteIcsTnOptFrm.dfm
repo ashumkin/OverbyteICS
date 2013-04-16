@@ -8,48 +8,48 @@ object OptForm: TOptForm
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -11
+  Font.Name = 'Arial'
   Font.Style = []
   OldCreateOrder = True
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
   PixelsPerInch = 96
-  TextHeight = 16
+  TextHeight = 14
   object Label1: TLabel
     Left = 8
     Top = 11
-    Width = 34
-    Height = 16
+    Width = 29
+    Height = 14
     Caption = 'Rows'
   end
   object Label2: TLabel
     Left = 8
     Top = 43
-    Width = 27
-    Height = 16
+    Width = 21
+    Height = 14
     Caption = 'Cols'
   end
   object Label3: TLabel
     Left = 8
     Top = 74
-    Width = 46
-    Height = 16
+    Width = 36
+    Height = 14
     Caption = 'LHeight'
   end
   object Label4: TLabel
     Left = 128
     Top = 12
-    Width = 63
-    Height = 16
+    Width = 50
+    Height = 14
     Caption = 'Line Zoom'
   end
   object Label5: TLabel
     Left = 128
     Top = 44
-    Width = 66
-    Height = 16
+    Width = 53
+    Height = 14
     Caption = 'Char Zoom'
   end
   object AutoCRCheckBox: TCheckBox
@@ -92,7 +92,7 @@ object OptForm: TOptForm
     Left = 64
     Top = 8
     Width = 49
-    Height = 24
+    Height = 22
     TabOrder = 0
     Text = 'RowsEdit'
   end
@@ -100,7 +100,7 @@ object OptForm: TOptForm
     Left = 64
     Top = 40
     Width = 49
-    Height = 24
+    Height = 22
     TabOrder = 1
     Text = 'ColsEdit'
   end
@@ -173,7 +173,7 @@ object OptForm: TOptForm
     Left = 64
     Top = 72
     Width = 49
-    Height = 24
+    Height = 22
     TabOrder = 2
     Text = 'LineHeightEdit'
   end
@@ -242,7 +242,7 @@ object OptForm: TOptForm
     Left = 204
     Top = 8
     Width = 45
-    Height = 24
+    Height = 22
     TabOrder = 3
     Text = 'LineZoomEdit'
   end
@@ -250,7 +250,7 @@ object OptForm: TOptForm
     Left = 204
     Top = 40
     Width = 45
-    Height = 24
+    Height = 22
     TabOrder = 4
     Text = 'CharZoomEdit'
   end
@@ -264,11 +264,12 @@ object OptForm: TOptForm
     TabOrder = 11
   end
   object FontDialog1: TFontDialog
-    Font.Charset = DEFAULT_CHARSET
+    Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'System'
+    Font.Height = -11
+    Font.Name = 'Courier New'
     Font.Style = []
+    Options = [fdFixedPitchOnly]
     Left = 204
     Top = 175
   end

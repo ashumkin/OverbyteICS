@@ -5,7 +5,7 @@ Description:  Delphi component combining both TnCnx and EmulVT components.
               Hence it does ANSI emulation using TCP/IP telnet protocol.
 Author:       François PIETTE
 Creation:     May, 1996
-Version:      8.00
+Version:      8.01
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -80,6 +80,10 @@ Aug 15, 2008 V7.00 Delphi 2009 (Unicode) support. The terminal is not
 Jul 17, 2011 V7.01 Arno fixed some bugs with non-Windows-1252 code pages.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Apr 11, 2013  V8.01 Angus added SocketFamily, LocalAddr and LocalAddr6 for IPv6
+                    Added default font if host not saved yet
+                    Free Options form each time it's opened
+
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -100,10 +104,8 @@ unit OverbyteIcsTnEmulVT;
     {$WARN SYMBOL_LIBRARY    OFF}
     {$WARN SYMBOL_DEPRECATED OFF}
 {$ENDIF}
-{$IFNDEF VER80}   { Not for Delphi 1                    }
-    {$H+}         { Use long strings                    }
-    {$J+}         { Allow typed constant to be modified }
-{$ENDIF}
+{$H+}         { Use long strings                    }
+{$J+}         { Allow typed constant to be modified }
 {$IFDEF BCB3_UP}
     {$ObjExportAll On}
 {$ENDIF}
@@ -122,8 +124,8 @@ uses
     OverbyteIcsTnOptFrm, OverbyteIcsWSocket;
 
 const
-  TnEmultVTVersion   = 800;
-  CopyRight : String = ' TTnEmulVT (c) 1996-2012 F. Piette V8.00 ';
+  TnEmultVTVersion   = 801;
+  CopyRight : String = ' TTnEmulVT (c) 1996-2013 F. Piette V8.01 ';
 
 type
   TTnEmulVTDataAvailable = procedure (Sender  : TObject;
@@ -154,6 +156,9 @@ type
     FMouseLeft          : Integer;
     FFocusDrawn         : Boolean;
     FFocusRect          : TRect;
+    FSocketFamily       : TSocketFamily;  { V8.01 }
+    FLocalAddr          : String;         { V8.01 }
+    FLocalAddr6         : String;         { V8.01 }
     procedure   TriggerDataAvailable(Buffer : Pointer; Len: Integer); virtual;
     procedure   TnCnxDataAvailable(Sender: TTnCnx; Buffer : Pointer; Len : Integer);
     procedure   TnCnxSessionClosed(Sender: TTnCnx; ErrorCode: Word);
@@ -203,7 +208,9 @@ type
     property Location      : String  read GetLocation  write SetLocation;
     property UpperLock     : Boolean read FUpperLock   write FUpperLock;
     property LocalEcho     : Boolean read FLocalEcho   write FLocalEcho;
-
+    property SocketFamily  : TSocketFamily read FSocketFamily  write FSocketFamily; { V8.01 }
+    property LocalAddr     : String  read FLocalAddr   write FLocalAddr;            { V8.01 }
+    property LocalAddr6    : String  read FLocalAddr6  write FLocalAddr6;           { V8.01 }
     property OnKeyDown;
     property OnSessionClosed    : TNotifyEvent         read  FOnSessionClosed
                                                        write FOnSessionClosed;
@@ -257,7 +264,7 @@ begin
     if FontName <> '*' then begin
         Font.Name  := FontName;
         Font.Size  := IniFile.ReadInteger(Section, 'FontSize', 9);
-        Font.Pitch := TFontPitch(IniFile.ReadInteger(Section, 'FontPitch', 12));
+        Font.Pitch := TFontPitch(IniFile.ReadInteger(Section, 'FontPitch', 0));
         nBuf       := IniFile.ReadInteger(Section, 'FontStyle', 0);
         Font.Style := [];
         if (nBuf and 1) <> 0 then
@@ -268,6 +275,13 @@ begin
             Font.Style := Font.Style + [fsUnderline];
         if (nBuf and 8) <> 0 then
             Font.Style := Font.Style + [fsStrikeOut];
+    end
+    else   { V8.01 added default font if host not saved yet }
+    begin
+        Font.Name := 'Courier New';
+        Font.Size := 8 ;
+        Font.Pitch := fpDefault ;
+        Font.Style := [];
     end;
 end;
 
@@ -293,6 +307,7 @@ begin
     FPort        := 'telnet';
     Rect.Top     := -1;
     SelectRect   := Rect;
+    FSocketFamily := DefaultSocketFamily;   { V8.01 }
 end;
 
 
@@ -511,19 +526,7 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * ** * * * * * * * * * * * * * *}
 procedure TTnEmulVT.Connect;
 var
-{$IFDEF VER80}    { Delphi 1 }
-    Form : TForm;
-{$ELSE}
-{$IFDEF VER90}    { Delphi 2 }
-    Form : TForm;
-{$ELSE}
-{$IFDEF VER93}    { Bcb 1    }
-    Form : TForm;
-{$ELSE}           { Delphi 3/4, Bcb 3/4 }
     Form : TCustomForm;
-{$ENDIF}
-{$ENDIF}
-{$ENDIF}
 begin
     if Length(FHostname) <= 0 then
         Exit;
@@ -533,6 +536,9 @@ begin
         Exit;
     FTnCnx.Port  := FPort;
     FTnCnx.Host  := FHostName;
+    FTnCnx.LocalAddr := FLocalAddr;       { V8.01 }
+    FTnCnx.LocalAddr6 := FLocalAddr6;     { V8.01 }
+    FTnCnx.SocketFamily := FSocketFamily; { V8.01 }
     FTnCnx.Connect;
     Display('Connecting to ''' + HostName + '''' + #13 + #10);
     Form := GetParentForm(Self);
@@ -586,60 +592,63 @@ begin
     if Length(FHostname) <= 0 then
         Exit;
 
-    if OptForm = nil then
-        OptForm := TOptForm.Create(Self);
+//    if OptForm = nil then   // Angus Apr 2013 create and free form
+    OptForm := TOptForm.Create(Self);
+    try
+        OptForm.IniFileName  := FIniFileName;
+        OptForm.OnNamesClick := FOnNamesClick;
 
-    OptForm.IniFileName  := FIniFileName;
-    OptForm.OnNamesClick := FOnNamesClick;
-
-    RestoreOptions;
-    OptForm.AFont.Assign(Font);
-    OptForm.LineHeight  := LineHeight;
-    OptForm.AutoCR      := AutoCr;
-    OptForm.AutoLF      := AutoLF;
-    OptForm.LocalEcho   := LocalEcho;
-    OptForm.MonoChrome  := MonoChrome;
-    OptForm.UpperLock   := UpperLock;
-    OptForm.Xlat        := Xlat;
-    OptForm.GraphicDraw := GraphicDraw;
-    OptForm.Rows        := Rows;
-    OptForm.Cols        := Cols;
-    OptForm.HostName    := FHostName;
-    OptForm.FKeys       := FKeys;
-    OptForm.CharZoom    := CharZoom;
-    OptForm.LineZoom    := LineZoom;
-    if OptForm.ShowModal = IDOK then begin
-        Font        := OptForm.AFont;
-        LineHeight  := OptForm.LineHeight;
-        AutoCR      := OptForm.AutoCr;
-        AutoLF      := OptForm.AutoLF;
-        LocalEcho   := OptForm.LocalEcho;
-        MonoChrome  := OptForm.MonoChrome;
-        UpperLock   := OptForm.UpperLock;
-        Xlat        := OptForm.Xlat;
-        GraphicDraw := OptForm.GraphicDraw;
-        Rows        := OptForm.Rows;
-        Cols        := OptForm.Cols;
-        FKeys       := OptForm.FKeys;
-        LineZoom    := OptForm.LineZoom;
-        CharZoom    := OptForm.CharZoom;
-        IniFile     := TIniFile.Create(FIniFilename);
-        FontToIni(OptForm.AFont, IniFile, FHostName);
-        IniFile.WriteInteger(FHostName, 'LineHeight',  LineHeight);
-        IniFile.WriteInteger(FHostName, 'Rows',        Rows);
-        IniFile.WriteInteger(FHostName, 'Cols',        Cols);
-        IniFile.WriteInteger(FHostName, 'AutoCR',      ord(AutoCR));
-        IniFile.WriteInteger(FHostName, 'AutoLF',      ord(AutoLF));
-        IniFile.WriteInteger(FHostName, 'LocalEcho',   ord(LocalEcho));
-        IniFile.WriteInteger(FHostName, 'MonoChrome',  ord(MonoChrome));
-        IniFile.WriteInteger(FHostName, 'UpperLock',   ord(UpperLock));
-        IniFile.WriteInteger(FHostName, 'Xlat',        ord(Xlat));
-        IniFile.WriteInteger(FHostName, 'GraphicDraw', ord(GraphicDraw));
-        IniFile.WriteInteger(FHostName, 'FKeys',       FKeys);
-        IniFile.WriteString(FHostName, 'LineZoom',     Format('%5.3f', [LineZoom]));
-        IniFile.WriteString(FHostName, 'CharZoom',     Format('%5.3f', [CharZoom]));
-        IniFile.Free;
-        Repaint;
+        RestoreOptions;
+        OptForm.AFont.Assign(Font);
+        OptForm.LineHeight  := LineHeight;
+        OptForm.AutoCR      := AutoCr;
+        OptForm.AutoLF      := AutoLF;
+        OptForm.LocalEcho   := LocalEcho;
+        OptForm.MonoChrome  := MonoChrome;
+        OptForm.UpperLock   := UpperLock;
+        OptForm.Xlat        := Xlat;
+        OptForm.GraphicDraw := GraphicDraw;
+        OptForm.Rows        := Rows;
+        OptForm.Cols        := Cols;
+        OptForm.HostName    := FHostName;
+        OptForm.FKeys       := FKeys;
+        OptForm.CharZoom    := CharZoom;
+        OptForm.LineZoom    := LineZoom;
+        if OptForm.ShowModal = IDOK then begin
+            Font        := OptForm.AFont;
+            LineHeight  := OptForm.LineHeight;
+            AutoCR      := OptForm.AutoCr;
+            AutoLF      := OptForm.AutoLF;
+            LocalEcho   := OptForm.LocalEcho;
+            MonoChrome  := OptForm.MonoChrome;
+            UpperLock   := OptForm.UpperLock;
+            Xlat        := OptForm.Xlat;
+            GraphicDraw := OptForm.GraphicDraw;
+            Rows        := OptForm.Rows;
+            Cols        := OptForm.Cols;
+            FKeys       := OptForm.FKeys;
+            LineZoom    := OptForm.LineZoom;
+            CharZoom    := OptForm.CharZoom;
+            IniFile     := TIniFile.Create(FIniFilename);
+            FontToIni(OptForm.AFont, IniFile, FHostName);
+            IniFile.WriteInteger(FHostName, 'LineHeight',  LineHeight);
+            IniFile.WriteInteger(FHostName, 'Rows',        Rows);
+            IniFile.WriteInteger(FHostName, 'Cols',        Cols);
+            IniFile.WriteInteger(FHostName, 'AutoCR',      ord(AutoCR));
+            IniFile.WriteInteger(FHostName, 'AutoLF',      ord(AutoLF));
+            IniFile.WriteInteger(FHostName, 'LocalEcho',   ord(LocalEcho));
+            IniFile.WriteInteger(FHostName, 'MonoChrome',  ord(MonoChrome));
+            IniFile.WriteInteger(FHostName, 'UpperLock',   ord(UpperLock));
+            IniFile.WriteInteger(FHostName, 'Xlat',        ord(Xlat));
+            IniFile.WriteInteger(FHostName, 'GraphicDraw', ord(GraphicDraw));
+            IniFile.WriteInteger(FHostName, 'FKeys',       FKeys);
+            IniFile.WriteString(FHostName, 'LineZoom',     Format('%5.3f', [LineZoom]));
+            IniFile.WriteString(FHostName, 'CharZoom',     Format('%5.3f', [CharZoom]));
+            IniFile.Free;
+            Repaint;
+        end;
+    finally
+        OptForm.Free ;
     end;
 end;
 

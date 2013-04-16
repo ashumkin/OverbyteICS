@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  User interface for TnEmulVT component options
 Creation:     May, 1996
-Version:      8.00
+Version:      8.01
 Author:       François PIETTE
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org See website for details.
@@ -45,6 +45,10 @@ May 11, 2008  V6.02 USchuster removed local atoi implementation (atoi is now in 
 Sept 4, 2008  V7.00 Angus don't save form size since it's fixed, font now Sans Serif
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Apr 11, 2013  V8.01 Angus changed font to Courer New 8 from System and ensure only fixed
+                      fonts allowed, since character spacing otherwise set to width of widest
+                      character in a proportional spaced font and looks horrible
+                    Changed form to Arial 8 which looks more modern
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsTnOptFrm;
@@ -80,8 +84,8 @@ uses
     Dialogs, Forms, StdCtrls, IniFiles, Buttons, OverbyteIcsUtils;
 
 const
-  TnOptFrmVersion      = 800;
-  CopyRight : String = ' TnOptFrm (c) 1996-2012 F. Piette V8.00 ';
+  TnOptFrmVersion      = 801;
+  CopyRight : String = ' TnOptFrm (c) 1996-2013 F. Piette V8.01 ';
 
 type
   TOptForm = class(TForm)
