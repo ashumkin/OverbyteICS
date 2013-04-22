@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      8.02
+Version:      8.03
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -480,6 +480,8 @@ Dec 15, 2012 V8.01 Arno fixed missing port number in both Host header and proper
 Mar 18, 2013 V8.02 - Angus added LocalAddr6 for IPv6
              Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
                    allow a host name to resolve to an IPv6 address.
+Apr 22, 2013 V8.03 Arno fixed an AV in THttpCli that raised when Abort
+             was called, i.e. from OnDocData event handler and SSL enabled.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -567,8 +569,8 @@ uses
     OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
-    HttpCliVersion       = 802;
-    CopyRight : String   = ' THttpCli (c) 1997-2013 F. Piette V8.02 ';
+    HttpCliVersion       = 803;
+    CopyRight : String   = ' THttpCli (c) 1997-2013 F. Piette V8.03 ';
     DefaultProxyPort     = '80';
     //HTTP_RCV_BUF_SIZE    = 8193;
     //HTTP_SND_BUF_SIZE    = 8193;
@@ -2933,7 +2935,9 @@ begin
             FReceiveLen := FReceiveLen - FBodyDataLen;
             { Move remaining data to start of buffer. 17/01/2004 }
             if FReceiveLen > 0 then
-                MoveTBytes(FReceiveBuffer, FBodyDataLen, 0, FReceiveLen + 1);
+                MoveTBytes(FReceiveBuffer, FBodyDataLen, 0, FReceiveLen + 1)
+            else if FReceiveLen < 0 then  { V8.03 }
+                FReceiveLen := 0;         { V8.03 }
         end;
         if not Assigned(FNext) then begin
             { End of document }
