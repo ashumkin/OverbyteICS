@@ -184,7 +184,9 @@ uses
 {$IFDEF COMPILER16_UP}
     System.SyncObjs,
 {$ENDIF}
+{$IFDEF COMPILER18_UP}
     AnsiStrings,
+{$ENDIF}
     OverbyteIcsMD5, OverbyteIcsTypes; // for TBytes and TThreadID
 
 type
