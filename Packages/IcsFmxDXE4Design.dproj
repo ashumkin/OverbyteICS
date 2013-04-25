@@ -51,7 +51,7 @@
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <GenPackage>true</GenPackage>
         <GenDll>true</GenDll>
-        <DCC_DcuOutput>..\Lib\$(Config)\$(Platform)\XE3</DCC_DcuOutput>
+        <DCC_DcuOutput>..\Lib\$(Config)\$(Platform)\XE4</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
