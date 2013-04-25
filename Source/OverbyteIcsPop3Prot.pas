@@ -202,6 +202,8 @@ Mar 19, 2013 V8.01 Angus added OpenEx, Login, UserPass, Capa and
              Added LocalAddr6 for IPv6
              Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
                    allow a host name to resolve to an IPv6 address.
+Apr 25, 2013 V8.02 Angus Login now checks AuthType and calls Auth, UserPass or APOP
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -268,8 +270,8 @@ uses
 (*$HPPEMIT '#pragma alias "@Overbyteicspop3prot@TCustomPop3Cli@GetUserNameW$qqrv"="@Overbyteicspop3prot@TCustomPop3Cli@GetUserName$qqrv"' *)
 
 const
-    Pop3CliVersion     = 801;
-    CopyRight : String = ' POP3 component (c) 1997-2013 F. Piette V8.01 ';
+    Pop3CliVersion     = 802;
+    CopyRight : String = ' POP3 component (c) 1997-2013 F. Piette V8.02 ';
     POP3_RCV_BUF_SIZE  = 4096;
 
 type
@@ -1895,10 +1897,14 @@ begin
     if not FHighLevelFlag then
         FRequestType  := pop3Login;
     FFctPrv := pop3FctLogin;
-    if FTimeStamp = '' then
-        HighLevelAsync(FRequestType, [pop3FctUser, pop3FctPass])
-    else
-        APop;
+    if FAuthType > popAuthNone then   { V8.02 }
+        Auth
+    else begin
+        if FTimeStamp = '' then
+            HighLevelAsync(FRequestType, [pop3FctUser, pop3FctPass])
+        else
+            APop;
+    end;
 end;
 
 
