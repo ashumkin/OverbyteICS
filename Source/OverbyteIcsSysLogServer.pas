@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  TSysLogServer class encapsulate the server side of the SysLog
               protocol as described in RFC3164.
 Creation:     September 2009
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2009 by François PIETTE
+Legal issues: Copyright (C) 2009-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
@@ -43,6 +43,7 @@ Feb 08, 2010 V1.01 F. Piette used SYSLOG_NILVALUE instead of '-'. Tested
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
                    fixed DecimalSeparator warning with XE and later
+Apr 2013 - V8.01 - Arno minor XE4 changes.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSysLogServer;
@@ -61,6 +62,7 @@ uses
     Windows, SysUtils, Classes, Winsock,
     OverbyteIcsWinSock,
     OverbyteIcsSysLogDefs,
+    OverbyteIcsUtils,
     OverbyteIcsWSocket;
 
 type
@@ -768,7 +770,7 @@ begin
     if Len < 0 then
         Exit;
     SetLength(RawMessage, Len);
-    SrcIP   := StrPas(inet_ntoa(Src.sin_addr));
+    SrcIP   := IcsStrPas(inet_ntoa(Src.sin_addr));
     SrcPort := AnsiString(IntToStr(ntohs(Src.sin_port)));
     if Assigned(FOnDataAvailable) then
         FOnDataAvailable(Self, SrcIP, SrcPort, RawMessage);

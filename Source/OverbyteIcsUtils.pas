@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      8.02
+Version:      8.03
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -125,6 +125,8 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 Oct 06, 2012 v8.01 Arno simplified TIcsIntegerList.IndexOf().
 Nov 10, 2012 v8.02 Bugfix IcsCompareTextA IcsCompareStrA
+Apr 25, 2013 V8.03 Arno minor XE4 changes. Added IcsStrLen(), IcsStrPas()
+                  IcsStrCopy().
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -182,6 +184,7 @@ uses
 {$IFDEF COMPILER16_UP}
     System.SyncObjs,
 {$ENDIF}
+    AnsiStrings,
     OverbyteIcsMD5, OverbyteIcsTypes; // for TBytes and TThreadID
 
 type
@@ -504,6 +507,14 @@ const
     function IcsCompareText(const S1, S2: AnsiString): Integer;{$IFDEF COMPILER12_UP} overload;
     function IcsCompareText(const S1, S2: UnicodeString): Integer; overload;
                     {$ENDIF}
+    function IcsStrLen(const Str: PAnsiChar): Cardinal; overload;
+    function IcsStrLen(const Str: PWideChar): Cardinal; overload;
+    function IcsStrPas(const Str: PAnsiChar): AnsiString; overload;
+    function IcsStrPas(const Str: PWideChar): string; overload;
+    function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar; overload;
+    function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar; overload;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { end Moved from OverbyteIcsLibrary.pas }
 
 {$IFDEF MSWINDOWS}
@@ -4193,6 +4204,50 @@ begin
 end;
 {$ENDIF}
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrLen(const Str: PAnsiChar): Cardinal;
+begin
+{$IFDEF COMPILER18_UP}
+  Result := System.AnsiStrings.StrLen(Str);
+{$ELSE}
+  Result := StrLen(Str);
+{$ENDIF}
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrLen(const Str: PWideChar): Cardinal;
+begin
+  Result := StrLen(Str);
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrPas(const Str: PAnsiChar): AnsiString;
+begin
+  Result := Str;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrPas(const Str: PWideChar): string;
+begin
+  Result := Str;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar;
+begin
+{$IFDEF COMPILER18_UP}
+  Result := System.AnsiStrings.StrCopy(Dest, Source);
+{$ELSE}
+  Result := StrCopy(Dest, Source);
+{$ENDIF}
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar;
+begin
+  Result := StrCopy(Dest, Source);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;

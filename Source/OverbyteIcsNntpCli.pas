@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Description:  TNntpCli is a client for the NNTP protocol (RFC-977)
 Creation:     December 19, 1997
-Version:      8.00
+Version:      8.01
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2012 by François PIETTE
+Legal issues: Copyright (C) 1997-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -105,6 +105,7 @@ Nov 08, 2010  V6.04 Arno improved final exception handling, more details
 Feb 29, 2012 V6.05 Arno - Use IcsRandomInt
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
+Apr 25, 2013 V8.01 Arno minor XE4 changes
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -176,8 +177,8 @@ uses
      OverbyteIcsWinSock;
 
 const
-    NntpCliVersion     = 800;
-    CopyRight : String = ' TNntpCli (c) 1997-2012 F. Piette V8.00 ';
+    NntpCliVersion     = 801;
+    CopyRight : String = ' TNntpCli (c) 1997-2013 F. Piette V8.01 ';
 {$IFDEF VER80}
     { Delphi 1 has a 255 characters string limitation }
     NNTP_SND_BUF_SIZE = 255;
@@ -1149,7 +1150,7 @@ begin
         if FSentFlag then
             Exit;
         FSentFlag := TRUE;
-        StrCopy(PAnsiChar(@FSendBuffer), PAnsiChar(#13#10 + '.' + #13#10));
+        IcsStrCopy(PAnsiChar(@FSendBuffer), PAnsiChar(#13#10 + '.' + #13#10));
         Len := 5;
     end;
     FWSocket.Send(@FSendBuffer, Len);
@@ -1312,7 +1313,7 @@ begin
         DelayedRequestDone(FStatusCode);
         Exit;
     end;
-    Buf := Trim(StrPas(Data));
+    Buf := Trim(IcsStrPas(Data));
     if Length(Buf) = 14 then begin
         Year  := atoi(Copy(Buf, 1, 4));
         Month := atoi(Copy(Buf, 5, 2));

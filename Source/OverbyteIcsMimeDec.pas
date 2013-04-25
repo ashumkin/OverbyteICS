@@ -6,11 +6,11 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      8.00
+Version:      8.01
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2010 by François PIETTE
+Legal issues: Copyright (C) 1998-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -298,7 +298,7 @@ Feb 20, 2011  V7.21 Angus, prevent range error for malformed blank lines
 Mar 11, 2011  V7.22 Angus, prevent range error for blank header in UnfoldHdrValue
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-
+Apr 25, 2013 V8.01 Arno minor XE4 changes.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -351,8 +351,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-    MimeDecodeVersion  = 800;
-    CopyRight : String = ' TMimeDecode (c) 1998-2012 Francois Piette V8.00';
+    MimeDecodeVersion  = 801;
+    CopyRight : String = ' TMimeDecode (c) 1998-2013 Francois Piette V8.01';
 
 type
     TMimeDecodePartLine = procedure (Sender  : TObject;
@@ -824,7 +824,7 @@ begin
 
     { Allocate a buffer for decode line. At most the length of encoded data }
     { plus 2 bytes for CRLF                                                 }
-    SetLength(DecodedBuf, StrLen(FCurrentData) + 2);
+    SetLength(DecodedBuf, IcsStrLen(FCurrentData) + 2);
     SourceIndex  := 0; { It's a PAnsiChar so index start at 0   }
     DecodedIndex := 1; { It's a AnsiString, so index start at 1 }
     while TRUE do begin
@@ -881,7 +881,7 @@ var
 begin
     SourceIndex  := 0;
     DecodedIndex := 0;
-    Len          := StrLen(FCurrentData);
+    Len          := IcsStrLen(FCurrentData);
 
     { Remove spaces at the end of line }
     while (Len > 0) and IsSpace(FCurrentData[Len - 1]) do
@@ -1085,7 +1085,7 @@ var
     end;
 
 begin
-    L := StrLen(Value); // V7.22 prevent range error 
+    L := IcsStrLen(Value); // V7.22 prevent range error
     SetLength(Result, L);
     Dec (L);
     I := 0;
@@ -1204,7 +1204,7 @@ var
 begin
     if FCurrentData^ = #0 then
         exit;
-    s := StrPas(FCurrentData);
+    s := IcsStrPas(FCurrentData);
 
     if IcsLowerCase(copy(s, 1, 6)) = 'begin ' then begin
         out1:=IcsLowerCase(s);
@@ -1333,7 +1333,7 @@ var
     I, C        : Integer;
 begin
     Result := TRUE;
-    S := StrPas(FCurrentData); { AS }
+    S := IcsStrPas(FCurrentData); { AS }
     if IcsTrim(S) = '' then begin
         Result := FALSE;
         Exit;
@@ -1583,7 +1583,7 @@ begin
     Dst    := '';
     Quote  := Result^;
     if Quote <> #34 then begin  { ##ERIC }
-        Dst := StrPas(Src);     { ##ERIC }
+        Dst := IcsStrPas(Src);     { ##ERIC }
         Exit;                   { ##ERIC }
     end;                        { ##ERIC }
 
@@ -1611,7 +1611,7 @@ var
     T : Integer;
     S : AnsiString;
 begin
-    S := IcsLowerCase(StrPas(FCurrentData));
+    S := IcsLowerCase(IcsStrPas(FCurrentData));
     if S = FBoundary then begin
         PreparePart;
         Exit;
@@ -1626,7 +1626,7 @@ begin
             end;
         end;
        { if not in primary boundary or embedded boundaries, then process it.}
-       ProcessDecodedLine(FCurrentData, StrLen(FCurrentData));
+       ProcessDecodedLine(FCurrentData, IcsStrLen(FCurrentData));
    end;
 end;
 
@@ -1656,7 +1656,7 @@ begin
     else if FEncoding = 'x-uuencode' then
         ProcessLineUUDecode                       { ##ERIC }
     else begin {tap}
-        ProcessDecodedLine(FCurrentData, StrLen(FCurrentData));
+        ProcessDecodedLine(FCurrentData, IcsStrLen(FCurrentData));
         ProcessDecodedLine(PAnsiChar(#13#10), 2); {tap: add \r\n to other encodings}
     end; {tap}
 end;
@@ -1694,7 +1694,7 @@ var
 begin
     { Check if end of part (boundary line found) }
     if (FCurrentData <> nil) and (FCurrentData^ <> #0) then begin
-        s := IcsLowerCase(StrPas(FCurrentData));
+        s := IcsLowerCase(IcsStrPas(FCurrentData));
         if (s = FBoundary) then begin
             PreparePart;
             exit;
@@ -1732,7 +1732,7 @@ begin
         if FCurrentData = nil then
             Len := 0
         else
-            Len := StrLen(FCurrentData);
+            Len := IcsStrLen(FCurrentData);
         if FPartFirstLine then               { FP Nov 13, 2007 }
             FPartFirstLine := FALSE
         else
@@ -1824,7 +1824,7 @@ begin
         GetTokenEx(p, FPartEncoding, Delim);
     end
     else if KeyWord = 'content-id' then begin
-        FPartContentID := StrPas(p);
+        FPartContentID := IcsStrPas(p);
         if (Length(FPartContentID) >= 2) and
            (FPartContentID[1] = '<') and
            (FPartContentID[Length(FPartContentID)] = '>') then
@@ -1947,7 +1947,7 @@ begin
             end
         end
     end;
-    FLengthHeader := FLengthHeader + Integer(StrLen(FCurrentData)) + 2;
+    FLengthHeader := FLengthHeader + Integer(IcsStrLen(FCurrentData)) + 2;
     FHeaderLines.Add(String(UnfoldHdrValue(FCurrentData)));
     TriggerHeaderLine;
 end;
