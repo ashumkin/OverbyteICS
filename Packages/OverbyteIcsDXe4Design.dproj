@@ -72,6 +72,7 @@
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <DCC_DcuOutput>..\Lib\$(Config)\$(Platform)\XE4</DCC_DcuOutput>
         <DCC_Description>Overbyte ICS Design-Time Package for Delphi XE4</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
     </PropertyGroup>

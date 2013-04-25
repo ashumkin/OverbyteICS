@@ -119,6 +119,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCC_IncludePath>..\Vc32</DCC_IncludePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_Debug_Win32)'!=''">
+        <DCC_DcuOutput>..\Lib\$(Config)\$(Platform)\XE4</DCC_DcuOutput>
         <DCC_Description>Overbyte ICS VCL Run-Time Package for Delphi XE4</DCC_Description>
         <PostBuildEvent><![CDATA[copy ..\Source\OverbyteIcsTnOptFrm.dfm ..\Lib\Debug\Win32\XE3\OverbyteIcsTnOptFrm.dfm
 $(PostBuildEvent)]]></PostBuildEvent>

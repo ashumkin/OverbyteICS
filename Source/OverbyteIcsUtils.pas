@@ -1075,7 +1075,7 @@ begin
         SrcPtr := MbStr;
         SrcBytesLeft := MbStrLen;
         if SrcBytesLeft < 0 then
-            SrcBytesLeft := StrLen(MbStr) + 1;
+            SrcBytesLeft := IcsStrLen(MbStr) + 1;
         CntSize := 0;
         if WStrLen <= 0 then
         begin

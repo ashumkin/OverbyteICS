@@ -10,7 +10,7 @@
         <Base>True</Base>
         <AppType>Package</AppType>
         <FrameworkType>FMX</FrameworkType>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <Platform Condition="'$(Platform)'==''">OSX32</Platform>
         <TargetedPlatforms>7</TargetedPlatforms>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -49,6 +49,12 @@
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_Debug)'=='true') or '$(Cfg_Debug_Win32)'!=''">
         <Cfg_Debug_Win32>true</Cfg_Debug_Win32>
+        <CfgParent>Cfg_Debug</CfgParent>
+        <Cfg_Debug>true</Cfg_Debug>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_Debug)'=='true') or '$(Cfg_Debug_Win64)'!=''">
+        <Cfg_Debug_Win64>true</Cfg_Debug_Win64>
         <CfgParent>Cfg_Debug</CfgParent>
         <Cfg_Debug>true</Cfg_Debug>
         <Base>true</Base>
@@ -112,6 +118,9 @@
     <PropertyGroup Condition="'$(Cfg_Debug_Win32)'!=''">
         <DCC_Description>Overbyte ICS FMX Run-Time Package for Delphi XE4</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_Debug_Win64)'!=''">
+        <DCC_DcuOutput>..\Lib\$(Config)\$(Platform)\XE4</DCC_DcuOutput>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
