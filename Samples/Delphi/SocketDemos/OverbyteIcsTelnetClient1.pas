@@ -56,7 +56,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Controls, Forms,
-  StdCtrls, OverbyteIcsIniFiles,
+  StdCtrls, OverbyteIcsIniFiles, OverbyteIcsUtils,
   OverbyteIcsWSocket, OverbyteIcsWinsock,
   OverbyteIcsEmulVT,  OverbyteIcsTnEmulVT;
 
@@ -144,7 +144,7 @@ begin
         { Set auto-wrap mode. Here is the place to do other settings. }
         TnEmulVT1.WriteStr(#27'[?7h');
         WinsockData := WinsockInfo;
-        StatusLabel.Caption := String(StrPas(WinsockData.szDescription));
+        StatusLabel.Caption := String(IcsStrPas(WinsockData.szDescription));
     end;
 end;
 
