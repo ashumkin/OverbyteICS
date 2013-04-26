@@ -76,6 +76,7 @@ uses
 {$ENDIF}
   System.SysUtils,
   System.Classes,
+  OverbyteIcsUtils,
   Ics.Fmx.OverbyteIcsHttpProt,
   Ics.Fmx.OverbyteIcsWSocket;
 
@@ -145,7 +146,7 @@ begin
         FHttpCli                    := THttpCli.Create(nil);
         try
             FHttpCli.SocketFamily       := sfAny;
-            FHttpCli.Url                := String(StrPas(FUrl));
+            FHttpCli.Url                := String(IcsStrPas(FUrl));
             FHttpCli.OnRequestDone      := HttpCliRequestDone;
             FHttpCli.RcvdStream         := TMemoryStream.Create;
             FHttpCli.GetAsync;

@@ -64,6 +64,7 @@ program IcsConSmtp;
 uses
   System.SysUtils,
   System.Classes,
+  OverbyteIcsUtils,
   Ics.Fmx.OverbyteIcsSmtpProt;
 
 const
@@ -199,7 +200,7 @@ begin
     if LineNum > FMessageBody.count then
         More := FALSE
     else
-        StrPLCopy(PAnsiChar(MsgLine),
+        IcsStrPLCopy(PAnsiChar(MsgLine),
                   AnsiString(FMessageBody.Strings[LineNum - 1]), MaxLen - 1);
 end;
 

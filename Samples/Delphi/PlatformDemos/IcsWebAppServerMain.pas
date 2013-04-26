@@ -72,6 +72,9 @@ uses
   System.StrUtils, System.SyncObjs,
   System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo,
+{$IF COMPILERVERSION >= 25}  
+  FMX.StdCtrls,
+{$IFEND}
   OverbyteIcsIniFiles,
   OverbyteIcsUtils,
   OverbyteIcsWndControl,

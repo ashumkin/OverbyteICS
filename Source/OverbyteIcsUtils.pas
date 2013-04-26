@@ -515,7 +515,14 @@ const
     function IcsStrPas(const Str: PWideChar): string; overload;
     function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar; overload;
     function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar; overload;
-
+    function IcsStrPCopy(Dest: PChar; const Source: string; MaxLen: Cardinal): PChar;
+  {$IFDEF UNICODE} overload;
+    function IcsStrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar; overload;
+  {$ENDIF}
+    function IcsStrPLCopy(Dest: PChar; const Source: String; MaxLen: Cardinal): PChar; 
+  {$IFDEF UNICODE} overload;
+    function IcsStrPLCopy(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar; overload;
+  {$ENDIF}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { end Moved from OverbyteIcsLibrary.pas }
 
@@ -4217,11 +4224,13 @@ begin
 {$ENDIF}
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrLen(const Str: PWideChar): Cardinal;
 begin
   Result := StrLen(Str);
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrPas(const Str: PAnsiChar): AnsiString;
@@ -4229,11 +4238,13 @@ begin
   Result := Str;
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrPas(const Str: PWideChar): string;
 begin
   Result := Str;
 end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar;
@@ -4245,11 +4256,53 @@ begin
 {$ENDIF}
 end;
 
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar;
 begin
   Result := StrCopy(Dest, Source);
 end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrPCopy(Dest: PChar; const Source: string; MaxLen: Cardinal): PChar;
+begin
+  Result := StrLCopy(Dest, PChar(Source), Length(Source));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF UNICODE}
+function IcsStrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar;
+begin
+{$IFDEF COMPILER18_UP}
+  Result := System.AnsiStrings.StrLCopy(Dest, PAnsiChar(Source), Length(Source));
+{$ELSE}
+  Result := StrLCopy(Dest, PAnsiChar(Source), Length(Source));
+{$ENDIF}
+end;
+{$ENDIF}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsStrPLCopy(Dest: PChar; const Source: String; MaxLen: Cardinal): PChar;
+begin
+  Result := StrPLCopy(Dest, PChar(Source), MaxLen);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF UNICODE}
+function IcsStrPLCopy(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
+begin
+{$IFDEF COMPILER18_UP}
+  Result := System.AnsiStrings.StrLCopy(Dest, PAnsiChar(Source), MaxLen);
+{$ELSE}
+  Result := StrLCopy(Dest, PAnsiChar(Source), MaxLen);
+{$ENDIF}
+end;
+{$ENDIF}
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsExtractFilePathW(const FileName: UnicodeString): UnicodeString;

@@ -118,6 +118,9 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit, FMX.ListBox, FMX.TabControl,
+{$IF COMPILERVERSION >= 25}  
+  FMX.StdCtrls,
+{$IFEND}
   OverByteIcsIniFiles,
   OverByteIcsUtils,
   OverbyteIcsWndControl,
@@ -548,8 +551,8 @@ begin
         Display('Winsock version ' +
                 IntToStr(LOBYTE(Data.wHighVersion)) + '.' +
                 IntToStr(HIBYTE(Data.wHighVersion)));
-        Display(String(StrPas(Data.szDescription)));
-        Display(String(StrPas(Data.szSystemStatus)));
+        Display(String(IcsStrPas(Data.szDescription)));
+        Display(String(IcsStrPas(Data.szSystemStatus)));
       {$ENDIF}
       {$IFDEF MSWINDOWS}
         Panel2.StyleLookup := 'PanelWinStyle';

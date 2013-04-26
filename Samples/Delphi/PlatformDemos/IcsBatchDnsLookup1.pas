@@ -26,6 +26,9 @@ uses
   System.Contnrs,
   System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit, FMX.ListBox, FMX.TabControl,
+{$IF COMPILERVERSION >= 25}  
+  FMX.StdCtrls,
+{$IFEND}
   OverbyteIcsUtils,
   OverbyteIcsIniFiles,
   OverbyteIcsWndControl,

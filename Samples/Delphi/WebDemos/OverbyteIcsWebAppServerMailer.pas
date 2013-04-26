@@ -373,7 +373,7 @@ begin
             if LineNum > EmailBody.Count then
                 More := false
             else
-                StrPCopy (PAnsiChar(MsgLine), AnsiString(EmailBody [Pred (LineNum)])) ;
+                IcsStrPCopy (PAnsiChar(MsgLine), AnsiString(EmailBody [Pred (LineNum)])) ;
         end ;
     except
     end ;

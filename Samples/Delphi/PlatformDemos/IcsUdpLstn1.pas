@@ -77,6 +77,9 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit,
+{$IF COMPILERVERSION >= 25}  
+  FMX.StdCtrls,
+{$IFEND}
   OverbyteIcsIniFiles, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 
@@ -234,7 +237,7 @@ begin
                 DataAvailableLabel.Text := IntToStr(atoi(DataAvailableLabel.Text) + 1) +
                                           '  ' + String(WSocket_inet_ntoa(PSockAddr(@Src).sin_addr)) +
                                           ':'  + IntToStr(WSocket_ntohs(PSockAddr(@Src).sin_port)) +
-                                          '--> ' + String(StrPas(Buffer));
+                                          '--> ' + String(IcsStrPas(Buffer));
             end;
         end;
     end
@@ -248,7 +251,7 @@ begin
                 DataAvailableLabel.Text := IntToStr(atoi(DataAvailableLabel.Text) + 1) +
                                           '  ' + WSocketIPv6ToStr(PIcsIPv6Address(@Src.sin6_addr)^) +
                                           ':'  + IntToStr(WSocket_ntohs(PSockAddr(@Src).sin_port)) +
-                                          '--> ' + String(StrPas(Buffer));
+                                          '--> ' + String(IcsStrPas(Buffer));
             end;
         end;
     end;
