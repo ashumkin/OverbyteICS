@@ -44,7 +44,7 @@
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_Define>VCL;USE_SSL;$(DCC_Define)</DCC_Define>
-        <DCC_Description>Overbyte ICS VCL Design-Time Package for Delphi XE3</DCC_Description>
+        <DCC_Description>Overbyte ICS VCL Design-Time Package for Delphi XE4</DCC_Description>
         <DesignOnlyPackage>true</DesignOnlyPackage>
         <GenPackage>true</GenPackage>
         <GenDll>true</GenDll>
@@ -53,7 +53,7 @@
         <DCC_Platform>x86</DCC_Platform>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_UsePackage>OverbyteIcsDXe3Run;$(DCC_UsePackage)</DCC_UsePackage>
+        <DCC_UsePackage>OverbyteIcsDXE4Run;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <DCC_Description>Overbyte ICS Design-Time Package for Delphi XE2</DCC_Description>
     </PropertyGroup>

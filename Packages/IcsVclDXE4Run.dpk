@@ -50,7 +50,7 @@ package IcsVclDXE4Run;
 {$DEFINE DEBUG}
 {$DEFINE USE_SSL}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'Overbyte ICS VCL Run-Time Package for Delphi XE3'}
+{$DESCRIPTION 'Overbyte ICS VCL Run-Time Package for Delphi XE4'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
 
