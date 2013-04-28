@@ -66,9 +66,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
   FMX.Layouts, FMX.Memo, FMX.Edit,
-{$IF COMPILERVERSION >= 25}  
   FMX.StdCtrls,
-{$IFEND}
   { Don't forget to add your vc32 directory to Delphi library path }
   OverbyteIcsUtils, OverbyteIcsIniFiles,
   OverbyteIcsWndControl, OverbyteIcsWSocket;

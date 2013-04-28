@@ -118,9 +118,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
   FMX.Memo, FMX.Edit, FMX.ListBox, FMX.TabControl,
-{$IF COMPILERVERSION >= 25}  
   FMX.StdCtrls,
-{$IFEND}
   OverByteIcsIniFiles,
   OverByteIcsUtils,
   OverbyteIcsWndControl,

@@ -4,10 +4,8 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, 
-{$IF COMPILERVERSION >= 25}  
+  FMX.Types, FMX.Controls,
   FMX.StdCtrls,
-{$IFEND}
   FMX.Forms, FMX.Layouts, FMX.ListBox;
 
 type

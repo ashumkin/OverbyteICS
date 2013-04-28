@@ -2,6 +2,9 @@ program IcsWebAppServ;
 
 uses
   FMX.Forms,
+{$IF CompilerVersion < 25}
+  FMX.StdCtrls in '..\..\FMX.StdCtrls.pas',
+{$IFEND}
   OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   Fmx.Types,
   IcsWebAppServerMain in 'IcsWebAppServerMain.pas' {WebAppSrvForm},

@@ -1,7 +1,11 @@
 program IcsHttpsTst;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
+  FMX.Forms,
+{$IF CompilerVersion < 25}
+  FMX.StdCtrls in '..\..\FMX.StdCtrls.pas',
+{$IFEND}
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsCliCertDlg in 'IcsCliCertDlg.pas' {ClientCertDlg},
   IcsHttpsTst1 in 'IcsHttpsTst1.pas' {HttpsTstForm};

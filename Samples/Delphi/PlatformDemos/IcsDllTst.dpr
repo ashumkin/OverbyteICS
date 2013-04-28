@@ -1,7 +1,11 @@
 program IcsDllTst;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
+  FMX.Forms,
+{$IF CompilerVersion < 25}
+  FMX.StdCtrls in '..\..\FMX.StdCtrls.pas',
+{$IFEND} 
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   FMX.Types,
   IcsDllTst1 in 'IcsDllTst1.pas' {DllTestForm};
 

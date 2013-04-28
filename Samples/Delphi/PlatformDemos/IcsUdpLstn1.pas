@@ -76,10 +76,8 @@ uses
 {$ENDIF}
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Layouts,
-  FMX.Memo, FMX.Edit,
-{$IF COMPILERVERSION >= 25}  
+  FMX.Memo, FMX.Edit,  
   FMX.StdCtrls,
-{$IFEND}
   OverbyteIcsIniFiles, OverbyteIcsWSocket,
   OverbyteIcsWndControl;
 

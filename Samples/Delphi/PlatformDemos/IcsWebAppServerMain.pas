@@ -71,10 +71,8 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.StrUtils, System.SyncObjs,
   System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs,
-  FMX.Layouts, FMX.Memo,
-{$IF COMPILERVERSION >= 25}  
+  FMX.Layouts, FMX.Memo,  
   FMX.StdCtrls,
-{$IFEND}
   OverbyteIcsIniFiles,
   OverbyteIcsUtils,
   OverbyteIcsWndControl,

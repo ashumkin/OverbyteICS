@@ -1,7 +1,11 @@
 program IcsUdpLstn;
 
 uses
-  FMX.Forms, OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
+  FMX.Forms,
+{$IF CompilerVersion < 25}
+  FMX.StdCtrls in '..\..\FMX.StdCtrls.pas',
+{$IFEND} 
+  OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   IcsUdpLstn1 in 'IcsUdpLstn1.pas' {MainForm};
 
 {$R *.res}

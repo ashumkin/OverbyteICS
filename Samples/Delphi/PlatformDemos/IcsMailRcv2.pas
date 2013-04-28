@@ -13,9 +13,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, 
-{$IF COMPILERVERSION >= 25}  
   FMX.StdCtrls,
-{$IFEND}
   FMX.Forms, FMX.Dialogs, FMX.Memo, FMX.Layouts;
 
 type

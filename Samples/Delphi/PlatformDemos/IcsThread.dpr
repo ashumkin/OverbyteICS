@@ -3,6 +3,9 @@ program IcsThread;
 uses
   FMX.Forms,
   FMX.Types,
+{$IF CompilerVersion < 25}
+  FMX.StdCtrls in '..\..\FMX.StdCtrls.pas',
+{$IFEND}
   IcsThread1 in 'IcsThread1.pas' {frmMain},
   OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
   Ics.Fmx.DemoUtils in 'Ics.Fmx.DemoUtils.pas';
