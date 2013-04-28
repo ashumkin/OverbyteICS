@@ -400,6 +400,7 @@ Samples\OverbyteIcsIniFiles.pas
 Samples\OverbyteIcsXp.manifest
 Samples\OverbyteIcsXpManifest.rc
 Samples\OverbyteIcsXpManifest.res
+Samples\FMX.StdCtrls.pas
 
 Samples\cpp\Internet\OverbyteIcsHttpTst1.cpp
 Samples\cpp\Internet\OverbyteIcsHttpTst1.dfm
@@ -1360,7 +1361,6 @@ Samples\Delphi\OtherDemos\OverbyteIcsSysLogServerDemo1.pas
 
 
 Samples\Delphi\PlatformDemos\xSamples.groupproj
-Samples\Delphi\PlatformDemos\Ics.Fmx.DemoUtils
 
 Samples\Delphi\PlatformDemos\IcsBatchDnsLookup.dpr
 Samples\Delphi\PlatformDemos\IcsBatchDnsLookup.dproj
@@ -1452,7 +1452,6 @@ Samples\Delphi\PlatformDemos\IcsThread.dproj
 Samples\Delphi\PlatformDemos\IcsThread1.fmx
 Samples\Delphi\PlatformDemos\IcsThread1.pas
 Samples\Delphi\PlatformDemos\Ics.Fmx.DemoUtils.pas
-
 Samples\Delphi\SocketDemos\SocketDemos.bpg
 Samples\Delphi\SocketDemos\Dcu\dir.txt
 
