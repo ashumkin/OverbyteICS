@@ -25,6 +25,9 @@ package IcsVclDXE3Run;
 {$R '..\Source\OverbyteIcsHttpAppServer.dcr'}
 {$R '..\Source\OverbyteIcsCharsetComboBox.dcr'}
 {$R '..\Source\OverbyteIcsWSocketTS.dcr'}
+{$R '..\Source\OverbyteIcsSnmpCli.dcr'}
+{$R '..\Source\OverbyteIcsSysLogClient.dcr'}
+{$R '..\Source\OverbyteIcsSysLogServer.dcr'}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
 {$ALIGN 8}
 {$ASSERTIONS ON}

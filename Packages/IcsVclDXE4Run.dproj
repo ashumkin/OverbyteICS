@@ -158,7 +158,10 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="..\Source\OverbyteIcsSslThrdLock.dcr"/>
         <DCCReference Include="..\Source\OverbyteIcsHttpAppServer.dcr"/>
         <DCCReference Include="..\Source\OverbyteIcsCharsetComboBox.dcr"/>
-        <DCCReference Include="..\Source\OverbyteIcsWSocketTS.dcr"/>
+        <DCCReference Include="..\Source\OverbyteIcsWSocketTS.dcr"/>        
+        <DCCReference Include="..\Source\OverbyteIcsSnmpCli.dcr"/>
+        <DCCReference Include="..\Source\OverbyteIcsSysLogClient.dcr"/>
+        <DCCReference Include="..\Source\OverbyteIcsSysLogServer.dcr"/>
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="vcl.dcp"/>
         <DCCReference Include="IcsCommonDXE4Run.dcp"/>
