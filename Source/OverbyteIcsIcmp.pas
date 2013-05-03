@@ -10,7 +10,7 @@ Description:  This unit encapsulate the ICMP.DLL into an object of type TICMP.
               to change properties or event handler. This is much simpler to
               use for a GUI program.
 Creation:     January 6, 1997
-Version:      8.02
+Version:      8.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -75,7 +75,7 @@ Feb 20, 2013 V8.02 Angus - icmp.dll was replaced with iphlpapi.dll from Windows 
                    Results now also returned as ReplyIP (string), ReplyStatus, ReplyRTT and
                       ReplySize which are the same for  IPv4 and IPv6
                    Added AsyncPing which currently not does work, callback never called, no idea why
-
+Mai 03, 2013 V8.03 Arno included OverbyteIcsTypes.pas to make it compile with Delphi 7 
 
 
 
@@ -125,6 +125,7 @@ interface
 uses
     Windows, SysUtils, Classes,
     OverbyteIcsWinsock,
+    OverbyteIcsTypes,
     OverbyteIcsUtils,
 {$IFDEF FMX}
     Ics.Fmx.OverbyteIcsWSocket;
@@ -133,8 +134,8 @@ uses
 {$ENDIF FMX}
 
 const
-  IcmpVersion = 8.02;
-  CopyRight : String   = ' TICMP (c) 1997-2013 F. Piette V8.02 ';
+  IcmpVersion = 8.03;
+  CopyRight : String   = ' TICMP (c) 1997-2013 F. Piette V8.03 ';
   IcmpDLL     = 'icmp.dll';
   IphlpapiDLL = 'iphlpapi.dll';     { V8.02 }
 

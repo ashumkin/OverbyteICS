@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      8.03
+Version:      8.04
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -127,6 +127,8 @@ Oct 06, 2012 v8.01 Arno simplified TIcsIntegerList.IndexOf().
 Nov 10, 2012 v8.02 Bugfix IcsCompareTextA IcsCompareStrA
 Apr 25, 2013 V8.03 Arno minor XE4 changes. Added IcsStrLen(), IcsStrPas()
                   IcsStrCopy().
+Mai 03, 2013 V8.04 Compile some overloaded versions of new functions from V8.03
+             in Delphi 2009+ only.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -509,18 +511,24 @@ const
     function IcsCompareText(const S1, S2: AnsiString): Integer;{$IFDEF COMPILER12_UP} overload;
     function IcsCompareText(const S1, S2: UnicodeString): Integer; overload;
                     {$ENDIF}
-    function IcsStrLen(const Str: PAnsiChar): Cardinal; overload;
+    function IcsStrLen(const Str: PAnsiChar): Cardinal;
+  {$IFDEF COMPILER12_UP} overload;
     function IcsStrLen(const Str: PWideChar): Cardinal; overload;
-    function IcsStrPas(const Str: PAnsiChar): AnsiString; overload;
+  {$ENDIF}
+    function IcsStrPas(const Str: PAnsiChar): AnsiString;
+  {$IFDEF COMPILER12_UP} overload;
     function IcsStrPas(const Str: PWideChar): string; overload;
-    function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar; overload;
+  {$ENDIF}
+    function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar;
+  {$IFDEF COMPILER12_UP} overload;
     function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar; overload;
+  {$ENDIF}
     function IcsStrPCopy(Dest: PChar; const Source: string; MaxLen: Cardinal): PChar;
-  {$IFDEF UNICODE} overload;
+  {$IFDEF COMPILER12_UP} overload;
     function IcsStrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar; overload;
   {$ENDIF}
     function IcsStrPLCopy(Dest: PChar; const Source: String; MaxLen: Cardinal): PChar; 
-  {$IFDEF UNICODE} overload;
+  {$IFDEF COMPILER12_UP} overload;
     function IcsStrPLCopy(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar; overload;
   {$ENDIF}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -4226,11 +4234,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
 function IcsStrLen(const Str: PWideChar): Cardinal;
 begin
   Result := StrLen(Str);
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrPas(const Str: PAnsiChar): AnsiString;
@@ -4240,11 +4249,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
 function IcsStrPas(const Str: PWideChar): string;
 begin
   Result := Str;
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrCopy(Dest: PAnsiChar; const Source: PAnsiChar): PAnsiChar;
@@ -4258,11 +4268,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF COMPILER12_UP}
 function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar;
 begin
   Result := StrCopy(Dest, Source);
 end;
-
+{$ENDIF}
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function IcsStrPCopy(Dest: PChar; const Source: string; MaxLen: Cardinal): PChar;
@@ -4272,7 +4283,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF UNICODE}
+{$IFDEF COMPILER12_UP}
 function IcsStrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar;
 begin
 {$IFDEF COMPILER18_UP}
@@ -4292,7 +4303,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF UNICODE}
+{$IFDEF COMPILER12_UP}
 function IcsStrPLCopy(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
 begin
 {$IFDEF COMPILER18_UP}
