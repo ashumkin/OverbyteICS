@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      8.02
+Version:      8.03
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -410,9 +410,9 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
 Aug 13, 2012 V8.01 Angus ensure SSL not enabled by default, corrected MultiListen
                    Arno added TSslFtpWSocketMultiListenItem with FtpSslTypes
                      for each MultiListen socket
-Jul 01, 2013 V8.02 Arno fixed an exception raised in ClientStorSessionClosed() 
+Jul 01, 2013 V8.02 Arno fixed an exception raised in ClientStorSessionClosed()
                    when an upload was aborted.
-
+Jul 02, 2003 V8.03 Arno fixed a bug in TClientProcessingThread (thread-safety).
 
 
 Angus pending -
@@ -519,8 +519,8 @@ uses
 
 
 const
-    FtpServerVersion         = 802;
-    CopyRight : String       = ' TFtpServer (c) 1998-2013 F. Piette V8.02 ';
+    FtpServerVersion         = 803;
+    CopyRight : String       = ' TFtpServer (c) 1998-2013 F. Piette V8.03 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -675,6 +675,7 @@ type
         Params    : String;
         InData    : String;
         OutData   : String;
+        AuxData   : String;        { AG V8.03 }
         ClientID  : Integer;
         StartTick : LongWord;      { angus V1.54 }
         Sender    : TObject;       { angus V1.54 }
@@ -7012,6 +7013,8 @@ begin
             with AThread.Client do begin
                 Params := AThread.InData;
                 try
+                    if AThread.AuxData <> '' then                           { AG V8.03 }
+                        TriggerDisplay(AThread.Client, AThread.AuxData);    { AG V8.03 }
                     TriggerAlterDirectory(AThread.Client, Params,
                                             (DirListType <> ListTypeName));
                     DataStream.Seek(0, 0);
@@ -8080,17 +8083,27 @@ begin
                 TriggerEnterSecurityContext;      { AG V7.02 }
                 try
                     Client.BuildDirList(TotalFiles);         { V7.08 }
+                   (*  !! Not thread-safe !!    { AG V8.03 }
                     if TotalFiles = -1 then
                         Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
                                                            Client.DirListPath + ' failed')
                     else
                         Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
                                               Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles));
+                    *)
+                    { AG V8.03 }
+                    if TotalFiles = -1 then
+                        AuxData := 'Completed directory listing for: ' +
+                                   Client.DirListPath + ' failed'
+                    else
+                        AuxData := 'Completed directory listing for: ' +
+                                  Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles);
+                    { / AG V8.03 }
                     Client.DataStream.Seek(0, 0);
                 finally
                     TriggerLeaveSecurityContext;  { AG V7.02 }
                 end;
-               if Client.DataStream.Size = 0 then begin   { V7.08 }
+                if Client.DataStream.Size = 0 then begin   { V7.08 }
                     if TotalFiles = -1 then
                         Buf := 'Listing failed' + #13#10
                     else
