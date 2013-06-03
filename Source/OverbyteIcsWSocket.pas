@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      8.04
+Version:      8.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -938,6 +938,9 @@ Mar 16, 2013 V8.03 Arno added new property LocalAddr6. This is a breaking change
                    require a value.
 Jun 03, 2013 V8.04 FPiette added unit "Types" so that some inlines are
                    expanded.
+Jun 03, 2013 V8.05 Eric Fleming Bonilha found a serious bug with closing the
+                   socket. The problem was that winsock may continue to post
+                   notification messages after closesocket() has been called.
 }
 
 {
@@ -1081,8 +1084,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 804;
-  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.04 ';
+  WSocketVersion            = 805;
+  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.05 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -9258,6 +9261,11 @@ begin
 
     if FHSocket <> INVALID_SOCKET then begin
         repeat
+          {$IFDEF MSWINDOWS}
+            { Disable winsock notification otherwise notifications may be }
+            { posted even after the call to closesocket()                 }
+            WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle, 0, 0); { V8.05 }
+          {$ENDIF}
             { Close the socket }
             iStatus := WSocket_Synchronized_closesocket(FHSocket);
             if iStatus <> 0 then begin
@@ -9277,6 +9285,12 @@ begin
                     SocketError('Disconnect (closesocket)');
                     Exit;
                 end;
+              {$IFDEF MSWINDOWS}
+                { Next line is untested, however I think we have to reenable }
+                { socket notification here.  (AG)                            }
+                WSocket_Synchronized_WSAASyncSelect(FHSocket, Handle,     { V8.05 }
+                                        FMsg_WM_ASYNCSELECT, FSelectEvent);
+              {$ENDIF}
                 MessagePump;
             end;
         until iStatus = 0;
