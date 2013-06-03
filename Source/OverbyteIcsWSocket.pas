@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      8.03
+Version:      8.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -936,6 +936,8 @@ Mar 16, 2013 V8.03 Arno added new property LocalAddr6. This is a breaking change
                    actually required to bind the socket to a particular interface.
                    By default both properties LocalAddr and LocalAddr6 do not
                    require a value.
+Jun 03, 2013 V8.04 FPiette added unit "Types" so that some inlines are
+                   expanded.
 }
 
 {
@@ -1020,7 +1022,7 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-  Windows, Messages, OverbyteIcsWinsock,
+  Windows, Messages, Types, OverbyteIcsWinsock,
 {$ENDIF}
   SysUtils, Classes, Contnrs, SyncObjs, SysConst,
 {$IFDEF POSIX}
@@ -1079,8 +1081,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 803;
-  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.03 ';
+  WSocketVersion            = 804;
+  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.04 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
