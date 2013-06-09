@@ -71,7 +71,9 @@ unit OverbyteIcsWebAppServerDWScriptUrlHandler;
 interface
 
 uses
-    Classes, SysUtils, OverbyteIcsHttpAppServer, OverbyteIcsHttpSrv,
+    Classes, SysUtils, RTTI, TypInfo,
+    OverbyteIcsHttpAppServer,
+    OverbyteIcsHttpSrv,
     dwsVCLGUIFunctions,
     dwsMagicExprs,
     dwsRTTIExposer,

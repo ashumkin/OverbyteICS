@@ -43,8 +43,10 @@ object WebAppSrvForm: TWebAppSrvForm
   end
   object HttpAppSrv1: THttpAppSrv
     ListenBacklog = 5
+    MultiListenSockets = <>
     Port = '80'
     Addr = '0.0.0.0'
+    SocketFamily = sfIPv4
     MaxClients = 0
     DocDir = 'c:\wwwroot'
     TemplateDir = 'c:\wwwroot\templates'
@@ -56,6 +58,9 @@ object WebAppSrvForm: TWebAppSrvForm
     MaxRequestsKeepAlive = 100
     SizeCompressMin = 5000
     SizeCompressMax = 5000000
+    MaxBlkSize = 8192
+    BandwidthLimit = 0
+    BandwidthSampling = 1000
     OnServerStarted = HttpAppSrv1ServerStarted
     OnServerStopped = HttpAppSrv1ServerStopped
     OnClientConnect = HttpAppSrv1ClientConnect
@@ -66,6 +71,7 @@ object WebAppSrvForm: TWebAppSrvForm
     AuthRealm = 'ics'
     OnBgException = HttpAppSrv1BgException
     SessionTimeout = 300
+    MaxSessions = 100
     OnDeleteSession = HttpAppSrv1DeleteSession
     OnVirtualException = HttpAppSrv1VirtualException
     Left = 52
