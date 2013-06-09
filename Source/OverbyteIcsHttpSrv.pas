@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      8.03
+Version:      8.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -366,6 +366,7 @@ Jul 23, 2012 V8.02 Angus - added TCustomSslHttpServer to allow descendents (TSsl
                    added SslEnable property so SSL can be disabled, defaults to TRUE
 Aug 21, 2012 V8.03 Tobias Rapp fixed a problem in THttpRangeStream with partial GET
                       requests returning less than requested
+Jun 08, 2013 V8.04 FPiette fixed missing FAnswerStatus in AnswerStream
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2969,8 +2970,10 @@ begin
         PutStringInSendBuffer(FVersion + ' 200 OK' + #13#10) ;
         FAnswerStatus := 200;   { V7.19 }
     end
-    else
+    else begin
+        FAnswerStatus := StrToIntDef(Copy(Status, 1, 3), 0);      { V8.04 }
         PutStringInSendBuffer(FVersion + ' ' + Status + #13#10);
+    end;
     if ContType = '' then
         PutStringInSendBuffer('Content-Type: text/html' + #13#10)
     else
