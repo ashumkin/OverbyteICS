@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  THttpAppSrv is a specialized THttpServer component to ease
               his use for writing application servers.
 Creation:     Dec 20, 2003
-Version:      8.02
+Version:      8.03
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -91,6 +91,8 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
 Aug 17, 2012 V8.02 Angus added TSslHttpAppSrv
                    SslEnable specifies if SSL is used and defaults to FALSE
                    added MaxSessions to allow more than 100 web sessions
+Jun 09, 2013 V8.03 FPiette added TUrlHander destructor to clear OnDestroying
+                   event handler in client's connection
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *_*}
@@ -218,6 +220,7 @@ type
         procedure SetOnGetRowData(const Value: THttpGetRowDataEvent);
         procedure ClientDestroying(Sender : TObject); virtual;
     public
+        destructor Destroy; override;
         procedure Execute; virtual;
         procedure Finish; virtual;
         function  CreateSession(const Params : String;
@@ -1750,6 +1753,23 @@ begin
         Client.WSessions.DeleteSession(Client.WSessionID);
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+destructor TUrlHandler.Destroy;
+var
+    T1 : TNotifyEvent;
+    T2 : TNotifyEvent;
+begin
+    if Assigned(FClient) then begin              { V8.03 }
+        // Clear client's connection event handler if it points to us
+        T1 := FClient.OnDestroying;              { V8.03 }
+        T2 := ClientDestroying;                  { V8.03 }
+        if @T1 = @T2 then                        { V8.03 }
+            FClient.OnDestroying := nil;         { V8.03 }
+    end;                                         { V8.03 }
+
+    inherited  Destroy;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function TUrlHandler.ValidateSession: Boolean;
