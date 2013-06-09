@@ -4,11 +4,11 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      8.02
+Version:      8.03
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2012 by François PIETTE
+Legal issues: Copyright (C) 1999-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -99,6 +99,8 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
 Jul 21, 2012 V8.01 Fix in TCustomMultiListenWSocketServer.TriggerClientConnect.
 Jun 03, 2013 V8.02 FPiette added unit "Types" so that some inlines are
                    expanded.
+Jun 09, 2013 V8.03 FPiette WMClientClosed clear CliId before freeing.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -164,8 +166,8 @@ uses
     OverbyteIcsUtils, OverbyteIcsTypes;
 
 const
-    WSocketServerVersion     = 802;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2013 F. Piette V8.02 ';
+    WSocketServerVersion     = 803;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2013 F. Piette V8.03 ';
     DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
 
 type
@@ -760,13 +762,15 @@ begin
     try
         Client := TWSocketClient(PIdRec^.PClient);
         { angus V7.00 ensure client not freed already }
-        if IsClient(Client) and (Client.CliId = PIdRec^.CliId) then
-        try
-            TriggerClientDisconnect(Client, Msg.WParam);
-        finally
-            { Calling Free will automatically remove client from list because    }
-            { we installed a notification handler.                               }
-            Client.Free;
+        if IsClient(Client) and (Client.CliId = PIdRec^.CliId) then begin
+            try
+                TriggerClientDisconnect(Client, Msg.WParam);
+            finally
+                { Calling Free will automatically remove client from list     }
+                { because we installed a notification handler.                }
+                Client.CliId := 0;  { V8.03 }
+                Client.Free;
+            end;
         end;
     finally
         System.Dispose(PIdRec);
