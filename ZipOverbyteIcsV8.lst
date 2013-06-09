@@ -1839,6 +1839,7 @@ Samples\Delphi\WebDemos\OverbyteIcsWebAppServerSessionData.pas
 Samples\Delphi\WebDemos\OverbyteIcsWebAppServerUrlDefs.pas
 Samples\Delphi\WebDemos\Ics.Fmx.OverbyteIcsWebAppServerCounter.pas
 Samples\Delphi\WebDemos\Ics.Fmx.OverbyteIcsWebAppServerMailer.pas
+Samples\Delphi\WebDemos\OverbyteIcsWebAppServerDWScriptUrlHandler.pas
 
 Samples\Delphi\WebDemos\OverbyteIcsWebServ.dof
 Samples\Delphi\WebDemos\OverbyteIcsWebServ.dpr
