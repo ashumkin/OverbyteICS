@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  TFtpServer class encapsulate the FTP protocol (server side)
               See RFC-959 for a complete protocol description.
 Creation:     April 21, 1998
-Version:      8.03
+Version:      8.04
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -413,6 +413,10 @@ Aug 13, 2012 V8.01 Angus ensure SSL not enabled by default, corrected MultiListe
 Jul 01, 2013 V8.02 Arno fixed an exception raised in ClientStorSessionClosed()
                    when an upload was aborted.
 Jul 02, 2003 V8.03 Arno fixed a bug in TClientProcessingThread (thread-safety).
+Jun 24, 2013 V8.04 Angus added new Options of ftpsCompressDirs defaults false
+                   ftpsThreadRecurDirs default false due to rare thread bug
+                   Skip using thread in zmode if level=Z_NO_COMPRESSION and
+                      size less than one meg since really a straight stream copy
 
 
 Angus pending -
@@ -420,6 +424,14 @@ CRC on the fly
 MD5 on the fly for downloads if not cached already
 test app - cache zlib files and CRCs and lock updates
 
+Known Issue (V8.04 Angus)
+On some processors only (multi-core Xeon?), using the XDMLSD -R command with a root
+directory in passive mode and a thread for ftpsThreadRecurDirs or zmode compression
+causes output to be randomly lost, raising an exception in the thread.  The issue is
+probably memory corruption, but can not trace the reason.  V8.04 mitigates this bug
+by disabling ftpsThreadRecurDirs and ftpsCompressDirs compression for directories and
+not using a thread if no compression needed (note in zmode a ZLIB must still be
+called but does not actually compress the file).
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -519,8 +531,8 @@ uses
 
 
 const
-    FtpServerVersion         = 803;
-    CopyRight : String       = ' TFtpServer (c) 1998-2013 F. Piette V8.03 ';
+    FtpServerVersion         = 804;
+    CopyRight : String       = ' TFtpServer (c) 1998-2013 F. Piette V8.04 ';
     UtcDateMaskPacked        = 'yyyymmddhhnnss';         { angus V1.38 }
     DefaultRcvSize           = 16384;    { V7.00 used for both xmit and recv, was 2048, too small }
 
@@ -615,9 +627,10 @@ type
                         ftpsModeZNoResume,               { angus V1.55 }
                         ftpsEnableUtf8,                  { angus V7.01 support Utf8 }
                         ftpsDefaultUtf8On,               { angus V7.01 default Utf8 off is normal for ANSI compatibility }
-                        ftpsAutoDetectCodePage           { AG V7.02 actually detects UTF-8 only! }
+                        ftpsAutoDetectCodePage,          { AG V7.02 actually detects UTF-8 only! }
                                                          { requires ftpsEnableUtf8 and sets ftpEnableUtf8   }
                                                          { once a valid UTF-8 buffer has been received from }
+                        ftpsCompressDirs                 { angus V8.04 zmode compress directory listings }
                                                          { a client.                                        }
                          );
     TFtpsOptions     = set of TFtpsOption;               { angus V1.38 }
@@ -2251,7 +2264,7 @@ begin
     FAddr               := ICS_ANY_HOST_V4;
     FBanner             := msgDftBanner;
     FListenBackLog      := 5;
-    FOptions            := [ftpsThreadRecurDirs, ftpsSiteXmlsd, ftpsCwdCheck, ftpsCdupHome] ;   { angus V7.02 }
+    FOptions            := [{tpsThreadRecurDirs,}ftpsSiteXmlsd, ftpsCwdCheck, ftpsCdupHome] ;   { angus V7.02, V8.04 stop thread}
     FMd5UseThreadFileSize   := 0;  { AG V1.50 }
     FTimeoutSecsLogin   := 60;      { angus V1.54 }
     FTimeoutSecsIdle    := 300;     { angus V1.54 }
@@ -4340,7 +4353,10 @@ begin
                 end;
             end
             else begin
-                Client.ZCurLevel := Z_BEST_SPEED;
+                if ftpsCompressDirs in Options then         { V8.04 see if compressing directories }
+                    Client.ZCurLevel := Z_BEST_SPEED
+                else
+                    Client.ZCurLevel := Z_NO_COMPRESSION;   { V8.04 skip compressing directories }
                 Client.ZCompFileName := 'Directory: ' + Client.DirListPath ;
                 Client.ZCompFileDelete := False;
             end;
@@ -4369,23 +4385,43 @@ begin
                     CloseFileStreams(Client);
                     Exit;
                 end;
-                TriggerDisplay(Client, 'Using thread to compress upload file: ' +
-                         Client.ZCompFileName + ', Level ' + IntToStr (Client.ZCurLevel));
-                Client.ProcessingThread := TClientProcessingThread.Create(TRUE);
-                Client.ProcessingThread.Client := Client;
-                Client.ProcessingThread.InData := Answer;
-                Client.ProcessingThread.Keyword := 'COMPRESS';
-                Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
-                Client.ProcessingThread.FreeOnTerminate := TRUE;
-            {$IFDEF COMPILER14_UP}
-                Client.ProcessingThread.Start;
-            {$ELSE}
-                Client.ProcessingThread.Resume;
-            {$ENDIF}
-                { Since answer is sent later when the thread returns we need }
-                { to set this flag!                                          }
-                Client.AnswerDelayed := TRUE;
-                exit;
+         {angus V8.04 don't use thread if no real compression needed unless more than one meg }
+                if (Client.ZCurLevel = Z_NO_COMPRESSION) and
+                                            (Client.DataStream.Size < 1000000) then begin
+                    TriggerDisplay(Client, 'Skipped thread to compress upload file, no compression');
+                    try
+                        ZlibCompressStreamEx(Client.DataStream, Client.ZFileStream,
+                                    Client.ZCurLevel, zsZLib, false, Self, UpdateThreadOnProgress);
+                        Client.ZFileStream.Position := 0 ;
+                        Client.ZCompInfo := '' ;
+                  { close data file now, not needed any more }
+                        Client.DataStream.Destroy;
+                        Client.DataStream := Nil;
+                    except
+                        on E:Exception do begin
+                            TriggerDisplay(Client, 'Failed to compress file - ' + E.Message);
+                        end;
+                    end;
+                end
+                else begin
+                    TriggerDisplay(Client, 'Using thread to compress upload file: ' +
+                             Client.ZCompFileName + ', Level ' + IntToStr (Client.ZCurLevel));
+                    Client.ProcessingThread := TClientProcessingThread.Create(TRUE);
+                    Client.ProcessingThread.Client := Client;
+                    Client.ProcessingThread.InData := Answer;
+                    Client.ProcessingThread.Keyword := 'COMPRESS';
+                    Client.ProcessingThread.OnTerminate := ClientProcessingThreadTerminate;
+                    Client.ProcessingThread.FreeOnTerminate := TRUE;
+                {$IFDEF COMPILER14_UP}
+                    Client.ProcessingThread.Start;
+                {$ELSE}
+                    Client.ProcessingThread.Resume;
+                {$ENDIF}
+                    { Since answer is sent later when the thread returns we need }
+                    { to set this flag!                                          }
+                    Client.AnswerDelayed := TRUE;
+                    exit;
+                end;
             end;
         end;
         PostMessage(Handle, FMsg_WM_FTPSRV_START_SEND, 0, LPARAM(Client));
@@ -8080,35 +8116,44 @@ begin
                    Client.HashStartPos, Client.HashEndPos, Client.FileModeRead) { angus V1.57, V7.08 }
             else if (Keyword = 'DIRECTORY') then begin                  { angus V1.54 }
                 OutData := Keyword;
-                TriggerEnterSecurityContext;      { AG V7.02 }
                 try
-                    Client.BuildDirList(TotalFiles);         { V7.08 }
-                   (*  !! Not thread-safe !!    { AG V8.03 }
-                    if TotalFiles = -1 then
-                        Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
-                                                           Client.DirListPath + ' failed')
-                    else
-                        Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
-                                              Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles));
-                    *)
-                    { AG V8.03 }
-                    if TotalFiles = -1 then
-                        AuxData := 'Completed directory listing for: ' +
-                                   Client.DirListPath + ' failed'
-                    else
-                        AuxData := 'Completed directory listing for: ' +
-                                  Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles);
-                    { / AG V8.03 }
-                    Client.DataStream.Seek(0, 0);
-                finally
-                    TriggerLeaveSecurityContext;  { AG V7.02 }
-                end;
-                if Client.DataStream.Size = 0 then begin   { V7.08 }
-                    if TotalFiles = -1 then
-                        Buf := 'Listing failed' + #13#10
-                    else
-                        Buf := Client.FtpServer.FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10;
-                    Client.DataStreamWriteString(Buf, Client.CurrentCodePage);
+                    TriggerEnterSecurityContext;      { AG V7.02 }
+                    try
+                        Client.BuildDirList(TotalFiles);         { V7.08 }
+                       (*  !! Not thread-safe !!    { AG V8.03 }
+                        if TotalFiles = -1 then
+                            Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
+                                                               Client.DirListPath + ' failed')
+                        else
+                            Client.FtpServer.TriggerDisplay(Client, 'Completed directory listing for: ' +
+                                                  Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles));
+                        *)
+                        { AG V8.03 }
+                        if TotalFiles = -1 then
+                            AuxData := 'Completed directory listing for: ' +
+                                       Client.DirListPath + ' failed'
+                        else
+                            AuxData := 'Completed directory listing for: ' +
+                                      Client.DirListPath + ', Total Files: ' + IntToStr (TotalFiles);
+                        { / AG V8.03 }
+                        Client.DataStream.Seek(0, 0);
+                    finally
+                        TriggerLeaveSecurityContext;  { AG V7.02 }
+                    end;
+                    if Client.DataStream.Size = 0 then begin   { V7.08 }
+                        if TotalFiles = -1 then
+                            Buf := 'Listing failed' + #13#10
+                        else
+                            Buf := Client.FtpServer.FormatResponsePath(Client, Client.DirListPath) + ' not found' + #13#10;
+                        Client.DataStreamWriteString(Buf, Client.CurrentCodePage);
+                    end;
+                except
+                    on E:Exception do begin  {angus V8.04 }
+                        AuxData := 'Failed to build directory listing - ' + E.Message;
+                        Buf := AuxData + #13#10;
+                        Client.DataStream.Seek(0, 0);
+                        Client.DataStreamWriteString(Buf, Client.CurrentCodePage);
+                    end;
                 end;
             end
      { angus V1.54 }
@@ -8124,6 +8169,10 @@ begin
                         end;
                         ZlibCompressStreamEx(DataStream, ZFileStream, ZCurLevel,
                                          zsZLib, false, Self, UpdateThreadOnProgress); { angus V1.55, V7.08 }
+                        if ZFileStream = Nil then begin   {angus V8.04 trap a bug when stream freed accidentally }
+                            OutData := 'Failed to compress file - ZFileStream Empty After Zlib';
+                            Exit;
+                        end;
                         ZFileStream.Position := 0 ;
                         ZCompInfo := ' compressed size ' + IntToKbyte(ZFileStream.Size) +
                             'bytes, uncompressed size ' + IntToKbyte(NewSize) + 'bytes' ;
