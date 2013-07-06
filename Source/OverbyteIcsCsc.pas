@@ -1416,8 +1416,7 @@ var
     BOM: TBytes;
 begin
     Result := 0;
-    if Detect then
-    begin
+    if Detect then begin
         // Detect and set code page
         if HasBOM(IcsGetBomBytes(CP_UTF32)) then
               SetCodePage(CP_UTF32)

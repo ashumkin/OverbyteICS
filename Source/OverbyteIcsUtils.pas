@@ -3,11 +3,11 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      8.04
+Version:      8.05
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2012 by François PIETTE
+Legal issues: Copyright (C) 2002-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -129,6 +129,8 @@ Apr 25, 2013 V8.03 Arno minor XE4 changes. Added IcsStrLen(), IcsStrPas()
                   IcsStrCopy().
 Mai 03, 2013 V8.04 Compile some overloaded versions of new functions from V8.03
              in Delphi 2009+ only.
+Jul 06, 2013 V8.05 FPiette fixed confitional compilation for IcsStrPCopy so
+             that it compiles with Delphi7.
 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -524,7 +526,7 @@ const
     function IcsStrCopy(Dest: PWideChar; const Source: PWideChar): PWideChar; overload;
   {$ENDIF}
     function IcsStrPCopy(Dest: PChar; const Source: string; MaxLen: Cardinal): PChar;
-  {$IFDEF COMPILER12_UP} overload;
+  {$IFDEF COMPILER7_UP} overload;
     function IcsStrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar; overload;
   {$ENDIF}
     function IcsStrPLCopy(Dest: PChar; const Source: String; MaxLen: Cardinal): PChar; 
@@ -4283,7 +4285,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-{$IFDEF COMPILER12_UP}
+{$IFDEF COMPILER7_UP}
 function IcsStrPCopy(Dest: PAnsiChar; const Source: AnsiString): PAnsiChar;
 begin
 {$IFDEF COMPILER18_UP}

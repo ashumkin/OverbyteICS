@@ -1730,6 +1730,12 @@ Samples\Delphi\SslInternet\OverbyteIcsSslWebServ.res
 Samples\Delphi\SslInternet\OverbyteIcsSslWebServ1.dfm
 Samples\Delphi\SslInternet\OverbyteIcsSslWebServ1.pas
 
+Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServer.dof
+Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServer.dpr
+Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServer.res
+Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServerMain.dfm
+Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServerMain.pas
+
 Samples\Delphi\SslInternet\SslCerts\IcsSslBuildCerts.bat
 Samples\Delphi\SslInternet\SslCerts\openssl.conf
 

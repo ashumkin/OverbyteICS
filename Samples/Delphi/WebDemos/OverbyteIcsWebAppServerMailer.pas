@@ -118,7 +118,15 @@ const
 implementation
 
 uses
-  {$IFDEF FMX} IcsWebAppServerMain {$ELSE} OverbyteIcsWebAppServerMain {$ENDIF};
+{$IFDEF FMX}
+    IcsWebAppServerMain
+{$ELSE}
+{$IFDEF USE_SSL}
+    OverbyteIcsSslWebAppServerMain
+{$ELSE}
+    OverbyteIcsWebAppServerMain
+{$ENDIF}
+{$ENDIF};
 
 function GetTempLastMod (Client: THttpAppSrvConnection; const FName: string): string ;
 var
@@ -368,15 +376,14 @@ begin
     try
         if NOT Assigned (EmailBody) then
             More := false
-        else
-        begin
+        else begin
             if LineNum > EmailBody.Count then
                 More := false
             else
-                IcsStrPCopy (PAnsiChar(MsgLine), AnsiString(EmailBody [Pred (LineNum)])) ;
-        end ;
+                IcsStrPCopy(PAnsiChar(MsgLine), AnsiString(EmailBody[Pred(LineNum)]));
+        end;
     except
-    end ;
+    end;
 end;
 
 procedure TUrlHandlerMailer.TimerAbortTimer(Sender: TObject);

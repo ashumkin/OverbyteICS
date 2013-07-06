@@ -10,10 +10,10 @@ DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
 PROJECTS = OverbyteIcsHttpsTst.exe OverbyteIcsSslWebServ.exe \
-  OverbyteIcsSslFtpTst.exe OverbyteIcsSslFtpServ.exe \
-  OverbyteIcsSslMailSnd.exe OverbyteIcsSslMailRcv.exe OverbyteIcsSslNewsRdr.exe \
-  OverbyteIcsSimpleSslCli.exe OverbyteIcsSimpleSslServer.exe \
-  OverbyteIcsPemTool.exe OverbyteIcsMsVerify.exe OverbyteIcsSslSniSrv.exe
+  OverbyteIcsSslFtpTst.exe OverbyteIcsSslFtpServ.exe OverbyteIcsSslMailSnd.exe \
+  OverbyteIcsSslMailRcv.exe OverbyteIcsSslNewsRdr.exe OverbyteIcsSimpleSslCli.exe \
+  OverbyteIcsSimpleSslServer.exe OverbyteIcsPemTool.exe OverbyteIcsMsVerify.exe \
+  OverbyteIcsSslSniSrv.exe OverbyteIcsSslWebAppServer.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -53,3 +53,8 @@ OverbyteIcsMsVerify.exe: OverbyteIcsMsVerify.dpr
 
 OverbyteIcsSslSniSrv.exe: OverbyteIcsSslSniSrv.dpr
   $(DCC)
+
+OverbyteIcsSslWebAppServer.exe: OverbyteIcsSslWebAppServer.dpr
+  $(DCC)
+
+

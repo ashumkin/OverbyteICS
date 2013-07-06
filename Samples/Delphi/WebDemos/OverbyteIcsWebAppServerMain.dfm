@@ -1,6 +1,6 @@
 object WebAppSrvForm: TWebAppSrvForm
-  Left = 79
-  Top = 292
+  Left = 12
+  Top = 206
   Caption = 'Overbyte ICS Web Application Server Demo'
   ClientHeight = 213
   ClientWidth = 371
