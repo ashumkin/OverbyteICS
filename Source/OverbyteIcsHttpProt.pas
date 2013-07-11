@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      8.03
+Version:      8.04
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -476,12 +476,14 @@ Feb 17, 2012 V7.25 Arno added NTLMv2 and NTLMv2 session security (basics),
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 Dec 15, 2012 V8.01 Arno fixed missing port number in both Host header and property
-             Location. 
+             Location.
 Mar 18, 2013 V8.02 - Angus added LocalAddr6 for IPv6
              Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
                    allow a host name to resolve to an IPv6 address.
 Apr 22, 2013 V8.03 Arno fixed an AV in THttpCli that raised when Abort
              was called, i.e. from OnDocData event handler and SSL enabled.
+Jul 11, 2013 V8.04 - Angus changed default Agent to 'Mozilla/4.0' removing
+                        (compatible; ICS) which upset some servers
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -569,8 +571,8 @@ uses
     OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
-    HttpCliVersion       = 803;
-    CopyRight : String   = ' THttpCli (c) 1997-2013 F. Piette V8.03 ';
+    HttpCliVersion       = 804;
+    CopyRight : String   = ' THttpCli (c) 1997-2013 F. Piette V8.04 ';
     DefaultProxyPort     = '80';
     //HTTP_RCV_BUF_SIZE    = 8193;
     //HTTP_SND_BUF_SIZE    = 8193;
@@ -1373,7 +1375,7 @@ begin
     FContentPost                   := 'application/x-www-form-urlencoded';
     FAccept                        := 'image/gif, image/x-xbitmap, ' +
                                       'image/jpeg, image/pjpeg, */*';
-    FAgent                         := 'Mozilla/4.0 (compatible; ICS)';
+    FAgent                         := 'Mozilla/4.0'; { V8.04 removed (compatible; ICS) which upset some servers  }
     FDoAuthor                      := TStringlist.Create;
     FRcvdHeader                    := TStringList.Create;
     FReqStream                     := TMemoryStream.Create;
