@@ -9,7 +9,7 @@ Description:  THttpServer implement the HTTP server protocol, that is a
               check for '..\', '.\', drive designation and UNC.
               Do the check in OnGetDocument and similar event handlers.
 Creation:     Oct 10, 1999
-Version:      8.04
+Version:      8.05
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -367,7 +367,12 @@ Jul 23, 2012 V8.02 Angus - added TCustomSslHttpServer to allow descendents (TSsl
 Aug 21, 2012 V8.03 Tobias Rapp fixed a problem in THttpRangeStream with partial GET
                       requests returning less than requested
 Jun 08, 2013 V8.04 FPiette fixed missing FAnswerStatus in AnswerStream
-
+Jul 11 2013 V8.05 Angus - Tobias Rapp found that client requests timed out after 10 seconds
+                     inactivity due to KeepAliveTimeSec which is far to fast.
+                   So added KeepAliveTimeXferSec default to 300 seconds which is effective
+                      during transfers, with KeepAliveTimeSec being used between requests.
+                   Ignore blank line separating pipelined requests
+                    
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -466,8 +471,8 @@ uses
     OverbyteIcsWinsock;
 
 const
-    THttpServerVersion = 803;
-    CopyRight : String = ' THttpServer (c) 1999-2012 F. Piette V8.03 ';
+    THttpServerVersion = 805;
+    CopyRight : String = ' THttpServer (c) 1999-2013 F. Piette V8.05 ';
     CompressMinSize = 5000;  { V7.20 only compress responses within a size range, these are defaults only }
     CompressMaxSize = 5000000;
     MinSndBlkSize = 8192 ;  { V7.40 }
@@ -724,6 +729,7 @@ type
         FDocSize               : THttpRangeInt; {TURCAN}
         FMsg_WM_HTTP_DONE      : UINT;
         FKeepAliveTimeSec      : Cardinal;
+        FKeepAliveTimeXferSec  : Cardinal;   { V8.05 }
         FMaxRequestsKeepAlive  : Integer;
         FShutDownFlag          : Boolean;
         FAnswerStatus          : Integer;  { V7.19 }
@@ -947,6 +953,8 @@ type
                                                      read  FRequestRangeValues; {ANDREAS}
         property KeepAliveTimeSec      : Cardinal    read  FKeepAliveTimeSec
                                                      write FKeepAliveTimeSec;
+        property KeepAliveTimeXferSec  : Cardinal    read  FKeepAliveTimeXferSec  
+                                                     write FKeepAliveTimeXferSec;  { V8.05 } 
         property MaxRequestsKeepAlive  : Integer     read  FMaxRequestsKeepAlive
                                                      write FMaxRequestsKeepAlive;
         property AnswerStatus          : Integer     read  FAnswerStatus; { V7.19 }
@@ -1085,6 +1093,7 @@ type
         FOnFilterDirEntry         : THttpFilterDirEntry;
         FListenBacklog            : Integer; {Bjørnar}
         FKeepAliveTimeSec         : Cardinal;
+        FKeepAliveTimeXferSec     : Cardinal;  { V8.05 } 
         FMaxRequestsKeepAlive     : Integer;
         FHeartBeat                : TIcsTimer;
         FHeartBeatBusy            : Boolean;
@@ -1175,6 +1184,7 @@ type
         function  GetSrcVersion: String;
         procedure HeartBeatOnTimer(Sender: TObject); virtual;
         procedure SetKeepAliveTimeSec(const Value: Cardinal);
+        procedure SetKeepAliveTimeXferSec(const Value: Cardinal); { V8.05 } 
         procedure SetMimeTypesList(const Value: TMimeTypesList); { V7.47 }
     public
         constructor Create(AOwner: TComponent); override;
@@ -1237,6 +1247,8 @@ type
                                                  write FOptions;
         property KeepAliveTimeSec : Cardinal     read  FKeepAliveTimeSec
                                                  write SetKeepAliveTimeSec;
+        property KeepAliveTimeXferSec : Cardinal read  FKeepAliveTimeXferSec
+                                                 write SetKeepAliveTimeXferSec;  { V8.05 } 
         property MaxRequestsKeepAlive : Integer  read  FMaxRequestsKeepAlive
                                                  write FMaxRequestsKeepAlive;
         { Size between which textual responses should be compressed, too small is a
@@ -1772,6 +1784,7 @@ begin
     FAuthTypes                    := [];
 {$ENDIF}
     FKeepAliveTimeSec     := 10;
+    FKeepAliveTimeXferSec := 300;  { V8.05 } 
     FMaxRequestsKeepAlive := 100;
     FHeartBeat            := TIcsTimer.Create(FWSocketServer);
     FHeartBeat.OnTimer    := HeartBeatOnTimer;
@@ -2013,6 +2026,16 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure THttpServer.SetKeepAliveTimeXferSec(const Value: Cardinal);  { V8.05 } 
+begin
+    if Value > High(Cardinal) div 1000 then
+        FKeepAliveTimeXferSec := High(Cardinal) div 1000
+    else
+        FKeepAliveTimeXferSec := Value;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This event handler is triggered when state of server socket has changed.  }
 { We use it to trigger our OnServerStarted event.                           }
 procedure THttpServer.WSocketServerChangeState(
@@ -2051,7 +2074,8 @@ begin
     Client.LingerOnOff                         := FLingerOnOff;
     Client.LingerTimeout                       := FLingerTimeout;
     (Client as THttpConnection).Options        := FOptions;
-    THttpConnection(Client).KeepAliveTimeSec   := FKeepAliveTimeSec ;
+    THttpConnection(Client).KeepAliveTimeSec     := FKeepAliveTimeSec;
+    THttpConnection(Client).KeepAliveTimeXferSec := FKeepAliveTimeXferSec;  { V8.05 } 
     Client.CreateCounter;
     Client.Counter.SetConnected;               { V7.23 }
     {$IFDEF USE_SSL}
@@ -2274,6 +2298,7 @@ var
     CurTicks : Cardinal;
     I        : Integer;
     Cli      : THttpConnection;
+    Timeout  : Cardinal;  { V8.05 } 
 begin
     if not FHeartBeatBusy then  { Avoid reentrance }
     try
@@ -2281,9 +2306,13 @@ begin
         CurTicks := IcsGetTickCount;
         for I := ClientCount - 1 downto 0 do begin
             Cli := Client[I];
-            if (Cli.KeepAliveTimeSec > 0) and
-               (IcsCalcTickDiff(Cli.Counter.LastAliveTick, CurTicks) >
-                                             Cli.KeepAliveTimeSec * 1000) then
+            if (Cli.FState = hcRequest) then  { V8.05 } 
+                Timeout := Cli.KeepAliveTimeSec
+            else
+                Timeout := Cli.KeepAliveTimeXferSec;
+           if (Timeout > 0) and { V8.05 } 
+				(IcsCalcTickDiff(Cli.Counter.LastAliveTick, CurTicks) >
+                                             Timeout * 1000) then
                 FWSocketServer.Disconnect(Cli);
         end;
     finally
@@ -2705,6 +2734,7 @@ begin
         FState := hcRequest; 
     end;
     if FState = hcRequest then begin
+        if FRcvdLine = '' then exit;   // ignore blank line separating pipelined requests { V8.05 } 
         { We just start a new request. Initialize all header variables }
         FRequestContentType    := '';
         FRequestContentLength  := 0;
@@ -4530,6 +4560,8 @@ begin
     end;
     if not Assigned(FDocStream) then begin
         TriggerAfterAnswer;                   { V7.19 we can log how much data was sent from here }
+        if FState in [hcPostedData, hcSendData] then
+            FState := hcRequest;              { ready for next pipelined requests } { V8.05 }
         Exit; { no stream usually means just a header string has been sent }
     end;
 
@@ -4550,8 +4582,11 @@ begin
         if FKeepAlive = FALSE then {Bjornar}
            Shutdown(1);            {Bjornar}
 
-        { FState := hcRequest;      Bjornar. Because client might pipeline requests, FState should only be set to hcRequest
-                                    in ConnectionDataAvailable after receiving empty line (when GET) and after all posted data is received (when POST).}
+        { Bjornar. Because client might pipeline requests, FState should only be set to
+          hcRequest in ConnectionDataAvailable after receiving empty line (when GET) and
+          after all posted data is received (when POST).}
+        if FState in [hcPostedData, hcSendData] then
+            FState := hcRequest;                  { restored V8.05 }
         PostMessage(Handle, FMsg_WM_HTTP_DONE, 0, 0);
         Exit;
     end;
