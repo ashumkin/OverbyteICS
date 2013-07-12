@@ -38,7 +38,8 @@ Dez  06, 2011  Made TCacheNode Data and Len writable.
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 Mar 29,  2013  Fixed a bug in TIcsAvlPointerTree where the wrong data was
-               passed to method Notification on Remove of a node. 
+               passed to method Notification on Remove of a node.
+Jul 12,  2013  Method Clear of TIcsAvlPointerTree did not reset Count to zero. 
 
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 
@@ -1363,6 +1364,7 @@ begin
         it := Temp;
     end;
     FRoot := nil;
+    FCount := 0;
 end;
 
 
