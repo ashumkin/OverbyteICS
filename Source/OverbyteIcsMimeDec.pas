@@ -6,7 +6,7 @@ Object:       TMimeDecode is a component whose job is to decode MIME encoded
               decode messages received with a POP3 or NNTP component.
               MIME is described in RFC-1521. Headers are described if RFC-822.
 Creation:     March 08, 1998
-Version:      8.01
+Version:      8.02
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -299,6 +299,8 @@ Mar 11, 2011  V7.22 Angus, prevent range error for blank header in UnfoldHdrValu
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 Apr 25, 2013 V8.01 Arno minor XE4 changes.
+Jul 14, 2013 V8.02 Arno - Some default values changed in TMimeDecode.MessageBegin.
+                   Set IsTextPart to False if FPartContentType contains "application/". 
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsMimeDec;
@@ -1793,7 +1795,10 @@ begin
     if KeyWord = 'content-type' then begin
         p := GetTokenEx(p, FPartContentType, Delim);
         if Pos(AnsiString('application/'), FPartContentType) = 1 then
-            FApplicationType := Copy(FPartContentType, 13, MaxInt)
+        begin
+            FApplicationType := Copy(FPartContentType, 13, MaxInt);
+            FIsTextpart := False; { V8.02 }
+        end
         else
             FIsTextpart := Pos(AnsiString('text'), FPartContentType) = 1;
         while Delim = ';' do begin
@@ -1968,14 +1973,14 @@ begin
     FIsTextPart              := TRUE; 
     FApplicationType         := '';
     FBoundary                := '';
-    FCharset                 := '';
+    FCharset                 := 'us-ascii';        { V8.02 }
     FCodePage                := FDefaultCodePage;
-    FContentType             := '';
+    FContentType             := 'text/plain';      { V8.02 }
     FCurrentData             := nil;
     FDate                    := '';
     FDest                    := '';
     FDisposition             := '';
-    FEncoding                := '';
+    FEncoding                := '7bit';            { V8.02 }
     FEndOfMime               := FALSE;
     FFileName                := '';
     FFormat                  := '';
