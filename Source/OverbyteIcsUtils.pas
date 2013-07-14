@@ -3,7 +3,7 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      8.06
+Version:      8.07
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -133,6 +133,8 @@ Jul 06, 2013 V8.05 FPiette fixed confitional compilation for IcsStrPCopy so
              that it compiles with Delphi7.
 Jul 06, 2013 V8.06 Arno reverted the conditional define from previous fix and
              fixed IcsStrPCopy instead.
+Jul 13, 2013 V8.07 Arno added an overloaded version of IcsGetBufferCodepage that
+             returns BOM's size.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -416,7 +418,8 @@ const
     function  IcsStrCharLength(const Str: PAnsiChar; ACodePage: LongWord = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  IcsNextCharIndex(const S: RawByteString; Index: Integer; ACodePage: LongWord = CP_ACP): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function  IcsGetBomBytes(ACodePage: LongWord): TBytes;
-    function  IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord;
+    function  IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord; overload;
+    function  IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer; out BOMSize: Integer): LongWord; overload;  { V8.07 }
     function  IcsSwap16(Value: Word): Word;
     procedure IcsSwap16Buf(Src, Dst: PWord; WordCount: Integer);
     function  IcsSwap32(Value: LongWord): LongWord;
@@ -2264,24 +2267,45 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-function IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord;
+function  IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer): LongWord;  { V8.07 }
+var
+  LBOMSize: Integer;
+begin
+  Result := IcsGetBufferCodepage(Buf, ByteCount, LBOMSize);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetBufferCodepage(Buf: PAnsiChar; ByteCount: Integer;              { V8.07 }
+  out BOMSize: Integer): LongWord;
 begin
     Result := CP_ACP;
+    BOMSize := 0;
     if (Buf = nil) then
         Exit;
     if (ByteCount > 3) and (Buf[0] = #$FF) and (Buf[1] = #$FE) and
-       (Buf[2] = #0) and (Buf[3] = #0) then
-        Result := CP_UTF32
+       (Buf[2] = #0) and (Buf[3] = #0) then begin
+        Result := CP_UTF32;
+        BOMSize := 4;
+    end
     else if (ByteCount > 3) and (Buf[0] = #0) and (Buf[1] = #0) and
-            (Buf[2] = #$FE) and (Buf[3] = #$FF) then
-        Result := CP_UTF32Be
+            (Buf[2] = #$FE) and (Buf[3] = #$FF) then begin
+        Result := CP_UTF32Be;
+        BOMSize := 4;
+    end
     else if (ByteCount > 2) and (Buf[0] = #$EF) and (Buf[1] = #$BB) and
-            (Buf[2] = #$BF)  then
-        Result := CP_UTF8
-    else if (ByteCount > 1) and (Buf[0] = #$FF) and (Buf[1] = #$FE) then
-        Result := CP_UTF16
-    else if (ByteCount > 1) and (Buf[0] = #$FE) and (Buf[1] = #$FF) then
+            (Buf[2] = #$BF)  then begin
+        Result := CP_UTF8;
+        BOMSize := 3;
+    end
+    else if (ByteCount > 1) and (Buf[0] = #$FF) and (Buf[1] = #$FE) then begin
+        Result := CP_UTF16;
+        BOMSize := 2;
+    end
+    else if (ByteCount > 1) and (Buf[0] = #$FE) and (Buf[1] = #$FF) then begin
         Result := CP_UTF16Be;
+        BOMSize := 2;
+    end;
 end;
 
 
