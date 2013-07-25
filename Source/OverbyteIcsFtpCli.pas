@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V8.02
+Version:      V8.03
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
@@ -1054,13 +1054,18 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
 Mar 18, 2013 V8.01 - Angus added LocalAddr6 for IPv6
              Note: SocketFamily must be set to sfAny, sfIPv6 or sfAnyIPv6 to
                    allow a host name to resolve to an IPv6 address.
-Mar 10, 2012 V8.02 - Arno added property ExternalIPv4. If specified, usually NAT
+Mar 10, 2013 V8.02 - Arno added property ExternalIPv4. If specified, usually NAT
              router's public IP, this IP is sent with the PORT command to the server.
              Makes active mode possible behind NAT in case the router isn't smart
              enough to handle active mode automatically or when the control connection
              is encrypted. The NAT router then must also be configured to forward
              incoming packets from the server properly to the client, specifying a
              DataPortRange helps in this context.
+Jul 24, 2013 V8.03 - Angus added more error reporting for not ready and more
+                debug logging.
+             Fixed bug in WaitUntilReady that meant some sync methods with multiple
+               commands randomly terminated prematurely allowing further commands to
+               be sent usually resulting in not ready errors.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -1150,9 +1155,9 @@ uses
     OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 802;
-  CopyRight : String = ' TFtpCli (c) 1996-2013 F. Piette V8.02 ';
-  FtpClientId : String = 'ICS FTP Client V8.02 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 803;
+  CopyRight : String = ' TFtpCli (c) 1996-2013 F. Piette V8.03 ';
+  FtpClientId : String = 'ICS FTP Client V8.03 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -2850,15 +2855,17 @@ function TCustomFtpCli.CheckReady : Boolean;
 begin
     Result := (FState in [ftpReady, ftpInternalReady, ftpPasvReady]);
     if not Result then
-        HandleError('FTP component not ready');
+        HandleError('FTP component not ready, state ' + LookupFtpState (FState));  { V8.03 }
 end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.OpenAsync;
 begin
-    if not CheckReady then
+    if not CheckReady then begin
+        TriggerDisplay('Not ready for Open');  { V8.03 }
         Exit;
+    end;
     if FConnected then begin
         HandleError('FTP component already connected');
         Exit;
@@ -2941,10 +2948,15 @@ procedure TCustomFtpCli.ExecAsync(
 var
     I : Integer;
 begin
+{$IFNDEF NO_DEBUG_LOG}
+    if CheckLogOptions(loProtSpecInfo) then
+        DebugLog(loProtSpecInfo, 'Start command, Req=' + LookupFTPReq (RqType) + ' - '  + Cmd);  { V8.03 }
+{$ENDIF}
     if not((Cmd = 'ABOR') or (Cmd = 'STAT') or (Cmd = 'QUIT')) then begin
-        if not CheckReady then
+        if not CheckReady then begin
+            TriggerDisplay('Not ready for next command, Req=' + LookupFTPReq (RqType) + ' - '  + Cmd);  { V8.03 }
             Exit;
-
+        end;
         if not FConnected then begin
             HandleError('FTP component not connected');
             Exit;
@@ -3985,8 +3997,10 @@ begin
         HandleError('FTP component already connected');
         Exit;
     end;
-    if not CheckReady then
+    if not CheckReady then begin
+        TriggerDisplay('Not ready for Request, Req=' + LookupFTPReq (RqType));  { V8.03 }
         Exit;
+    end;
     FLastResponseSave := FLastResponse;
     FStatusCodeSave   := -1;
     FRequestType      := RqType;
@@ -5143,6 +5157,10 @@ var
     Delim      : Char;
     DelimCnt, N: Integer;
 begin
+{$IFNDEF NO_DEBUG_LOG}
+    if CheckLogOptions(loProtSpecInfo) then
+        DebugLog(loProtSpecInfo, 'Start command, Req=Get - '  + FLocalFileName);  { V8.03 }
+{$ENDIF}
     if not FConnected then begin
         HandleError(FGetCommand + ': not connected');
         Exit;
@@ -5462,6 +5480,10 @@ var
     NewPos      : TFtpBigInt;
     Uploadsize  : TFtpBigInt;
 begin
+{$IFNDEF NO_DEBUG_LOG}
+    if CheckLogOptions(loProtSpecInfo) then
+        DebugLog(loProtSpecInfo, 'Start command, Req=Put/Append - '  + FLocalFileName);  { V8.03 }
+{$ENDIF}
     if not FConnected then begin
         HandleError('STOR/APPE: not connected');
         Exit;
@@ -5865,6 +5887,10 @@ procedure TCustomFtpCli.ControlSocketDnsLookupDone(
     Sender  : TObject;
     ErrCode : Word);
 begin
+{$IFNDEF NO_DEBUG_LOG}
+    if CheckLogOptions(loProtSpecInfo) then
+        DebugLog(loProtSpecInfo, 'Control DNS Lookup Done - '  + FControlSocket.DnsResult);  { V8.03 }
+{$ENDIF}
     if ErrCode <> 0 then begin
         FLastResponse  := '500 DNS lookup error - ' + GetWinsockErr(ErrCode) ;
         FStatusCode    := 500;
@@ -5926,6 +5952,10 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomFtpCli.ControlSocketSessionConnected(Sender: TObject; ErrCode: Word);
 begin
+{$IFNDEF NO_DEBUG_LOG}
+    if CheckLogOptions(loProtSpecInfo) then
+        DebugLog(loProtSpecInfo, 'Control Socket Connect, error='  + IntToStr (ErrCode));  { V8.03 }
+{$ENDIF}
     { Do not trigger the client SessionConnected from here. We must wait }
     { to have received the server banner.                                }
     if ErrCode <> 0 then begin
@@ -6197,6 +6227,10 @@ procedure TCustomFtpCli.ControlSocketSessionClosed(
 var
     LClosedState : TFtpState;
 begin
+{$IFNDEF NO_DEBUG_LOG}
+    if CheckLogOptions(loProtSpecInfo) then
+        DebugLog(loProtSpecInfo, 'Control Socket Closed, error='  + IntToStr (ErrCode));  { V8.03 }
+{$ENDIF}
     { Sometimes ErrCode equals ECONNRESET after QUIT response has been received
       OK when server and client are on the same host. Seen on MacOS and was
       reported in TWSocket list for Windows as well. In such a case we may
@@ -6890,7 +6924,8 @@ begin
     DummyHandle := INVALID_HANDLE_VALUE;
   {$ENDIF}
     while TRUE do begin
-        if FState in [ftpReady, ftpInternalReady] then begin
+        { V8.03 InternalReady happens between multiple commands, ignore it }
+        if FState in [ftpReady {, ftpInternalReady}] then begin
             { Back to ready state, the command is finished }
             Result := (FRequestResult = 0);
             break;
@@ -6975,8 +7010,10 @@ begin
         if (f_SSL_version(FControlSocket.Ssl) < SSL3_VERSION) or
            IsSslRenegotiationDisallowed(FControlSocket) then
         begin
-            if not CheckReady then
+            if not CheckReady then begin
+                TriggerDisplay('Not ready for Auth');  { V8.03 }
                 Exit;
+            end;
             if not FHighLevelFlag then
                 FRequestType := ftpAuthAsync;
             FFctPrv := ftpFctAuth;
