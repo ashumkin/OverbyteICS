@@ -3,7 +3,7 @@
 Author:       François PIETTE
 Description:  TWSocket class encapsulate the Windows Socket paradigm
 Creation:     April 1996
-Version:      8.05
+Version:      8.06
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -941,6 +941,7 @@ Jun 03, 2013 V8.04 FPiette added unit "Types" so that some inlines are
 Jun 03, 2013 V8.05 Eric Fleming Bonilha found a serious bug with closing the
                    socket. The problem was that winsock may continue to post
                    notification messages after closesocket() has been called.
+Aug 18, 2013 V8.06 Arno added some default property specifiers.
 }
 
 {
@@ -1084,8 +1085,8 @@ type
   TSocketFamily = (sfAny, sfAnyIPv4, sfAnyIPv6, sfIPv4, sfIPv6);
 
 const
-  WSocketVersion            = 805;
-  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.05 ';
+  WSocketVersion            = 806;
+  CopyRight    : String     = ' TWSocket (c) 1996-2013 Francois Piette V8.06 ';
   WSA_WSOCKET_TIMEOUT       = 12001;
   DefaultSocketFamily       = sfIPv4;
 
@@ -1681,13 +1682,16 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property Proto : String                         read  FProtoStr
                                                     write SetProto;
     property MultiCast       : Boolean              read  FMultiCast
-                                                    write FMultiCast;
+                                                    write FMultiCast
+                                                    default False;
     property MultiCastAddrStr: String               read  FMultiCastAddrStr
                                                     write SetMultiCastAddrStr;
     property MultiCastIpTTL  : Integer              read  FMultiCastIpTTL
-                                                    write FMultiCastIpTTL;
+                                                    write FMultiCastIpTTL
+                                                    default 1;
     property ReuseAddr       : Boolean              read  FReuseAddr
-                                                    write FReuseAddr;
+                                                    write FReuseAddr
+                                                    default False;
     property PeerAddr : String                      read  GetPeerAddr;
     property PeerPort : String                      read  GetPeerPort;
     property DnsResult : String                     read  FDnsResult;
@@ -1698,7 +1702,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property WriteCount : Int64                     read  FWriteCount;   { V7.24 }
     property RcvdCount : LongInt                    read  GetRcvdCount;
     property LastError : Integer                    read  FLastError
-                                                    write FLastError;  { V5.20 }
+                                                    write FLastError   { V5.20 }
+                                                    default 0;
     property ComponentOptions : TWSocketOptions     read  FComponentOptions
                                                     write FComponentOptions;
     property BufSize          : Integer             read  GetBufSize
@@ -1708,11 +1713,14 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
     property SocketSndBufSize : Integer             read  FSocketSndBufSize
                                                     write SetSocketSndBufSize;
     property ListenBacklog    : Integer             read  FListenBacklog
-                                                    write FListenBacklog;
+                                                    write FListenBacklog
+                                                    default 5;
     property ReqVerLow       : BYTE                 read  GetReqVerLow
-                                                    write SetReqVerLow;
+                                                    write SetReqVerLow
+                                                    default 2;
     property ReqVerHigh      : BYTE                 read  GetReqVerHigh
-                                                    write SetReqVerHigh;
+                                                    write SetReqVerHigh
+                                                    default 2;
     property OnDataAvailable : TDataAvailable       read  FOnDataAvailable
                                                     write FOnDataAvailable;
     property OnDataSent      : TDataSent            read  FOnDataSent
@@ -1733,28 +1741,36 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                                                     write FOnError;
     { FlushTimeout property is not used anymore }
     property FlushTimeout : Integer                 read  FFlushTimeOut
-                                                    write FFlushTimeout;
+                                                    write FFlushTimeout
+                                                    default 60;
     property SendFlags : TSocketSendFlags           read  GetSendFlags
-                                                    write SetSendFlags;
+                                                    write SetSendFlags
+                                                    default wsSendNormal;
     property Text: String                           read  ReceiveStr
                                                     write SendText;
     property LingerOnOff   : TSocketLingerOnOff     read  FLingerOnOff
-                                                    write FLingerOnOff;
+                                                    write FLingerOnOff
+                                                    default wsLingerOn;
     property LingerTimeout : Integer                read  FLingerTimeout
-                                                    write FLingerTimeout;
+                                                    write FLingerTimeout
+                                                    default 0;
     property KeepAliveOnOff: TSocketKeepAliveOnOff  read  FKeepAliveOnOff
-                                                    write FKeepAliveOnOff;
+                                                    write FKeepAliveOnOff
+                                                    default wsKeepAliveOff;
     property KeepAliveTime : Integer                read  FKeepAliveTime
-                                                    write FKeepAliveTime;
+                                                    write FKeepAliveTime
+                                                    default 0;
     property KeepAliveInterval : Integer            read  FKeepAliveInterval
-                                                    write FKeepAliveInterval;
+                                                    write FKeepAliveInterval
+                                                    default 0;
     property OnDebugDisplay : TDebugDisplay         read  FOnDebugDisplay
                                                     write FOnDebugDisplay;
     property Counter      : TWSocketCounter         read  FCounter;
     property CounterClass : TWsocketCounterClass    read  FCounterClass
                                                     write SetCounterClass;
     property SocketFamily : TSocketFamily           read  FSocketFamily
-                                                    write SetSocketFamily;
+                                                    write SetSocketFamily
+                                                    default DefaultSocketFamily;
     property OnAddressListChanged : TNetChangeEvent read  FOnAddressListChanged
                                                     write SetOnAddressListChanged;
     property OnRoutingInterfaceChanged : TNetChangeEvent
@@ -1954,7 +1970,8 @@ type  { <== Required to make D7 code explorer happy, AG 05/24/2007 }
                                                     write FSocksPassword;
       property SocksAuthentication : TSocksAuthentication
                                                     read  FSocksAuthentication
-                                                    write FSocksAuthentication;
+                                                    write FSocksAuthentication
+                                                    default socksNoAuthentication;
       property OnSocksError  : TSocksErrorEvent     read  FOnSocksError
                                                     write FOnSocksError;
       property OnSocksConnected : TSessionConnected read  FOnSocksConnected
@@ -2940,15 +2957,19 @@ type
       property    RcvdCnt    : LongInt      read  FRcvdCnt;
   published
       property LineMode : Boolean           read  FLineMode
-                                            write SetLineMode;
+                                            write SetLineMode
+                                            default False;
       property LineLimit : LongInt          read  FLineLimit
-                                            write FLineLimit;
+                                            write FLineLimit
+                                            default 65536;
       property LineEnd  : AnsiString        read  FLineEnd
                                             write FLineEnd;
       property LineEcho : Boolean           read  FLineEcho
-                                            write FLineEcho;
+                                            write FLineEcho
+                                            default False;
       property LineEdit : Boolean           read  FLineEdit
-                                            write FLineEdit;
+                                            write FLineEdit
+                                            default False;
       property OnLineLimitExceeded : TLineLimitEvent
                                             read  FOnLineLimitExceeded
                                             write FOnLineLimitExceeded;

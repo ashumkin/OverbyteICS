@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      8.04
+Version:      8.05
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -103,6 +103,7 @@ Jun 09, 2013 V8.03 FPiette WMClientClosed clear CliId before freeing.
 Aug 18, 2013 V8.04 Arno - It was not possible to clear both string properties
                    Banner and BannerTooBusy in OI since empty strings were not
                    stored in the .dfm.
+Aug 18, 2013 V8.05 Arno added some default property specifiers.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -168,8 +169,8 @@ uses
     OverbyteIcsUtils, OverbyteIcsTypes;
 
 const
-    WSocketServerVersion     = 804;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2013 F. Piette V8.04 ';
+    WSocketServerVersion     = 805;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2013 F. Piette V8.05 ';
 
 type
     TCustomWSocketServer       = class;
@@ -278,7 +279,8 @@ type
                                                       write FBannerTooBusy
                                                       stored IsBannerTooBusyStored;
         property  MaxClients             : LongInt    read  FMaxClients
-                                                      write FMaxClients;
+                                                      write FMaxClients
+                                                      default 0;
         { Triggered when a client disconnect }
         property  OnClientDisconnect     : TWSocketClientConnectEvent
                                                       read  FOnClientDisconnect

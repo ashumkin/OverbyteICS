@@ -3,11 +3,11 @@
 Author:       François PIETTE
 Creation:     Octobre 2002
 Description:  Composant non-visuel avec un handle de fenêtre.
-Version:      8.01
+Version:      8.02
 EMail:        francois.piette@overbyte.be   http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2011 by François PIETTE
+Legal issues: Copyright (C) 2002-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -105,6 +105,7 @@ May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
 15/12/2012 V8.01 (Posix only) Arno reset FHandle and FThreadID to zero in
                  TIcsWndControl.DeallocateHWnd.
+Aug 18, 2013 V8.02 Arno added some default property specifiers.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -146,8 +147,8 @@ uses
   OverbyteIcsTypes;
 
 const
-  TIcsWndControlVersion  = 801;
-  CopyRight : String     = ' TIcsWndControl (c) 2002-2012 F. Piette V8.01 ';
+  TIcsWndControlVersion  = 802;
+  CopyRight : String     = ' TIcsWndControl (c) 2002-2013 F. Piette V8.02 ';
 
   IcsWndControlWindowClassName = 'IcsWndControlWindowClass';
 
@@ -245,7 +246,8 @@ type
     procedure   MessagePump; virtual;
     function    PostQuitMessage: Boolean;
     property MultiThreaded   : Boolean                read  FMultiThreaded
-                                                      write SetMultiThreaded;
+                                                      write SetMultiThreaded
+                                                      default False;
     property Terminated      : Boolean                read  GetTerminated
                                                       write SetTerminated;
     property OnMessagePump   : TNotifyEvent           read  FOnMessagePump
