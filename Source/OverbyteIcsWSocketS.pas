@@ -4,7 +4,7 @@ Author:       François PIETTE
 Description:  A TWSocket that has server functions: it listen to connections
               an create other TWSocket to handle connection for each client.
 Creation:     Aug 29, 1999
-Version:      8.03
+Version:      8.04
 EMail:        francois.piette@overbyte.be     http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
@@ -100,7 +100,9 @@ Jul 21, 2012 V8.01 Fix in TCustomMultiListenWSocketServer.TriggerClientConnect.
 Jun 03, 2013 V8.02 FPiette added unit "Types" so that some inlines are
                    expanded.
 Jun 09, 2013 V8.03 FPiette WMClientClosed clear CliId before freeing.
-
+Aug 18, 2013 V8.04 Arno - It was not possible to clear both string properties
+                   Banner and BannerTooBusy in OI since empty strings were not
+                   stored in the .dfm.
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -166,9 +168,8 @@ uses
     OverbyteIcsUtils, OverbyteIcsTypes;
 
 const
-    WSocketServerVersion     = 803;
-    CopyRight : String       = ' TWSocketServer (c) 1999-2013 F. Piette V8.03 ';
-    DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
+    WSocketServerVersion     = 804;
+    CopyRight : String       = ' TWSocketServer (c) 1999-2013 F. Piette V8.04 ';
 
 type
     TCustomWSocketServer       = class;
@@ -220,6 +221,13 @@ type
     { For each connection, it instanciate a new TWSocketClient (or derived) }
     { to handle connection. Use ClientClass to specify your derived.        }
     TCustomWSocketServer = class(TWSocket)
+    private
+        procedure ReadBannerValue(Reader: TReader);
+        procedure WriteBannerValue(Writer: TWriter);
+        procedure WriteBannerTooBusyValue(Writer: TWriter);
+        procedure ReadBannerTooBusyValue(Reader: TReader);
+        function  IsBannerStored: Boolean;
+        function  IsBannerTooBusyStored: Boolean;
     protected
         FBanner                 : String;
         FBannerTooBusy          : String;
@@ -231,6 +239,7 @@ type
         FOnClientCreate         : TWSocketClientCreateEvent;
         FOnClientConnect        : TWSocketClientConnectEvent;
         FOnClientDisconnect     : TWSocketClientConnectEvent;
+        procedure DefineProperties(Filer: TFiler); override;
         procedure WndProc(var MsgRec: TMessage); override;
         procedure Notification(AComponent: TComponent; operation: TOperation); override;
         procedure TriggerSessionAvailable(Error : Word); override;
@@ -263,9 +272,11 @@ type
     published
         { Banner sent to client as welcome message. Can be empty. }
         property  Banner                 : String     read  FBanner
-                                                      write FBanner;
+                                                      write FBanner
+                                                      stored IsBannerStored;
         property  BannerTooBusy          : String     read  FBannerTooBusy
-                                                      write FBannerTooBusy;
+                                                      write FBannerTooBusy
+                                                      stored IsBannerTooBusyStored;
         property  MaxClients             : LongInt    read  FMaxClients
                                                       write FMaxClients;
         { Triggered when a client disconnect }
@@ -512,6 +523,61 @@ type
 
 implementation
 
+const
+    DefaultBanner            = 'Welcome to OverByte ICS TcpSrv';
+    DefaultBannerTooBusy     = 'Sorry, too many clients';
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocketServer.DefineProperties(Filer: TFiler);
+begin
+    inherited DefineProperties(Filer);
+    Filer.DefineProperty('Banner', ReadBannerValue, WriteBannerValue, (Banner = ''));
+    Filer.DefineProperty('BannerTooBusy', ReadBannerTooBusyValue,
+      WriteBannerTooBusyValue, (BannerTooBusy = ''));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocketServer.IsBannerStored: Boolean;
+begin
+    Result := Banner <> DefaultBanner;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomWSocketServer.IsBannerTooBusyStored: Boolean;
+begin
+  Result := BannerTooBusy <> DefaultBannerTooBusy;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocketServer.WriteBannerValue(Writer: TWriter);
+begin
+    Writer.WriteString(Banner);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocketServer.WriteBannerTooBusyValue(Writer: TWriter);
+begin
+    Writer.WriteString(BannerTooBusy);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocketServer.ReadBannerValue(Reader: TReader);
+begin
+    Banner := Reader.ReadString;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomWSocketServer.ReadBannerTooBusyValue(Reader: TReader);
+begin
+    BannerTooBusy := Reader.ReadString;
+end;
+
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 constructor TCustomWSocketServer.Create(AOwner: TComponent);
@@ -520,7 +586,7 @@ begin
     FClientList      := TList.Create;
     FClientClass     := TWSocketClient;
     FBanner          := DefaultBanner;
-    FBannerTooBusy   := 'Sorry, too many clients';
+    FBannerTooBusy   := DefaultBannerTooBusy;
 end;
 
 
