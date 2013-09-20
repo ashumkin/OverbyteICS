@@ -33,6 +33,7 @@ package OverbyteIcsD7Run;
 {$R '..\Source\OverbyteIcsSnmpCli.dcr'}
 {$R '..\Source\OverbyteIcsSysLogClient.dcr'}
 {$R '..\Source\OverbyteIcsSysLogServer.dcr'}
+{$R '..\Source\OverbyteIcsSmtpSrv.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -135,6 +136,7 @@ contains
   OverbyteIcsFormDataDecoder in '..\Source\OverbyteIcsFormDataDecoder.pas',
   OverbyteIcsSnmpMsgs in '..\Source\OverbyteIcsSnmpMsgs.pas',
   OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas',
-  OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas';
+  OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
+  OverbyteIcsSmtpSrv in '..\Source\OverbyteIcsSmtpSrv.pas';
 
 end.

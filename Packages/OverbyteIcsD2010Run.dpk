@@ -30,6 +30,7 @@ package OverbyteIcsD2010Run;
 {$R '..\Source\OverbyteIcsWSocketTS.dcr'}
 {$R '..\Source\OverbyteIcsMimeUtils.dcr'}
 {$R '..\Source\OverbyteIcsCookies.dcr'}
+{$R '..\Source\OverbyteIcsSmtpSrv.dcr'}
 {$ALIGN 8}
 { ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -133,6 +134,7 @@ contains
   OverbyteIcsSysLogClient in '..\Source\OverbyteIcsSysLogClient.pas',
   OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
   OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
-  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas';
+  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas',
+  OverbyteIcsSmtpSrv in '..\Source\OverbyteIcsSmtpSrv.pas';
 
 end.

@@ -273,6 +273,8 @@ Source\OverbyteIcsSHA1.pas
 Source\OverbyteIcsSSLEAY.pas
 Source\OverbyteIcsSmtpProt.dcr
 Source\OverbyteIcsSmtpProt.pas
+Source\OverbyteIcsSmtpSrv.dcr
+Source\OverbyteIcsSmtpSrv.pas
 Source\OverbyteIcsSnmpCli.dcr
 Source\OverbyteIcsSnmpCli.pas
 Source\OverbyteIcsSnmpMsgs.pas
@@ -1231,6 +1233,11 @@ Samples\Delphi\MailNewsDemos\OverbyteIcsNewsReader.res
 Samples\Delphi\MailNewsDemos\OverbyteIcsNewsReader1.dfm
 Samples\Delphi\MailNewsDemos\OverbyteIcsNewsReader1.pas
 
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.dof
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.dpr
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.res
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.dfm
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.pas
 
 Samples\Delphi\MiscDemos\MiscDemos.bpg
 Samples\Delphi\MiscDemos\Dcu\dir.txt

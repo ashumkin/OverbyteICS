@@ -40,5 +40,8 @@ OverbyteIcsConPop3.exe: OverbyteIcsConPop3.dpr
 OverbyteIcsMailSndAsync.exe: OverbyteIcsMailSndAsync.dpr
   $(DCC)
 
+OverbyteIcsSmtpServer.exe: OverbyteIcsSmtpServer.dpr
+  $(DCC)
+
 
 

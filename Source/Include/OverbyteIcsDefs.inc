@@ -54,7 +54,8 @@ Oct 23, 2010 V1.12 PasDoc compatible.
 Feb 4,  2011 V1.13 BUILTIN_TIMEOUT and BUILTIN_THROTTLE now enabled by default 
 May 2012 - V8.00 - Arno added FireMonkey cross platform support with POSIX/MacOS
                    also IPv6 support, include files now in sub-directory
-Apr 2013 - V8.01 - Arno XE4 
+Apr 2013 - V8.01 - Arno XE4
+Aug 2013 - V8.02 - FPiette XE5
 
 
   SYMBOL           Compiler version
@@ -91,6 +92,7 @@ Apr 2013 - V8.01 - Arno XE4
   DELPHI16_UP      Delphi 16 or higher  (Delphi XE2  - Pulsar)
   DELPHI17_UP      Delphi 17 or higher  (Delphi XE3  - WaterDragon)
   DELPHI18_UP      Delphi 18 or higher  (Delphi XE4  - Quitessence)
+  DELPHI19_UP      Delphi 19 or higher  (Delphi XE5  - Zephyr)
 
   BCB1             C++ Builder 1
   BCB3             C++ Builder 3
@@ -110,6 +112,7 @@ Apr 2013 - V8.01 - Arno XE4
   BCB16_UP         C++ Builder XE2  or higher
   BCB17_UP         C++ Builder XE3  or higher
   BCB18_UP         C++ Builder XE4  or higher
+  BCB19_UP         C++ Builder XE5  or higher
 
   COMPILER1        Delphi 1
   COMPILER2        Delphi 2  or C++ Builder 1
@@ -129,6 +132,7 @@ Apr 2013 - V8.01 - Arno XE4
   COMPILER16       Delphi or C++ Builder XE2
   COMPILER17       Delphi or C++ Builder XE3
   COMPILER18       Delphi or C++ Builder XE4
+  COMPILER19       Delphi or C++ Builder XE5
 
   COMPILER1_UP     Delphi 1  or higher
   COMPILER2_UP     Delphi 2  or C++ Builder 1 or higher
@@ -148,6 +152,7 @@ Apr 2013 - V8.01 - Arno XE4
   COMPILER16_UP    Delphi or C++ Builder XE2  or higher (Pulsar)
   COMPILER17_UP    Delphi or C++ Builder XE3  or higher (WaterDragon)
   COMPILER18_UP    Delphi or C++ Builder XE4  or higher (Quitessence)
+  COMPILER19_UP    Delphi or C++ Builder XE5  or higher (Zephyr)
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }
 
@@ -211,6 +216,17 @@ Apr 2013 - V8.01 - Arno XE4
 {$ENDIF}
 
 {$DEFINE VER_UNKNOWN}
+
+{$IFDEF VER260}
+  {$UNDEF VER_UNKNOWN}
+  {$DEFINE COMPILER19}
+  {$IFDEF BCB}
+    {$DEFINE BCB19}
+  {$ELSE}
+    {$DEFINE DELPHI19}
+    {$DEFINE DELPHI}
+  {$ENDIF}
+{$ENDIF}
 
 {$IFDEF VER250}
   {$UNDEF VER_UNKNOWN}
@@ -303,7 +319,7 @@ Apr 2013 - V8.01 - Arno XE4
       {$DEFINE DELPHI10}
       {$DEFINE DELPHI}
     {$ENDIF}
-  {$ENDIF}  
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF VER170}
@@ -398,13 +414,34 @@ Apr 2013 - V8.01 - Arno XE4
 {$ENDIF}
 
 {$IFDEF VER_UNKNOWN}   { If the compiler version is not detected define latest }
-  {$DEFINE COMPILER18} { supported compiler version.                           }
+  {$DEFINE COMPILER19} { supported compiler version.                           }
   {$IFDEF BCB}
-    {$DEFINE BCB18}
+    {$DEFINE BCB19}
   {$ELSE}
-    {$DEFINE DELPHI18}
+    {$DEFINE DELPHI19}
     {$DEFINE DELPHI}
   {$ENDIF}
+{$ENDIF}
+
+{$IFDEF DELPHI19}
+  {$DEFINE DELPHI19_UP}
+  {$DEFINE DELPHI18_UP}
+  {$DEFINE DELPHI17_UP}
+  {$DEFINE DELPHI16_UP}
+  {$DEFINE DELPHI15_UP}
+  {$DEFINE DELPHI14_UP}
+  {$DEFINE DELPHI12_UP}
+  {$DEFINE DELPHI11_UP}
+  {$DEFINE DELPHI10_UP}
+  {$DEFINE DELPHI9_UP}
+  {$DEFINE DELPHI8_UP}
+  {$DEFINE DELPHI7_UP}
+  {$DEFINE DELPHI6_UP}
+  {$DEFINE DELPHI5_UP}
+  {$DEFINE DELPHI4_UP}
+  {$DEFINE DELPHI3_UP}
+  {$DEFINE DELPHI2_UP}
+  {$DEFINE DELPHI1_UP}
 {$ENDIF}
 
 {$IFDEF DELPHI18}
@@ -609,6 +646,28 @@ Apr 2013 - V8.01 - Arno XE4
 
 {$IFDEF DELPHI1}
   {$DEFINE DELPHI1_UP}
+{$ENDIF}
+
+{$IFDEF COMPILER19}
+  {$DEFINE COMPILER19_UP}
+  {$DEFINE COMPILER18_UP}
+  {$DEFINE COMPILER17_UP}
+  {$DEFINE COMPILER16_UP}
+  {$DEFINE COMPILER15_UP}
+  {$DEFINE COMPILER14_UP}
+  {$DEFINE COMPILER12_UP}
+  {$DEFINE COMPILER11_UP}
+  {$DEFINE COMPILER10_UP}
+  {$DEFINE COMPILER9_UP}
+  {$DEFINE COMPILER8_UP}
+  {$DEFINE COMPILER7_UP}
+  {$DEFINE COMPILER6_UP}
+  {$DEFINE COMPILER5_UP}
+  {$DEFINE COMPILER4_UP}
+  {$DEFINE COMPILER35_UP}
+  {$DEFINE COMPILER3_UP}
+  {$DEFINE COMPILER2_UP}
+  {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
 {$IFDEF COMPILER18}
@@ -836,6 +895,23 @@ Apr 2013 - V8.01 - Arno XE4
   {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
+{$IFDEF BCB19}
+  {$DEFINE BCB19_UP}
+  {$DEFINE BCB18_UP}
+  {$DEFINE BCB17_UP}
+  {$DEFINE BCB16_UP}
+  {$DEFINE BCB15_UP}
+  {$DEFINE BCB14_UP}
+  {$DEFINE BCB12_UP}
+  {$DEFINE BCB11_UP}
+  {$DEFINE BCB10_UP}
+  {$DEFINE BCB6_UP}
+  {$DEFINE BCB5_UP}
+  {$DEFINE BCB4_UP}
+  {$DEFINE BCB3_UP}
+  {$DEFINE BCB1_UP}
+{$ENDIF}
+
 {$IFDEF BCB18}
   {$DEFINE BCB18_UP}
   {$DEFINE BCB17_UP}
@@ -1036,4 +1112,6 @@ Apr 2013 - V8.01 - Arno XE4
     {$DEFINE USE_ICONV}
   {$ENDIF}
 {$ENDIF}
+
+
 

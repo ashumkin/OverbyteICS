@@ -1,9 +1,9 @@
-ICS - Internet Component Suite - V8 Beta - Delphi 7 to RAD Studio XE3
+ICS - Internet Component Suite - V8 Beta - Delphi 7 to RAD Studio XE5
 =====================================================================
 (Aka FPIETTE's Components)
 
 
-Revised: September 13, 2012
+Revised: September 20, 2013
 http://www.overbyte.be/
 
 Table of content:
@@ -28,7 +28,7 @@ Table of content:
 
 Legal issues:
 -------------
-              Copyright (C) 1997-2012 by François PIETTE
+              Copyright (C) 1997-2013 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium
               <francois.piette@overbyte.be>
 
@@ -135,7 +135,9 @@ http://www.embarcadero.com/
 
 With Delphi XE2 and later, VCL 64-bit Windows targets are supported for Delphi only.
 Currently FireMonkey is partly supported for Delphi only (there are still a few
-non-ported components). Ics for Mac OSX is currently experimental.
+non-ported components). ICS for Mac OSX is currently experimental.  There are no
+current plans for ICS for iOS, however ICS for Android is in early development
+but a long way off beta due to lack of AnsiString.
 
 The zip file has sub-directories in it. You must use the WinZip "Use folder names"
 option to restore this directory tree or you will have problems because the files
@@ -162,7 +164,7 @@ This is the new V8 sub-directory layout:
       |
 	\$(Platform)                      Win32 / Win64 / OSX32
         |
-	  \<delphi_version>               D7..XE3 includes .dcu and .dfm files for Delphi
+	  \<delphi_version>               D7..XE5 includes .dcu and .dfm files for Delphi
 	                                  and .obj and .hpp files for C++ Builder
 
 .\Samples                             Delphi Win32/Win64 common source for all demos
@@ -241,6 +243,10 @@ Delphi XE2       :  DXe2Install.groupproj // VCL only, no FireMonkey components
 Delphi XE2       :  DXe2InstallVclFmx.groupproj // Both VCL and FireMonkey components
 Delphi XE3       :  DXe3Install.groupproj // VCL only, no FireMonkey components
 Delphi XE3       :  DXe3InstallVclFmx.groupproj // Both VCL and FireMonkey components
+Delphi XE4       :  DXe4Install.groupproj // VCL only, no FireMonkey components
+Delphi XE4       :  DXe4InstallVclFmx.groupproj // Both VCL and FireMonkey components
+Delphi XE5       :  DXe5Install.groupproj // VCL only, no FireMonkey components
+Delphi XE5       :  DXe5InstallVclFmx.groupproj // Both VCL and FireMonkey components
 C++ Builder 2006 :  CB2006Install.bdsgroup
 C++ Builder 2007 :  CB2007Install.groupproj
 C++ Builder 2009 :  CB2009Install.groupproj
@@ -315,6 +321,8 @@ Delphi 2010      :  OverbyteIcsD2010Run.dproj, OverbyteIcsD2010Design.dproj
 Delphi XE        :  OverbyteIcsDXeRun.dproj, OverbyteIcsDXeDesign.dproj
 Delphi XE2       :  OverbyteIcsDXe2Run.dproj, OverbyteIcsDXe2Design.dproj
 Delphi XE3       :  OverbyteIcsDXe3Run.dproj, OverbyteIcsDXe3Design.dproj
+Delphi XE4       :  OverbyteIcsDXe4Run.dproj, OverbyteIcsDXe4Design.dproj
+Delphi XE5       :  OverbyteIcsDXe5Run.dproj, OverbyteIcsDXe5Design.dproj
 C++ Builder 2006 :  OverbyteIcsCB2006Run.bdsproj, OverbyteIcsCB2006Design.bdsproj
 C++ Builder 2007 :  OverbyteIcsCB2007Run.cbproj, OverbyteIcsCB2007Design.cbproj
 C++ Builder 2009 :  OverbyteIcsCB2009Run.cbproj, OverbyteIcsCB2009Design.cbproj
@@ -330,6 +338,12 @@ Delphi XE2 FMX          :  IcsFmxDXe2Run.dproj, IcsFmxDXe2Design.dproj
 Delphi XE3 FMX/VCL      :  IcsCommonDXe3Run.dproj, IcsCommonDXe3Design.dproj
 Delphi XE3 VCL          :  IcsVclDXe3Run.dproj, IcsVclDXe3Design.dproj
 Delphi XE3 FMX          :  IcsFmxDXe3Run.dproj, IcsFmxDXe3Design.dproj
+Delphi XE4 FMX/VCL      :  IcsCommonDXe4Run.dproj, IcsCommonDXe4Design.dproj
+Delphi XE4 VCL          :  IcsVclDXe4Run.dproj, IcsVclDXe4Design.dproj
+Delphi XE4 FMX          :  IcsFmxDXe4Run.dproj, IcsFmxDXe4Design.dproj
+Delphi XE5 FMX/VCL      :  IcsCommonDXe5Run.dproj, IcsCommonDXe5Design.dproj
+Delphi XE5 VCL          :  IcsVclDXe5Run.dproj, IcsVclDXe5Design.dproj
+Delphi XE5 FMX          :  IcsFmxDXe5Run.dproj, IcsFmxDXe5Design.dproj
 C++ Builder XE2 FMX/VCL :  IcsCommonCBXe2Run.dproj, IcsCommonDXe2Design.dproj
 C++ Builder XE2 VCL     :  IcsVclCBXe2Run.dproj, IcsVclCBXe2Design.dproj
 C++ Builder XE2 FMX     :  IcsFmxCBXe2Run.dproj, IcsFmxCBXe2Design.dproj
@@ -364,8 +378,9 @@ If not, add it manually. It is not mandatory to add .\Lib to the global Delphi p
 but it will be much easier for you because otherwise you'll have to add it to each
 project.
 
-DELPHI XE2/WIN32, XE3/WIN32, XE2/WIN64 and XE3/WIN64: Similar to above, but the
-Library path is specified separately for 32-bit and 64-bit Windows Platforms.
+DELPHI XE2/WIN32, XE3/WIN32, XE4/WIN32, XE5/WIN32, XE2/WIN64, XE3/WIN64, XE4/WIN64,
+XE5/WIN64: Similar to above, but the Library path is specified separately for
+32-bit and 64-bit Windows Platforms.
 
 DELPHI 7: Add VC32 directory path to your library path (Tools menu / Environment
 Options / Library / Library Path. Add .\Lib\Debug\Win32\D7 path at the end of the
@@ -494,6 +509,7 @@ properly add all of the available components in this collection:
 > OverbyteIcsPop3Prot.pas      POP3 client protocol - get mail from mail server
 > OverbyteIcsReg.pas           Register design components
 > OverbyteIcsSmtpProt.pas      SMTP client protocol - send mail to server
+> OverbyteIcsSmtpSrv.pas       SMTP server protocol - receive mail from client
 > OverbyteIcsSnmpCli.pas       SNMP client protocol - network management
 > OverbyteIcsSnmpMsgs.pas      SNMP client protocol - message helper
 > OverbyteIcsSysLogClient.pas  Syslog Client Protocol - receive syslog messages
@@ -645,6 +661,7 @@ Delphi Win32/Win64 SMTP, POP3, NNTP sample applications
 > OverbyteIcsMailSndAsync.dpr   Example of parallel EMail sending with multiple connections
 > OverbyteIcsMimeDemo.dpr       Example of EMail decoding (attached files are extracted) - ACTIVE!!
 > OverbyteIcsNewsReader.dpr     Example of TNntpCli component (Send/receive newsgroups) - ACTIVE!!
+> OverbyteIcsSmtpServer.dpr     Internet EMail server using SMTP protocol - ACTIVE!!
 
 Delphi Win32/Win64 Miscellaneous applications
 ---------------------------------------------

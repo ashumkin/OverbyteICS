@@ -33,6 +33,7 @@ package OverbyteIcsD2009Run;
 {$R '..\source\OverbyteIcsSnmpCli.dcr'}
 {$R '..\source\OverbyteIcsSysLogClient.dcr'}
 {$R '..\source\OverbyteIcsSysLogServer.dcr'}
+{$R '..\Source\OverbyteIcsSmtpSrv.dcr'}
 {$ALIGN 8}
 { ASSERTIONS OFF}
 {$BOOLEVAL OFF}
@@ -135,6 +136,7 @@ contains
   OverbyteIcsSysLogClient in '..\Source\OverbyteIcsSysLogClient.pas',
   OverbyteIcsSysLogDefs in '..\Source\OverbyteIcsSysLogDefs.pas',
   OverbyteIcsSysLogServer in '..\Source\OverbyteIcsSysLogServer.pas',
-  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas';
+  OverbyteIcsTicks64 in '..\Source\OverbyteIcsTicks64.pas',
+  OverbyteIcsSmtpSrv in '..\Source\OverbyteIcsSmtpSrv.pas';
 
 end.

@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{BCD0545C-3A49-4959-BB73-0741D6E1D23B}</ProjectGuid>
         <MainSource>OverbyteIcsDXe4Run.dpk</MainSource>
@@ -162,6 +162,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="..\Source\OverbyteIcsWSocketTS.dcr"/>
         <DCCReference Include="..\Source\OverbyteIcsMimeUtils.dcr"/>
         <DCCReference Include="..\Source\OverbyteIcsCookies.dcr"/>
+        <DCCReference Include="..\Source\OverbyteIcsSmtpSrv.dcr"/>
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="vcl.dcp"/>
         <DCCReference Include="..\Source\OverbyteIcsTypes.pas"/>
@@ -238,6 +239,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="..\Source\OverbyteIcsSysLogDefs.pas"/>
         <DCCReference Include="..\Source\OverbyteIcsSysLogServer.pas"/>
         <DCCReference Include="..\Source\OverbyteIcsTicks64.pas"/>
+        <DCCReference Include="..\Source\OverbyteIcsSmtpSrv.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_Release</Key>
             <CfgParent>Base</CfgParent>
