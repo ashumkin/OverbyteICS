@@ -95,7 +95,7 @@ uses
     OverbyteIcsSysLogClient,
     OverbyteIcsSysLogServer,
     OverbyteIcsSnmpCli,
-
+    OverbyteIcsSmtpSrv,
     // VCL only
     OverbyteIcsMultiProgressBar,
     OverbyteIcsEmulVT, OverbyteIcsTnCnx, OverbyteIcsTnEmulVT, OverbyteIcsTnScript,
@@ -175,7 +175,8 @@ begin
       TMultiProgressBar,
       TSysLogClient,
       TSysLogServer,
-      TSnmpCli
+      TSnmpCli,
+      TSmtpServer
     ]);
 {$ENDIF VCL}
 {$IFDEF ICS_COMMON}
