@@ -58,6 +58,9 @@ uses
     Classes, SysUtils,
   {$IFDEF FMX}
     System.Types, System.UITypes, System.UIConsts, FMX.Types,
+  {$IF Compilerversion >= 25}
+    FMX.Graphics,
+  {$IFEND}
   {$ELSE}
     Graphics, Jpeg,
   {$ENDIF}
