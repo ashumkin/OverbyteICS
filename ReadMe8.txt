@@ -3,7 +3,7 @@ ICS - Internet Component Suite - V8 Beta - Delphi 7 to RAD Studio XE5
 (Aka FPIETTE's Components)
 
 
-Revised: September 20, 2013
+Revised: September 24, 2013
 http://www.overbyte.be/
 
 Table of content:
@@ -755,15 +755,19 @@ Delphi Win32/Win64 SSL-enabled sample applications
 > OverbyteIcsHttpsTst.dpr         Example of TSslHttpCli component (GET) - ACTIVE!!
 > OverbyteIcsMsVerify.dpr         Demo of HTTPs server, static and dynamic pages, template for HTML - ACTIVE!!
 > OverbyteIcsPemTool.dpr          ICS Pem Certificate Tool - Create and import certificates in OpenSLL PEM format
-> OverbyteIcsSimpleSslCli.dpr     Example of simple SSL client using TSslWSocket
-> OverbyteIcsSimpleSslServer.dpr  Example of SSL server using TSslWSocket
+> OverbyteIcsSimpleSslCli.dpr     Example of simple SSL client using TSslWSocket - ACTIVE!!
+> OverbyteIcsSimpleSslServer.dpr  Example of SSL server using TSslWSocket - ACTIVE!!
 > OverbyteIcsSslFtpServ.dpr       General purpose FTP SSL server, uses TSocketServer - ACTIVE!!
 > OverbyteIcsSslFtpTst.dpr        Basic graphical FTP SSL client - ACTIVE!!
 > OverbyteIcsSslMailRcv.dpr       Internet EMail access using POP3 protocol and SSL - ACTIVE!!
 > OverbyteIcsSslMailSnd.dpr       Example of EMail sending using SMTP and SSL - ACTIVE!!
 > OverbyteIcsSslNewsRdr.dpr       Example of TSslNntpCli component (Send/receive newsgroups) - ACTIVE!!
-> OverbyteIcsSslSniSrv.dpr`       Test of Server Name Indication (SNI) in server mode.
+> OverbyteIcsMsVerify.dpr         Verify and show an OpenSSL certificate or certificate chain using
+                                     class TMsCertChainEngine which uses MS crypto API - ACTIVE!!
+> OverbyteIcsSslSniSrv.dpr        Test of Server Name Indication (SNI) in server mode - ACTIVE!!
 > OverbyteIcsSslWebServ.dpr       Demo of HTTPS server, uses TSocketServer - ACTIVE!!
+> OverbyteIcsSslWebAppServer.dpr  Advanced HTTPS server demo, uses WebServ, adds sessions - ACTIVE!!
+> OverbyteIcsSslSmtpServer.dpr    Internet EMail server using SMTP protocol and SSL - ACTIVE!!
 
 Delphi Win32/Win64 HTTP sample applications
 -------------------------------------------

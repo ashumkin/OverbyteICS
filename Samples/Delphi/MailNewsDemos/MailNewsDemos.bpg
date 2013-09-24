@@ -11,7 +11,8 @@ BRCC = $(ROOT)\bin\brcc32.exe $**
 #----------------------------------------------------------------------------
 PROJECTS = OverbyteIcsMailSnd.exe OverbyteIcsMailRcv.exe \
   OverbyteIcsNewsReader.exe OverbyteIcsMailHtml.exe OverbyteIcsMimeDemo.exe \
-  OverbyteIcsConSmtp.exe OverbyteIcsConPop3.exe OverbyteIcsMailSndAsync.exe
+  OverbyteIcsConSmtp.exe OverbyteIcsConPop3.exe OverbyteIcsMailSndAsync.exe \
+  OverbyteIcsSmtpServer.exe
 #----------------------------------------------------------------------------
 default: $(PROJECTS)
 #----------------------------------------------------------------------------

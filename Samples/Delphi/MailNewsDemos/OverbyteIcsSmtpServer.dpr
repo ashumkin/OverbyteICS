@@ -1,12 +1,12 @@
-program OverbyteSmtpServer;
+program OverbyteIcsSmtpServer;
 
 {$R '..\..\OverbyteIcsXpManifest.res' '..\..\OverbyteIcsXpManifest.rc'}
-{$R '..\..\OverbyteIcsCommonVersion.res'  '..\..\OverbyteIcsCommonVersion.rc'}
+{$R '..\..\OverbyteIcsCommonVersion.res' '..\..\OverbyteIcsCommonVersion.rc'}
 
 uses
-  Forms, 
+  Forms,
   OverbyteIcsIniFiles in '..\..\OverbyteIcsIniFiles.pas',
-  OverbyteSmtpServ1 in 'OverbyteSmtpServ1.pas' {SmtpSrvForm};
+  OverbyteIcsSmtpServ1 in 'OverbyteIcsSmtpServ1.pas' {SmtpSrvForm};
 
 {$R *.res}
 

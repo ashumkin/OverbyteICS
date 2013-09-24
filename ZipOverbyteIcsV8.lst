@@ -1764,6 +1764,13 @@ Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServer.dpr
 Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServerMain.dfm
 Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServerMain.pas
 
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.dof
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.dpr
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.res
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.dfm
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.pas
+
+
 Samples\Delphi\SslInternet\SslCerts\IcsSslBuildCerts.bat
 Samples\Delphi\SslInternet\SslCerts\openssl.conf
 

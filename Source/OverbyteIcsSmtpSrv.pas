@@ -109,7 +109,7 @@ History:
 //                             Added max message size check         //
 //******************************************************************//
 
-Sep 20, 2013 V8.00 Angus updated for ICS V8 with IPv6
+Sep 24, 2013 V8.00 Angus updated for ICS V8 with IPv6
     Reformatted closer to ICS style, private variables prefixed with F
     Using simple LineMode instead of complex dynamic buffer
     MAIL FROM command is allowed after RCPT TO but resets recipients
@@ -132,11 +132,11 @@ Sep 20, 2013 V8.00 Angus updated for ICS V8 with IPv6
       special case of *@domain=account that catches all email for the domain
     Added ToAccounts list similar to MessageTo list of RcpTo, but blank
       if message is being relayed of different account if an alias address
-
-
-
-Planned
-    Add SSL support, STARTTLS command
+    Added SSL support using STARTTLS command only (port 465 implicit is
+       NOT supported since revoked)
+    Optionally add X-Originating-IP header
+    Optionally only allow authentication after TLS negotiated
+    Optionally prevent relaying even with authentication
 
 
 
@@ -208,6 +208,7 @@ uses
 {$ELSE}
     OverbyteIcsWndControl,
     OverbyteIcsWSocket,
+    OverbyteIcsWSockBuf,
     OverbyteIcsWSocketS,
 {$ENDIF}
     OverbyteIcsDnsQuery,
@@ -268,9 +269,14 @@ type
     TSmtpsOption      = (smtpsAddRecvHeaders, // add Return-Path: and Recieved: before other SMTP headers
                          smtpsAddEnvHeaders,  // add X-Envelope-From: and X-Envelope-To: after other SMTP headers,
                          smtpsAddReplayHdrs,  // add X-Sender: and multiple X-Receiver: before other SMTP headers
+                         smtpsAddIpAddrHdr,   // add X-Originating-IP after other SMTP headers
                          smtpsParseHeaders,   // should main email headers be parsed and saved
-                         smtpsAllowRelay,     // allow accept mail for other servers, which will spooled and relayed
-                         smtpsExtendedResp);  // allow ENHANCEDSTATUSCODES to be supported
+                         smtpsAllowOpenRelay, // allow accept mail for other servers, which will spooled and relayed
+                         smtpsAllowAuthRelay, // only allow relay with authentication
+                         smtpsExtendedResp,   // allow ENHANCEDSTATUSCODES to be supported
+                         smtpsAllowTls,       // allow TLS (SSL)
+                         smtpsAuthNoTls       // allow authentication without TLS
+                        );
     TSmtpsOptions     = set of TSmtpsOption;
 
    // note, if smtpsParseHeaders=true and To: is missing, header Apparently-To: is added with Rcpt-To envelope
@@ -278,7 +284,7 @@ type
 
 
   // This describes the client state required to run a particular SMTP primitive
-    TSmtpMsgContext     = (mcConnecting, mcConnected, mcCommand, mcMessage, mcData, mcAny);
+    TSmtpMsgContext     = (mcConnecting, mcConnected, mcCommand, mcWaitTls, mcMessage, mcData, mcAny);
 
   // Action to be taken for various commands from application events
     TSmtpMailAction     = (
@@ -396,7 +402,9 @@ type
         FDataStream   : TStream;           // Stream created by application used to save email DATA
         FUserName     : string;            // authenticated user name
         FAuthenticated : boolean;          // true if client successfully authenticated
+        FTlsDone      : boolean;           // true if TLS/SSL negotiated successfully
               // above are all published
+
         FESMTP        : boolean;           // did we get an ESMTP header
         FLastContact  : TDateTime;         // for timeouts
         FSmtpServer   : TSmtpServer;       // parent SMTP server
@@ -407,6 +415,7 @@ type
         FSmtpSrvAuthType: TSmtpSrvAuthType;// authentication type, if any
         FAuthChallenge: AnsiString;        // authentication challenge sent for Cram-Md5 and Cram-Sha1
         FMsg_wmClientLookupDone: UINT;
+        FMsg_wmClientClose: UINT;
         procedure      ClientDataRx(Sender : TObject; Error : Word);
         procedure      ProcessCommand(Str : PAnsiChar);
         procedure      AllocateMsgHandlers; override;
@@ -419,6 +428,9 @@ type
         function       SendAnswer(const Str : String) : integer;
         procedure      SendStatus(const FormatStr : string; const EnhancedStat : string;
                                                                       Args : array of const);
+{$IFDEF USE_SSL}
+        function       SslSendPlain(Data : TWSocketData; Len : Integer) : Integer;
+{$ENDIF}
         constructor    Create(AOwner : TComponent); override;
         destructor     Destroy; override;
      // internal client ID, incremented with each connection, randomised when server starts
@@ -542,7 +554,7 @@ type
         procedure          HandleRCPT(Sender : TObject; const ClientID : cardinal; var ESMTP : boolean; Parameters : PAnsiChar); virtual;
         procedure          HandleDATA(Sender : TObject; const ClientID : cardinal; var ESMTP : boolean; Parameters : PAnsiChar); virtual;
         procedure          HandleAUTH(Sender : TObject; const ClientID : cardinal; var ESMTP : boolean; Parameters : PAnsiChar); virtual;
-        procedure          HandleAUTH2(Sender : TObject; const ClientID : cardinal; var ESMTP : boolean; Parameters : PAnsiChar);
+        procedure          HandleAUTH2(Sender : TObject; const ClientID : cardinal; var ESMTP : boolean; Parameters : PAnsiChar); virtual;
         procedure          SendActionFailed(Sender : TObject; Action: TSmtpmailAction; const Reason: string);
     public
        // This routine can be called to update a client when the Action handler has previously returned a wsmtpNotHandled
@@ -627,6 +639,31 @@ type
         property           OnDataEnd          : TSmtpDataEvent       read FOnDataEnd         write FOnDataEnd;
      end;
 
+{$IFDEF USE_SSL}
+    TSslSmtpServer = class(TSmtpServer)
+    protected
+        FOnSslHandshakeDone                 : TSslHandshakeDoneEvent;
+        FOnSslVerifyPeer                    : TSslVerifyPeerEvent;
+        function  GetSslContext : TSslContext;
+        procedure SetSslContext(Value : TSslContext);
+        procedure HandleTLS(Sender : TObject; const ClientID : cardinal; var ESMTP : boolean; Parameters : PAnsiChar); virtual;
+        procedure TlsSslVerifyPeer(Sender        : TObject;
+                                   var Ok        : Integer;
+                                   Cert          : TX509Base); virtual;
+        procedure TlsSslHandshakeDone(Sender         : TObject;
+                                      ErrCode        : Word;
+                                      PeerCert       : TX509Base;
+                                      var Disconnect : Boolean); virtual;
+    public
+        constructor Create(AOwner: TComponent); override;
+    published
+        property  SslContext         : TSslContext         read  GetSslContext         write SetSslContext;
+        property  OnSslVerifyPeer    : TSslVerifyPeerEvent read  FOnSslVerifyPeer      write FOnSslVerifyPeer;
+        property  OnSslHandshakeDone : TSslHandshakeDoneEvent  read  FOnSslHandshakeDone  write FOnSslHandshakeDone;
+    end;
+{$ENDIF} // USE_SSL
+
+
 // format an IPv6 address with []
 function FormatIpAddr (const Addr: string): string ;
 // format an IPv6 address with [] and port
@@ -693,6 +730,7 @@ resourcestring
     sClosingChannel      = 'closing transmission channel.';
     xTimeout             = 'timeout period exceeded.';
     xNoStorage           = 'insufficient system storage.';
+    xTlsAreadyDone       = 'TLS already estabished';
 
     xNoSysUnavail        = 'System is not currently accepting messages';
     xNetError            = 'Unspecified network error';
@@ -703,6 +741,7 @@ resourcestring
     xListNotRec          = 'Mailing list does not exist';
 
     s220                 = '220 %s ESMTP server %s';
+    s220s                = '220 Ready to start TLS';              // Angus
     s221                 = '221 %s %s';
     s235                 = '235 Authentication successful';          // Angus
     s250                 = '250 %s';
@@ -715,6 +754,7 @@ resourcestring
     s451                 = '451 Greylisted, please try again in %s seconds';  // Angus
     s452                 = '452 Requested action not taken: %s';
     s454                 = '454 Authentication failed';              // Angus
+    s454s                = '454 TLS not available';                  // Angus
     s500                 = '500 Invalid command: "%s"';
     s501                 = '501 %s';
     s502                 = '502 Command not implemented: "%s"';
@@ -1051,7 +1091,6 @@ begin
 
     FLocalAccounts.Free;
     FAliasAccounts.Free;
-  //FAliasDomains.Free;
     FLocalDomains.Free;
 
     inherited;
@@ -1687,14 +1726,72 @@ begin
                     CommandList := CommandList + Format (s250c, [Trim (String (FCommands[i].Cmd))]) + CRLF;
         if FMaxMsgSize > 0 then
             CommandList := CommandList + Format (s250c, ['SIZE '+ IntToStr (FMaxMsgSize)]) + CRLF;
-        CommandList := CommandList + Format (s250c, ['AUTH PLAIN LOGIN CRAM-MD5 CRAM-SHA1'])+ CRLF;
-        if smtpsExtendedResp in FSmtpServer.FOptions then CommandList := CommandList +
-                                             Format (s250c, ['ENHANCEDSTATUSCODES'])+ CRLF;
+      // might not want to offer AUTH SSL negotiated
+        if FTlsDone OR (NOT (smtpsAuthNoTls in FSmtpServer.FOptions)) and
+                     (smtpsAllowTls in FSmtpServer.FOptions) then
+            CommandList := CommandList + Format (s250c, ['AUTH PLAIN LOGIN CRAM-MD5 CRAM-SHA1'])+ CRLF;
+        if (smtpsExtendedResp in FSmtpServer.FOptions) then
+            CommandList := CommandList + Format (s250c, ['ENHANCEDSTATUSCODES'])+ CRLF;
+{$IFDEF USE_SSL}
+        if (NOT FTlsDone) and (smtpsAllowTls in FSmtpServer.FOptions) then
+            CommandList := CommandList + Format (s250c , ['STARTTLS']) + CRLF ;
+{$ENDIF}
         CommandList := CommandList + Format (s250 , ['PIPELINING']) + CRLF ;
         SendAnswer (CommandList);
     end
 end;
 
+{$IFDEF USE_SSL}
+//******************************************************************//
+//  Routine      HandleTLS                                          //
+//                                                                  //
+//  Description  Handles STARTTLS command                           //
+//******************************************************************//
+
+procedure TSslSmtpServer.HandleTLS(Sender : TObject; const ClientID : cardinal;
+                                                var ESMTP : boolean; Parameters : PAnsiChar);
+var
+    Answer: AnsiString;
+    Client: TSmtpSrvCli;
+begin
+    ESMTP := false;
+    Client := Sender as TSmtpSrvCli;
+    if (Client.FContext <> mcCommand) or (NOT (smtpsAllowTls in FOptions)) then
+    begin
+        Client.SendStatus (s454s, '', ['']);  // failed
+        exit;
+    end ;
+    if Client.FTlsDone or (Client.SslState = sslEstablished) then
+    begin
+        Client.SendStatus (s501, '', [xTlsAreadyDone]);  // failed
+        exit;
+    end ;
+  // must reset everything for SSL session
+    Client.ClearClient;
+    try
+        Client.SslEnable := True;
+        Client.SslMode := sslModeServer;
+        Client.SslContext := FServer.SslContext;
+        Client.OnSslVerifyPeer := TlsSslVerifyPeer;
+        Client.OnSslHandshakeDone := TlsSslHandshakeDone;
+        Client.FContext := mcWaitTls;
+        Client.AcceptSslHandshake;
+        Answer := AnsiString (s220s + CRLF);
+        Client.SslSendPlain (Pointer(Answer), Length(Answer));
+        exit;
+    except
+        on E:Exception do
+        begin
+            if Assigned(FExtHandler) then
+                FExtHandler (Self, E);
+        end;
+    end;
+    Client.SslEnable                := False;
+    Client.OnSslVerifyPeer          := nil;
+    Client.OnSslHandshakeDone       := nil;
+    Client.SendStatus (s454s, '', ['']);  // failed
+end;
+{$ENDIF}
 
 //******************************************************************//
 //  Routine      HandleAUTH                                         //
@@ -1711,6 +1808,17 @@ var
 begin
     with TSmtpSrvCli (Sender) do
     begin
+{$IFDEF USE_SSL}
+        if (smtpsAllowTls in FSmtpServer.FOptions) and
+                            (smtpsAuthNoTls in FOptions) then
+        begin
+            if NOT FTlsDone then
+            begin
+                SendStatus (s503, '5.1', [xOutOfSequence]);
+                exit;
+            end;
+        end;
+{$ENDIF}
         FUserName := '';
         FSmtpSrvAuthType := smtpsAuthNone;
         FAuthenticated := false;
@@ -2019,7 +2127,7 @@ procedure TSmtpServer.HandleRCPT(Sender : TObject; const ClientID : cardinal;
 var
     Recipient, Domain, LocalAccount, Reason: string;
     Action    : TSmtpmailAction;
-    Dupli     : boolean;
+    Dupli, AllowRelay: boolean;
     J, K      : integer;
 begin
   // Line should consist of TO: <[address]>. Validate.
@@ -2075,12 +2183,19 @@ begin
                             LocalAccount := FAliasAccounts.ValueFromIndex [K];
                     end;
                 end;
-                if (LocalAccount = '') and (NOT (smtpsAllowRelay in FOptions)) then
+             // not local, see if allowed to relay mail
+                if (LocalAccount = '') then
                 begin
-                    if (J > 1) and (NOT (FLocalDomains as TStringList).Find (Domain, K)) then
-                        Action := wsmtpBadDomain
-                    else
-                        Action := wsmtpBadAccount;
+                    AllowRelay := false;
+                    if (FAuthenticated and (smtpsAllowAuthRelay in FOptions)) then AllowRelay := true;
+                    if (smtpsAllowOpenRelay in FOptions) then AllowRelay := true;
+                    if NOT AllowRelay then
+                    begin
+                        if (J > 1) and (NOT (FLocalDomains as TStringList).Find (Domain, K)) then
+                            Action := wsmtpBadDomain
+                        else
+                            Action := wsmtpBadAccount;
+                    end;
                 end;
             end;
 
@@ -2307,7 +2422,7 @@ procedure TSmtpSrvCli.ClearClient;
 begin
     FESMTP           := false;
     FDnsQuery        := nil;
-    FMessageFrom := '';
+    FMessageFrom     := '';
     FClientDomain    := '';
     FClientRDNS      := '';
     FClientMX        := '';
@@ -2322,6 +2437,7 @@ begin
     FHdrDateStr      := '';
     FHdrDateDT       := 0;
     FDoneHdrs        := false;
+    FTlsDone         := false;
 end;
 
 //******************************************************************//
@@ -2372,6 +2488,18 @@ begin
         end;
     end;
 end;
+
+//******************************************************************//
+//  Routine      SslSendPlain                                       //
+//                                                                  //
+//  Description  Sends a response before SSL negotiated             //
+//******************************************************************//
+{$IFDEF USE_SSL}
+function TSmtpSrvCli.SslSendPlain(Data : TWSocketData; Len : Integer) : Integer;
+begin
+    Result := RealSend (Data, Len);
+end;
+{$ENDIF}
 
 
 //******************************************************************//
@@ -2462,9 +2590,11 @@ begin
                                     if (HdrTo = '') and (smtpsParseHeaders in FSmtpServer.FOptions) then
                                     begin
                                         for I := 0 to FMessageTo.Count - 1 do
-                                            Headers := AnsiString ('Apparently-To: ' + FMessageTo [I] + CRLF);
+                                            Headers := Headers + AnsiString ('Apparently-To: ' + FMessageTo [I] + CRLF);
                                     end;
                                 end;
+                                if (smtpsAddIpAddrHdr in FSmtpServer.FOptions) then
+                                    Headers := Headers + AnsiString ('X-Originating-IP: ' + FClientIpAddr + CRLF);
                                 if Headers <> '' then
                                     FDataStream.WriteBuffer (PAnsiChar(Headers)^, Length(Headers));
 
@@ -2578,6 +2708,7 @@ procedure TSmtpSrvCli.AllocateMsgHandlers;
 begin
     inherited AllocateMsgHandlers;
     FMsg_wmClientLookupDone := FWndHandler.AllocateMsgHandler (Self);
+    FMsg_wmClientClose := FWndHandler.AllocateMsgHandler (Self);
 end;
 
 
@@ -2586,6 +2717,7 @@ begin
     if Assigned (FWndHandler) then
     begin
         FWndHandler.UnregisterMessage (FMsg_wmClientLookupDone);
+        FWndHandler.UnregisterMessage (FMsg_wmClientClose);
     end;
     inherited FreeMsgHandlers;
 end;
@@ -2622,10 +2754,14 @@ begin
                     begin
                         FSmtpServer.SendActionFailed (Self, Action, Reason);
                       // Reject connection
-                        Close;
+                        TSmtpSrvCli (MsgRec.LParam).Close;
                     end;
                 end;
             end ;
+        end
+        else if MsgRec.Msg = FMsg_wmClientClose then
+        begin
+            TSmtpSrvCli (MsgRec.LParam).Close;
         end
         else
            inherited WndProc (MsgRec);
@@ -2762,6 +2898,78 @@ begin
         end;
     end;
 end;
+
+//******************************************************************//
+//  Routine      SSL Create                                         //
+//                                                                  //
+//  Description  Create SSL component                               //
+//******************************************************************//
+
+{$IFDEF USE_SSL}
+constructor TSslSmtpServer.Create(AOwner: TComponent);
+begin
+    inherited Create(AOwner);
+    FServer.SslEnable := true;
+    AddCommand (cSTARTTLS, HandleTLS, mcCommand);
+end;
+
+
+//******************************************************************//
+//  Routine      SSL Get/SetContext                                 //
+//                                                                  //
+//  Description  Get and Set SSL Content                            //
+//******************************************************************//
+function TSslSmtpServer.GetSslContext: TSslContext;
+begin
+    Result := FServer.SslContext;
+end;
+
+procedure TSslSmtpServer.SetSslContext(Value: TSslContext);
+begin
+    FServer.SslContext :=  Value;
+end;
+
+
+//******************************************************************//
+//  Routine      TlsSslHandshakeDone                                //
+//                                                                  //
+//  Description  SSL handshaking has completed OK or failed         //
+//******************************************************************//
+procedure TSslSmtpServer.TlsSslHandshakeDone(Sender: TObject;
+  ErrCode: Word; PeerCert: TX509Base; var Disconnect: Boolean);
+var
+    Client: TSmtpSrvCli;
+begin
+    Client := Sender as TSmtpSrvCli;
+    if Assigned(FOnSslHandshakeDone) then
+        FOnSslHandshakeDone(Sender, ErrCode, PeerCert, Disconnect);
+    if (ErrCode <> 0) or Disconnect then
+    begin
+        PostMessage (FHandle, Client.FMsg_wmClientClose, 0, cardinal(Sender));
+        Disconnect := FALSE;
+    end
+    else
+    begin
+        Client.ClearClient;
+        Client.FContext := mcConnected;  // expect EHLO next
+        Client.FTlsDone := true;
+    end;
+end;
+
+
+//******************************************************************//
+//  Routine      TlsSslVerifyPeer                                   //
+//                                                                  //
+//  Description  Verify Peer                                        //
+//******************************************************************//
+procedure TSslSmtpServer.TlsSslVerifyPeer(Sender: TObject;
+  var Ok: Integer; Cert: TX509Base);
+begin
+    if Assigned(FOnSslVerifyPeer) then
+        FOnSslVerifyPeer(Sender, Ok, Cert);
+end;
+
+{$ENDIF}
 
 //******************************************************************//
 //  Routine      Initialization/Finalization                        //
