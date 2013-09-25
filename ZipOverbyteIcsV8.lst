@@ -1236,8 +1236,8 @@ Samples\Delphi\MailNewsDemos\OverbyteIcsNewsReader1.pas
 Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.dof
 Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.dpr
 Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.res
-Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.dfm
-Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServer.pas
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServ1.dfm
+Samples\Delphi\MailNewsDemos\OverbyteIcsSmtpServ1.pas
 
 Samples\Delphi\MiscDemos\MiscDemos.bpg
 Samples\Delphi\MiscDemos\Dcu\dir.txt
@@ -1767,8 +1767,8 @@ Samples\Delphi\SslInternet\OverbyteIcsSslWebAppServerMain.pas
 Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.dof
 Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.dpr
 Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.res
-Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.dfm
-Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServer.pas
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServ1.dfm
+Samples\Delphi\SslInternet\OverbyteIcsSslSmtpServ1.pas
 
 
 Samples\Delphi\SslInternet\SslCerts\IcsSslBuildCerts.bat
