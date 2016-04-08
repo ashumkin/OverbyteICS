@@ -93,7 +93,7 @@ type
     TNtlmState  = (lsNone, lsInAuth, lsDoneOK, lsDoneErr);
     TNtlmSessionBeforeValidate = procedure(Sender: TObject; var Allow: Boolean) of object;
     TNtlmAuthSession = class(TObject)
-    private
+    protected
         FPSFT              : PSecurityFunctionTable;
         FHCred             : TCredHandle;
         FHCtx              : TSecHandle;
@@ -107,7 +107,6 @@ type
         FAuthError         : Integer;
         FLmCompatLevel     : LongWord;  { V1.07 }
         FOnBeforeValidate  : TNtlmSessionBeforeValidate;
-   protected
         procedure   NtlmMsg3GetAttributes(const NtlmMsg3: AnsiString);
         function    NtlmMsgGetType(const NtlmMsg: AnsiString): Integer;
         function    NtlmAccept(const InBuffer: AnsiString): AnsiString;
@@ -139,6 +138,8 @@ type
 //procedure UnloadSecPackage;
 
 {$ENDIF MSWINDOWS}
+var
+    cbMaxMessage        : Cardinal;
 
 implementation
 
@@ -146,7 +147,6 @@ implementation
 
 var
     SecPackageLock      : TRtlCriticalSection;
-    cbMaxMessage        : Cardinal;
     PSFT                : PSecurityFunctionTable;
     SecPackageHandle    : THandle;
 

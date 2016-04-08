@@ -502,8 +502,8 @@ uses
     OverbyteIcsCharsetUtils;
 
 const
-  SmtpCliVersion     = 808;
-  CopyRight : String = ' SMTP component (c) 1997-2016 Francois Piette V8.08 ';
+  SmtpCliVersion     = 809;
+  CopyRight : String = ' SMTP component (full NTLM) (c) 1997-2016 Francois Piette V8.09 ';
   smtpProtocolError  = 20600; {AG}
 {  SMTP_RCV_BUF_SIZE  = 4096;  V8.07 no longer used }
 
@@ -859,12 +859,13 @@ type
         procedure   NextExecAsync;
         procedure   EhloNext;
         procedure   DoAuthPlain;
+        procedure   DoAuthNtlm; virtual;
         procedure   AuthNextPlain;
         procedure   AuthNextLogin;
         procedure   AuthNextLoginNext;
         procedure   AuthNextCramMD5;
         procedure   AuthNextCramSHA1; {HLX} 
-        procedure   AuthNextNtlm;
+        procedure   AuthNextNtlm; virtual;
         procedure   RcptToNext;
         procedure   RcptToDone;
         procedure   DataNext;
@@ -2543,6 +2544,12 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomSmtpClient.DoAuthNtlm;
+begin
+  ExecAsync(smtpAuth, 'AUTH NTLM ' + NtlmGetMessage1('', '', FLmCompatLevel),
+            [334], AuthNextNtlm); { V7.39 }
+end;
+
 procedure TCustomSmtpClient.DoAuthPlain;
 var
     AuthPlain : String;
@@ -2632,8 +2639,7 @@ begin
     smtpAuthCramSHA1: {HLX}
         ExecAsync(smtpAuth, 'AUTH CRAM-SHA1', [334], AuthNextCramSHA1);
     smtpAuthNtlm :                                              {AG}
-        ExecAsync(smtpAuth, 'AUTH NTLM ' + NtlmGetMessage1('', '', FLmCompatLevel),
-                  [334], AuthNextNtlm); { V7.39 }
+        DoAuthNtlm;
     end;
 end;
 
