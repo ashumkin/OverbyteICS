@@ -4118,6 +4118,7 @@ begin
     FEmailFiles  := TStringList.Create;
     FMailMsgText := TSmtpMessageText.Create;
     FAttachmentEncoding := smtpEncodeBase64;                        {AG}
+    FLmCompatLevel := 0;
 end;
 
 
