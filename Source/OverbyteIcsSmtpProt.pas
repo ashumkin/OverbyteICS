@@ -865,7 +865,7 @@ type
         procedure   AuthNextLoginNext;
         procedure   AuthNextCramMD5;
         procedure   AuthNextCramSHA1; {HLX} 
-        procedure   AuthNextNtlm; virtual;
+        procedure   AuthNextNtlm;
         procedure   RcptToNext;
         procedure   RcptToDone;
         procedure   DataNext;

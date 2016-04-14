@@ -100,7 +100,8 @@ type
   TSslSmtpNTLMCli = class(TSslSmtpCli) // define USE_SSL if not found TSslSmtpCli
   protected
     FNtlmAuth: TNtlmAuthSession2;
-    procedure AuthNextNtlm; override;
+    FUseNTLMWithPassword: Boolean;
+    procedure AuthNextNtlm;
     procedure DoAuthNtlm; override;
     function NtlmGetMessage1(const AHost, ADomain: string;
       ALmCompatLevel: Integer = 0): string;
@@ -111,6 +112,8 @@ type
   public
     constructor Create(AOwner : TComponent); override;
     procedure BeforeDestruction; override;
+
+    property UseNTLMWithPassword: Boolean read FUseNTLMWithPassword write FUseNTLMWithPassword;
   end;
 
 implementation
@@ -414,12 +417,26 @@ constructor TSslSmtpNTLMCli.Create(AOwner: TComponent);
 begin
   inherited;
   FNtlmAuth := nil;
+  // use user:password by default
+  FUseNTLMWithPassword := True;
 end;
 
 procedure TSslSmtpNTLMCli.DoAuthNtlm;
+var
+  s: string;
 begin
-  ExecAsync(smtpAuth, 'AUTH NTLM ' + Self.NtlmGetMessage1('', '', FLmCompatLevel),
-            [334], AuthNextNtlm); { V7.39 }
+  s := EmptyStr;
+  if not FUseNTLMWithPassword then
+  begin
+    s := Self.NtlmGetMessage1('', '', FLmCompatLevel);
+    FUseNTLMWithPassword := s = EmptyStr;
+    if FUseNTLMWithPassword then
+      TriggerResponse('NtlmGenMessage1 failed on a client?! Fallback to user:password');
+  end;
+  if FUseNTLMWithPassword then
+    inherited DoAuthNtlm
+  else
+    ExecAsync(smtpAuth, 'AUTH NTLM ' + s, [334], AuthNextNtlm)
 end;
 
 function TSslSmtpNTLMCli.NtlmGetMessage1(const AHost, ADomain: string;
