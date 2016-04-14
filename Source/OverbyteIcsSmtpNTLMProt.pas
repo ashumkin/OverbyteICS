@@ -89,7 +89,7 @@ type
     FOwner: TSslSmtpCli;
     function NtlmGenMessage1(const AHost, ADomain: string;
       ALmCompatLevel: Integer): Boolean;
-    function NtlmGenMessage3(const AMessageType2, ADomain, AHost, AUsername, APassword: string;
+    function NtlmGenMessage3(const AMessageType2, ADomain, AHost, AUsername: string;
       NtlmMsg2Info : TNTLM_Msg2_Info;
       ACodePage: Integer;
       ALmCompatLevel: Integer): Boolean;
@@ -104,7 +104,7 @@ type
     procedure DoAuthNtlm; override;
     function NtlmGetMessage1(const AHost, ADomain: string;
       ALmCompatLevel: Integer = 0): string;
-    function NtlmGetMessage3(const AMessageType2, ADomain, AHost, AUsername, APassword: string;
+    function NtlmGetMessage3(const AMessageType2, ADomain, AHost, AUsername: string;
       NtlmMsg2Info : TNTLM_Msg2_Info;
       ACodePage: Integer;
       ALmCompatLevel: Integer = 0): string;
@@ -257,7 +257,7 @@ begin
   end
 end;
 
-function TNtlmAuthSession2.NtlmGenMessage3(const AMessageType2, ADomain, AHost, AUsername, APassword: string;
+function TNtlmAuthSession2.NtlmGenMessage3(const AMessageType2, ADomain, AHost, AUsername: string;
   NtlmMsg2Info : TNTLM_Msg2_Info;
   ACodePage: Integer;
   ALmCompatLevel: Integer): Boolean;
@@ -396,7 +396,7 @@ begin
   NtlmParseUserCode(FUsername, LDomain, LUsername);
   NtlmMsg3 := Self.NtlmGetMessage3(Copy(FLastResponse, 5, MaxInt), LDomain,
                               '',  // the Host param seems to be ignored
-                              LUsername, FPassword,
+                              LUsername,
                               NtlmMsg2Info,     { V7.39 }
                               CP_ACP,
                               FLmCompatLevel);  { V7.39 }
@@ -439,13 +439,13 @@ begin
 end;
 
 function TSslSmtpNTLMCli.NtlmGetMessage3(const AMessageType2, ADomain, AHost,
-  AUsername, APassword: string; NtlmMsg2Info: TNTLM_Msg2_Info; ACodePage,
+  AUsername: string; NtlmMsg2Info: TNTLM_Msg2_Info; ACodePage,
   ALmCompatLevel: Integer): string;
 begin
   Result := EmptyStr;
   Assert(Assigned(FNtlmAuth));
   TriggerResponse('FNtlmAuth.NtlmGenMessage3');
-  if FNtlmAuth.NtlmGenMessage3(Base64Decode(AMessageType2), ADomain, AHost, AUsername, APassword,
+  if FNtlmAuth.NtlmGenMessage3(Base64Decode(AMessageType2), ADomain, AHost, AUsername,
       NtlmMsg2Info, ACodePage, ALmCompatLevel) then
     Result := FNtlmAuth.NtlmMessage
   else
