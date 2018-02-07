@@ -24,9 +24,10 @@
 { Modification history:                                                        }
 { June 2015 - Angus renamed from CryptuiApi and moved to main source dir       }
 {                   now using OverbyteIcsWinCrypt                              }
-{                                                                              }
+{ 5 Oct 2017 - only compile for Windows                                                                              }
 
 {******************************************************************************}
+
 
 unit OverbyteIcsCryptuiApi;
 
@@ -35,6 +36,7 @@ unit OverbyteIcsCryptuiApi;
 {.$DEFINE WIN7_UP}  // WinXp+, most likely W2K+
 
 interface
+{$IFDEF MSWINDOWS}
 
 uses
   Windows,
@@ -1241,8 +1243,10 @@ function CryptUIWizImport(
   pImportSrc: PCCRYPTUI_WIZ_IMPORT_SRC_INFO;
   hDestCertStore: HCERTSTORE
 ): BOOL; stdcall;
+{$ENDIF}
 
 implementation
+{$IFDEF MSWINDOWS}
 
 const
   CryptUI = 'Cryptui.dll';
@@ -1265,5 +1269,7 @@ function CryptUIWizExport; external CryptUI name 'CryptUIWizExport';
 function CryptUIWizFreeDigitalSignContext; external CryptUI name 'CryptUIWizFreeDigitalSignContext';
 function CryptUIWizImport; external CryptUI name 'CryptUIWizImport';
 
+{$ENDIF}
 end.
+
 

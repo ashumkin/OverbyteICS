@@ -2,13 +2,13 @@
 
 Author:       François PIETTE
 Creation:     May 1996
-Version:      V8.09
+Version:      V8.42
 Object:       TFtpClient is a FTP client (RFC 959 implementation)
               Support FTPS (SSL) if ICS-SSL is used (RFC 2228 implementation)
 EMail:        http://www.overbyte.be        francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1996-2016 by François PIETTE
+Legal issues: Copyright (C) 1996-2017 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -1074,6 +1074,11 @@ Jun 01, 2015 V8.07 - Angus update SslServerName for SSL SNI support allowing ser
                        select correct SSL context and certificate
 Oct 25, 2015 V8.08 - Angus report SSL certificate check failed in HandshakeDone event
 Feb 23, 2016 V8.09 - Angus renamed TBufferedFileStream to TIcsBufferedFileStream
+Nov 10, 2016 V8.37 - Added extended exception information, set SocketErrs = wsErrFriendly for
+                      some more friendly messages (without error numbers)
+Mar 3, 2017  V8.42 - Angus TULargeInteger now ULARGE_INTEGER
+Jun 21, 2017 V8.49 - Angus using IcsGetFileSize instead of local version
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -1164,9 +1169,9 @@ uses
     OverByteIcsFtpSrvT;
 
 const
-  FtpCliVersion      = 809;
-  CopyRight : String = ' TFtpCli (c) 1996-2016 F. Piette V8.09 ';
-  FtpClientId : String = 'ICS FTP Client V8.09 ';   { V2.113 sent with CLNT command  }
+  FtpCliVersion      = 849;
+  CopyRight : String = ' TFtpCli (c) 1996-2017 F. Piette V8.49 ';
+  FtpClientId : String = 'ICS FTP Client V8.49 ';   { V2.113 sent with CLNT command  }
 
 const
 //  BLOCK_SIZE       = 1460; { 1514 - TCP header size }
@@ -1411,6 +1416,7 @@ type
     FOnZlibProgress     : TZlibProgress; { V2.113 call back event during ZLIB processing }
     FZCompFileName      : String;        { V2.113 zlib file name of compressed file }
     FZlibWorkDir        : String;        { V2.113 zlib work directory }
+    FSocketErrs         : TSocketErrs;   { V8.37 }
 {$IF DEFINED(UseBandwidthControl) or DEFINED(BUILTIN_THROTTLE)}
     FBandwidthLimit     : Integer;  // Bytes per second
     FBandwidthSampling  : Integer;  // mS sampling interval
@@ -1765,6 +1771,8 @@ type
     property OnReadyToTransmit    : TFtpReadyToTransmit  read  FOnReadyToTransmit
                                                          write FOnReadyToTransmit;
     property OnBgException;   { V7.15 }
+    property SocketErrs          : TSocketErrs           read  FSocketErrs
+                                                         write FSocketErrs;      { V8.37 }
   end;
 
   TFtpClient = class(TCustomFtpCli)
@@ -1908,6 +1916,7 @@ type
     property BandwidthSampling;                                    { V2.106 }
 {$IFEND}
     property SocketFamily;
+    property SocketErrs;                                           { V8.37 } 
   end;
 
 { You must define USE_SSL so that SSL code is included in the component.   }
@@ -2150,11 +2159,12 @@ begin
 end ;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(*  V8.49 using version n Utils
 function GetFileSize(FileName : String) : TFtpBigInt; { V2.108 }
 var
     SR : TSearchRec;
 {$IFDEF MSWINDOWS}
-    TempSize: TULargeInteger;  // 64-bit integer record
+    TempSize: ULARGE_INTEGER; { V8.42 was TULargeInteger } { 64-bit integer record }
 {$ENDIF}
 begin
     if FindFirst(FileName, faReadOnly or faHidden or
@@ -2171,7 +2181,7 @@ begin
     end
     else
         Result := -1;
-end;
+end;       *)
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2894,6 +2904,7 @@ begin
     FLastResponse        := '';
     FErrorMessage        := '';
     FStatusCode          := 0;
+    FControlSocket.SocketErrs := FSocketErrs;        { V8.37 }
 
 { angus V7.00 always set proxy and SOCKS options before opening socket  }
     FControlSocket.SocksAuthentication := socksNoAuthentication;
@@ -2908,7 +2919,7 @@ begin
     end;
 
     case FConnectionType of
-       // ftpProxy:   FPassive := TRUE;     { V7.22 } 
+       // ftpProxy:   FPassive := TRUE;     { V7.22 }
         ftpSocks4:  FControlSocket.SocksLevel := '4';
         ftpSocks4A: FControlSocket.SocksLevel := '4A';
         ftpSocks5:  FControlSocket.SocksLevel := '5';
@@ -3318,7 +3329,7 @@ begin
     { value. This property could be initialized using Size command.         }
     if (not (FRequestType in [ftpRestartPutAsync, ftpRestPutAsync])) and
        (not (ftpNoAutoResumeAt in FOptions)) then
-        FResumeAt := GetFileSize(FLocalFileName)
+        FResumeAt := IcsGetFileSize(FLocalFileName);
 end;
 
 
@@ -5086,7 +5097,7 @@ begin
     { passive mode.                                                         }
     case FConnectionType of
         ftpDirect, ftpProxy     : FPassive := NewValue;             { V7.22 }
-        ftpSocks4, ftpSocks4A, 
+        ftpSocks4, ftpSocks4A,
         ftpSocks5, ftpHttpProxy : FPassive := TRUE;                 { V7.22 }
     end;
 end;
@@ -5103,6 +5114,7 @@ begin
     FDataSocket.LingerOnOff        := wsLingerOff;
     FDataSocket.LingerTimeout      := 0;
     FDataSocket.ComponentOptions   := [wsoNoReceiveLoop];   { 26/10/02 } { 2.109 }
+    FDataSocket.SocketErrs         := FSocketErrs;        { V8.37 }
 {$IFDEF BUILTIN_THROTTLE}
     if ftpBandwidthControl in FOptions then begin
         FDataSocket.BandwidthLimit     := FBandwidthLimit;
@@ -5230,7 +5242,7 @@ begin
                 { We MUST check for file size >= RestartPos since Seek in any      } { V2.108 }
                 { write-mode may write to the stream returning always the correct  }
                 { new position.                                                    }
-                NewPos := GetFileSize(FLocalFileName);                    { V2.108 }
+                NewPos := IcsGetFileSize(FLocalFileName);                 { V2.108 }
                 if FResumeAt <= NewPos then                               { V2.108 }
                     NewPos := FLocalStream.Seek(FResumeAt, soBeginning);
                 if NewPos <> FResumeAt then begin
@@ -5445,7 +5457,8 @@ begin
     FDataSocket.LingerOnOff        := wsLingerOff;
     FDataSocket.LingerTimeout      := 0;
     FDataSocket.ComponentOptions   := [wsoNoReceiveLoop];   { 26/10/02 }
-    FDataSocketSentFlag            := FALSE;          { V7.11 }    
+    FDataSocketSentFlag            := FALSE;          { V7.11 }
+    FDataSocket.SocketErrs         := FSocketErrs;        { V8.37 }
 {$IFDEF BUILTIN_THROTTLE}
     if ftpBandwidthControl in FOptions then begin
         FDataSocket.BandwidthLimit     := FBandwidthLimit;
@@ -5764,6 +5777,7 @@ begin
     FDataSocket.OnSessionClosed    := nil;
     FDataSocket.OnDataAvailable    := nil;
     FDataSocketSentFlag            := FALSE;     { V7.11 }
+    FDataSocket.SocketErrs := FSocketErrs;        { V8.37 }
 {$IFDEF BUILTIN_THROTTLE}
     if ftpBandwidthControl in FOptions then begin
         FDataSocket.BandwidthLimit     := FBandwidthLimit;
@@ -6926,7 +6940,9 @@ var
 {$ENDIF}
 begin
 {$IFNDEF WIN64}                  { V7.25 }
+  {$IFNDEF DELPHI24_UP}
     Result    := TRUE;           { Make dcc32 happy }
+  {$ENDIF}
 {$ENDIF}
     FTimeStop := LongInt(IcsGetTickCount) + LongInt(FTimeout) * 1000;
   {$IFDEF MSWINDOWS}

@@ -3,7 +3,7 @@ object SslFtpServerForm: TSslFtpServerForm
   Top = 162
   Caption = 'SslFtpServerForm'
   ClientHeight = 282
-  ClientWidth = 461
+  ClientWidth = 667
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,7 +20,7 @@ object SslFtpServerForm: TSslFtpServerForm
   object InfoMemo: TMemo
     Left = 0
     Top = 137
-    Width = 461
+    Width = 667
     Height = 145
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
@@ -37,7 +37,7 @@ object SslFtpServerForm: TSslFtpServerForm
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 461
+    Width = 667
     Height = 137
     Align = alTop
     TabOrder = 1
@@ -103,7 +103,7 @@ object SslFtpServerForm: TSslFtpServerForm
     end
     object Label11: TLabel
       Left = 252
-      Top = 42
+      Top = 41
       Width = 33
       Height = 13
       Caption = 'CA File'
@@ -116,8 +116,8 @@ object SslFtpServerForm: TSslFtpServerForm
       Caption = 'CA Path'
     end
     object Label1: TLabel
-      Left = 228
-      Top = 90
+      Left = 457
+      Top = 66
       Width = 59
       Height = 13
       Caption = 'Port Server2'
@@ -142,6 +142,13 @@ object SslFtpServerForm: TSslFtpServerForm
       Width = 40
       Height = 13
       Caption = 'Req. Ssl'
+    end
+    object Label2: TLabel
+      Left = 457
+      Top = 41
+      Width = 35
+      Height = 13
+      Caption = 'IP Addr'
     end
     object StartMinimizedCheckBox: TCheckBox
       Left = 134
@@ -192,17 +199,17 @@ object SslFtpServerForm: TSslFtpServerForm
       Text = 'CAPathEdit'
     end
     object VerifyPeerCheckBox: TCheckBox
-      Left = 290
-      Top = 110
+      Left = 372
+      Top = 86
       Width = 71
       Height = 17
       Caption = 'Verify Peer'
-      TabOrder = 6
+      TabOrder = 9
     end
     object SslTypeConnPortEdit: TEdit
-      Left = 290
-      Top = 86
-      Width = 153
+      Left = 534
+      Top = 62
+      Width = 82
       Height = 21
       TabOrder = 7
       Text = 'SslTypeConnPortEdit'
@@ -212,17 +219,25 @@ object SslFtpServerForm: TSslFtpServerForm
       Top = 110
       Width = 53
       Height = 21
-      TabOrder = 8
+      TabOrder = 10
       Text = '0'
       OnChange = RenegotiationIntervalEditChange
     end
     object DisplaySslInfoCheckBox: TCheckBox
-      Left = 290
-      Top = 13
+      Left = 252
+      Top = 87
       Width = 101
       Height = 17
       Caption = 'Display SSL Info'
-      TabOrder = 9
+      TabOrder = 8
+    end
+    object ServIpAddr: TEdit
+      Left = 504
+      Top = 39
+      Width = 153
+      Height = 21
+      TabOrder = 6
+      Text = '0.0.0.0'
     end
   end
   object SslFtpServer1: TSslFtpServer
@@ -275,8 +290,11 @@ object SslFtpServerForm: TSslFtpServerForm
     OnValidateDele = SslFtpServer1ValidateDele
     OnValidateRnFr = SslFtpServer1ValidateRnFr
     OnGetProcessing = SslFtpServer1GetProcessing
+    OnDisplay = SslFtpServer1Display
     OnHost = SslFtpServer1Host
     OnRein = SslFtpServer1Rein
+    SocketErrs = wsErrFriendly
+    ExclusiveAddr = True
     SslContext = SslContext1
     OnSslVerifyPeer = SslFtpServer1SslVerifyPeer
     OnSslHandshakeDone = SslFtpServer1SslHandshakeDone
@@ -333,16 +351,36 @@ object SslFtpServerForm: TSslFtpServerForm
   end
   object SslContext1: TSslContext
     IcsLogger = IcsLogger1
+    SslDHParamLines.Strings = (
+      '-----BEGIN DH PARAMETERS-----'
+      'MIICCAKCAgEA45KZVdTCptcakXZb7jJvSuuOdMlUbl1tpncHbQcYbFhRbcFmmefp'
+      'bOmZsTowlWHQpoYRRTe6NEvYox8J+44i/X5cJkMTlIgMb0ZBty7t76U9f6qAId/O'
+      '6elE0gnk2ThER9nmBcUA0ZKgSXn0XCBu6j5lzZ0FS+bx9OVNhlzvIFBclRPXbI58'
+      '71dRoTjOjfO1SIzV69T3FoKJcqur58l8b+no/TOQzekMzz4XJTRDefqvePhj7ULP'
+      'Z/Zg7vtEh11h8gHR0/rlF378S05nRMq5hbbJeLxIbj9kxQunETSbwwy9qx0SyQgH'
+      'g+90+iUCrKCJ9Fb7WKqtQLkQuzJIkkXkXUyuxUuyBOeeP9XBUAOQu+eYnRPYSmTH'
+      'GkhyRbIRTPCDiBWDFOskdyGYYDrxiK7LYJQanqHlEFtjDv9t1XmyzDm0k7W9oP/J'
+      'p0ox1+WIpFgkfv6nvihqCPHtAP5wevqXNIQADhDk5EyrR3XWRFaySeKcmREM9tbc'
+      'bOvmsEp5MWCC81ZsnaPAcVpO66aOPojNiYQZUbmm70fJsr8BDzXGpcQ44+wmL4Ds'
+      'k3+ldVWAXEXs9s1vfl4nLNXefYl74cV8E5Mtki9hCjUrUQ4dzbmNA5fg1CyQM/v7'
+      'JuP6PBYFK7baFDjG1F5YJiO0uHo8sQx+SWdJnGsq8piI3w0ON9JhUvMCAQI='
+      '-----END DH PARAMETERS-----')
     SslVerifyPeer = False
     SslVerifyDepth = 9
     SslVerifyFlags = []
+    SslCheckHostFlags = []
+    SslSecLevel = sslSecLevel80bits
     SslOptions = [sslOpt_NO_SSLv2]
     SslVerifyPeerModes = [SslVerifyMode_PEER]
     SslSessionCacheModes = []
     SslCipherList = 'ALL:!ADH:RC4+RSA:+SSLv2:@STRENGTH'
     SslVersionMethod = sslV23_SERVER
+    SslMinVersion = sslVerSSL3
+    SslMaxVersion = sslVerMax
+    SslECDHMethod = sslECDHAuto
     SslSessionTimeout = 0
     SslSessionCacheSize = 20480
+    AutoEnableBuiltinEngines = False
     Left = 102
     Top = 164
   end
@@ -398,6 +436,8 @@ object SslFtpServerForm: TSslFtpServerForm
     OnGetProcessing = SslFtpServer1GetProcessing
     OnHost = SslFtpServer1Host
     OnRein = SslFtpServer1Rein
+    SocketErrs = wsErrFriendly
+    ExclusiveAddr = True
     SslContext = SslContext1
     OnSslVerifyPeer = SslFtpServer1SslVerifyPeer
     OnSslHandshakeDone = SslFtpServer1SslHandshakeDone

@@ -1,11 +1,13 @@
-ICS - Internet Component Suite - V8 - Delphi 7 to RAD Studio 10 Seattle
+ICS - Internet Component Suite - V8 - Delphi 7 to RAD Studio 10.2 Tokyo
 =======================================================================
 (Aka FPIETTE's Components)
 
 
-Revised: March 18, 2016
+Revised: July 6, 2017
 http://www.overbyte.be/
 http://wiki.overbyte.be/
+http://www.overbyte.eu/
+http://wiki.overbyte.eu/
 
 Table of content:
 -----------------
@@ -29,7 +31,7 @@ Table of content:
 
 Legal issues:
 -------------
-              Copyright (C) 1997-2016 by François PIETTE
+              Copyright (C) 1997-2017 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium
               <francois.piette@overbyte.be>
 
@@ -110,7 +112,7 @@ Latest versions:
 
 The latest versions of ICS can be downloaded from the ICS Wiki web site:
 
-http://wiki.overbyte.be/wiki/index.php/ICS_Download
+http://wiki.overbyte.eu/wiki/index.php/ICS_Download
 
 ICS V5 and V6 are archive releases no longer updated, last supported release was 2007.
 
@@ -123,8 +125,8 @@ also includes the OpenSSL binaries needed to support SSL. ICS V8 supports Delphi
 and Mac OS-X projects.  Note that latest C++ Builder version supported is XE3 (lack of
 spare time, sorry).
 
-ICS V9 is in early development and is planned to support Android. There are no current
-plans for ICS for iOS.
+ICS V9 is in early development and is planned to support Android and Linux Server. There
+are no current plans for ICS for iOS.
 
 
 Version Control repository:
@@ -231,15 +233,15 @@ be compiled into your applications depending on whether the conditional define
 USE_SSL is set in the project options or not (this requires having the .\Source
 directory in either in the library path or in projects Search path).
 
-Actual use of SSL in your applications also requires the OpenSSL files 
-LIBEAY32.DLL and SSLEAY32.DLL being available somewhere in the path.  Note 
-different DLLs are needed for Win32 and Win64 applications.  The ICS 
-distribution includes the latest Win32 OpenSSL files in the .\OpenSSL-Win32 
-directory and the two main DLLs duplicated in .\Samples\delphi\sslinternet. 
+Actual use of SSL in your applications also requires the OpenSSL files
+libcrypto-1_1.dll (or libcrypto-1_1-x64.dll) and libssl-1_1.dll (or libssl-1_1-x64).dll
+being available somewhere in the path.  The ICS distribution includes the latest Win32
+OpenSSL files in the .\OpenSSL-Win32 directory and the four main DLLs duplicated in
+.\Samples\delphi\sslinternet.
 
 Other OpenSSL files, including older and Win64, may be downloaded from:
 
-http://wiki.overbyte.be/wiki/index.php/ICS_Download
+http://wiki.overbyte.eu/wiki/index.php/ICS_Download
 
 
 INSTALLATION USING THE INSTALL PROJECT GROUPS
@@ -267,8 +269,12 @@ Delphi XE7       :  DXe7Install.groupproj // VCL only, no FireMonkey components
 Delphi XE7       :  DXe7InstallVclFmx.groupproj // Both VCL and FireMonkey components
 Delphi XE8       :  DXe8Install.groupproj // VCL only, no FireMonkey components
 Delphi XE8       :  DXe8InstallVclFmx.groupproj // Both VCL and FireMonkey components
-Delphi 10 Seattle : D10SInstall.groupproj // VCL only, no FireMonkey components
-Delphi 10 Seattle : D10SInstallVclFmx.groupproj // Both VCL and FireMonkey components
+Delphi 10 Seattle  : D10SInstall.groupproj // VCL only, no FireMonkey components
+Delphi 10 Seattle  : D10SInstallVclFmx.groupproj // Both VCL and FireMonkey components
+Delphi 10.1 Berlin : D101Install.groupproj // VCL only, no FireMonkey components
+Delphi 10.1 Berlin : D101InstallVclFmx.groupproj // Both VCL and FireMonkey components
+Delphi 10.2 Tokyo  : D102Install.groupproj // VCL only, no FireMonkey components
+Delphi 10.2 Tokyo  : D102InstallVclFmx.groupproj // Both VCL and FireMonkey components
 C++ Builder 2006 :  CB2006Install.bdsgroup
 C++ Builder 2007 :  CB2007Install.groupproj
 C++ Builder 2009 :  CB2009Install.groupproj
@@ -297,6 +303,11 @@ under "Overbyte ICS" and "Overbyte ICS SSL". Then do a "Save All" and a "Close A
 5 - Various directories under .\Samples\delphi\ include samples that illustrate use
 of all the ICS components, see later.
 
+6 - Alternatively, recent Delphi versions have a Build Groups pane in the Project
+Manager, opened by clicking a a button.  This allows building multiple packages with
+multiple configurations and platforms with a single click. After building, the
+32-bit design package still need to be installed manually.
+
 
 FIREMONKEY CROSS PLATFORM PACKAGES:
 
@@ -323,7 +334,12 @@ packages can be installed in the IDE at the same time, if you want both VCL
 and FMX install DXe2InstallVclFmx.groupproj only. Currently the XE2 package
 cache is buggy and should be disabled by adding the -nocache parameter.
 
-5 - The .\Samples\delphi\PlatformDemos\ folder contains FireMonkey sample
+5 - Alternatively, recent Delphi versions have a Build Groups pane in the Project
+Manager, opened by clicking a a button.  This allows building multiple packages with
+multiple configurations and platforms with a single click.  After building, the
+32-bit design packages still need to be installed one by one.
+
+6 - The .\Samples\delphi\PlatformDemos\ folder contains FireMonkey sample
 projects that may all be built with FireMonkey for Mac OS X (and Windows).
 
 
@@ -348,7 +364,9 @@ Delphi XE5       :  OverbyteIcsDXe5Run.dproj, OverbyteIcsDXe5Design.dproj
 Delphi XE6       :  OverbyteIcsDXe6Run.dproj, OverbyteIcsDXe6Design.dproj
 Delphi XE7       :  OverbyteIcsDXe7Run.dproj, OverbyteIcsDXe7Design.dproj
 Delphi XE8       :  OverbyteIcsDXe8Run.dproj, OverbyteIcsDXe8Design.dproj
-Delphi 10 Seattle : OverbyteIcsD10SRun.dproj, OverbyteIcsD10SDesign.dproj
+Delphi 10 Seattle  : OverbyteIcsD10SRun.dproj, OverbyteIcsD10SDesign.dproj
+Delphi 10.1 Berlin : OverbyteIcsD101Run.dproj, OverbyteIcsD101Design.dproj
+Delphi 10.2 Tokyo  : OverbyteIcsD102Run.dproj, OverbyteIcsD102Design.dproj
 C++ Builder 2006 :  OverbyteIcsCB2006Run.bdsproj, OverbyteIcsCB2006Design.bdsproj
 C++ Builder 2007 :  OverbyteIcsCB2007Run.cbproj, OverbyteIcsCB2007Design.cbproj
 C++ Builder 2009 :  OverbyteIcsCB2009Run.cbproj, OverbyteIcsCB2009Design.cbproj
@@ -382,6 +400,12 @@ Delphi XE8 FMX          :  IcsFmxDXe8Run.dproj, IcsFmxDXe8Design.dproj
 Delphi 10 Seattle FMX/VCL: IcsCommonD10SRun.dproj, IcsCommonD10SDesign.dproj
 Delphi 10 Seattle VCL   :  IcsVclD10SRun.dproj, IcsVclD10SDesign.dproj
 Delphi 10 Seattle FMX   :  IcsFmxD10SRun.dproj, IcsFmxD10SDesign.dproj
+Delphi 10.1 Berlin FMX/VCL: IcsCommonD101Run.dproj, IcsCommonD101Design.dproj
+Delphi 10.1 Berlin VCL  :  IcsVclD101Run.dproj, IcsVclD101Design.dproj
+Delphi 10.1 Berlin FMX  :  IcsFmxD101Run.dproj, IcsFmxD101Design.dproj
+Delphi 10.2 Tokyo FMX/VCL: IcsCommonD102Run.dproj, IcsCommonD102Design.dproj
+Delphi 10.2 Tokyo VCL   :  IcsVclD102Run.dproj, IcsVclD102Design.dproj
+Delphi 10.2 Tokyo FMX   :  IcsFmxD102Run.dproj, IcsFmxD102Design.dproj
 C++ Builder XE2 FMX/VCL :  IcsCommonCBXe2Run.dproj, IcsCommonDXe2Design.dproj
 C++ Builder XE2 VCL     :  IcsVclCBXe2Run.dproj, IcsVclCBXe2Design.dproj
 C++ Builder XE2 FMX     :  IcsFmxCBXe2Run.dproj, IcsFmxCBXe2Design.dproj
@@ -416,12 +440,16 @@ If not, add it manually. It is not mandatory to add .\Lib to the global Delphi p
 but it will be much easier for you because otherwise you'll have to add it to each
 project.
 
+
 DELPHI XE2/WIN32, XE3/WIN32, XE4/WIN32, XE5/WIN32, XE6/WIN32, XE7/WIN32, XE8/WIN32,
-10 Seattle/WIN32, XE2/WIN64, XE3/WIN64, XE4/WIN64, XE5/WIN64, XE6/WIN64, XE7/WIN64,
-XE8/WIN64, 10 Seattle/WIN64:
+10 Seattle/WIN32, 10.1 Berlin/WIN32, 10.2 Tokyo/WIN32, XE2/WIN64, XE3/WIN64, XE4/WIN64,
+XE5/WIN64, XE6/WIN64, XE7/WIN64, XE8/WIN64, 10 Seattle/WIN64, 10.1 Berlin/WIN64,
+10.2 Tokyo/WIN64:
 
 Similar to above, but the Library path is specified separately for 32-bit and 64-bit
-Windows Platforms.
+Windows Platforms. Beware Delphi seems to default to 64-bit platform, and needs to
+be changed to 32-bit plaform before setting the Library path.
+
 
 DELPHI 7: Add VC32 directory path to your library path (Tools menu / Environment
 Options / Library / Library Path. Add .\Lib\Debug\Win32\D7 path at the end of the
@@ -430,10 +458,11 @@ existing path).
 
 SAMPLE DELPHI PROJECTS
 
-Once the package is installed, you may open the sample projects. The samples are split
-into several directories according to protocols, most with a project group that can be
-opened in all versions of Delphi.
+Once the package is installed, you may open the sample projects. There are about 95
+samples are split into several directories according to protocols, with a project
+group that can be opened in all versions of Delphi.
 
+.\Samples\delphi\AllDemosProject.bpg
 .\Samples\delphi\BroswerDemo
 .\Samples\delphi\FtpDemos\FtpDemos.bpg
 .\Samples\delphi\MailNewsDemos\MailNewsDemos.bpg
@@ -444,7 +473,12 @@ opened in all versions of Delphi.
 .\Samples\delphi\sslinternet\SslDemos.bpg
 .\Samples\delphi\WebDemos\WebDemos.bpg
 
-Full details of the sample projects are shown later in this document.
+Full details of the individual sample projects are shown later in this document.
+
+AllDemosProject.bpg contains all 94 samples except BrowserDemo (which needs a third
+party component installed).  But building all the samples at the same requires a
+lot of memory and was not possible until Delphi 10 Seattle and later which have improved
+memory management.  Earlier versions of Delphi will compile each other project group.
 
 You might get some dialog box telling you that resource files are missing (they may not
 have been included in the zip file to save space) and are recreated by Delphi. It is OK.
@@ -454,11 +488,8 @@ been recreated, you should see in the project manager a group of projects.
 To compile all samples in the group at once, do Project / Build all projects. This may
 take a few minutes.
 
-Note 1: Delphi may run out of memory if you ask to compile all projects at
-once. If you have not enough RAM, then compile each project individually.
-
-Note 2: Delphi has warnings which triggers a lot of messages for 100% OK
-code. You can turn those warnings off in the project/ options / Compiler messages
+Note Delphi has warnings which triggers a lot of messages for 100% OK code. You
+can turn those warnings off in the project/ options / Compiler messages
 and deselecting: "Deprecated symbol", "Platform symbol", "unsafe type", "unsafe code",
 "unsafe typecast". Those are intended for .NET and Linux portability. You can
 safely ignore them if you run windows. For you facility, I included a utility
@@ -548,6 +579,7 @@ properly add all of the available components in this collection:
 > OverbyteIcsNntpCli.pas       NNTP client protocol - send and receive newsgroups messages
 > OverbyteIcsPing.pas          ICMP echo protocol - ping a host
 > OverbyteIcsPop3Prot.pas      POP3 client protocol - get mail from mail server
+> OverbyteIcsProxy.pas         Proxy server protocol - HTTP forward and reverse proxy, and others
 > OverbyteIcsReg.pas           Register design components
 > OverbyteIcsSmtpProt.pas      SMTP client protocol - send mail to server
 > OverbyteIcsSmtpSrv.pas       SMTP server protocol - receive mail from client
@@ -579,7 +611,7 @@ properly add all of the available components in this collection:
 > OverbyteIcsHttpContCod.pas   HTTP Content Coding support, uses extra units
 > OverbyteIcsIcmp.pas          ICMP protocol support, used by the PING component
 > OverbyteIcsIconv.pas         Headers for iconv library (LGPL)
-> OverbyteIcsLIBEAY.pas        Delphi encapsulation for LIBEAY32.DLL (OpenSSL)
+> OverbyteIcsLIBEAY.pas        Delphi encapsulation for libeay32.dll and libcrypto-1_1.dll (OpenSSL)
 > OverbyteIcsMD4.pas           Implementation of the MD4 Message-Digest Algorithm
 > OverbyteIcsMD5.pas           Implementation of the MD5 Message-Digest Algorithm
 > OverbyteIcsMimeUtil.pas      Support routines for MIME standard
@@ -589,7 +621,7 @@ properly add all of the available components in this collection:
 > OverbyteIcsOneTimePw.pas     One Time Password support functions, used by FTP
 > OverbyteIcsSHA1.pas          Implementation of US Secure Hash Algorithm 1 (SHA1)
 > OverbyteIcsSocketUtils.pas   Cross platform socket utilities for ICS
-> OverbyteIcsSSLEAY.pas        Delphi encapsulation for SSLEAY32.DLL (OpenSSL)
+> OverbyteIcsSSLEAY.pas        Delphi encapsulation for ssleay32.dll and libssl-1_1.dll (OpenSSL)
 > OverbyteIcsSslSessionCache.pas  A very fast external SSL-session-cache component
 > OverbyteIcsSslThrdLock.pas   Implementation of OpenSsl thread locking (Windows);
 > OverbyteIcsSspi.pas          A few header translations from MS sspi.h and security.h
@@ -663,8 +695,8 @@ for "deprecated".
 Sample applications:
 --------------------
 
-With V8, the sample applications are now grouped into directories according to general
-functionality, to make it easier to compare related samples.
+With V8, the 96 sample applications are now grouped into directories according to
+general functionality, to make it easier to compare related samples.
 
 Many samples are similar. When searching for something, always look at the date
 the demos where created. The most recent is always the best code!  In the lists
@@ -794,13 +826,15 @@ Delphi Win32/Win64 SSL-enabled sample applications
 --------------------------------------------------
 .\Samples\delphi\sslinternet\SslDemos.bpg - Project group
 > OverbyteIcsHttpsTst.dpr         Example of TSslHttpCli component (GET) - ACTIVE!!
-> OverbyteIcsPemTool.dpr          ICS Pem Certificate Tool - Create and import certificates in OpenSLL PEM format
+> OverbyteIcsPemTool.dpr          ICS Pem Certificate Tool - Create and import certificates in many formats  - ACTIVE!!
+> OverbyteIcsProxySslServer.dpr   ICS Proxy server  - ACTIVE!!
 > OverbyteIcsSimpleSslCli.dpr     Example of simple SSL client using TSslWSocket - ACTIVE!!
 > OverbyteIcsSimpleSslServer.dpr  Example of SSL server using TSslWSocket - ACTIVE!!
 > OverbyteIcsSslFtpServ.dpr       General purpose FTP SSL server, uses TSocketServer - ACTIVE!!
 > OverbyteIcsSslFtpTst.dpr        Basic graphical FTP SSL client - ACTIVE!!
 > OverbyteIcsSslMailRcv.dpr       Internet EMail access using POP3 protocol and SSL - ACTIVE!!
 > OverbyteIcsSslMailSnd.dpr       Example of EMail sending using SMTP and SSL - ACTIVE!!
+> OverbyteIcsSslMultiWebServ.dpr  Advanced multi host web server demo  - ACTIVE!!
 > OverbyteIcsSslNewsRdr.dpr       Example of TSslNntpCli component (Send/receive newsgroups) - ACTIVE!!
 > OverbyteIcsMsVerify.dpr         Verify and show an OpenSSL certificate or certificate chain using
                                      class TMsCertChainEngine which uses MS crypto API - ACTIVE!!
@@ -836,7 +870,7 @@ Sample Notes
 Note 1: Not all samples have been rewritten in C++ for C++ Builder. And those rewritten are
         frequently much simpler. So C++ Builder user: have a look at the Delphi sample too !
 Note 2: Follow "UserMade" link on ICS web site to find more sample programs written by
-        ICS users.
+        ICS users, although these are mostly for older versions of ICS.
 
 As explained in the component installation, you may encounter an error loading
 a sample application or running it. This may be because the last time I loaded the form,
@@ -864,13 +898,15 @@ component only if you define USE_SSL symbol to your packages and projects.
 Just add USE_SSL to the defines in the project or package options and
 recompile everything.
 
-The components make use of LIBEAY32.DLL and SSLEAY32.DLL to handle SSL
-protocol stuff. The DLLs are dynamically loaded at runtime. It means that
-the DLLs will only be required at runtime when you first make use of a SSL
-function. Your applications will run on systems without OpenSSL DLLs as long
-as you don't call any SSL function.  The files may be downloaded from:
+The components make use of libcrypto-1_1.dll (or libcrypto-1_1-x64.dll) and
+libssl-1_1.dll (or libssl-1_1-x64).dll to handle SSL protocol stuff. The DLLs
+are dynamically loaded at runtime. It means that the DLLs will only be required
+at runtime when you first make use of a SSL function. Your applications will
+run on systems without OpenSSL DLLs as long as you don't call any SSL function.
+The ICS distribution includes the latest OpenSSL files or they may be downloaded
+from:
 
-http://wiki.overbyte.be/wiki/index.php/ICS_Download
+http://wiki.overbyte.eu/wiki/index.php/ICS_Download
 
 Most ICS components have their SSL enabled counter part. They work exactly
 the same way as the regular component except when SSL specific stuff is needed,
@@ -1031,5 +1067,6 @@ site http://www.overbyte.be.
 francois.piette@overbyte.be
 francois.piette@swing.be
 http://www.overbyte.be/
-http://wiki.overbyte.be/
+http://wiki.overbyte.eu/
+
 

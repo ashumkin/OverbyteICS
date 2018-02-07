@@ -8,12 +8,12 @@ Description:  This is an email form demo, designed to send a email to a hard
               entered in the form.  This demo uses a test email account at
               Magenta Systems, but the sender gets an identical copy of the
               email so you see it worked.
-Version:      1.04
+Version:      8.49
 EMail:        angus@magsys.co.uk
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2009 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 2009 to 2017 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium. 
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -47,6 +47,10 @@ Jul 10, 2009 V1.01 Arno fixed a bug in SmtpClient.OnGetData, we may not send
 Jul 10, 2009 V1.02 Arno Removed string cast warnings.
 Sept 1, 2009 V1.03 Angus - report exceptions creating virtual pages
 Nov 16, 2013 V1.04 Removed all references to demo's main form.
+May 24, 2016 V1.04 Angus - added OverbyteIcsFormDataDecoder to uses
+Jul 5,  2017 V8.49 Changed GetUAgeSizeFile to IcsGetUAgeSizeFile
+                   Ensure POST uses same protocol as original page 
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -66,8 +70,7 @@ uses
     ExtCtrls,
   {$ENDIF}
     OverbyteIcsWndControl, OverbyteIcsHttpAppServer, OverbyteIcsHttpSrv, OverbyteIcsWebSession,
-    OverbyteIcsSmtpProt, OverbyteIcsUtils, OverbyteIcsWSocket,
-    OverbyteIcsFtpSrvT;
+    OverbyteIcsSmtpProt, OverbyteIcsUtils, OverbyteIcsWSocket, OverbyteIcsFormDataDecoder;
 
 type
 
@@ -128,7 +131,7 @@ const
     DateMmmMask = 'dd mmm yyyy' ;
 begin
     FullName := Client.TemplateDir + '/' + Fname ;
-    if GetUAgeSizeFile (FullName, FileDT, FSize) then
+    if IcsGetUAgeSizeFile (FullName, FileDT, FSize) then
         DateTimeToString (Result, DateMmmMask, FileDT)
     else
         Result := 'Page not found' ;
@@ -274,7 +277,8 @@ begin
         Display ('DNS Lookup Failed - ' + WSocketErrorDesc (Error)) ;
         sUserIPHost := sIPAddr ;
     end;
-    sPageUrl := 'http://' + Client.RequestHost + Client.Path ;  // used for POST URL
+   { V8.49 ensure POST uses same protocol as original page }
+    sPageUrl := Client.RequestProtocol + '://' + Client.RequestHost + Client.Path ;  // used for POST URL
     errorMsg := '' ;
 
 // see if to email account passed as query - no domain

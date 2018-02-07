@@ -4,12 +4,12 @@ Program:      NsLookup
 Description:  ICS batch async DNS lookup DnsLookup (IPv6 and IPv4)
 Author:       François Piette
 Creation:      ?
-Version:      8.00
+Version:      8.44
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2010 by François PIETTE
-              Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
+Legal issues: Copyright (C) 1999-2017 by François PIETTE
+              Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
               This software is provided 'as-is', without any express or
@@ -32,15 +32,23 @@ Legal issues: Copyright (C) 1999-2010 by François PIETTE
 
               3. This notice may not be removed or altered from any source
                  distribution.
+
+Mar  7, 2017  V8.43  Added Use Thread tick box so wsockets uses thread for
+                    all DNS lookups instead of just IPv4
+Apr 15, 2017  V8.44 FPiette removed compiler warnings for D10.2
 }
 
 interface
 
 {$WARN SYMBOL_PLATFORM OFF}
+{$I OVERBYTEICSDEFS.INC}
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Contnrs,
+{$IFDEF DELPHI24_UP}
+  UITypes,
+{$ENDIF}
   OverbyteIcsUtils,
   OverbyteIcsIniFiles,
   OverbyteIcsWndControl,
@@ -61,6 +69,7 @@ type
     SocketFamilyComboBox: TComboBox;
     Label5: TLabel;
     Label6: TLabel;
+    UseThread: TCheckBox;
     procedure StartButtonClick(Sender: TObject);
     procedure WSocket1DnsLookupDone(Sender: TObject; ErrCode: Word);
     procedure FormCreate(Sender: TObject);
@@ -104,6 +113,7 @@ const
     KeyInstances       = 'NumberOfInstances';
     SectionDnsNames    = 'DnsNames';
     KeyDnsName         = 'Item';
+    KeyUseThread       = 'UseThread';
 
 procedure TBatchDnsLookupForm.FormCreate(Sender: TObject);
 begin
@@ -143,12 +153,14 @@ begin
         FMin         := IniFile.ReadInteger(SectionSetup, KeyMin,  1);
         FMax         := IniFile.ReadInteger(SectionSetup, KeyMax,  4);
         FInstances   := IniFile.ReadInteger(SectionSetup, KeyInstances, 4);
+        UseThread.Checked :=  IniFile.ReadBool(SectionSetup, KeyUseThread, False);
         if not IniFile.ReadStrings(SectionDnsNames, KeyDnsName, DnsNamesMemo.Lines) then
         begin
             DnsNamesMemo.Text :=
             'www.overbyte.be'#13#10 +
             'svn.overbyte.be'#13#10 +
             'wiki.overbyte.be'#13#10 +
+            'wiki.overbyte.eu'#13#10 +
             'www.embarcardero.com'#13#10 +
             'edn.embarcardero.com'#13#10 +
             'nonexisting'#13#10 +
@@ -194,8 +206,9 @@ begin
         IniFile.WriteInteger(SectionSetup,    KeyMin,         FMin);
         IniFile.WriteInteger(SectionSetup,    KeyMax,         FMax);
         IniFile.WriteInteger(SectionSetup,    KeyInstances,   FInstances);
-        IniFile.WriteStrings(SectionDnsNames, KeyDnsName,     DnsNamesMemo.Lines);
-        IniFile.UpdateFile;
+        IniFile.WriteBool(SectionSetup,       KeyUseThread,   UseThread.Checked);
+         IniFile.WriteStrings(SectionDnsNames, KeyDnsName,    DnsNamesMemo.Lines);
+       IniFile.UpdateFile;
     except
         on E: Exception do
             MessageDlg(E.ClassName + ' ' + E.Message, mtError, [mbOK], 0);
@@ -287,7 +300,10 @@ begin
         WSocket := TWSocket.Create(nil);
         FWSocketList.Add(WSocket);
         WSocket.Tag := FHostList.Count -1;
-        { Note DnsLookup uses the old API if SocketFamily is sfIPv4 }
+        { Note DnsLookup uses the old API if SocketFamily is sfIPv4 unless wsoIcsDnsLookup is set  }
+        { V8.43 see if using thread for IPv4 lookups }
+        if UseThread.Checked then
+            WSocket.ComponentOptions := WSocket.ComponentOptions + [wsoIcsDnsLookup];
         WSocket.SocketFamily := TSocketFamily(SocketFamilyComboBox.ItemIndex);
         WSocket.OnDnsLookupDone := WSocket1DnsLookupDone;
         WSocket.DnsLookup(FHostList[WSocket.Tag]);

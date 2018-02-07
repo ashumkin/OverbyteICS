@@ -8,11 +8,11 @@ Description:  WebSrv1 show how to use THttpServer component to implement
               The code below allows to get all files on the computer running
               the demo. Add code in OnGetDocument, OnHeadDocument and
               OnPostDocument to check for authorized access to files.
-Version:      8.06
+Version:      8.52
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1999-2016 by François PIETTE
+Legal issues: Copyright (C) 1999-2018 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -73,7 +73,28 @@ Mar 17 2016  V8.05 Angus added local IP address, SSL Version and SSL Cipher sele
                    Report server SSL certificates and warn if expired
                    Display more SSL diags on demo.html menu
 Mar 23 2016  V8.06 Angus set ErrCode in onSslServerName event to stop Java clients
-                    rejecting SSL connections, and illustrate it's proper use 
+                    rejecting SSL connections, and illustrate it's proper use
+May 24 2016  V8.27 Angus testing OpenSSL 1.1.0, added SslThrdLock
+                   Specify minimum and maximum SSL version supported
+                   List SSL ciphers available and supported by protocols
+                   Old SSL check box to ignore OpenSSL 1.1.0 and use older versions
+Nov 04 2016  V8.37 Set friendly errors
+Nov 29 2016  V8.39 Better way of listing certificates actually loaded into context
+                     rather than opening files a second time
+Feb 26 2017  V8.41 Added SslSecLevel to set minimum effective bits for
+                     certificate key length, 128 bits and higher won't usually work!
+                   Load certificates into SslCertX509 which supports PEM, DER,
+                     PKCS12, PKCS8 formats and check chain for errors before
+                     initialising SSL context, also reports chain
+                   Removed old ciphers, adding new new cipher
+Jun 26 2017 V8.49 Added .well-known directory support.  If WellKnownPath is
+                     specified as a path, any access to /.well-known/xx is
+                     handled locally either in the OnWellKnownDir Event or
+                     by returning a file from WellKnownPath instead of DocDir.
+                     This is primarily for Let's Encrypt challenges.
+Jan 3, 2018  V8.52 Added IPv6 support by listing IPv6 local listen addresses,
+                     and sorting them.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslWebServ1;
@@ -109,11 +130,13 @@ uses
   Windows, Messages, SysUtils, Classes, Controls, Forms,
   OverbyteIcsIniFiles, StdCtrls, ExtCtrls, OverbyteIcsWinsock,
   OverbyteIcsWSocket, OverbyteIcsWSocketS, OverbyteIcsHttpSrv,
-  OverbyteIcsLIBEAY, OverbyteIcsSslSessionCache,  OverbyteIcsSslX509Utils,
-  OverbyteIcsLogger, OverbyteIcsWndControl;
+  OverbyteIcsLIBEAY, OverbyteIcsSSLEAY, OverbyteIcsSslSessionCache,
+  OverbyteIcsSslX509Utils, OverbyteIcsLogger, OverbyteIcsWndControl,
+  OverbyteIcsSslThrdLock, TypInfo, OverbyteIcsUtils,
+  OverbyteIcsSocketUtils;
 
 const
-  CopyRight : String         = 'WebServ (c) 1999-2016 F. Piette V8.06 ';
+  CopyRight : String         = 'WebServ (c) 1999-2018 F. Piette V8.52 ';
   Ssl_Session_ID_Context     = 'WebServ_Test';
 
 type
@@ -185,14 +208,24 @@ type
     DhParamFileEdit: TEdit;
     ECDHList: TComboBox;
     Label13: TLabel;
-    Label20: TLabel;
-    SslVersionList: TComboBox;
     Label21: TLabel;
     SslCipherEdit: TEdit;
     Label14: TLabel;
     SslCipherList: TComboBox;
     Label22: TLabel;
     ListenAddr: TComboBox;
+    Label20: TLabel;
+    SslMinVersion: TComboBox;
+    Label23: TLabel;
+    SslMaxVersion: TComboBox;
+    OldSslCheckBox: TCheckBox;
+    SslStaticLock1: TSslStaticLock;
+    Label24: TLabel;
+    DebugEventCheckBox: TCheckBox;
+    SslSecLevel: TComboBox;
+    Label25: TLabel;
+    WellKnownPathEdit: TEdit;
+    Label26: TLabel;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -239,6 +272,12 @@ type
     procedure SslHttpServer1SslServerName(Sender      : TObject;
                                   var Ctx     : TSslContext;
                                   var ErrCode : TTlsExtError);
+    procedure IcsLogger1IcsLogEvent(Sender: TObject; LogOption: TLogOption;
+      const Msg: string);
+    procedure SslHttpServer1WellKnownDir(Sender, Client: TObject;
+      const Path: string; var BodyStr: string);
+    procedure HttpServer2WellKnownDir(Sender, Client: TObject;
+      const Path: string; var BodyStr: string);
   private
     FIniFileName            : String;
     FInitialized            : Boolean;
@@ -248,6 +287,8 @@ type
     FLogFileOpened          : Boolean;
     FRenegotiationInterval  : Longword;
     FSrvSslCert             : string;
+    FSrvCipherList          : string;
+    FCliCipherList          : string;
     procedure CreateVirtualDocument_Demo(Sender    : TObject;
                                          Client    : TObject;
                                          var Flags : THttpGetFlag);
@@ -302,10 +343,15 @@ const
     KeyRenegInterval   = 'RenegotiationInterval';
     KeyDHFile          = 'DHFile';
     KeyECDHList        = 'ECDHList';
-    KeySslVersionList  = 'SslVersionList';
     KeySslCipherEdit   = 'SslCipherEdit';
     KeySslCipherList   = 'SslCipherList';
     KeyListenAddr      = 'ListenAddr';
+    KeySslMinVersion   = 'SslMinVersion';
+    KeySslMaxVersion   = 'SslMaxVersion';
+    KeyOldSsl          = 'OldSsl';
+    KeyDebugEvent      = 'DebugEvent';
+    KeySslSecLevel     = 'SslSecLevel';
+    KeyWellKnownPath   = 'WellKnownPath';
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslWebServForm.FormCreate(Sender: TObject);
@@ -335,11 +381,17 @@ var
     wsi     : TWSADATA;
     OldIp   : string;
     I       : integer;
+    SL      : TSslSecLevel;
+    InterfaceList : TStringList;
 begin
     if not FInitialized then begin
         FInitialized := TRUE;
 
-        { Restore persistent data from INI file }
+    { V8.41 set SSL security level items from TSslSecLevel }
+        for SL := Low (TSslSecLevel) to High (TSslSecLevel) do
+            SslSecLevel.Items.Add (GetEnumName(TypeInfo(TSslSecLevel), Ord(SL)));
+
+    { Restore persistent data from INI file }
         IniFile      := TIcsIniFile.Create(FIniFileName);
         Width        := IniFile.ReadInteger(SectionWindow, KeyWidth,  Width);
         Height       := IniFile.ReadInteger(SectionWindow, KeyHeight, Height);
@@ -371,8 +423,7 @@ begin
                                                    'cacert.pem');
         CAPathEdit.Text      := IniFile.ReadString(SectionData, KeyCAPath,
                                                    '');
-        DHParamFileEdit.Text := IniFile.ReadString(SectionData, KeyDHFile,    { V8.02 }
-                                                   'dhparam2048.pem');
+        DHParamFileEdit.Text := IniFile.ReadString(SectionData, KeyDHFile, ''); { V8.02 }
         AcceptableHostsEdit.Text := IniFile.ReadString(SectionData, KeyAcceptableHosts,
                                                        'www.overbyte.be;www.borland.com');
         VerifyPeerCheckBox.Checked := Boolean(IniFile.ReadInteger(SectionData,
@@ -381,17 +432,35 @@ begin
         FRenegotiationInterval := IniFile.ReadInteger(SectionData,
                                                       KeyRenegInterval, 0);
         ECDHList.ItemIndex := IniFile.ReadInteger(SectionData, KeyECDHList, 1);   { V8.02 }
-        SslVersionList.ItemIndex := IniFile.ReadInteger(SectionData, KeySslVersionList, 0);  { V8.05 }
+        SslMinVersion.ItemIndex := IniFile.ReadInteger(SectionData,               { V8.07 }
+                                                       KeySslMinVersion,
+                                                       0);
+        SslMaxVersion.ItemIndex := IniFile.ReadInteger(SectionData,               { V8.07 }
+                                                       KeySslMaxVersion,
+                                                       5);
         SslCipherList.ItemIndex := IniFile.ReadInteger(SectionData, KeySslCipherList, 0);    { V8.05 }
         SslCipherEdit.Text := IniFile.ReadString(SectionData, KeySslCipherEdit, '');         { V8.05 }
         OldIp := IniFile.ReadString(SectionData, KeyListenAddr, '');                         { V8.05 }
+        OldSslCheckBox.Checked  := IniFile.ReadBool(SectionData, KeyOldSsl, False);          { V8.07 }
+        DebugEventCheckBox.Checked := IniFile.ReadBool(SectionData, KeyDebugEvent, False);   { V8.07 }
+        SslSecLevel.ItemIndex := IniFile.ReadInteger(SectionData, KeySslSecLevel, 1);        { V8.41 }
+        WellKnownPathEdit.Text := IniFile.ReadString(SectionData, KeyWellKnownPath, '');       { V8.49 }
         IniFile.Free;
 
         RenegotiationIntervalEdit.Text := IntToStr(FRenegotiationInterval);
 
-        { V8.05 allow user to choose which IP address to listen }
-        ListenAddr.Items.Text := 'localhost' + #13#10 +
-                               '0.0.0.0' + #13#10 + LocalIPList.Text;
+      { V8.05 allow user to choose which IP address to listen }
+        InterfaceList := TStringList.Create;
+        InterfaceList.Sorted := True;  { V8.52 sort the list } 
+        try
+       { V8.52 get local IP list from newer cross platform function }
+         //  IcsGetInterfaceList(InterfaceList);
+            InterfaceList.AddStrings(LocalIPList(sfAny));   { V8.52 show IPv6 as well }
+            ListenAddr.Items.Text := 'localhost' + #13#10 +
+                                '0.0.0.0' + #13#10 + InterfaceList.Text;
+        finally
+            InterfaceList.Free;
+        end;
         I := ListenAddr.Items.IndexOf(OldIp);
         if I >= 0 then
             ListenAddr.ItemIndex := I
@@ -425,6 +494,16 @@ begin
         if wsi.lpVendorInfo <> nil then
             Display('        ' + StrPas(wsi.lpVendorInfo));
 {$ENDIF}
+
+    { V8.07 load OpenSSL, then display OpenSSL DLL name and version  }
+        GSSLEAY_DLL_IgnoreNew := OldSslCheckBox.Checked;  { V8.07 ignore OpenSSL 1.1.0 and later }
+        SslStaticLock1.Enabled := true ;
+        if NOT FileExists (GLIBEAY_DLL_FileName) then
+            DisplayMemo.Lines.Add('SSL/TLS DLL not found: ' + GLIBEAY_DLL_FileName)
+        else
+            DisplayMemo.Lines.Add('SSL/TLS DLL: ' + GLIBEAY_DLL_FileName +
+                                                ', Version: ' + OpenSslVersion);
+
         { Automatically start server }
         StartHttpsButtonClick(Self);
         StartHttpButtonClick(Self);
@@ -463,10 +542,15 @@ begin
     IniFile.WriteInteger(SectionData,   KeyVerifyPeer,  Ord(VerifyPeerCheckBox.Checked));
     IniFile.WriteInteger(SectionData,   KeyRenegInterval, FRenegotiationInterval);
     IniFile.WriteInteger(SectionData,   KeyECDHList,  ECDHList.ItemIndex);        { V8.01 }
-    IniFile.WriteInteger(SectionData,   KeySslVersionList, SslVersionList.ItemIndex);  { V8.05 }
+    IniFile.WriteInteger(SectionData,   KeySslMinVersion,   SslMinVersion.ItemIndex);  { V8.07 }
+    IniFile.WriteInteger(SectionData,   KeySslMaxVersion,   SslMaxVersion.ItemIndex);  { V8.07 }
     IniFile.WriteInteger(SectionData,   KeySslCipherList, SslCipherList.ItemIndex);    { V8.05 }
     IniFile.WriteString(SectionData,    KeySslCipherEdit, SslCipherEdit.Text);         { V8.05 }
     IniFile.WriteString(SectionData,    KeyListenAddr, ListenAddr.Items [ListenAddr.ItemIndex]); { V8.05 }
+    IniFile.WriteBool(SectionData,      KeyOldSsl,      OldSslCheckBox.Checked);       { V8.07 }
+    IniFile.WriteBool(SectionData,      KeyDebugEvent,  DebugEventCheckBox.Checked);   { V8.07 }
+    IniFile.WriteInteger(SectionData,   KeySslSecLevel, SslSecLevel.ItemIndex);        { V8.41 }
+    IniFile.WriteString(SectionData,    KeyWellKnownPath, WellKnownPathEdit.Text);       { V8.49 }
     IniFile.UpdateFile;
     IniFile.Free;
     CloseLogFile;
@@ -479,8 +563,8 @@ procedure TSslWebServForm.Display(Msg : String);
 begin
     DisplayMemo.Lines.BeginUpdate;
     try
-        { We preserve only 200 lines }
-        while DisplayMemo.Lines.Count > 200 do
+        { We preserve only 5000 lines }
+        while DisplayMemo.Lines.Count > 5000 do
             DisplayMemo.Lines.Delete(0);
         DisplayMemo.Lines.Add(Msg);
     finally
@@ -513,45 +597,82 @@ end;
 { client.                                                                   }
 { When server is started, we will get OnServerStarted event triggered.      }
 procedure TSslWebServForm.StartHttpsButtonClick(Sender: TObject);
-const
-    SslSrvVersions : array [0..5] of TSslVersionMethod =
-        (sslBestVer_SERVER,sslV2_SERVER,sslV3_SERVER,sslTLS_V1_SERVER,sslTLS_V1_1_SERVER,sslTLS_V1_2_SERVER);  { V8.05 }
+//const
+//    SslSrvVersions : array [0..5] of TSslVersionMethod =
+//        (sslBestVer_SERVER,sslV2_SERVER,sslV3_SERVER,sslTLS_V1_SERVER,sslTLS_V1_1_SERVER,sslTLS_V1_2_SERVER);  { V8.05 }
 var
-    MyCert: TX509Ex;
+//    MyCert: TX509Base;
+//    CertList: TX509List;
+//    Tot, I: Integer;
+//    Info: string;
+    ErrStr: string;
+    valres: TChainResult;
 begin
+    IcsLogger1.LogOptions := [];
+    if DebugEventCheckBox.Checked then
+        IcsLogger1.LogOptions := IcsLogger1.LogOptions + [loDestEvent];
+    if IcsLogger1.LogOptions <> [] then
+        IcsLogger1.LogOptions := IcsLogger1.LogOptions +
+                                 LogAllOptInfo + [loAddStamp];
     SslHttpServer1.DocDir           := Trim(DocDirEdit.Text);
+    SslHttpServer1.WellKnownPath    := Trim(WellKnownPathEdit.Text);      { V8.49 }
     SslHttpServer1.DefaultDoc       := Trim(DefaultDocEdit.Text);
     SslHttpServer1.Port             := Trim(PortHttpsEdit.Text);
     SslHttpServer1.Addr             := ListenAddr.Items [ListenAddr.ItemIndex];  { V8.05 }
     SslHttpServer1.ClientClass      := TMyHttpConnection;
     SslHttpServer1.SetAcceptableHostsList(AcceptableHostsEdit.Text);
+    FSrvSslCert := '';
+
+    { V8.41 the old way, loading into context, not check until initialised,
+      these properties are still used if SslCertX509 is not loaded from any files
     SslContext1.SslCertFile         := CertFileEdit.Text;
     SslContext1.SslPassPhrase       := PassPhraseEdit.Text;
     SslContext1.SslPrivKeyFile      := PrivKeyFileEdit.Text;
     SslContext1.SslCAFile           := CAFileEdit.Text;
-    SslContext1.SslCAPath           := CAPathEdit.Text;
+    SslContext1.SslCAPath           := CAPathEdit.Text; }
+
+    { V8.41 new way, supports PEM, DER, PKCS12, PKCS8 formats and check them earlier }
+    SslContext1.SslCertX509.LoadFromFile(CertFileEdit.Text, croTry, croTry,
+                                                          PassPhraseEdit.Text);  { try and load pkey and inter certs }
+    if NOT SslContext1.SslCertX509.IsPkeyLoaded then
+            SslContext1.SslCertX509.PrivateKeyLoadFromPemFile(PrivKeyFileEdit.Text);
+    if NOT SslContext1.SslCertX509.IsInterLoaded then
+            SslContext1.SslCertX509.LoadIntersFromPemFile(CAFileEdit.Text);
+
+     { V8.41 check certificate chain for errors }
+     SslContext1.SslCertX509.LoadCATrustFromString(sslRootCACertsBundle);  { trusted root so we check chain }
+     valres := SslContext1.SslCertX509.ValidateCertChain('', FSrvSslCert, ErrStr);  { really need host name  }
+    if valres = chainOK then
+        ErrStr := 'Chain Validated OK'
+    else if valres = chainWarn then
+        ErrStr := 'Chain Warning - ' + ErrStr
+    else
+        ErrStr := 'Chain Failed - ' + ErrStr;
+    Display(FSrvSslCert + #13#10 + ErrStr + #13#10);
+    if valres = chainFail then Exit;
+
     SslContext1.SslDHParamFile      := DhParamFileEdit.Text;      { V8.02 }
     SslContext1.SslVerifyPeer       := VerifyPeerCheckBox.Checked;
     SslContext1.SslECDHMethod       := TSslECDHMethod(ECDHList.ItemIndex); { V8.02 }
 //    SslContext1.SslVersionMethod    := sslBestVer_SERVER;        { V8.02 }
-    SslContext1.SslVersionMethod    := SslSrvVersions [SslVersionList.ItemIndex];   { V8.05 }
-    if SslContext1.SslVersionMethod = sslV2_SERVER then begin
-        SslContext1.SslCipherList := 'SSLv2:RC4+MD5';  { V8.05 Mozilla ones don't support SSLv2 }
-        SslHttpServer1.OnSslServerName := nil; { not supported for SSLv2 }
-    end
-    else begin
-      case SslCipherList.ItemIndex of   { V8.05 choice of ciphers }
-          0: SslContext1.SslCipherList := sslCiphersServer;
-          1: SslContext1.SslCipherList := sslCiphersMozillaSrvBack;
-          2: SslContext1.SslCipherList := sslCiphersMozillaSrvInter;
-          3: SslContext1.SslCipherList := sslCiphersMozillaSrvHigh;
-          4: SslContext1.SslCipherList := sslCiphersMozillaSrvBack38;
-          5: SslContext1.SslCipherList := sslCiphersMozillaSrvInter38;
-          6: SslContext1.SslCipherList := sslCiphersMozillaSrvHigh38;
-      end;
+//    SslContext1.SslVersionMethod    := SslSrvVersions [SslVersionList.ItemIndex];   { V8.05 }
+    SslContext1.SslMinVersion       := TSslVerMethod (SslMinVersion.ItemIndex);  { V8.07}
+    SslContext1.SslMaxVersion       := TSslVerMethod (SslMaxVersion.ItemIndex);  { V8.07}
+    case SslCipherList.ItemIndex of   { V8.05 choice of ciphers }
+        0: SslContext1.SslCipherList := sslCiphersServer;
+        1: SslContext1.SslCipherList := sslCiphersMozillaSrvBack;
+        2: SslContext1.SslCipherList := sslCiphersMozillaSrvInter;
+        3: SslContext1.SslCipherList := sslCiphersMozillaSrvInterFS; { V8.41 }
+        4: SslContext1.SslCipherList := sslCiphersMozillaSrvHigh;
+   //     4: SslContext1.SslCipherList := sslCiphersMozillaSrvBack38;   V8.41 gone
+   //     5: SslContext1.SslCipherList := sslCiphersMozillaSrvInter38;
+   //     6: SslContext1.SslCipherList := sslCiphersMozillaSrvHigh38;
     end;
    if SslCipherEdit.Text <> '' then  SslContext1.SslCipherList := SslCipherEdit.Text; { V8.05 }
-    SslContext1.SslOptions := SslContext1.SslOptions + [sslOpt_NO_SSLv2, sslOpt_NO_SSLv3,
+   SslContext1.SslSecLevel := TSslSecLevel (SslSecLevel.ItemIndex);   { V8.41 }
+
+   { V8.07 setting minimum and maximum versions now handled when creating context }
+ {  SslContext1.SslOptions := SslContext1.SslOptions + [sslOpt_NO_SSLv2, sslOpt_NO_SSLv3,
                                      sslOpt_NO_TLSv1, sslOpt_NO_TLSv1_1, sslOpt_NO_TLSv1_2];
     if SslContext1.SslVersionMethod = sslV2_SERVER then
         SslContext1.SslOptions := SslContext1.SslOptions - [sslOpt_NO_SSLv2]
@@ -565,10 +686,11 @@ begin
         SslContext1.SslOptions := SslContext1.SslOptions - [sslOpt_NO_TLSv1_2]
     else
         SslContext1.SslOptions := SslContext1.SslOptions - [sslOpt_NO_SSLv2, sslOpt_NO_SSLv3,
-                                     sslOpt_NO_TLSv1, sslOpt_NO_TLSv1_1, sslOpt_NO_TLSv1_2];
+                                     sslOpt_NO_TLSv1, sslOpt_NO_TLSv1_1, sslOpt_NO_TLSv1_2];  }
+
  { V8.02 single DH needed for perfect forward secrecy }
     SslContext1.SslOptions := SslContext1.SslOptions +
-                          [sslOpt_CIPHER_SERVER_PREFERENCE, sslOpt_SINGLE_DH_USE];
+          [sslOpt_CIPHER_SERVER_PREFERENCE, sslOpt_SINGLE_DH_USE, SslOpt_SINGLE_ECDH_USE] ;
     try
         if SslContext1.IsCtxInitialized then   { V8.05 }
         begin
@@ -576,31 +698,44 @@ begin
           SslHttpServer1.WSocketServer.ResetSSL;
         end;
         SslContext1.InitContext;  { V8.02 get any error now before starting server }
-        if NOT FileExists (GLIBEAY_DLL_FileName) then    { V8.05 }
-          Display('SSL/TLS DLL not found: ' + GLIBEAY_DLL_FileName)
-        else
-          Display('SSL/TLS DLL: ' + GLIBEAY_DLL_FileName + ', Version: ' + OpenSslVersion);
-        MyCert := TX509Ex.Create(self);  // Oct 2015 report server certificate
-        try
-            MyCert.LoadFromPemFile (SslContext1.SslCertFile); // Oct 2015
-            FSrvSslCert := MyCert.CertInfo ;
-            if Date > MyCert.ValidNotAfter then
-                Display ('Server SSL Certificate Has Exprired')
-            else if (Date + 30) > MyCert.ValidNotAfter then
-                Display ('Server SSL Certificate Exprires Shortly');
-            MyCert.LoadFromPemFile (SslContext1.SslCAFile);   // Dec 2015
-            FSrvSslCert := FSrvSslCert +  #13#10#13#10 + MyCert.CertInfo ;
-            Display ('Server SSL Certificates' + #13#10 + FSrvSslCert + #13#10) ;
-            if Date > MyCert.ValidNotAfter then
-                Display ('Server SSL CA Certificate Has Exprired')
-            else if (Date + 30) > MyCert.ValidNotAfter then
-                Display ('Server SSL CA Certificate Exprires Shortly') ;
-            FSrvSslCert := StringReplace (FSrvSslCert, #13#10, '<BR>'+#13#10, [rfReplaceAll]) ;
-        finally
-            MyCert.Free ;
-        end;
 
-    except
+     // V8.39 better way of listing certificates actually loaded into store
+     // V8.41 now done earlier ion ValidateCertChain
+   (*     CertList := TX509List.Create (self, True);
+        try
+            Tot := SslContext1.SslGetAllCerts (CertList);
+            if SslContext1.SslCertX509.SubjectOneLine <> '' then  // ensure loaded
+            begin
+                 CertList.Add(SslContext1.SslCertX509.X509);  // add server cert
+                 inc (Tot);
+            end;
+            if Tot > 0 then begin
+                CertList.SortChain(xsrtIssuerFirst);
+                for I := 1 to Tot do begin
+                    Info := 'Certficate #' + IntToStr (I) + #13#10 + CertList [I-1].CertInfo + #13#10;
+                    if Date > CertList [I-1].ValidNotAfter then
+                        Info := Info + '!!! SSL Certificate Has Expired' + #13#10
+                    else if (Date + 30) > CertList [I-1].ValidNotAfter then
+                        Info := Info + '!!! SSL Certificate Exprires Shortly' + #13#10;
+                    Display(Info);
+                    FSrvSslCert := FSrvSslCert + Info;
+                end;
+            end;
+        finally
+            CertList.Free;
+        end;    *)
+        FSrvSslCert := StringReplace (FSrvSslCert, #13#10, '<BR>'+#13#10, [rfReplaceAll]) ;
+
+      { V8.07  list SSL ciphers }
+        FSrvCipherList := SslContext1.SslGetAllCiphers;
+        FSrvCipherList := StringReplace(FSrvCipherList, #13#10, ', ', [rfReplaceAll]);
+        Display('SSL Ciphers Accepted: ' + #13#10 + FSrvCipherList + #13#10);
+
+        FCliCipherList := SslHttpServer1.WSocketServer.SslGetSupportedCiphers (True, False);
+        FCliCipherList := StringReplace(FCliCipherList, #13#10, ', ', [rfReplaceAll]);
+        Display('SSL Ciphers Supported: ' + #13#10 + FCliCipherList + #13#10);
+
+     except
         on E:Exception do begin
             Display('Failed to initialize SSL Context: ' + E.Message);
             Exit;
@@ -615,6 +750,7 @@ procedure TSslWebServForm.StartHttpButtonClick(Sender: TObject);
 begin
     // Just a little quick test to support also HTTP without SSL
     HttpServer2.DocDir         := Trim(DocDirEdit.Text);
+    HttpServer2.WellKnownPath  := Trim(WellKnownPathEdit.Text);  { V8.49 }
     HttpServer2.DefaultDoc     := Trim(DefaultDocEdit.Text);
     HttpServer2.Port           := Trim(PortHttpEdit.Text);
     HttpServer2.Addr           := ListenAddr.Items [ListenAddr.ItemIndex];  { V8.05 }
@@ -656,7 +792,7 @@ begin
     StartHttpsButton.Enabled := FALSE;
     StopButton.Enabled       := TRUE;
     Display('HTTPS Server is waiting for connections');
-    S := SslHttpServer1.Addr;
+    S := IcsFmtIpv6Addr(SslHttpServer1.Addr);  { V8.52 browser friendly IPv6 }
     if S = '0.0.0.0' then S:= 'localhost';
     Display('https://' + S + '/demo.html');
 end;
@@ -669,7 +805,7 @@ var
 begin
     StartHttpButton.Enabled    := FALSE;
     Display('HTTP Server is waiting for connections');
-    S := SslHttpServer1.Addr;
+    S := IcsFmtIpv6Addr(SslHttpServer1.Addr); { V8.52 browser friendly IPv6 }
     if S = '0.0.0.0' then S:= 'localhost';
     Display('http://' + S + '/demo.html');
 end;
@@ -697,6 +833,50 @@ begin
     Display('HTTP Server stopped');
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ This event handler is triggered when a client specifies the /.well-known/ path }
+procedure TSslWebServForm.HttpServer2WellKnownDir(Sender, Client: TObject;     { V8.49 }
+  const Path: string; var BodyStr: string);
+begin
+   Display('HTTP Server: Well-Known File Requested: ' + Path);
+   if Pos('/acme-challenge/', Path) > 1 then begin
+     // check challenge token received Let's Encrypt and return key authorization
+     // sample only !!!
+        if Pos('/LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0', Path) > 1 then  begin
+            BodyStr := 'LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0' +
+                                            '.9jg46WB3rR_AHD-EBXdN7cBkH1WOu0tA3M9fm21mqTI';
+           Display('HTTP Server: acme-challenge response: ' + BodyStr);
+        end;
+   end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ This event handler is triggered when a client specifies the /.well-known/ path }
+procedure TSslWebServForm.SslHttpServer1WellKnownDir(Sender, Client: TObject;   { V8.49 }
+  const Path: string; var BodyStr: string);
+begin
+   Display('HTTPS Server: Well-Known File Requested: ' + Path);
+
+ { !!! note, acme challenges use HTTP only since they precede the ussuing
+       of an SSL certificate, but other services might use SSL }
+   if Pos('/acme-challenge/', Path) > 1 then begin
+     // check challenge token received Let's Encrypt and return key authorization
+     // sample only !!!
+        if Pos('/LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0', Path) > 1 then  begin
+            BodyStr := 'LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0' +
+                                            '.9jg46WB3rR_AHD-EBXdN7cBkH1WOu0tA3M9fm21mqTI';
+           Display('HTTPS Server: acme-challenge response: ' + BodyStr);
+        end;
+   end;
+end;
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslWebServForm.IcsLogger1IcsLogEvent(Sender: TObject;
+  LogOption: TLogOption; const Msg: string);
+begin
+    Display(Msg);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { This event handler is triggered when a new client has connected.          }
@@ -898,7 +1078,8 @@ begin
             '<P>OpenSSL Version: ' + OpenSslVersion + '<BR>' + #13#10#13#10 +
              'Server SSL Certificates: <BR>' + #13#10 +
              FSrvSslCert + '<BR><BR>' + #13#10 +
-             'OpenSSL Cipher: ' + SslContext1.SslCipherList +  '<P>' + #13#10 +
+             'OpenSSL Server Ciphers: ' + FSrvCipherList + '<P>' + #13#10 +
+             'SSL Ciphers from Client: ' + FCliCipherList + '<P>' + #13#10 +
              'Note: You can find a better demo in the non-SSL ICS.<P>' + #13#10 +
           '</BODY>' + #13#10 +
         '</HTML>' + #13#10;
@@ -989,7 +1170,7 @@ var
 begin
     { It's easyer to do the cast one time. Could use with clause... }
     Remote := TMyHttpConnection(Client);
-    
+
     { Count request and display a message }
     Inc(FCountRequests);
     Display(IntToStr(FCountRequests) + ': POST ' + Remote.Path);
@@ -1238,7 +1419,7 @@ begin
             Display('Error msg: ' + Cert.VerifyErrMsg + #13#10 +
                     'In this example we accept any cert');
         OK := 1; //In this example we accept any client.
-    end;    
+    end;
 end;
 
 
@@ -1342,9 +1523,11 @@ var
     Remote : TMyHttpConnection;
 begin
     Remote := Sender as TMyHttpConnection;
+    FCliCipherList := Remote.SslGetSupportedCiphers (True, True);
+    FCliCipherList := StringReplace(FCliCipherList, #13#10, ', ', [rfReplaceAll]);
     if ErrCode = 0 then begin
         Remote.LastHandshake := GetTickCount;
-        if DisplaySslInfoCheckBox.Checked then
+        if DisplaySslInfoCheckBox.Checked then begin
       {     Display(Format('[' + FormatDateTime('HH:NN:SS', Now) + ' ' +
                     Remote.GetPeerAddr + '] SslHandshakeDone. Secure ' +
                     'connection with %s, cipher %s, %d secret bits ' +
@@ -1355,12 +1538,16 @@ begin
             Display('[' + FormatDateTime('HH:NN:SS', Now) + ' ' +
                     Remote.GetPeerAddr + '] ' + Remote.SslHandshakeRespMsg +
                     ', SessionReused ' + IntToStr (Ord(Remote.SslSessionReused)));    { V8.01 }
+            Display('SSL Ciphers from Client: ' + #13#10 + FCliCipherList + #13#10);
+        end;
     end
     else
-        if DisplaySslInfoCheckBox.Checked then
+        if DisplaySslInfoCheckBox.Checked then begin
             Display('[' + FormatDateTime('HH:NN:SS', Now) + ' ' +
                       Remote.GetPeerAddr + '] SslHandshake failed, error #' +
                         IntToStr (ErrCode) + ' - ' + Remote.SslHandshakeRespMsg);  { V8.01 }
+            Display('SSL Ciphers from Client: ' + #13#10 + FCliCipherList + #13#10);
+        end;
 end;
 
 

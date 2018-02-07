@@ -44,7 +44,7 @@ package IcsFmxD101Run;
 {$DEFINE DEBUG}
 {$DEFINE USE_SSL}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'Overbyte ICS FMX Run-Time Package for Delphi 10 Seattle'}
+{$DESCRIPTION 'Overbyte ICS FMX Run-Time Package for Delphi 10.1 Berlin'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
 

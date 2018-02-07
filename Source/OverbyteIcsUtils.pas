@@ -3,11 +3,11 @@
 Author:       Arno Garrels <arno.garrels@gmx.de>
 Description:  A place for common utilities.
 Creation:     Apr 25, 2008
-Version:      8.09
+Version:      8.52
 EMail:        http://www.overbyte.be       francois.piette@overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 2002-2016 by François PIETTE
+Legal issues: Copyright (C) 2002-2018 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
 
@@ -137,6 +137,22 @@ Jul 13, 2013 V8.07 Arno added an overloaded version of IcsGetBufferCodepage that
              returns BOM's size.
 Nov 23, 2015 V8.08 Eugene Kotlyarov fix MacOSX compilation and compiler warnings
 Feb 22, 2016 V8.09 Angus moved RFC1123_Date and RFC1123_StrToDate from HttpProt
+Nov 15, 2016 V8.38 Angus moved IcsGetFileVerInfo from OverbyteIcsSSLEAY
+                   Added IcsVerifyTrust to check authenticode code signing digital
+                     certificate and hash on EXE and DLL files, note currently
+                     ignores certificate revoke checking since so slow
+Apr 4, 2017  V8.45 Added $EXTERNALSYM to satisfy C++. thanks to Jarek Karciarz
+May 12, 2017 V8.47 Added IcsCheckTrueFalse
+Jun 23, 2017 V8.49 Fixes for MacOs
+                   Added several functions for copying and searching TBytes buffers
+                     that receive socket data, converting them to Strings
+                   Moved IcsGetFileSize and GetUAgeSizeFile here from FtpSrvT
+Sep 19, 2017 V8.50 Added IcsMoveTBytesToString and IcsMoveStringToTBytes that take
+                      a codepage for proper Unicode conversion
+Nov 17, 2017 V8.51 Added IcsGetFileUAge
+Jan 3, 2018  V8.52 Added IcsFmtIpv6Addr, IcsFmtIpv6AddrPort and IcsStripIpv6Addr to
+                      format browser friendly IPv6 addresses with []
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsUtils;
@@ -491,6 +507,9 @@ const
     function IcsFileAgeW(const Utf8FileName: UTF8String): Integer; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
     function IcsFileExistsW(const FileName: UnicodeString): Boolean; overload;
     function IcsFileExistsW(const Utf8FileName: UTF8String): Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF} overload;
+    function IcsGetUAgeSizeFile (const filename: string; var FileUDT: TDateTime;
+                                                    var FSize: Int64): boolean;   { V8.49 moved from FtpSrvT }
+    function IcsGetFileSize(const FileName : String) : Int64;                     { V8.49 moved from FtpSrvT }
     function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsAnsiUpperCaseW(const S: UnicodeString): UnicodeString;     // angus
     function IcsMakeWord(L, H: Byte): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -500,6 +519,37 @@ const
     function IcsLoByte(W: Word): Byte; {$IFDEF USE_INLINE} inline; {$ENDIF}
     function IcsLoWord(LW: LongWord): Word; {$IFDEF USE_INLINE} inline; {$ENDIF}
     procedure IcsCheckOSError(ALastError: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
+    function IcsCheckTrueFalse(const Value: string): boolean;    { V8.47 }
+{ we receive socket as single byte raw data into TBytes buffer without a
+  character set, then convertit onto Delphi Strings for ease of processing }
+{ Beware - this function treats buffers as ANSI, no Unicode conversion }
+    procedure IcsMoveTBytesToString(const Buffer: TBytes; OffsetFrom: Integer;
+                      var Dest: String; OffsetTo: Integer; Count: Integer); overload; { V8.49 }
+{ this function converts buffers to Unicode }
+    procedure IcsMoveTBytesToString(const Buffer: TBytes; OffsetFrom: Integer;
+        var Dest: UnicodeString; OffsetTo: Integer; Count: Integer; ACodePage: LongWord); overload; { V8.50 }
+{ this function converts buffers to Unicode }
+    procedure IcsMoveTBytesToString(const Buffer: TBytes; OffsetFrom: Integer;
+        var Dest: AnsiString; OffsetTo: Integer; Count: Integer; ACodePage: LongWord); overload; { V8.50 }
+{ Beware - this function treats buffers as ANSI, no Unicode conversion }
+ //   procedure IcsMoveStringToTBytes(const Source: String; var Buffer: TBytes; Count: Integer);  { V8.49 }
+    function IcsMoveStringToTBytes(const Source: String; var Buffer: TBytes;
+                                                        Count: Integer): Integer; overload;  { V8.50 }
+    function IcsMoveStringToTBytes(const Source: UnicodeString; var Buffer: TBytes;
+                 Count: Integer; ACodePage: LongWord; Bom: Boolean = false): Integer; overload;  { V8.50 }
+    procedure IcsMoveTBytes(var Buffer: TBytes; OffsetFrom: Integer; OffsetTo: Integer;
+                                Count: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}   { V8.49 }
+    procedure IcsMoveTBytesEx(const BufferFrom: TBytes; var BufferTo: TBytes;
+              OffsetFrom, OffsetTo, Count: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}  { V8.49 }
+{ Pos that ignores nulls in the TBytes buffer, so avoid PAnsiChar functions }
+    function IcsTBytesPos(const Substr: String; const S: TBytes; Offset, Count: Integer): Integer;  { V8.49 }
+    function IcsTbytesStarts(Source: TBytes; Find: PAnsiChar) : Boolean;    { V8.49 }
+    function IcsTbytesContains(Source : TBytes; Find : PAnsiChar) : Boolean;   { V8.49 }
+    function IcsGetFileUAge(const FileName : String) : TDateTime;            { V8.51 }
+    function IcsFmtIpv6Addr (const Addr: string): string;              { V8.52 }
+    function IcsFmtIpv6AddrPort (const Addr, Port: string): string;    { V8.52 }
+    function IcsStripIpv6Addr (const Addr: string): string;            { V8.52 }
+
 
 { Moved from OverbyteIcsLibrary.pas prefix "_" replaced by "Ics" }
     function IcsIntToStrA(N : Integer): AnsiString;
@@ -592,6 +642,209 @@ type
         procedure Leave; {$IFDEF USE_INLINE} inline; {$ENDIF}
         function TryEnter: Boolean;
     end;
+
+{ V8.38 handle for wintrust.dll }
+var
+    WinTrustHandle : THandle;
+
+{$IFDEF MSWINDOWS}
+{ V8.38 moved from OverbyteIcsSSLEAY }
+function IcsGetFileVerInfo(
+    const AppName         : String;
+    out   FileVersion     : String;
+    out   FileDescription : String): Boolean;
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}
+{ V8.38 constants and records for Wintrust }
+{ V8.45 added $EXTERNALSYM to satisfy C++ }
+const
+  WINTRUST_ACTION_GENERIC_VERIFY_V2: TGUID = '{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}' ;
+  {$EXTERNALSYM WINTRUST_ACTION_GENERIC_VERIFY_V2}
+
+  TRUST_E_NOSIGNATURE = HRESULT($800B0100);
+  {$EXTERNALSYM TRUST_E_NOSIGNATURE}
+  CERT_E_EXPIRED = HRESULT($800B0101);
+  {$EXTERNALSYM CERT_E_EXPIRED}
+  CERT_E_VALIDITYPERIODNESTING = HRESULT($800B0102);
+  {$EXTERNALSYM CERT_E_VALIDITYPERIODNESTING}
+  CERT_E_ROLE = HRESULT($800B0103);
+   {$EXTERNALSYM CERT_E_ROLE}
+  CERT_E_PATHLENCONST = HRESULT($800B0104);
+   {$EXTERNALSYM CERT_E_PATHLENCONST}
+  CERT_E_CRITICAL = HRESULT($800B0105);
+   {$EXTERNALSYM CERT_E_CRITICAL}
+  CERT_E_PURPOSE = HRESULT($800B0106);
+   {$EXTERNALSYM CERT_E_PURPOSE}
+  CERT_E_ISSUERCHAINING = HRESULT($800B0107);
+   {$EXTERNALSYM CERT_E_ISSUERCHAINING}
+  CERT_E_MALFORMED = HRESULT($800B0108);
+   {$EXTERNALSYM CERT_E_MALFORMED}
+  CERT_E_UNTRUSTEDROOT = HRESULT($800B0109);
+   {$EXTERNALSYM CERT_E_UNTRUSTEDROOT}
+  CERT_E_CHAINING = HRESULT($800B010A);
+   {$EXTERNALSYM CERT_E_CHAINING}
+  TRUST_E_FAIL = HRESULT($800B010B);
+   {$EXTERNALSYM TRUST_E_FAIL}
+  CERT_E_REVOKED = HRESULT($800B010C);
+   {$EXTERNALSYM CERT_E_REVOKED}
+  CERT_E_UNTRUSTEDTESTROOT = HRESULT($800B010D);
+   {$EXTERNALSYM CERT_E_UNTRUSTEDTESTROOT}
+  CERT_E_REVOCATION_FAILURE = HRESULT($800B010E);
+   {$EXTERNALSYM CERT_E_REVOCATION_FAILURE}
+  CERT_E_CN_NO_MATCH = HRESULT($800B010F);
+   {$EXTERNALSYM CERT_E_CN_NO_MATCH}
+  CERT_E_WRONG_USAGE = HRESULT($800B0110);
+   {$EXTERNALSYM CERT_E_WRONG_USAGE}
+  TRUST_E_EXPLICIT_DISTRUST = HRESULT($800B0111);
+   {$EXTERNALSYM TRUST_E_EXPLICIT_DISTRUST}
+  CERT_E_UNTRUSTEDCA = HRESULT($800B0112);
+   {$EXTERNALSYM CERT_E_UNTRUSTEDCA}
+  CERT_E_INVALID_POLICY = HRESULT($800B0113);
+   {$EXTERNALSYM CERT_E_INVALID_POLICY}
+  CERT_E_INVALID_NAME = HRESULT($800B0114);
+   {$EXTERNALSYM CERT_E_INVALID_NAME}
+  TRUST_E_SYSTEM_ERROR = HRESULT($80096001);
+   {$EXTERNALSYM TRUST_E_SYSTEM_ERROR}
+  TRUST_E_NO_SIGNER_CERT = HRESULT($80096002);
+   {$EXTERNALSYM TRUST_E_NO_SIGNER_CERT}
+  TRUST_E_COUNTER_SIGNER = HRESULT($80096003);
+   {$EXTERNALSYM TRUST_E_COUNTER_SIGNER}
+  TRUST_E_CERT_SIGNATURE = HRESULT($80096004);
+   {$EXTERNALSYM TRUST_E_CERT_SIGNATURE}
+  TRUST_E_TIME_STAMP = HRESULT($80096005);
+   {$EXTERNALSYM TRUST_E_TIME_STAMP}
+  TRUST_E_BAD_DIGEST = HRESULT($80096010);
+   {$EXTERNALSYM TRUST_E_BAD_DIGEST}
+  TRUST_E_BASIC_CONSTRAINTS = HRESULT($80096019);
+   {$EXTERNALSYM TRUST_E_BASIC_CONSTRAINTS}
+  TRUST_E_FINANCIAL_CRITERIA = HRESULT($8009601E);
+   {$EXTERNALSYM TRUST_E_FINANCIAL_CRITERIA}
+  CRYPT_E_SECURITY_SETTINGS = HRESULT($80092026);
+   {$EXTERNALSYM CRYPT_E_SECURITY_SETTINGS}
+
+  WTCI_DONT_OPEN_STORES = $00000001 ; // only open dummy "root" all other are in pahStores.
+   {$EXTERNALSYM WTCI_DONT_OPEN_STORES}
+  WTCI_OPEN_ONLY_ROOT = $00000002 ;
+   {$EXTERNALSYM WTCI_OPEN_ONLY_ROOT}
+
+// _WINTRUST_DATA.dwUIChoice
+    WTD_UI_ALL    = 1 ;
+   {$EXTERNALSYM WTD_UI_ALL}
+    WTD_UI_NONE   = 2 ;
+   {$EXTERNALSYM WTD_UI_NONE}
+    WTD_UI_NOBAD  = 3 ;
+   {$EXTERNALSYM WTD_UI_NOBAD}
+    WTD_UI_NOGOOD = 4 ;
+   {$EXTERNALSYM WTD_UI_NOGOOD}
+
+// _WINTRUST_DATA.fdwRevocationChecks
+    WTD_REVOKE_NONE       = $00000000 ;
+   {$EXTERNALSYM WTD_REVOKE_NONE}
+    WTD_REVOKE_WHOLECHAIN = $00000001 ;
+   {$EXTERNALSYM WTD_REVOKE_WHOLECHAIN}
+
+// _WINTRUST_DATA.dwUnionChoice
+    WTD_CHOICE_FILE    = 1 ;
+   {$EXTERNALSYM WTD_CHOICE_FILE}
+    WTD_CHOICE_CATALOG = 2 ;
+   {$EXTERNALSYM WTD_CHOICE_CATALOG}
+    WTD_CHOICE_BLOB    = 3 ;
+   {$EXTERNALSYM WTD_CHOICE_BLOB}
+    WTD_CHOICE_SIGNER  = 4 ;
+   {$EXTERNALSYM WTD_CHOICE_SIGNER}
+    WTD_CHOICE_CERT    = 5 ;
+   {$EXTERNALSYM WTD_CHOICE_CERT}
+
+// _WINTRUST_DATA.dwStateAction
+    WTD_STATEACTION_IGNORE  = $00000000 ;
+   {$EXTERNALSYM WTD_STATEACTION_IGNORE}
+    WTD_STATEACTION_VERIFY  = $00000001 ;
+   {$EXTERNALSYM WTD_STATEACTION_VERIFY}
+    WTD_STATEACTION_CLOSE   = $00000002 ;
+   {$EXTERNALSYM WTD_STATEACTION_CLOSE}
+    WTD_STATEACTION_AUTO_CACHE       = $00000003 ;
+   {$EXTERNALSYM WTD_STATEACTION_AUTO_CACHE}
+    WTD_STATEACTION_AUTO_CACHE_FLUSH = $00000004 ;
+   {$EXTERNALSYM WTD_STATEACTION_AUTO_CACHE_FLUSH}
+    WTD_PROV_FLAGS_MASK     = $0000FFFF ;
+   {$EXTERNALSYM WTD_PROV_FLAGS_MASK}
+    WTD_USE_IE4_TRUST_FLAG  = $00000001 ;
+   {$EXTERNALSYM WTD_USE_IE4_TRUST_FLAG}
+    WTD_NO_IE4_CHAIN_FLAG   = $00000002 ;
+   {$EXTERNALSYM WTD_NO_IE4_CHAIN_FLAG}
+    WTD_NO_POLICY_USAGE_FLAG = $00000004 ;
+   {$EXTERNALSYM WTD_NO_POLICY_USAGE_FLAG}
+    WTD_REVOCATION_CHECK_NONE = $00000010 ;
+   {$EXTERNALSYM WTD_REVOCATION_CHECK_NONE}
+    WTD_REVOCATION_CHECK_END_CERT = $00000020 ;
+   {$EXTERNALSYM WTD_REVOCATION_CHECK_END_CERT}
+    WTD_REVOCATION_CHECK_CHAIN    = $00000040 ;
+   {$EXTERNALSYM WTD_REVOCATION_CHECK_CHAIN}
+    WTD_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = $00000080 ;
+   {$EXTERNALSYM WTD_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT}
+    WTD_SAFER_FLAG                 = $00000100 ;
+   {$EXTERNALSYM WTD_SAFER_FLAG}
+    WTD_HASH_ONLY_FLAG             = $00000200 ;
+   {$EXTERNALSYM WTD_HASH_ONLY_FLAG}
+    WTD_USE_DEFAULT_OSVER_CHECK    = $00000400 ;
+   {$EXTERNALSYM WTD_USE_DEFAULT_OSVER_CHECK}
+    WTD_LIFETIME_SIGNING_FLAG      = $00000800 ;
+   {$EXTERNALSYM WTD_LIFETIME_SIGNING_FLAG}
+    WTD_CACHE_ONLY_URL_RETRIEVAL   = $00001000 ; { affects CRL retrieval and AIA retrieval }
+   {$EXTERNALSYM WTD_CACHE_ONLY_URL_RETRIEVAL}
+    WTD_UICONTEXT_EXECUTE = 0 ;
+   {$EXTERNALSYM WTD_UICONTEXT_EXECUTE}
+    WTD_UICONTEXT_INSTALL = 1 ;
+   {$EXTERNALSYM WTD_UICONTEXT_INSTALL}
+
+type
+    PVOID           = Pointer;
+   {$EXTERNALSYM PVOID}
+
+  WINTRUST_FILE_INFO_ = record
+    cbStruct: DWORD;
+    pcwszFilePath: LPCWSTR;
+    hFile: THandle;
+    pgKnownSubject: PGUID;
+  end {WINTRUST_FILE_INFO_};
+  TWinTrustFileInfo = WINTRUST_FILE_INFO_ ;
+  PWinTrustFileInfo = ^WINTRUST_FILE_INFO_ ;
+
+type
+  _WINTRUST_DATA = record
+    cbStruct: DWORD;                // = sizeof(WINTRUST_DATA)
+    pPolicyCallbackData: PVOID;     // optional: used to pass data between the app and policy
+    pSIPClientData: PVOID;          // optional: used to pass data between the app and SIP.
+    dwUIChoice: DWORD;              // required: UI choice, one of WTD_UI_xx
+    fdwRevocationChecks: DWORD;     // required: certificate revocation check options, one of WTD_REVOKE_xx
+    dwUnionChoice: DWORD;           // required: which structure is being passed in, one of WTD_CHOICE_xx
+    Info: record {union part of the original struct }
+    case integer of
+        0: (pFile: PWinTrustFileInfo);           // individual file
+  //      1: (pCatalog: PWinTrustCatalogInfo);     // member of a Catalog File
+  //      2: (pBlob: PWinTrustBlobInfo);           // memory blob
+  //      3: (pSgnr: PWinTrustSgnrInfo);           // signer structure only
+  //      4: (pCert: PWinTrustCertInfo);
+    end ;
+// end union
+    dwStateAction: DWORD;       // optional (Catalog File Processing), WTD_STATEACTION_xx
+    hWVTStateData: THANDLE;     // optional (Catalog File Processing)
+    pwszURLReference: LPCWSTR ; // angus ???  // optional: (future) used to determine zone.
+    dwProvFlags: DWORD;         // optional:  WTD_PROV_FLAGS, etc
+    dwUIContext: DWORD;         // optional: used to determine action text in UI. WTD_UICONTEXT_xx
+  end {_WINTRUST_DATA};
+  TWinTrustData = _WINTRUST_DATA ;
+  PWinTrustData = ^_WINTRUST_DATA ;
+
+var
+  WinVerifyTrust: function(hwnd: HWND; var pgActionID: TGUID;
+                                      pWVTData: Pointer): DWORD stdcall ;
+
+{ V8.38 Windows API to check authenticode code signing digital certificate on EXE and DLL files }
+  function IcsVerifyTrust (const Fname: string; const HashOnly,
+                          Expired: boolean; var Response: string): integer;
+{$ENDIF}
 
 implementation
 
@@ -1173,7 +1426,7 @@ begin
                             DstBytesLeft := SizeOf(SBuf);
                         end
                         else begin
-                            Result := 0;
+                            //Result := 0; { V8.49 }
                             SetLastError(ERROR_INSUFFICIENT_BUFFER);
                             Break;
                         end;
@@ -2160,7 +2413,7 @@ function IcsGetWideChars(const Buffer; BufferSize: Integer;
 var
     PUCS4 : PUCS4Char;
     I     : Integer;
-    
+
     procedure UCS4ToU16;
     begin
         I := 0;
@@ -4896,6 +5149,91 @@ begin
 {$ENDIF}
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
+function FileTimeToInt64 (const FileTime: TFileTime): Int64 ;    { V8.49 moved from FtpSrvT }
+begin
+    Move (FileTime, Result, SizeOf (Result));    // 29 Sept 2004, poss problem with 12/00 mixup
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function Int64ToFileTime (const FileTime: Int64): TFileTime ;     { V8.49 moved from FtpSrvT }
+begin
+    Move (FileTime, Result, SizeOf (Result));
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+const
+  FileTimeBase = -109205.0;   // days between years 1601 and 1900
+  FileTimeStep: Extended = 24.0 * 60.0 * 60.0 * 1000.0 * 1000.0 * 10.0; // 100 nsec per Day
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function FileTimeToDateTime(const FileTime: TFileTime): TDateTime;    { V8.49 moved from FtpSrvT }
+begin
+    Result := FileTimeToInt64 (FileTime) / FileTimeStep ;
+    Result := Result + FileTimeBase ;
+end;
+{$ENDIF MSWINDOWS}
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ get file written UTC DateTime and size in bytes - no change for summer time }
+function IcsGetUAgeSizeFile (const filename: string; var FileUDT: TDateTime;
+                                                    var FSize: Int64): boolean;   { V8.49 moved from FtpSrvT }
+var
+   SResult: integer ;
+   SearchRec: TSearchRec ;
+{$IFDEF MSWINDOWS}
+   TempSize: ULARGE_INTEGER; { V8.42 was TULargeInteger } { 64-bit integer record }
+{$ENDIF}
+begin
+   Result := FALSE ;
+   FSize := -1;
+   FileUDT := 0;   { V8.51 }
+   SResult := {$IFDEF RTL_NAMESPACES}System.{$ENDIF}SysUtils.FindFirst(filename, faAnyFile, SearchRec);
+   if SResult = 0 then begin
+     {$IFDEF MSWINDOWS}
+        TempSize.LowPart  := SearchRec.FindData.nFileSizeLow ;
+        TempSize.HighPart := SearchRec.FindData.nFileSizeHigh ;
+        FSize             := TempSize.QuadPart ;
+        FileUDT := FileTimeToDateTime (SearchRec.FindData.ftLastWriteTime);
+      {$ENDIF}
+      {$IFDEF POSIX}
+        FSize := SearchRec.Size;
+        FileUDT := SearchRec.TimeStamp;
+      {$ENDIF}
+        Result            := TRUE ;
+   end;
+   {$IFDEF RTL_NAMESPACES}System.{$ENDIF}SysUtils.FindClose(SearchRec);
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetFileSize(const FileName : String) : Int64;            { V8.49 moved from FtpSrvT }
+var
+    FileUDT: TDateTime;
+begin
+    Result := -1 ;
+    IcsGetUAgeSizeFile (FileName, FileUDT, Result);
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function IcsGetFileUAge(const FileName : String) : TDateTime;            { V8.51 }
+var
+    FSize: Int64;
+begin
+    Result := 0 ;
+    IcsGetUAgeSizeFile (FileName, Result, FSize);
+end;
+
+
+
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Note: despite the name, this is a full Unicode function changing non-ANSI characters }
 function IcsAnsiLowerCaseW(const S: UnicodeString): UnicodeString;
@@ -5183,4 +5521,433 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
+function IcsGetFileVerInfo(      { V8.27 added Ics to prevent conflicts }
+    const AppName         : String;
+    out   FileVersion     : String;
+    out   FileDescription : String): Boolean;
+const
+    DEFAULT_LANG_ID       = $0409;
+    DEFAULT_CHAR_SET_ID   = $04E4;
+type
+    TTranslationPair = packed record
+        Lang, CharSet: WORD;
+    end;
+    PTranslationIDList = ^TTranslationIDList;
+    TTranslationIDList = array[0..MAXINT div SizeOf(TTranslationPair) - 1]
+                             of TTranslationPair;
+var
+    Buffer, PStr    : PChar;
+    BufSize         : DWORD;
+    StrSize, IDsLen : DWORD;
+    Status          : Boolean;
+    LangCharSet     : String;
+    IDs             : PTranslationIDList;
+begin
+    Result          := FALSE;
+    FileVersion     := '';
+    FileDescription := '';
+    BufSize         := GetFileVersionInfoSize(PChar(AppName), StrSize);
+    if BufSize = 0 then
+        Exit;
+    GetMem(Buffer, BufSize);
+    try
+        // get all version info into Buffer
+        Status := GetFileVersionInfo(PChar(AppName), 0, BufSize, Buffer);
+        if not Status then
+            Exit;
+        // set language Id
+        LangCharSet := '040904E4';
+        if VerQueryValue(Buffer, PChar('\VarFileInfo\Translation'),
+                         Pointer(IDs), IDsLen) then begin
+            if IDs^[0].Lang = 0 then
+                IDs^[0].Lang := DEFAULT_LANG_ID;
+            if IDs^[0].CharSet = 0 then
+                IDs^[0].CharSet := DEFAULT_CHAR_SET_ID;
+            LangCharSet := Format('%.4x%.4x',
+                                  [IDs^[0].Lang, IDs^[0].CharSet]);
+        end;
+
+        // now read real information
+        Status := VerQueryValue(Buffer, PChar('\StringFileInfo\' +
+                                LangCharSet + '\FileVersion'),
+                                Pointer(PStr), StrSize);
+        if Status then begin
+            FileVersion := StrPas(PStr);
+            Result      := TRUE;
+        end;
+        Status := VerQueryValue(Buffer, PChar('\StringFileInfo\' +
+                                LangCharSet + '\FileDescription'),
+                                Pointer(PStr), StrSize);
+        if Status then
+            FileDescription := StrPas(PStr);
+    finally
+        FreeMem(Buffer);
+    end;
+end;
+{$ENDIF}
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{$IFDEF MSWINDOWS}
+{ V8.38 Windows API to check authenticode code signing digital certificate on EXE and DLL files }
+{ HashOnly ignores certificate, Expired ignores expired certificate }
+{ note currently ignores rovoked certificate check since very slow }
+function IcsVerifyTrust (const Fname: string; const HashOnly,
+                          Expired: boolean; var Response: string): integer;
+var
+    ActionID: TGUID ;
+    WinTrustData: TWinTrustData ;
+    WinTrustFileInfo: TWinTrustFileInfo ;
+    WFname: WideString ;
+begin
+    result := -1;
+    WinTrustHandle := LoadLibrary('WINTRUST.DLL');
+    if WinTrustHandle = 0 then begin
+        response := 'WINTRUST.DLL Not Found' ;
+        exit;
+    end ;
+    @WinVerifyTrust := GetProcAddress(WinTrustHandle, 'WinVerifyTrust');
+    if (@WinVerifyTrust = nil) then begin
+        response := 'WinVerifyTrust Not Found';
+        exit;
+    end ;
+    if NOT FileExists (Fname) then  begin
+        Response := 'Program File Not Found - ' + Fname;
+        exit;
+    end ;
+    WinTrustFileInfo.cbStruct := SizeOf (TWinTrustFileInfo);
+    WFname := Fname;
+    WinTrustFileInfo.pcwszFilePath := @WFname [1];
+    WinTrustFileInfo.hFile := 0;
+    WinTrustFileInfo.pgKnownSubject := Nil;
+    WinTrustData.cbStruct := SizeOf (TWinTrustData);
+    WinTrustData.pPolicyCallbackData := Nil;
+    WinTrustData.pSIPClientData := Nil;
+    WinTrustData.dwUIChoice := WTD_UI_NONE;
+    WinTrustData.fdwRevocationChecks := WTD_REVOKE_NONE;   // revoke check is horribly slow
+    WinTrustData.dwUnionChoice := WTD_CHOICE_FILE;
+    WinTrustData.Info.pFile := @WinTrustFileInfo;
+    WinTrustData.dwStateAction := 0;
+    WinTrustData.hWVTStateData := 0;
+    WinTrustData.pwszURLReference := Nil;
+    WinTrustData.dwProvFlags := WTD_REVOCATION_CHECK_NONE;
+    if HashOnly then WinTrustData.dwProvFlags :=
+                            WinTrustData.dwProvFlags OR WTD_HASH_ONLY_FLAG;      // ignore certificate
+    if Expired then WinTrustData.dwProvFlags :=
+                        WinTrustData.dwProvFlags OR WTD_LIFETIME_SIGNING_FLAG;   // check expired date
+    WinTrustData.dwUIContext := WTD_UICONTEXT_EXECUTE;
+    ActionID := WINTRUST_ACTION_GENERIC_VERIFY_V2;
+    Result := WinVerifyTrust (INVALID_HANDLE_VALUE, ActionID, @WinTrustData);
+    case Result of
+      ERROR_SUCCESS:
+         response := 'Trusted Code';
+      TRUST_E_SUBJECT_NOT_TRUSTED:
+         response := 'Not Trusted Code';
+      TRUST_E_PROVIDER_UNKNOWN:
+         response := 'Trust Provider Unknown';
+      TRUST_E_ACTION_UNKNOWN:
+         response := 'Trust Provider Action Unknown';
+      TRUST_E_SUBJECT_FORM_UNKNOWN:
+         response := 'Trust Provider Form Unknown';
+      TRUST_E_NOSIGNATURE:
+         response := 'Unsigned Code';
+      TRUST_E_EXPLICIT_DISTRUST:
+         response := 'Certificate Marked as Untrusted by the User';
+      TRUST_E_BAD_DIGEST:
+         response := 'Code has been Modified' ;
+      CERT_E_EXPIRED:
+        response := 'Signed Code But Certificate Expired' ;
+      CERT_E_CHAINING:
+        response := 'Signed Code But Certificate Chain Not Trusted' ;
+      CERT_E_UNTRUSTEDROOT:
+        response := 'Signed Code But Certificate Root Not Trusted' ;
+      CERT_E_UNTRUSTEDTESTROOT:
+        response := 'Signed Code But With Untrusted Test Certificate' ;
+      CRYPT_E_SECURITY_SETTINGS:
+         response := 'Local Security Options Prevent Verification';
+      else
+         response := 'Trust Error: ' + SysErrorMessage (Result);
+    end ;
+end ;                   
+{$ENDIF}
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ INI file support read TRUE, true or 1 for a boolean }
+function IcsCheckTrueFalse(const Value: string): boolean;   { V8.47 }
+begin
+    result := (IcsLowerCase((Copy(Value, 1, 1))) = 't') OR (Value = '1') ;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ we receive socket as single byte raw data into TBytes buffer without a
+  character set, then convertit onto Delphi Strings for ease of processing }
+{ Beware - this function treats buffers as ANSI, no Unicode conversion }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsMoveTBytesToString(const Buffer: TBytes; OffsetFrom: Integer;
+                      var Dest: String; OffsetTo: Integer; Count: Integer);  { V8.49 }
+{$IFDEF UNICODE}
+var
+    PSrc  : PByte;
+    PDest : PChar;
+begin
+    PSrc  := Pointer(Buffer);
+    if Length(Dest) < (OffsetTo + Count - 1) then
+        SetLength(Dest, OffsetTo + Count - 1);
+    PDest := Pointer(Dest);
+    Dec(OffsetTo); // String index!
+    while Count > 0 do begin
+        PDest[OffsetTo] := Char(PSrc[OffsetFrom]);
+        Inc(OffsetTo);
+        Inc(OffsetFrom);
+        Dec(Count);
+    end;
+{$ELSE}
+begin
+    if Length(Dest) < (OffsetTo + Count - 1) then
+        SetLength(Dest, OffsetTo + Count - 1);
+    Move(Buffer[OffsetFrom], Dest[OffsetTo], Count);
+{$ENDIF}
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ we receive socket as single byte raw data into TBytes buffer without a
+  character set, then convertit onto Delphi Strings for ease of processing }
+{ this function handles Unicode conversion, returns widestring }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsMoveTBytesToString(const Buffer: TBytes; OffsetFrom: Integer;
+        var Dest: UnicodeString; OffsetTo: Integer; Count: Integer; ACodePage: LongWord);  { V8.50 }
+var
+    WS: UnicodeString;
+    FailedByteCount: Integer;
+begin
+    if (ACodePage = CP_UTF16) or (ACodePage = CP_UTF16Be) then
+        WS := IcsBufferToUnicode(Pointer(@Buffer[OffsetFrom])^, Count, ACodePage, FailedByteCount)  // no-8bit ansi
+     else
+        WS := AnsiToUnicode(PAnsiChar(@Buffer[OffsetFrom]), ACodePage);  // no 16-bit unicode
+    if (OffsetTo > 1) and (Length(Dest) > 0) then
+        Dest := Copy (Dest, 1, OffsetTo) + WS
+    else
+        Dest := WS;
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ we receive socket as single byte raw data into TBytes buffer without a
+  character set, then convertit onto Delphi Strings for ease of processing }
+{ this function handles Unicode conversion, returns AnsiString }
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsMoveTBytesToString(const Buffer: TBytes; OffsetFrom: Integer;
+        var Dest: AnsiString; OffsetTo: Integer; Count: Integer; ACodePage: LongWord);  { V8.50 }
+var
+    WS: UnicodeString;
+begin
+    IcsMoveTBytesToString(Buffer, OffsetFrom, WS, OffsetTo, Count, ACodePage);
+    Dest := String(WS);   { ? may appear for non-ANSI characters }
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Converts a String to a TBytes buffer as ANSI, no Unicode conversion }
+function IcsMoveStringToTBytes(const Source: String; var Buffer: TBytes;
+                                                Count: Integer): integer;  { V8.50 }
+{$IFDEF UNICODE}
+var
+    PDest : PByte;
+    PSrc  : PChar;
+    I     : Integer;
+begin
+    PSrc  := Pointer(Source);
+    if Count > Length(Source) then
+        Count := Length(Source);
+    if Length(Buffer) < Count then
+        SetLength(Buffer, Count);
+    PDest := Pointer(Buffer);
+    for I := 0 to Count - 1 do begin
+        PDest[I] := Byte(PSrc[I]);
+    end;
+{$ELSE}
+begin
+    if Count > Length(Source) then
+        Count := Length(Source);
+    if Length(Buffer) < Count then
+        SetLength(Buffer, Count);
+    Move(Source[1], Buffer[0], Count);
+{$ENDIF}
+    Result := Count;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Converts an UnicodeString to a TBytes buffer with correct codepage }
+function IcsMoveStringToTBytes(const Source: UnicodeString; var Buffer: TBytes;
+                            Count: Integer; ACodePage: LongWord; Bom: Boolean = false): Integer;  { V8.50 }
+var
+    Len2, Offset: Integer;
+    Newbom: TBytes;
+begin
+    Result := 0;
+    if Length(Source) < Count then Count := Length(Source);
+    if Count > 0 then begin
+
+      // two byte code page, cheat and copy unicode string with CP_UTF16 BOM
+        if (ACodePage = CP_UTF16) or (ACodePage = CP_UTF16Be) then begin
+            Newbom := IcsGetBomBytes(CP_UTF16);
+            Offset := Length(Newbom);
+            Result := (Count * 2) + Offset;
+            if Length(Buffer) < Result then
+                SetLength(Buffer, Result);
+            Move(newbom[0], Buffer[0], Offset);
+            Move(Source[1], Buffer[2], Count);
+        end
+
+     // handle all other codepages
+        else begin
+            Result := IcsWcToMb(ACodePage, 0, Pointer(Source), Count, nil, 0, nil, nil);
+            Offset := 0;
+            if Bom then begin
+                Newbom := IcsGetBomBytes(ACodePage);
+                Offset := Length(Newbom);
+                Result := Result + Offset;
+            end;
+            if Length(Buffer) < Result then
+                SetLength(Buffer, Result);
+            if Result > 0 then begin
+                if Bom then begin
+                    Move(newbom[0], Buffer[0], Offset);
+                end;
+                Len2 := IcsWcToMb(ACodePage, 0, Pointer(Source), Count,
+                                    PAnsiChar(@Buffer[Offset]), Result, nil, nil);
+                if Len2 <> Result then begin // May happen, very rarely
+                    Result := Len2 + Offset;
+                    SetLength(Buffer, Result);
+                end;
+            end;
+        end
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsMoveTBytes(var Buffer: TBytes; OffsetFrom: Integer; OffsetTo: Integer;
+                                Count: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}   { V8.49 }
+begin
+    Move(Buffer[OffsetFrom], Buffer[OffsetTo], Count);
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure IcsMoveTBytesEx(const BufferFrom: TBytes; var BufferTo: TBytes;
+              OffsetFrom, OffsetTo, Count: Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}  { V8.49 }
+begin
+    Move(BufferFrom[OffsetFrom], BufferTo[OffsetTo], Count);
+end;
+
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ Pos that ignores nulls in the TBytes buffer, so avoid PAnsiChar functions }
+function IcsTBytesPos(const Substr: String; const S: TBytes; Offset, Count: Integer): Integer;  { V8.49 }
+var
+    Ch: Byte;
+    SubLen, I, J: Integer;
+    Found: Boolean;
+begin
+    Result := -1;
+    SubLen := Length(Substr);
+    if SubLen = 0 then Exit;
+    Ch := Byte(SubStr[1]);
+    for I := Offset to Count - SubLen do begin
+        if S[I] = Ch then begin
+            Found := True;
+            if SubLen > 1 then begin
+                for J := 2 to SubLen do begin
+                    if Byte(Substr[J]) <> S[I+J-1] then begin
+                        Found := False;
+                        Break;
+                     end;
+                end;
+            end;
+            if Found then begin
+                Result := I;
+                Exit;
+            end;
+        end;
+    end;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ case insensitive check for null terminated Find at start of buffer }
+function IcsTbytesStarts(Source: TBytes; Find: PAnsiChar) : Boolean;    { V8.49 }
+begin
+    Result := FALSE;
+{$IFDEF COMPILER18_UP}
+    if (System.AnsiStrings.StrLIComp(PAnsiChar(Source), Find, Length(Find)) = 0) then
+       Result := TRUE;
+{$ELSE}
+    if (StrLIComp(PAnsiChar(Source), Find, Length(Find)) = 0) then
+       Result := TRUE;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ case sensitive check for Find within null terminated buffer }
+function IcsTbytesContains(Source : TBytes; Find : PAnsiChar) : Boolean;   { V8.49 }
+begin
+    Result := FALSE;
+{$IFDEF COMPILER18_UP}
+    if (System.AnsiStrings.StrPos(PAnsiChar(Source), Find) <> nil) then
+      Result := TRUE;
+{$ELSE}
+    if (StrPos(PAnsiChar(Source), Find) <> nil) then
+      Result := TRUE;
+{$ENDIF}
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ format an IPv6 address with browser friendly [] }
+function IcsFmtIpv6Addr (const Addr: string): string;    { V8.52 }
+begin
+    if (Pos ('.', Addr) = 0) and (Pos ('[', Addr) = 0) and (Pos (':', Addr) > 0) then
+        result := '[' + Addr + ']'
+    else
+        result := Addr;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ format an IPv6 address with browser friendly [] and port }
+function IcsFmtIpv6AddrPort (const Addr, Port: string): string;    { V8.52 }
+begin
+    result := IcsFmtIpv6Addr (Addr) + ':' + Port;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+{ strip [] off IPv6 address }
+function IcsStripIpv6Addr (const Addr: string): string;         { V8.52 }
+begin
+    if (Pos ('[', Addr) = 1) and (Addr [Length (Addr)] = ']') then
+        result := Copy (Addr, 2, Length (Addr) - 2)
+    else
+        result := Addr;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+initialization
+finalization
+    if WinTrustHandle <> 0 then FreeLibrary (WinTrustHandle);
+    WinTrustHandle := 0;
+
 end.

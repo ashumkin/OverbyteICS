@@ -2,7 +2,7 @@
 
 Author:       François PIETTE
 Creation:     November 23, 1997
-Version:      8.13
+Version:      8.51
 Description:  THttpCli is an implementation for the HTTP protocol
               RFC 1945 (V1.0), and some of RFC 2068 (V1.1)
 Credit:       This component was based on a freeware from by Andreas
@@ -11,7 +11,7 @@ Credit:       This component was based on a freeware from by Andreas
 EMail:        francois.piette@overbyte.be         http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1997-2016 by François PIETTE
+Legal issues: Copyright (C) 1997-2017 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -505,6 +505,26 @@ Oct 19, 2015 V8.12 Angus allow better SSL Handshake error reporting
 Feb 22, 2016 V8.13 Angus check statuscode with StrToIntDef to avoid errors
                    ensure headers added in event are logged
                    Angus moved RFC1123_Date and RFC1123_StrToDate to Utils
+Nov 04, 2016 V8.37 V8.10 POST relocation fix failed 302 because status had been cleared
+                   Don't set blank SocksLevel
+                   Don't suppress socket exceptions unless we handle them with OnSocketError,
+                      note this means more exceptions may need to be handled
+                   Added extended exception information, set FSocketErrs = wsErrFriendly for
+                      some more friendly messages (without error numbers)
+May 18, 2017 V8.48 Fixed SslServerName for correct host target name with SSL proxies
+Sep 17, 2017 V8.50 Replaced four TBytes functions with versions in OverbyteIcsUtils
+Dec 7,  2017 V8.51 Fixed SOCKS4A/5 skip DNSLookup since hostname is passed to SOCKS server
+                      so it can resolve DNS instead, thanks to Colin Wall for fixing this.
+                   Socks authstate event now works
+                   Report sensible proxy and socks ReasonPhrase
+
+To convert the received HTML stream to a unicode string with the correct codepage,
+use this function in OverbyteIcsCharsetUtils, it's not used directly by this unit
+to avoid linking in various charset tables applications may not need. The last
+argumment determines whether entities like &pound; and &#9741; are converted to
+characters:
+
+UnicodeStr := IcsHtmlToStr(RcvdStream, ContentType, true);
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 {$IFNDEF ICS_INCLUDE_MODE}
@@ -593,8 +613,8 @@ uses
     OverbyteIcsTypes, OverbyteIcsUtils;
 
 const
-    HttpCliVersion       = 813;
-    CopyRight : String   = ' THttpCli (c) 1997-2016 F. Piette V8.13 ';
+    HttpCliVersion       = 851;
+    CopyRight : String   = ' THttpCli (c) 1997-2017 F. Piette V8.51 ';
     DefaultProxyPort     = '80';
     //HTTP_RCV_BUF_SIZE    = 8193;
     //HTTP_SND_BUF_SIZE    = 8193;
@@ -836,6 +856,7 @@ type
         FOnSocketError        : TNotifyEvent;
         FOnBeforeHeaderSend   : TBeforeHeaderSendEvent;     { Wilfried 9 sep 02}
         FCloseReq             : Boolean;                    { SAE 01/06/04 }
+        FSocketErrs           : TSocketErrs;   { V8.37 }
         FTimeout              : UINT;  { V7.04 }            { Sync Timeout Seconds }
         FWMLoginQueued        : Boolean;
         procedure AbortComponent; override; { V7.11 }
@@ -897,8 +918,8 @@ type
         procedure SocketSessionConnected(Sender : TObject; ErrCode : Word); virtual;
         procedure SocketDataSent(Sender : TObject; ErrCode : Word); virtual;
         procedure SocketDataAvailable(Sender: TObject; ErrCode: Word); virtual;
-        function  StartsWithText(Source : TBytes; Find : PAnsiChar) : Boolean; {Bjornar}
-        function  ContainsText(Source : TBytes; Find : PAnsiChar) : Boolean; {Bjornar}
+  {      function  StartsWithText(Source : TBytes; Find : PAnsiChar) : Boolean; V8.50 moved to Utils }
+  {      function  ContainsText(Source : TBytes; Find : PAnsiChar) : Boolean; V8.50 moved to Utils }
         procedure LocationSessionClosed(Sender: TObject; ErrCode: Word); virtual;
         procedure DoRequestAsync(Rq : THttpRequest); virtual;
         procedure DoRequestSync(Rq : THttpRequest); virtual;
@@ -1166,6 +1187,8 @@ type
         property OnBgException;                                             { V7.11 }
         property SocketFamily        : TSocketFamily read  FSocketFamily
                                                      write FSocketFamily;
+        property SocketErrs         : TSocketErrs    read  FSocketErrs
+                                                     write FSocketErrs;      { V8.37 }
     end;
 
 { You must define USE_SSL so that SSL code is included in the component.   }
@@ -1189,12 +1212,12 @@ Description:  A component adding SSL support to THttpCli.
 {$X+}                                 { Enable extended syntax              }
 {$H+}                                 { Use long strings                    }
 {$J+}                                 { Allow typed constant to be modified }
-
+{
 const
      SslHttpCliVersion            = 100;
      SslHttpCliDate               = 'Feb 15, 2003';
      SslHttpCliCopyRight : String = ' TSslHttpCli (c) 2008 Francois Piette V1.00.0 ';
-
+}
 type
     TSslHttpCli = class(THttpCli)
     protected
@@ -1294,77 +1317,6 @@ begin
     FErrorCode := ErrCode;
 end;
 
-(* moved to OverbyteIcsUtilt to share with web server
-{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-const
-   RFC1123_StrWeekDay : String = 'MonTueWedThuFriSatSun';
-   RFC1123_StrMonth   : String = 'JanFebMarAprMayJunJulAugSepOctNovDec';
-{ We cannot use Delphi own function because the date must be specified in   }
-{ english and Delphi use the current language.                              }
-function RFC1123_Date(aDate : TDateTime) : String;
-var
-   Year, Month, Day       : Word;
-   Hour, Min,   Sec, MSec : Word;
-   DayOfWeek              : Word;
-begin
-   DecodeDate(aDate, Year, Month, Day);
-   DecodeTime(aDate, Hour, Min,   Sec, MSec);
-   DayOfWeek := ((Trunc(aDate) - 2) mod 7);
-   Result := Copy(RFC1123_StrWeekDay, 1 + DayOfWeek * 3, 3) + ', ' +
-             Format('%2.2d %s %4.4d %2.2d:%2.2d:%2.2d',
-                    [Day, Copy(RFC1123_StrMonth, 1 + 3 * (Month - 1), 3),
-                     Year, Hour, Min, Sec]);
-end;
-
-{ Bug: time zone is ignored !! }
-function RFC1123_StrToDate(aDate : String) : TDateTime;
-var
-    Year, Month, Day : Word;
-    Hour, Min,   Sec : Word;
-begin
-    { Fri, 30 Jul 2004 10:10:35 GMT }
-    Day    := StrToIntDef(Copy(aDate, 6, 2), 0);
-    Month  := (Pos(Copy(aDate, 9, 3), RFC1123_StrMonth) + 2) div 3;
-    Year   := StrToIntDef(Copy(aDate, 13, 4), 0);
-    Hour   := StrToIntDef(Copy(aDate, 18, 2), 0);
-    Min    := StrToIntDef(Copy(aDate, 21, 2), 0);
-    Sec    := StrToIntDef(Copy(aDate, 24, 2), 0);
-    Result := EncodeDate(Year, Month, Day);
-    Result := Result + EncodeTime(Hour, Min, Sec, 0);
-end; *)
-(*
-{$IFDEF NOFORMS}
-{ This function is a callback function. It means that it is called by       }
-{ windows. This is the very low level message handler procedure setup to    }
-{ handle the message sent by windows (winsock) to handle messages.          }
-function HTTPCliWindowProc(
-    ahWnd   : HWND;
-    auMsg   : Integer;
-    awParam : WPARAM;
-    alParam : LPARAM): Integer; stdcall;
-var
-    Obj    : TObject;
-    MsgRec : TMessage;
-begin
-    { At window creation asked windows to store a pointer to our object     }
-    Obj := TObject(GetWindowLong(ahWnd, 0));
-
-    { If the pointer doesn't represent a TCustomFtpCli, just call the default procedure}
-    if not (Obj is THTTPCli) then
-        Result := DefWindowProc(ahWnd, auMsg, awParam, alParam)
-    else begin
-        { Delphi use a TMessage type to pass parameter to his own kind of   }
-        { windows procedure. So we are doing the same...                    }
-        MsgRec.Msg    := auMsg;
-        MsgRec.wParam := awParam;
-        MsgRec.lParam := alParam;
-        { May be a try/except around next line is needed. Not sure ! }
-        THTTPCli(Obj).WndProc(MsgRec);
-        Result := MsgRec.Result;
-    end;
-end;
-{$ENDIF}
-*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 function THttpCli.MsgHandlersCount : Integer;
@@ -1427,7 +1379,10 @@ begin
     FCtrlSocket.OnDnsLookupDone    := SocketDNSLookupDone;
     FCtrlSocket.OnSocksError       := DoSocksError;
     FCtrlSocket.OnSocksConnected   := DoSocksConnected;
-    FCtrlSocket.OnError            := SocketErrorTransfer;
+    FCtrlSocket.OnSocksAuthState   := DoSocksAuthState;   { V8.51 }
+   { V8.37 don't suppress socket exceptions unless we handle them }
+    if Assigned (FOnSocketError) then
+        FCtrlSocket.OnError        := SocketErrorTransfer;
 {$IF DEFINED(UseBandwidthControl) or DEFINED(BUILTIN_THROTTLE)}
     FBandwidthLimit                := 10000;  { Bytes per second     }
     FBandwidthSampling             := 1000;   { mS sampling interval }
@@ -2141,13 +2096,17 @@ begin
     StateChange(httpDnsLookup);
     FCtrlSocket.LocalAddr := FLocalAddr; {bb}
     FCtrlSocket.LocalAddr6 := FLocalAddr6;  { V8.02 }
+    FCtrlSocket.SocketErrs := FSocketErrs;        { V8.37 }
     try
         FCtrlSocket.SocketFamily := FSocketFamily;
         { The setter of TCustomWSocket.Addr sets the correct internal     }
         { SocketFamily in case a host name is either a valid IPv6 or IPv4 }
         { address.                                                        }
         FCtrlSocket.Addr := FHostName;
-        FCtrlSocket.DnsLookup(FHostName);
+        if (FSocksServer = '') or (FSocksLevel = '4') then  { V8.51 socks5 takes host name }
+            FCtrlSocket.DnsLookup(FHostName)
+        else
+            SocketDNSLookupDone(self, 0);    { V8.51 skip DNS lookup }
     except
         on E: Exception do begin
             FStatusCode   := 404;
@@ -2162,17 +2121,19 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.DoBeforeConnect;
 begin
-    FCtrlSocket.Addr                := FDnsResult;
+    FCtrlSocket.Addr                := FDnsResult; { V8.51 for SOCKS5 may be host name }
     FCtrlSocket.LocalAddr           := FLocalAddr; {bb}
     FCtrlSocket.LocalAddr6          := FLocalAddr6;  { V8.02 }
     FCtrlSocket.Port                := FPort;
     FCtrlSocket.Proto               := 'tcp';
     FCtrlSocket.SocksServer         := FSocksServer;
-    FCtrlSocket.SocksLevel          := FSocksLevel;
+    if FSocksLevel <> '' then                        { V8.37 don't set blank }
+        FCtrlSocket.SocksLevel      := FSocksLevel;
     FCtrlSocket.SocksPort           := FSocksPort;
     FCtrlSocket.SocksUsercode       := FSocksUsercode;
     FCtrlSocket.SocksPassword       := FSocksPassword;
     FCtrlSocket.SocksAuthentication := FSocksAuthentication;
+    FCtrlSocket.SocketErrs          := FSocketErrs;        { V8.37 }
     FReceiveLen                     := 0; { Clear the receive buffer V7.10 }
 {$IFDEF BUILTIN_THROTTLE}
     if httpoBandwidthControl in FOptions then begin
@@ -2197,12 +2158,15 @@ begin
         SocketSessionClosed(Sender, ErrCode);
     end
     else begin
-        FDnsResult            := FCtrlSocket.DnsResult;
+        if (FSocksServer = '') or (FSocksLevel = '4') then  { V8.51 socks5 takes host name }
+            FDnsResult := FCtrlSocket.DnsResult
+        else
+            FDnsResult := FHostName;
         StateChange(httpDnsLookupDone);  { 19/09/98 }
 {$IFDEF UseNTLMAuthentication}
         { NTLM authentication is alive only for one connection            }
         { so when we reconnect to server NTLM auth states must be reseted }
-        (* Removed by *ML* on May 02, 2005 
+        (* Removed by *ML* on May 02, 2005
         if FAuthNTLMState = ntlmDone then
             FAuthNTLMState      := ntlmNone;  {BLD NTLM}
 
@@ -2214,7 +2178,7 @@ begin
 {$ENDIF}
         { Basic authentication is alive only for one connection            }
         { so when we reconnect to server Basic auth states must be reseted }
-        (* Removed by *ML* on May 02, 2005 
+        (* Removed by *ML* on May 02, 2005
         if FAuthBasicState = basicDone then
             FAuthBasicState      := basicNone;
 
@@ -2255,11 +2219,12 @@ begin
             FRequestDoneError := FCtrlSocket.LastError;
             FStatusCode       := 404;
             FReasonPhrase     := 'can''t connect: ' +
-                                 WSocketErrorDesc(FCtrlSocket.LastError) +
+                                 WSocketErrorMsgFromErrorCode(FCtrlSocket.LastError) +  { V8.51 handles proxy errors } 
+                              {   WSocketErrorDesc(FCtrlSocket.LastError) +  }
                                  ' (Error #' + IntToStr(FCtrlSocket.LastError) + ')';
             FCtrlSocket.Close;
             SocketSessionClosed(Sender, FCtrlSocket.LastError);
-        end;    
+        end;
     end;
 end;
 
@@ -2274,9 +2239,9 @@ begin
     if ErrCode <> 0 then begin
         FRequestDoneError := ErrCode;
         FStatusCode       := 404;
-        FReasonPhrase     := WSocketErrorDesc(ErrCode) +
+        FReasonPhrase     := WSocketErrorMsgFromErrorCode(ErrCode) +  { V8.51 handles proxy errors }
+                          {    WSocketErrorDesc(ErrCode) + }
                              ' (Error #' + IntToStr(ErrCode) + ')';
-        {SocketSessionClosed(Sender, ErrCode)}  {14/12/2003};
         TriggerSessionConnected; {14/12/2003}
         Exit;
     end;
@@ -2353,7 +2318,7 @@ begin
                     SocketDataSent(FCtrlSocket, 0);
                 {$ENDIF}
                 end;
-            httpPATCH:  { V8.06 } 
+            httpPATCH:  { V8.06 }
                 begin
                     SendRequest('PATCH', FRequestVer);
                 {$IFDEF UseNTLMAuthentication}
@@ -2821,6 +2786,7 @@ end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { If UNICODE is defined each byte in Buffer must be ASCII (ord < 128) ! }
+(*  V8.50 moved to Utils
 procedure MoveTBytesToString(
     const Buffer : TBytes;
     OffsetFrom   : Integer;
@@ -2845,10 +2811,11 @@ begin
 begin
     Move(Buffer[OffsetFrom], Dest[OffsetTo], Count);
 {$ENDIF}
-end;
+end;   *)
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(* V8.50 moved to Utils
 procedure MoveTBytes(
     var Buffer : Tbytes;
     OffsetFrom : Integer;
@@ -2856,7 +2823,7 @@ procedure MoveTBytes(
     Count      : Integer); {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
     Move(Buffer[OffsetFrom], Buffer[OffsetTo], Count);
-end;
+end;  *)
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
@@ -2993,7 +2960,7 @@ begin
             FReceiveLen := FReceiveLen - FBodyDataLen;
             { Move remaining data to start of buffer. 17/01/2004 }
             if FReceiveLen > 0 then
-                MoveTBytes(FReceiveBuffer, FBodyDataLen, 0, FReceiveLen + 1)
+                IcsMoveTBytes(FReceiveBuffer, FBodyDataLen, 0, FReceiveLen + 1)
             else if FReceiveLen < 0 then  { V8.03 }
                 FReceiveLen := 0;         { V8.03 }
         end;
@@ -3857,15 +3824,15 @@ begin
     {$ENDIF}
         FProxyConnected := TRUE;
         if ( {Bjornar - Start}
-           (StartsWithText(FReceiveBuffer, 'HTTP/1.0 200') or
-           StartsWithText(FReceiveBuffer,'HTTP/1.1 200') or
-           StartsWithText(FReceiveBuffer, 'HTTP/1.0  200') or //M$ Proxy Server 2.0
-           StartsWithText(FReceiveBuffer, 'HTTP/1.1  200')) //M$ Proxy Server 2.0 not tested ??
+           (IcsTbytesStarts(FReceiveBuffer, 'HTTP/1.0 200') or
+           IcsTbytesStarts(FReceiveBuffer,'HTTP/1.1 200') or
+           IcsTbytesStarts(FReceiveBuffer, 'HTTP/1.0  200') or //M$ Proxy Server 2.0
+           IcsTbytesStarts(FReceiveBuffer, 'HTTP/1.1  200')) //M$ Proxy Server 2.0 not tested ??
            and not
-           ((StartsWithText(FReceiveBuffer, 'HTTP/1.1 200 OK') or
-           StartsWithText(FReceiveBuffer, 'HTTP/1.0 200 OK')) and
-           ContainsText(FReceiveBuffer, 'Content-Length:') and
-           not ContainsText(FReceiveBuffer, 'Content-Length: 0'))
+           ((IcsTbytesStarts(FReceiveBuffer, 'HTTP/1.1 200 OK') or
+           IcsTbytesStarts(FReceiveBuffer, 'HTTP/1.0 200 OK')) and
+           IcsTbytesContains(FReceiveBuffer, 'Content-Length:') and
+           not IcsTbytesContains(FReceiveBuffer, 'Content-Length: 0'))
            ) then {Bjornar - End}
         begin
             { We have a connection to remote host thru proxy, we can start }
@@ -3927,7 +3894,7 @@ begin
             FReceiveLen  := FReceiveLen - FBodyDataLen;   {+++++}
             { Move remaining data to start of buffer. 17/01/2004 }
             if FReceiveLen > 0 then
-                MoveTBytes(FReceiveBuffer, FBodyDataLen, 0, FReceiveLen + 1);
+                IcsMoveTBytes(FReceiveBuffer, FBodyDataLen, 0, FReceiveLen + 1);
 
             FBodyDataLen := 0;
 
@@ -3970,8 +3937,8 @@ begin
             else                                                  // FP 09/09/06
                 SetLength(FLastResponse, I);                      // FP 09/09/06
             if Length(FLastResponse) > 0 then                     // FP 09/09/06
-                MoveTBytesToString(FReceiveBuffer, 0,
-                        FLastResponse, 1, Length(FLastResponse)); // FP 09/09/06 
+                IcsMoveTBytesToString(FReceiveBuffer, 0,
+                        FLastResponse, 1, Length(FLastResponse)); // FP 09/09/06
         end;                                                      // FP 09/09/06
 
 {$IFNDEF NO_DEBUG_LOG}
@@ -3981,7 +3948,7 @@ begin
         FReceiveLen := FReceiveLen - I - 1;                               // FP 09/09/06
         if FReceiveLen > 0 then begin
 //          Move(FReceiveBuffer[I], FReceiveBuffer[0], FReceiveLen + 1);
-            MoveTBytes(FReceiveBuffer, I + 1, 0, FReceiveLen);  // FP 09/09/06
+            IcsMoveTBytes(FReceiveBuffer, I + 1, 0, FReceiveLen);  // FP 09/09/06
             // Debugging purpose only
             //FillChar(FReceiveBuffer[FReceiveLen], I + 1, '*');
         end
@@ -4006,6 +3973,7 @@ end;
 
 {Bjornar - Start}
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+(* V8.50 moved to Utils as IcsTbytesStarts
 function THttpCli.StartsWithText(Source : TBytes; Find : PAnsiChar) : Boolean;
 begin
     Result := FALSE;
@@ -4015,6 +3983,7 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+ V8.50 moved to Utils as IcsTbytesContains
 function THttpCli.ContainsText(Source : TBytes; Find : PAnsiChar) : Boolean;
 begin
     Result := FALSE;
@@ -4022,13 +3991,14 @@ begin
       Result := TRUE;
 end;
 {Bjornar - End}
-
+*)
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure THttpCli.StartRelocation;
 var
     SaveLoc : String;
     AllowMoreRelocations : Boolean;
+    SavedStatus: integer;
 begin
 {$IFNDEF NO_DEBUG_LOG}
     if CheckLogOptions(loProtSpecInfo) then  { V1.91 } { replaces $IFDEF DEBUG_OUTPUT  }
@@ -4063,7 +4033,8 @@ begin
         if Assigned(FOnLocationChange) then
              FOnLocationChange(Self);
         SaveLoc := FLocation;  { 01/05/03 }
-        InternalClear;
+        SavedStatus := FStatusCode;  { V8.37 keep if before it's lost }
+        InternalClear;   { clears most header vars }
         FLocation := SaveLoc;
         FDocName  := FPath;
         AdjustDocName;
@@ -4073,8 +4044,9 @@ begin
         { angus V8.07  unless a 307 or 308 POST which must not revert to GET }
         {if (FRequestType = httpPOST) and not ((FStatusCode = 307) or (FStatusCode = 308)) then }
         { angus V8.10 - try and match how Chrome and Firefox handle POST relocation }
-        if ((FStatusCode=303) and (FRequestType <> httpHEAD)) or
-              ((FRequestType = httpPOST) and ((FStatusCode=301) or (FStatusCode=302))) then
+        { angus V8.37 - last fix failed 302 because status had been cleared }
+        if ((SavedStatus=303) and (FRequestType <> httpHEAD)) or
+              ((FRequestType = httpPOST) and ((SavedStatus=301) or (SavedStatus=302))) then
             FRequestType  := httpGET;
         { Must clear what we already received }
         CleanupRcvdStream; {11/11/04}
@@ -5119,7 +5091,8 @@ end;
 procedure TSslHttpCli.DoBeforeConnect;
 begin
     inherited DoBeforeConnect;
-    FCtrlSocket.SslServerName       := FHostName;  { V8.11 needed for SNI support }
+   { V8.11 needed for SNI support, V8.48 was FHostName which failed for proxies }
+    FCtrlSocket.SslServerName       := FTargetHost;
     FCtrlSocket.OnSslVerifyPeer     := TransferSslVerifyPeer;
     FCtrlSocket.OnSslCliGetSession  := TransferSslCliGetSession;
     FCtrlSocket.OnSslCliNewSession  := TransferSslCliNewSession;

@@ -8,11 +8,11 @@ Description:  This is a demo program showing how to use the TFtpServer
               In production program, you should add code to implement
               security issues.
 Creation:     April 21, 1998
-Version:      8.00
+Version:      8.50
 EMail:        francois.piette@overbyte.be  http://www.overbyte.be
 Support:      Use the mailing list twsocket@elists.org
               Follow "support" link at http://www.overbyte.be for subscription.
-Legal issues: Copyright (C) 1998-2011 by François PIETTE
+Legal issues: Copyright (C) 1998-2017 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium.
               <francois.piette@overbyte.be>
               SSL implementation includes code written by Arno Garrels,
@@ -66,11 +66,15 @@ Nov 6, 2008   V1.12 Angus, support server V7.00 which does not use OverbyteIcsFt
                     ReadOnly account supported
                    (next release will have a different file for each HOST supported)
                     Note: random account names are no longer allowed for this demo
-Nov 8, 2008, V1.13 Angus, support HOST and REIN(ialise) commands
-Nov 13, 2008, V1.14 Angus, ensure servers have ftpsCwdCheck set
-Dec 9, 2014   V8.00 Angus added SslHandshakeRespMsg for better error handling
-
-
+Nov 8, 2008  V1.13 Angus, support HOST and REIN(ialise) commands
+Nov 13, 2008 V1.14 Angus, ensure servers have ftpsCwdCheck set
+Dec 9, 2014  V8.00 Angus added SslHandshakeRespMsg for better error handling
+May 24, 2016 V8.01 Angus added OverbyteIcsLIBEAY, OverbyteIcsSsLeay to uses
+Nov 12 2016  V8.37 Set friendly errors
+                   Specify minimum and maximum SSL version supported
+                   Allow server IP address to be specified
+Apr 15, 2017  V8.38 FPiette removed compiler warnings for D10.2
+Aug 25, 2107, V8.50 Angus added server onDisplay event
 
 Sample entry from ftpaccounts-default.ini
 
@@ -87,6 +91,10 @@ ReadOnly=false
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 unit OverbyteIcsSslFtpServ1;
 
+{$I OVERBYTEICSDEFS.INC}
+{$IFDEF DELPHI25_UP}
+   {$WARN SYMBOL_DEPRECATED OFF}
+{$ENDIF}
 {$IFNDEF USE_SSL}
   {$MESSAGE FATAL 'Define conditional define "USE_SSL" in the project options'};
 {$ENDIF}
@@ -101,11 +109,11 @@ uses
   Dialogs, OverbyteIcsIniFiles, OverbyteIcsFtpSrv, OverbyteIcsWSocket,
   StdCtrls, ExtCtrls, Menus,
   OverbyteIcsWinsock, OverbyteIcsLibeay, OverbyteIcsLogger,
-  OverbyteIcsWndControl, OverbyteIcsOneTimePw;
+  OverbyteIcsSsLeay, OverbyteIcsWndControl, OverbyteIcsOneTimePw;
 
 const
-  FtpServVersion      = 800;
-  CopyRight : String  = ' SslFtpServ (c) 1998-2014 F. Piette V8.00 ';
+  FtpServVersion      = 850;
+  CopyRight : String  = ' SslFtpServ (c) 1998-2017 F. Piette V8.50 ';
   WM_APPSTARTUP       = WM_USER + 1;
 
 type
@@ -174,6 +182,8 @@ type
     OpenSslVer1: TMenuItem;
     DisplaySslInfoCheckBox: TCheckBox;
     IcsLogger1: TIcsLogger;
+    Label2: TLabel;
+    ServIpAddr: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure SslFtpServer1ClientConnect(Sender: TObject;
       Client: TFtpCtrlSocket; Error: Word);
@@ -235,6 +245,8 @@ type
       var Allowed: Boolean);
     procedure SslFtpServer1Host(Sender: TObject; Client: TFtpCtrlSocket; Host: TFtpString; var Allowed: Boolean);
     procedure SslFtpServer1Rein(Sender: TObject; Client: TFtpCtrlSocket; var Allowed: Boolean);
+    procedure SslFtpServer1Display(Sender: TObject; Client: TFtpCtrlSocket;
+      Msg: TFtpString);
   private
     FInitialized              : Boolean;
     FIniFileName              : String;
@@ -289,7 +301,7 @@ const
     KeySslConnPort      = 'SslConnPort';
     KeyRenegInterval    = 'RenegotiationInterval';
     KeyDisplaySslInfo   = 'DisplaySslInfo';
-
+    KeyServIpAddr       = 'ServIpAddr';
 
 
     STATUS_GREEN        = 0;
@@ -381,10 +393,10 @@ begin
             FXLeft := 0;
         if FXTop < 0 then
             FXTop := 0;
-        if FXWidth < 310 then
-            FXWidth := 310;
-        if FXHeight <= 250 then
-            FXHeight := 250;
+        if FXWidth < 341 then
+            FXWidth := 341;
+        if FXHeight <= 6831 then
+            FXHeight := 683;
         if (FXLeft + FXWidth) > Screen.Width then
             FXLeft := Screen.Width - FXWidth;
         if (FXTop + FXHeight) > Screen.Height then
@@ -426,6 +438,7 @@ begin
         IniFile.WriteInteger(SectionData,   KeyDisplaySslInfo,
                                             Ord(DisplaySslInfoCheckBox.Checked));
         IniFile.WriteInteger(SectionData,   KeyRenegInterval, FSslRenegotiationInterval);
+        IniFile.WriteString(SectionData,    KeyServIpAddr,  ServIpAddr.Text);  { V8.37 }
         IniFile.UpdateFile;
         IniFile.Free;
     except
@@ -457,6 +470,9 @@ begin
     SslTypeConnPortEdit.Text := IniFile.ReadString(SectionData,
                                                    KeySslConnPort,
                                                    '990');
+    ServIpAddr.Text := IniFile.ReadString(SectionData,            { V8.37 }
+                                          KeyServIpAddr,
+                                         '0.0.0.0');
     FSslRenegotiationInterval := IniFile.ReadInteger(SectionData,
                                                      KeyRenegInterval, 0);
     DisplaySslInfoCheckBox.Checked :=
@@ -481,6 +497,7 @@ begin
     IniFile.WriteInteger(SectionData,   KeyVerifyPeer,  Ord(VerifyPeerCheckBox.Checked));
     IniFile.WriteString(SectionData,    KeySslConnPort, SslTypeConnPortEdit.Text);
     IniFile.WriteInteger(SectionData,   KeyRenegInterval, FSslRenegotiationInterval);
+    IniFile.WriteString(SectionData,    KeyServIpAddr,  ServIpAddr.Text);  { V8.37 }
     IniFile.UpdateFile;
     IniFile.Free;
 end;
@@ -591,8 +608,11 @@ begin
         InfoMemo.Lines.Add('        ' + String(StrPas(wsi.lpVendorInfo)));
 {$ENDIF}
     { Set SSL properties, internal session caching enabled }
-    SslContext1.SslVersionMethod            := sslV23_SERVER;
+//    SslContext1.SslVersionMethod            := sslV23_SERVER;
     //SslContext1.SslOptions                  := [sslOpt_NO_SSLv2]; //it's unsecure
+    SslContext1.SslMinVersion       := sslVerTLS1;  { V8.37}
+    SslContext1.SslMaxVersion       := sslVerMax;   { V8.37}
+    SslContext1.SslCipherList       := sslCiphersMozillaSrvBack;
 
     { Enables OpenSsl's internal session caching }
     SslContext1.SslSessionCacheModes        := [sslSESS_CACHE_SERVER];
@@ -617,6 +637,8 @@ begin
     SslFtpServer1.Banner := '220-Welcome to my Server' + #13#10 +
                             '220-' + #13#10 +
                             '220 ICS FTP Server ready.';
+    SslFtpServer1.Addr   := ServIpAddr.Text;  { V8.37 }
+    SslFtpServer2.Addr   := ServIpAddr.Text;  { V8.37 }
     SslFtpServer1.Port   := FPort;
     SslFtpServer2.Port   := SslTypeConnPortEdit.Text;
     SslFtpServer1.Start;
@@ -710,6 +732,13 @@ begin
     UpdateClientCount;
 end;
 
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TSslFtpServerForm.SslFtpServer1Display(Sender: TObject;    { V8.50 }
+  Client: TFtpCtrlSocket; Msg: TFtpString);
+begin
+    InfoMemo.Lines.Add('! ' + Msg);
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TSslFtpServerForm.SslFtpServer1Start(Sender: TObject);

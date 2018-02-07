@@ -221,6 +221,13 @@ object SmtpSslSrvForm: TSmtpSslSrvForm
       Height = 13
       Caption = 'PrivateKey'
     end
+    object Label8: TLabel
+      Left = 466
+      Top = 10
+      Width = 35
+      Height = 13
+      Caption = 'IP Addr'
+    end
     object CertFileEdit: TEdit
       Left = 80
       Top = 5
@@ -268,7 +275,15 @@ object SmtpSslSrvForm: TSmtpSslSrvForm
       Height = 17
       Alignment = taLeftJustify
       Caption = 'Verify Peer'
+      TabOrder = 6
+    end
+    object ServIpAddr: TEdit
+      Left = 524
+      Top = 6
+      Width = 153
+      Height = 21
       TabOrder = 5
+      Text = '0.0.0.0'
     end
   end
   object SmtpServer1: TSslSmtpServer
@@ -276,18 +291,21 @@ object SmtpSslSrvForm: TSmtpSslSrvForm
       item
         Addr = '0.0.0.0'
         Port = '587'
+        SslEnable = False
       end>
     Addr = '0.0.0.0'
     Port = 'smtp'
     SocketFamily = sfAnyIPv4
     ServerHost = 'pc19-web'
-    ServerDesc = 'SMTP Server (c) 1997-2013 Francois Piette V8.00'
+    ServerDesc = 'SMTP Server (c) 1997-2016 Francois Piette V8.37'
     MaxClients = 0
     MultiThreaded = False
     MaxMessageSize = 0
     ClientTimeout = 60
     GreyDelaySecs = 0
     Options = [smtpsAddIpAddrHdr]
+    SocketErrs = wsErrFriendly
+    ExclusiveAddr = True
     OnException = SmtpServer1Exception
     OnServerStarted = SmtpServer1ServerStarted
     OnServerStopped = SmtpServer1ServerStopped
@@ -308,6 +326,20 @@ object SmtpSslSrvForm: TSmtpSslSrvForm
     Top = 325
   end
   object SslContext1: TSslContext
+    SslDHParamLines.Strings = (
+      '-----BEGIN DH PARAMETERS-----'
+      'MIICCAKCAgEA45KZVdTCptcakXZb7jJvSuuOdMlUbl1tpncHbQcYbFhRbcFmmefp'
+      'bOmZsTowlWHQpoYRRTe6NEvYox8J+44i/X5cJkMTlIgMb0ZBty7t76U9f6qAId/O'
+      '6elE0gnk2ThER9nmBcUA0ZKgSXn0XCBu6j5lzZ0FS+bx9OVNhlzvIFBclRPXbI58'
+      '71dRoTjOjfO1SIzV69T3FoKJcqur58l8b+no/TOQzekMzz4XJTRDefqvePhj7ULP'
+      'Z/Zg7vtEh11h8gHR0/rlF378S05nRMq5hbbJeLxIbj9kxQunETSbwwy9qx0SyQgH'
+      'g+90+iUCrKCJ9Fb7WKqtQLkQuzJIkkXkXUyuxUuyBOeeP9XBUAOQu+eYnRPYSmTH'
+      'GkhyRbIRTPCDiBWDFOskdyGYYDrxiK7LYJQanqHlEFtjDv9t1XmyzDm0k7W9oP/J'
+      'p0ox1+WIpFgkfv6nvihqCPHtAP5wevqXNIQADhDk5EyrR3XWRFaySeKcmREM9tbc'
+      'bOvmsEp5MWCC81ZsnaPAcVpO66aOPojNiYQZUbmm70fJsr8BDzXGpcQ44+wmL4Ds'
+      'k3+ldVWAXEXs9s1vfl4nLNXefYl74cV8E5Mtki9hCjUrUQ4dzbmNA5fg1CyQM/v7'
+      'JuP6PBYFK7baFDjG1F5YJiO0uHo8sQx+SWdJnGsq8piI3w0ON9JhUvMCAQI='
+      '-----END DH PARAMETERS-----')
     SslVerifyPeer = False
     SslVerifyDepth = 9
     SslVerifyFlags = []
@@ -316,8 +348,12 @@ object SmtpSslSrvForm: TSmtpSslSrvForm
     SslSessionCacheModes = []
     SslCipherList = 'ALL:!ADH:RC4+RSA:+SSLv2:@STRENGTH'
     SslVersionMethod = sslV23_SERVER
+    SslMinVersion = sslVerSSL3
+    SslMaxVersion = sslVerMax
+    SslECDHMethod = sslECDHAuto
     SslSessionTimeout = 0
     SslSessionCacheSize = 20480
+    AutoEnableBuiltinEngines = False
     Left = 85
     Top = 325
   end
