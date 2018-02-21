@@ -3988,6 +3988,7 @@ type
       FTimeout             : LongInt;    { Given in milliseconds }
       FTimeStop            : LongInt;    { Milliseconds          }
       FOnLineLimitExceeded : TLineLimitEvent;
+      procedure Do_FD_CONNECT(var Msg : TMessage); override;
       procedure   InternalAbort(ErrCode : Word); override; { V7.49 }
       procedure   WndProc(var MsgRec: TMessage); override;
       procedure   WMTriggerDataAvailable(var msg: TMessage);
@@ -12404,6 +12405,13 @@ begin
     FRcvdCnt := FRcvdCnt - BufferSize;
 end;
 
+
+procedure TCustomLineWSocket.Do_FD_CONNECT(var Msg: TMessage);
+begin
+  FRcvdPtr := nil;
+  FRcvdCnt := 0;
+  inherited;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 { Edit received data. Handle TAB and BACKSPACE characters.                  }
