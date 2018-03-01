@@ -185,7 +185,7 @@ begin
     OutSecBuff.BufferType := SECBUFFER_TOKEN;
     OutSecBuff.pvBuffer   := nil;
 
-    Sec := FPSFT^.InitializeSecurityContextA(@FHCred,
+    Sec := FPSFT^.{$IFDEF UNICODE}InitializeSecurityContextW{$ELSE}InitializeSecurityContextA{$ENDIF}(@FHCred,
                                        nil,
                                        '',
                                        0,
@@ -300,7 +300,7 @@ begin
     OutSecBuff.BufferType := SECBUFFER_TOKEN;
     OutSecBuff.pvBuffer   := nil;
 
-    Sec := FPSFT^.InitializeSecurityContextA(@FHCred,
+    Sec := FPSFT^.{$IFDEF UNICODE}InitializeSecurityContextW{$ELSE}InitializeSecurityContextA{$ENDIF}(@FHCred,
                                        pHCtx,
                                        '',
                                        0,
